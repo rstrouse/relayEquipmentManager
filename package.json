@@ -2,7 +2,7 @@
   "name": "relay-equipment-manager",
   "version": "0.0.0",
   "description": "relayEquipmentManager",
-  "main": "app.js",
+  "main": "dist/app.js",
   "author": {
     "name": ""
   },

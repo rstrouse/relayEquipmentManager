@@ -27,7 +27,6 @@ class ConfigItem {
     initData(data) { return data; }
     setDataVal(name, val, persist) {
         if (this.data[name] !== val) {
-            // console.log(`Changing equipment: ${this.dataName} ${this.data.id} ${name}:${this.data[name]} --> ${val}`);
             this.data[name] = val;
             if (typeof persist === 'undefined' || persist)
                 this.hasChanged = true;
@@ -279,6 +278,8 @@ class Controller extends ConfigItem {
         let cfg = def;
         if (fs.existsSync(path)) {
             try {
+                let data = fs.readFileSync(path, 'utf8');
+                console.log(data);
                 cfg = JSON.parse(fs.readFileSync(path, 'utf8') || '{}');
             }
             catch (ex) {
