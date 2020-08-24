@@ -33,6 +33,18 @@ export class GpioController  {
         this.stopAsync();
         this.init();
     }
+    private translateState(direction: string, state: string) {
+        switch (state) {
+            case 'on':
+                return (direction === 'out') ? 'high' : direction;
+                break;
+            case 'off':
+                return (direction === 'out') ? 'low' : direction;
+                break;
+            default:
+                return direction;
+        }
+    }
     public initPins() {
         let pinouts = cont.pinouts;
         logger.info(`Initializing GPIO Pins ${cont.gpio.pins.length}`);
@@ -49,11 +61,11 @@ export class GpioController  {
                         this.pins.push(pin);
                         if (gp.accessible) {
                             logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${ pinDef.headerId }.`);
-                            pin.gpio = new gp(pinout.gpioId, pinDef.direction.gpio, 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         else {
                             logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);
-                            pin.gpio = new MockGpio(pinout.gpioId, pinDef.direction.name, 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                     }
                 }
@@ -98,11 +110,25 @@ class MockGpio {
     private _isExported = false;
     constructor(pinId: number, direction: string, edge?: string, options?) {
         this._pinId = pinId;
-        this._direction = direction;
+        switch (direction) {
+            case 'high':
+                this._value = 1;
+                this._direction = 'out';
+                break;
+            case 'low':
+                this._value = 0;
+                this._direction = 'out';
+                break;
+            default:
+                this._direction = direction;
+                this._value = 0;
+                break;
+        }
         this._edge = edge;
         this._opts = extend(true, { activeLow: false, debounceTimeout:0, reconfigureDirection:true }, options);
         this._value = 0;
         this._isExported = true;
+        if (this._direction !== direction) logger.info(`Input direction translated to initial state ${direction} --> ${this._direction}`);
     }
     public read(callback?: (err, value) => void) {
         if (typeof callback !== 'undefined')
