@@ -464,7 +464,7 @@
             $('<div></div>').appendTo(line).pickList({
                 required: true,
                 bindColumn: 0, displayColumn: 1, labelText: 'Conn Type', binding: 'type.name',
-                columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'State', style: { minWidth: '157px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' } }, { binding: 'inst', text: 'Description', style: { minWidth: '327px' } }],
+                columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Type', style: { minWidth: '157px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' } }, { binding: 'inst', text: 'Description', style: { minWidth: '327px' } }],
                 items: conns.connectionTypes, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '5.5rem' } }
             }).on('selchanged', function (e) {
                 var c = dataBinder.fromElement(dlg);
@@ -624,8 +624,7 @@
         setConnection: function (conn, callback) {
             var self = this, o = self.options, el = self.element;
             var cb = callback;
-            console.log(typeof cb);
-            let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' ? conn.type.name : '';
+            let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' && conn.id > 0 ? conn.type.name : '';
             if (el.attr('data-conntype') !== type || type === '') {
                 el.attr('data-conntype', type);
                 el.empty();
