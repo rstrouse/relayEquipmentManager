@@ -61,11 +61,11 @@ export class GpioController  {
                         this.pins.push(pin);
                         if (gp.accessible) {
                             logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${ pinDef.headerId }.`);
-                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: true });
                         }
                         else {
                             logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);
-                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: true });
                         }
                     }
                 }
