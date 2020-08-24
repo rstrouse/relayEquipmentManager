@@ -49,7 +49,7 @@ export class GpioController  {
                         this.pins.push(pin);
                         if (gp.accessible) {
                             logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);
-                            pin.gpio = gp(pinout.gpioId, pinDef.direction.name, 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            pin.gpio = new gp(pinout.gpioId, pinDef.direction.name, 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         else {
                             logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);
