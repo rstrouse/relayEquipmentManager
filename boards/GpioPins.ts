@@ -48,8 +48,8 @@ export class GpioController  {
                         pin = { headerId: pinDef.headerId, pinId: pinDef.id };
                         this.pins.push(pin);
                         if (gp.accessible) {
-                            logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.name} on Header ${ pinDef.headerId }.`);
-                            pin.gpio = new gp(pinout.gpioId, pinDef.direction.name, 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${ pinDef.headerId }.`);
+                            pin.gpio = new gp(pinout.gpioId, pinDef.direction.gpio, 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         else {
                             logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);

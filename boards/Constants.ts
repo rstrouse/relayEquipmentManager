@@ -55,9 +55,8 @@ export class valueMaps {
         [3, { name: 'beagle', desc: 'Beagle Bone Black', pinouts:'beaglebone.json' }]
     ]);
     public pinDirections: valueMap = new valueMap([
-        [0, { name: 'input', desc: 'Input' }],
-        [1, { name: 'output', desc: 'Output' }],
-        [2, { name: 'both', desc: 'Input/Output' }]
+        [0, { name: 'input', desc: 'Input', gpio:'in' }],
+        [1, { name: 'output', desc: 'Output', gpio:'out' }]
     ]);
     public pinTypes: valueMap = new valueMap([
         [0, { name: 'unused', desc: 'Unused' }],
