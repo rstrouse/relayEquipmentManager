@@ -1,0 +1,10 @@
+﻿[
+  {
+    "outputFile": "pages/widgets.css",
+    "inputFile": "pages/widgets.scss"
+  },
+  {
+    "outputFile": "pages/themes/default/theme.css",
+    "inputFile": "pages/themes/default/theme.scss"
+  }
+]

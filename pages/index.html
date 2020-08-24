@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relay Equipment Manager</title>
+    <script type="text/javascript" src="../socket.io-client/socket.io.js"></script>
+    <script type="text/javascript" src="../../jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript" src="../../jquery-ui/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="../../jquery-ui-touch-punch/jquery.ui.touch-punch.min.js"></script>
+    <script type="text/javascript" src="widgets.js"></script>
+    <script type="text/javascript" src="configPage.js"></script>
+    <link rel="stylesheet" type="text/css" href="../../jquery-ui/jquery-ui.css" />
+    <link rel="stylesheet" type="text/css" href="../../jquery-ui/jquery-ui.theme.css" />
+    <link id="cssref_glyphs" rel="stylesheet" type="text/css" href="/font-awesome/css/all.css" />
+    <link id="cssref_widgets" rel="stylesheet" type="text/css" href="widgets.css" />
+    <script type="text/javascript">
+        // Add in the current theme for the pool controller.
+        var theme = getCookie('dashTheme', 'default');
+        $('<link id="cssref_theme" rel="stylesheet" type="text/css" href="themes/' + theme + '/theme.css" />').appendTo($('head')).attr('data-theme', theme);
+    </script>
+</head>
+<body>
+    <div class="dashOuter picDashboard " data-panel="dashboard">
+        <div class="dashContainer"></div>
+    </div>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('div.dashContainer').configPage();
+        });
+    </script>
+</body>
+</html>

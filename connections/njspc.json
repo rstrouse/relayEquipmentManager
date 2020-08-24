@@ -1,0 +1,86 @@
+﻿{
+  "events": [
+    {
+      "name": "valve",
+      "hasId": true,
+      "hasPinId": true,
+      "instructions": "If the valve is virtual it will verify the pinId set on the valve prior to checking the id field.  If you would like to only process virtual valves where the pin id is identified, then leave the Id field blank.",
+      "bindings": [
+        {
+          "binding": "isDiverted",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "circuit",
+      "hasId": true,
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "feature",
+      "hasId": true,
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "circuitGroup",
+      "hasId": true,
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "lightGroup",
+      "hasId": true,
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "virtualCircuit",
+      "hasId": true,
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "heater",
+      "hasId": true,
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "schedule",
+      "hasId": true,
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ]
+    }
+  ]
+}

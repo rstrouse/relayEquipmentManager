@@ -1,0 +1,12 @@
+﻿{
+  "name": "Unspecified",
+  "desc": "Unspecified board definition",
+  "headers": [
+    {
+      "width": 0,
+      "length": 0,
+      "sex":  "male",
+      "pins": []
+    }
+  ]
+}

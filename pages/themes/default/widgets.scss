@@ -1,0 +1,93 @@
+﻿@import '../mixins/gradients.scss';
+@import './colors.scss';
+
+div.dashOuter {
+    height:100%;
+}
+div.dashContainer {
+    height:calc(100% - 32px);
+}
+div.picTabContents, div.picTabBar {
+    height:100%;
+}
+div.picController {
+    height:24px;
+}
+div.picConfigTabContents {
+    @include linear_gradient(0deg, rgba(240,240,240,1) 0%, rgba(249,249,249,1) 15%, rgba(255,255,255,1) 24%, rgba(255,255,255,1) 82%, rgba(222,222,222,1) 100%);
+}
+
+div.picTab:not(.picTabSelected) {
+    border-color: silver;
+    color: silver;
+}
+
+div.pover-icon:hover {
+    color: orange;
+    text-shadow: 3px 3px 16px #272634;
+}
+
+div.picBody[data-ison=false] div.picBodyTemp {
+    color: silver;
+}
+
+span.picUnits {
+    color: gray;
+}
+
+div.picAccordian-title {
+    border: solid 1px gray;
+    border-top-left-radius: $border_radius;
+    border-top-right-radius: $border_radius;
+}
+
+div.pnl-scheduleDays > div.table {
+    border-top-left-radius: $border_radius;
+    border-top-right-radius: $border_radius;
+}
+
+div.pnl-scheduleDays div.table-caption {
+    border-top-left-radius: $border_radius;
+    border-top-right-radius: $border_radius;
+    border: solid 1px gray;
+    @include fldbutton_background();
+}
+
+div.pnl-scheduleDays div.table-row.dayheader {
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+
+div.pnl-scheduleDays div.table-cell.dayheader {
+    text-align: center;
+    width: 2.4rem;
+    border: solid 1px gray;
+    font-weight: bold;
+    color: white;
+}
+
+div.pnl-scheduleDays div.table-row.dayheader {
+    background: #fde4be;
+    @include linear_gradient(180deg, #fde4be 0%, #E78F08 65%);
+    color: black;
+    font-weight: bold;
+}
+
+div.pnl-scheduleDays div.table-cell.day:hover {
+    @include hover_background();
+}
+
+div.pnl-scheduleDays div.table-cell.day:not(.disabled):active {
+    color: white;
+    @include active_background();
+}
+div.pnl-pin-definition {
+    border:solid 1px black;
+    vertical-align:top;
+    margin-left:10px;
+    margin-top:10px;
+    border-radius:5px;
+    padding:10px;
+    background-color:white;
+}
+

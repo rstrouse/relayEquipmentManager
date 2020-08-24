@@ -1,0 +1,557 @@
+﻿{
+  "name": "BeagleBone",
+  "desc": "Black and Blue Models",
+  "icon": "fas fa-paw",
+  "headers": [
+    {
+      "id": 1,
+      "name": "P9 Header",
+      "width": 2,
+      "length": 23,
+      "sex": "female",
+      "bgcolor": "black",
+      "align": "left",
+      "pins": [
+        {
+          "id": 1,
+          "name": "Ground",
+          "type": "ground"
+        },
+        {
+          "id": 2,
+          "name": "Ground",
+          "type": "ground"
+        },
+        {
+          "id": 3,
+          "name": "3v3 Power",
+          "type": "power3"
+        },
+        {
+          "id": 4,
+          "name": "3v3 Power",
+          "type": "power3"
+        },
+        {
+          "id": 5,
+          "name": "5v Power VDD",
+          "type": "power5"
+        },
+        {
+          "id": 6,
+          "name": "5v Power VDD",
+          "type": "power5"
+        },
+        {
+          "id": 7,
+          "name": "5v Power SYS",
+          "type": "power5"
+        },
+        {
+          "id": 8,
+          "name": "5v Power SYS",
+          "type": "power5"
+        },
+        {
+          "id": 9,
+          "name": "Power Button",
+          "type": "syspin"
+        },
+        {
+          "id": 10,
+          "name": "Reset",
+          "type": "syspin"
+        },
+        {
+          "id": 11,
+          "name": "GPIO-0 30",
+          "type": "gpio",
+          "gpioId": 30
+        },
+        {
+          "id": 12,
+          "name": "GPIO-1 28",
+          "type": "gpio",
+          "gpioId": 60
+        },
+        {
+          "id": 13,
+          "name": "GPIO-0 31",
+          "type": "gpio",
+          "gpioId": 31
+        },
+        {
+          "id": 14,
+          "name": "GPIO-1 18",
+          "type": "gpio",
+          "gpioId": 40
+        },
+        {
+          "id": 15,
+          "name": "GPIO-1 16",
+          "type": "gpio",
+          "gpioId": 48
+        },
+        {
+          "id": 16,
+          "name": "GPIO-1 19",
+          "type": "gpio",
+          "gpioId": 51
+        },
+        {
+          "id": 17,
+          "name": "GPIO-0 4",
+          "type": "gpio",
+          "gpioId": 4
+        },
+        {
+          "id": 18,
+          "name": "GPIO-0 5",
+          "type": "gpio",
+          "gpioId": 5
+        },
+        {
+          "id": 19,
+          "name": "GPIO-0 13",
+          "type": "gpio",
+          "gpioId": 13
+        },
+        {
+          "id": 20,
+          "name": "GPIO-0 12",
+          "type": "gpio",
+          "gpioId": 12
+        },
+        {
+          "id": 21,
+          "name": "GPIO-0 3",
+          "type": "gpio",
+          "gpioId": 3
+        },
+        {
+          "id": 22,
+          "name": "GPIO-0 2",
+          "type": "gpio",
+          "gpioId": 2
+        },
+        {
+          "id": 23,
+          "name": "GPIO-1 17",
+          "type": "gpio",
+          "gpioId": 49
+        },
+        {
+          "id": 24,
+          "name": "GPIO-0 15",
+          "type": "gpio",
+          "gpioId": 15
+        },
+        {
+          "id": 25,
+          "name": "GPIO-3 21",
+          "type": "gpio",
+          "gpioId": 117
+        },
+        {
+          "id": 26,
+          "name": "GPIO-0 13",
+          "type": "gpio",
+          "gpioId": 4
+        },
+        {
+          "id": 27,
+          "name": "GPIO-3 19",
+          "type": "gpio",
+          "gpioId": 125
+        },
+        {
+          "id": 28,
+          "name": "GPIO-3 17",
+          "type": "gpio",
+          "gpioId": 123
+        },
+        {
+          "id": 29,
+          "name": "GPIO-3 15",
+          "type": "gpio",
+          "gpioId": 111
+        },
+        {
+          "id": 30,
+          "name": "GPIO-3 16",
+          "type": "gpio",
+          "gpioId": 112
+        },
+        {
+          "id": 31,
+          "name": "GPIO-3 14",
+          "type": "gpio",
+          "gpioId": 110
+        },
+        {
+          "id": 32,
+          "name": "VDD_ADC",
+          "type": "syspin"
+        },
+        {
+          "id": 33,
+          "name": "Analog Input 4",
+          "type": "input"
+        },
+        {
+          "id": 34,
+          "name": "ADC Ground",
+          "type": "ground"
+        },
+        {
+          "id": 35,
+          "name": "Analog Input 6",
+          "type": "input"
+        },
+        {
+          "id": 36,
+          "name": "Analog Input 5",
+          "type": "input"
+        },
+        {
+          "id": 37,
+          "name": "Analog Input 2",
+          "type": "input"
+        },
+        {
+          "id": 38,
+          "name": "Analog Input 3",
+          "type": "input"
+        },
+        {
+          "id": 39,
+          "name": "Analog Input 0",
+          "type": "input"
+        },
+        {
+          "id": 40,
+          "name": "Analog Input 1",
+          "type": "input"
+        },
+        {
+          "id": 41,
+          "name": "GPIO-0 20",
+          "type": "gpio",
+          "gpioId": 20
+        },
+        {
+          "id": 42,
+          "name": "GPIO-0 7",
+          "type": "gpio",
+          "gpioId": 7
+        },
+        {
+          "id": 43,
+          "name": "Ground",
+          "type": "ground"
+        },
+        {
+          "id": 44,
+          "name": "Ground",
+          "type": "ground"
+        },
+        {
+          "id": 45,
+          "name": "Ground",
+          "type": "ground"
+        },
+        {
+          "id": 46,
+          "name": "Ground",
+          "type": "ground"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "P8 Header",
+      "width": 2,
+      "length": 23,
+      "sex": "female",
+      "bgcolor": "black",
+      "align": "right",
+      "pins": [
+        {
+          "id": 1,
+          "name": "Ground",
+          "type": "ground"
+        },
+        {
+          "id": 2,
+          "name": "Ground",
+          "type": "ground"
+        },
+        {
+          "id": 3,
+          "name": "GPIO-1 6",
+          "type": "gpio",
+          "gpioId": 38
+        },
+        {
+          "id": 4,
+          "name": "GPIO-1 7",
+          "type": "gpio",
+          "gpioId": 39
+        },
+        {
+          "id": 5,
+          "name": "GPIO-1 2",
+          "type": "gpio",
+          "gpioId": 34
+        },
+        {
+          "id": 6,
+          "name": "GPIO-1 3",
+          "type": "gpio",
+          "gpioId": 35
+        },
+        {
+          "id": 7,
+          "name": "GPIO-2 2",
+          "type": "gpio",
+          "gpioId": 66
+
+        },
+        {
+          "id": 8,
+          "name": "GPIO-2 3",
+          "type": "gpio",
+          "gpioId": 67
+        },
+        {
+          "id": 9,
+          "name": "GPIO-2 5",
+          "type": "gpio",
+          "gpioId": 69
+        },
+        {
+          "id": 10,
+          "name": "GPIO-2 4",
+          "type": "gpio",
+          "gpioId": 68
+        },
+        {
+          "id": 11,
+          "name": "GPIO-1 13",
+          "type": "gpio",
+          "gpioId": 45
+        },
+        {
+          "id": 12,
+          "name": "GPIO-1 12",
+          "type": "gpio",
+          "gpioId": 44
+        },
+        {
+          "id": 13,
+          "name": "GPIO-0 23",
+          "type": "gpio",
+          "gpioId": 23
+        },
+        {
+          "id": 14,
+          "name": "GPIO-0 26",
+          "type": "gpio",
+          "gpioId": 26
+        },
+        {
+          "id": 15,
+          "name": "GPIO-1 15",
+          "type": "gpio",
+          "gpioId": 47
+        },
+        {
+          "id": 16,
+          "name": "GPIO-1 14",
+          "type": "gpio",
+          "gpioId": 46
+        },
+        {
+          "id": 17,
+          "name": "GPIO-0 27",
+          "type": "gpio",
+          "gpioId": 27
+        },
+        {
+          "id": 18,
+          "name": "GPIO-2 1",
+          "type": "gpio",
+          "gpioId": 65
+        },
+        {
+          "id": 19,
+          "name": "GPIO-0 22",
+          "type": "gpio",
+          "gpioId": 22
+        },
+        {
+          "id": 20,
+          "name": "GPIO-1 31",
+          "type": "gpio",
+          "gpioId": 63
+        },
+        {
+          "id": 21,
+          "name": "GPIO-1 30",
+          "type": "gpio",
+          "gpioId": 62
+        },
+        {
+          "id": 22,
+          "name": "GPIO-1 5",
+          "type": "gpio",
+          "gpioId": 37
+        },
+        {
+          "id": 23,
+          "name": "GPIO-1 4",
+          "type": "gpio",
+          "gpioId": 36
+        },
+        {
+          "id": 24,
+          "name": "GPIO-1 1",
+          "type": "gpio",
+          "gpioId": 33
+        },
+        {
+          "id": 25,
+          "name": "GPIO-1 0",
+          "type": "gpio",
+          "gpioId": 32
+        },
+        {
+          "id": 26,
+          "name": "GPIO-1 29",
+          "type": "gpio",
+          "gpioId": 61
+        },
+        {
+          "id": 27,
+          "name": "GPIO-2 22",
+          "type": "gpio",
+          "gpioId": 86
+        },
+        {
+          "id": 28,
+          "name": "GPIO-2 24",
+          "type": "gpio",
+          "gpioId": 88
+        },
+        {
+          "id": 29,
+          "name": "GPIO-2 23",
+          "type": "gpio",
+          "gpioId": 87
+        },
+        {
+          "id": 30,
+          "name": "GPIO-2 25",
+          "type": "gpio",
+          "gpioId": 89
+        },
+        {
+          "id": 31,
+          "name": "GPIO-0 10",
+          "type": "gpio",
+          "gpioId": 10
+        },
+        {
+          "id": 32,
+          "name": "GPIO-0 11",
+          "type": "gpio",
+          "gpioId": 11
+        },
+        {
+          "id": 33,
+          "name": "GPIO-0 9",
+          "type": "gpio",
+          "gpioId": 9
+        },
+        {
+          "id": 34,
+          "name": "GPIO-2 7",
+          "type": "gpio",
+          "gpioId": 81
+        },
+        {
+          "id": 35,
+          "name": "GPIO-0 8",
+          "type": "gpio",
+          "gpioId": 8
+        },
+        {
+          "id": 36,
+          "name": "GPIO-2 16",
+          "type": "gpio",
+          "gpioId": 80
+        },
+        {
+          "id": 37,
+          "name": "GPIO-2 14",
+          "type": "gpio",
+          "gpioId": 78
+        },
+        {
+          "id": 38,
+          "name": "GPIO-2 15",
+          "type": "gpio",
+          "gpioId": 79
+        },
+        {
+          "id": 39,
+          "name": "GPIO-2 12",
+          "type": "gpio",
+          "gpioId": 76
+        },
+        {
+          "id": 40,
+          "name": "GPIO-2 13",
+          "type": "gpio",
+          "gpioId": 77
+        },
+        {
+          "id": 41,
+          "name": "GPIO-2 10",
+          "type": "gpio",
+          "gpioId": 74
+        },
+        {
+          "id": 42,
+          "name": "GPIO-2 11",
+          "type": "gpio",
+          "gpioId": 75
+        },
+        {
+          "id": 43,
+          "name": "GPIO-2 8",
+          "type": "gpio",
+          "gpioId": 72
+        },
+        {
+          "id": 44,
+          "name": "GPIO-2 9",
+          "type": "gpio",
+          "gpioId": 73
+        },
+        {
+          "id": 45,
+          "name": "GPIO-2 6",
+          "type": "gpio",
+          "gpioId": 70
+        },
+        {
+          "id": 46,
+          "name": "GPIO-2 27",
+          "type": "gpio",
+          "gpioId": 71
+        }
+      ]
+    }
+  ]
+}

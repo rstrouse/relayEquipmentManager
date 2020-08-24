@@ -1,0 +1,72 @@
+{
+  "lastUpdated": "8/23/2020, 6:34:11 PM",
+  "gpio": {
+    "pins": [
+      {
+        "id": 3,
+        "headerId": 1,
+        "isInverted": false,
+        "direction": "output",
+        "triggers": [
+          {
+            "id": 1,
+            "isActive": true,
+            "sourceId": 4,
+            "state": "on",
+            "eventName": "valve",
+            "binding": "isDiverted",
+            "operator": "eq",
+            "bindValue": "true"
+          },
+          {
+            "id": 2,
+            "isActive": true,
+            "sourceId": 4,
+            "state": "off",
+            "eventName": "valve",
+            "binding": "isDiverted",
+            "operator": "eq",
+            "bindValue": "false"
+          }
+        ],
+        "state": "off",
+        "isActive": true
+      },
+      {
+        "id": 5,
+        "headerId": 1,
+        "isInverted": false,
+        "direction": "output",
+        "triggers": []
+      }
+    ]
+  },
+  "controllerType": "raspi",
+  "connections": [
+    {
+      "id": 2,
+      "isActive": true,
+      "name": "Testing service end",
+      "type": "wsEndpoint"
+    },
+    {
+      "id": 3,
+      "isActive": false,
+      "name": "Internal Broker",
+      "type": "mqttBroker"
+    },
+    {
+      "id": 4,
+      "isActive": true,
+      "name": "Pool Controller",
+      "type": "njspc",
+      "protocol": "http:",
+      "ipAddress": "192.168.1.234",
+      "port": 4200,
+      "userName": "",
+      "password": "",
+      "sslKeyFile": "",
+      "sslCertFile": ""
+    }
+  ]
+}

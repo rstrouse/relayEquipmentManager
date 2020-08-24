@@ -1,0 +1,48 @@
+{
+  "web": {
+    "servers": {
+      "http2": {
+        "enabled": false
+      },
+      "http": {
+        "enabled": true,
+        "ip": "0.0.0.0",
+        "port": 8080,
+        "httpsRedirect": false,
+        "authentication": "none",
+        "authFile": "/users.htpasswd"
+      },
+      "https": {
+        "enabled": true,
+        "ip": "127.0.0.1",
+        "port": 8081,
+        "authentication": "none",
+        "authFile": "/users.htpasswd",
+        "sslKeyFile": "",
+        "sslCertFile": ""
+      },
+      "mdns": {
+        "enabled": false
+      },
+      "sspd": {
+        "enabled": false
+      },
+      "services": {}
+    },
+    "services": {
+      "protocol": "http://",
+      "ip": "127.0.0.1",
+      "port": 4200
+    }
+  },
+  "dashboard": {
+    "startPage": "index.html"
+  },
+  "log": {
+    "app": {
+      "enabled": true,
+      "level": "info"
+    }
+  },
+  "appVersion": "0.0.0"
+}
