@@ -1,4 +1,5 @@
 {
+  "controllerType": "raspi",
   "gpio": { "pins": [] },
   "connections": []
 }

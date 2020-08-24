@@ -231,7 +231,7 @@ export class Controller extends ConfigItem {
             .then(() => { fs.writeFileSync(this.cfgPath, JSON.stringify(this.data, undefined, 2)); })
             .catch(function (err) { if (err) logger.error('Error writing controller config %s %s', err, this.cfgPath); });
     }
-    public get controllerType() { return this.getMapVal(this.data.controllerType, vMaps.controllerTypes); }
+    public get controllerType() { return this.getMapVal(this.data.controllerType || 'raspi', vMaps.controllerTypes); }
     public set controllerType(val) {
         let old = this.data.controllerType;
         this.setMapVal('controllerType', val, vMaps.controllerTypes);

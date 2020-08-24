@@ -49,7 +49,6 @@ export class valueMap extends Map<number, any> {
 export class valueMaps {
     constructor() { }
     public controllerTypes: valueMap = new valueMap([
-        [0, { name: 'unspecified', desc: 'Unspecified' }],
         [1, { name: 'raspi', desc: 'Raspberry Pi', pinouts:'raspi.json' }],
         [2, { name: 'opi', desc: 'Orange Pi' }],
         [3, { name: 'beagle', desc: 'Beagle Bone Black', pinouts:'beaglebone.json' }]

@@ -1,9 +1,6 @@
 {
   "web": {
     "servers": {
-      "http2": {
-        "enabled": false
-      },
       "http": {
         "enabled": true,
         "ip": "0.0.0.0",
@@ -27,7 +24,10 @@
       "sspd": {
         "enabled": false
       },
-      "services": {}
+      "services": {},
+      "http2": {
+        "enabled": false
+      }
     },
     "services": {
       "protocol": "http://",
@@ -35,14 +35,14 @@
       "port": 4200
     }
   },
-  "dashboard": {
-    "startPage": "index.html"
-  },
   "log": {
     "app": {
       "enabled": true,
       "level": "info"
     }
   },
-  "appVersion": "0.0.0"
+  "appVersion": "0.0.0",
+  "dashboard": {
+    "startPage": "index.html"
+  }
 }
