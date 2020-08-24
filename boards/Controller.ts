@@ -37,6 +37,7 @@ class ConfigItem {
             if (typeof persist === 'undefined' || persist) this.hasChanged = true;
         }
         else if (typeof persist !== 'undefined' && persist) this.hasChanged = true;
+
     }
     protected setMapVal(name, val, map: valueMap, persist?: boolean) {
         if (typeof val === 'number') {

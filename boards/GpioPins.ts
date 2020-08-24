@@ -66,7 +66,7 @@ export class GpioController  {
     }
     public readPinAsync(headerId: number, pinId: number): Promise<number> {
         let pin = this.pins.find(elem => elem.headerId === headerId && elem.pinId === pinId);
-        if (typeof pin === 'undefined') return Promise.reject(new Error('Invalid pin. Could not find pin in controller.'));
+        if (typeof pin === 'undefined') throw new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`);
         return new Promise<number>(async (resolve, reject) => {
             try {
                 let val = await pin.gpio.readSync();
@@ -77,9 +77,10 @@ export class GpioController  {
     }
     public async writePinAsync(headerId: number, pinId: number, val:number): Promise<void> {
         let pin = this.pins.find(elem => elem.headerId === headerId && elem.pinId === pinId);
-        if (typeof pin === 'undefined') return Promise.reject(new Error('Invalid pin. Could not find pin in controller.'));
+        if (typeof pin === 'undefined') throw new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`);
         return new Promise<void>(async (resolve, reject) => {
             try {
+                logger.info(`Writing Pin ${pin.headerId}: ${pin.pinId}`);
                 await pin.gpio.writeSync(val);
                 resolve();
             }
