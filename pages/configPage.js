@@ -487,7 +487,8 @@
                 columns: [{ binding: 'name', text: 'Name', style: { width: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'type.desc', text: 'Type', style: { width: '177px' } }]
             }).on('additem', function (evt) {
                 $.getLocalService('/config/options/connections', null, function (conns, status, xhr) {
-                    self._createConnectionDialog('dlgAddConnection', 'Add a new Connection', conns);
+                    var dlg = self._createConnectionDialog('dlgAddConnection', 'Add a new Connection', conns);
+                    dataBinder.bind(dlg, { isActive: true });
                 });
             }).on('edititem', function (evt) {
                 $.getLocalService('/config/options/connections/' + evt.dataKey, null, function (conns, status, xhr) {

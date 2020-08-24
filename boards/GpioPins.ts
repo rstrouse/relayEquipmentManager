@@ -45,7 +45,7 @@ export class GpioController  {
                 if (typeof pinout !== 'undefined') {
                     let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === - pinDef.headerId);
                     if (typeof pin === 'undefined') {
-                        pin = { headerId: pinDef.headerId, pinId: pinDef.id };
+                        pin = { headerId: pinDef.headerId, pinId: pinDef.id, gpioId:pinout.gpioId };
                         this.pins.push(pin);
                         if (gp.accessible) {
                             logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${ pinDef.headerId }.`);
@@ -76,12 +76,12 @@ export class GpioController  {
         });
     }
     public async writePinAsync(headerId: number, pinId: number, val:number): Promise<void> {
-        let pin = this.pins.find(elem => elem.headerId === headerId && elem.pinId === pinId);
-        if (typeof pin === 'undefined') throw new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`);
         return new Promise<void>(async (resolve, reject) => {
             try {
-                logger.info(`Writing Pin ${pin.headerId}: ${pin.pinId}`);
-                await pin.gpio.writeSync(val);
+                let pin = this.pins.find(elem => elem.headerId === headerId && elem.pinId === pinId);
+                if (typeof pin === 'undefined') return reject(new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`));
+                logger.info(`Writing Pin #${pin.headerId}:${pin.pinId} -> GPIO #${pin.gpioId} to ${val}`);
+                await pin.gpio.write(val);
                 resolve();
             }
             catch (err) { reject(err); }
@@ -108,33 +108,28 @@ class MockGpio {
         if (typeof callback !== 'undefined')
             callback(this.checkExported(), this._value);
         else
-            return Promise.resolve(this._value);
+            return this._isExported ? Promise.resolve(this._value) : Promise.reject(this.notExportedError());
     }
     public readSync(): Promise<number> { return new Promise<number>((resolve, reject) => { !this._isExported ? reject(this.checkExported()) : resolve(this._value); }); }
     public write(val: number, callback?: (err, value) => void) {
-        let prom;
         if (this._direction === 'in') {
-            let err = !this._isExported ? this.notExportedError : new Error(`EPERM: Pin #${this._pinId} Write operation is not permitted.`);
-            if (err) logger.error(err);
-            if (typeof callback !== 'undefined')
-                callback(err, this._value = val);
-            else
-                prom = Promise.reject(err);
-            this.setValueInternal(err, this._value);
+            let err = !this._isExported ? this.notExportedError() : new Error(`EPERM: GPIO #${this._pinId} Write operation is not permitted for inputs.`);
+            if (typeof callback !== 'undefined') callback(err, this._value);
+            else return Promise.reject(err);
         }
         else {
+            let err = this.checkExported();
+            this.setValueInternal(err, val);
             if (typeof callback !== 'undefined')
-                callback(this.checkExported(), this._value = val);
+                callback(err, this._value);
             else
-                prom = !this._isExported ? Promise.reject(this.notExportedError()) : Promise.resolve(val);
-            this.setValueInternal(undefined, val);
+                return err ? Promise.reject(this.notExportedError()) : Promise.resolve(this._value);
         }
-        return prom;
     }
     public writeSync(val): Promise<number> {
         let prom;
         if (this._direction === 'in') {
-            let err = !this._isExported ? this.notExportedError : new Error(`EPERM: Pin #${this._pinId} Write operation is not permitted.`);
+            let err = !this._isExported ? this.notExportedError : new Error(`EPERM: GPIO #${this._pinId} Write operation is not permitted.`);
             if (err) logger.error(err);
             prom = Promise.reject(err);
             this.setValueInternal(err, this._value);
@@ -146,13 +141,13 @@ class MockGpio {
         return prom;
     }
     public watch(callback: (err, value) => void) {
-        logger.info(`Watching Pin #${this._pinId}`);
+        logger.info(`Watching GPIO #${this._pinId}`);
         this._watches.push(callback);
     }
     public unwatch(callback?: (err, value) => void) {
         if (typeof callback === 'undefined') this.unwatchAll();
         else {
-            logger.info(`Unwatch Pin #${this._pinId} callback`);
+            logger.info(`Unwatch GPIO #${this._pinId} callback`);
 
             for (let i = this._watches.length - 1; i >= 0; i--) {
                 if (this._watches[i] === callback) {
@@ -163,42 +158,46 @@ class MockGpio {
     }
     public unwatchAll() { this._watches.length = 0; logger.info(`Unwatch ${this._pinId} all callbacks`); }
     public edge(): string {
-        logger.info(`Get Pin ${this._pinId} Edge: ${this.edge}`);
+        logger.info(`Get GPIO #${this._pinId} Edge: ${this._edge}`);
         return this._edge
     }
     public setEdge(edge: string) {
         this._edge = edge;
-        logger.info(`Set Pin #${this._pinId} Edge to ${this.edge}`);
+        logger.info(`Set GPIO #${this._pinId} Edge to ${this.edge}`);
     }
     public activeLow(): boolean {
-        logger.info(`Get Pin #${this._pinId} ActiveLow: ${ this._opts.activeLow }`);
+        logger.info(`Get GPIO #${this._pinId} ActiveLow: ${ this._opts.activeLow }`);
         return utils.makeBool(this._opts.activeLow);
     }
     public setActiveLow(activeLow: boolean) { this._opts.activeLow = activeLow; }
     public unexport() {
-        logger.info(`Unexported Pin #${this._pinId}`);
+        logger.info(`Unexported GPIO #${this._pinId}`);
         this._isExported = false;
     }
     private setValueInternal(err, val) {
-        if (this._isExported) {
-            logger.info(`Wrote Pin #${this._pinId} to ${val}`);
+        if (!err && this._isExported) {
+            logger.info(`Wrote GPIO #${this._pinId} to ${val}`);
             let oldVal = this._value;
             this._value = val;
             if (oldVal !== val && ((this._edge === 'both') ||
                 (this._edge === 'rising' && val === 1) ||
                 (this._edge === 'falling' && val === 0))) {
                 for (let i = 0; i < this._watches.length; i++) {
-                    logger.info(`Fired Pin #${this._pinId} watch #${i + 1}`);
+                    logger.info(`Fired GPIO #${this._pinId} watch #${i + 1}`);
                     this._watches[i](err, val);
                 }
             }
         }
+        else {
+            logger.error(`Cannot write GPIO #${this._pinId}`);
+        }
+        return this._value;
     }
     private checkExported() {
         if (!this._isExported) logger.error(this.notExportedError());
         return !this._isExported ? this.notExportedError() : undefined;
     }
-    private notExportedError() { return new Error(`EPERM: The pin #${this._pinId} has not been exported.`); }
+    private notExportedError() { return new Error(`EPERM: GPIO #${this._pinId} has not been exported.`); }
     public static HIGH = 1;
     public static LOW = 0;
 }

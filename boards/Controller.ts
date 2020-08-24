@@ -408,7 +408,7 @@ export class GpioPin extends ConfigItem {
     public set state(val) {
         this.setMapVal('state', val, vMaps.pinStates);
         let mv = this.getMapVal(this.data.state, vMaps.pinStates);
-        if (typeof mv !== 'undefined' && mv.gpio !== 'undefined') gpioPins.writePinAsync(this.headerId, this.id, mv.gpio);
+        if (typeof mv !== 'undefined' && mv.gpio !== 'undefined' && this.isActive) gpioPins.writePinAsync(this.headerId, this.id, mv.gpio).catch(err => logger.error(err));
     }
     public get triggers(): GpioPinTriggerCollection { return new GpioPinTriggerCollection(this.data, 'triggers'); }
     public getExtended() {
