@@ -708,7 +708,7 @@ div.pnl-gpio-board-name {
   left: 20px;
   bottom: 240px;
   color: white;
-  transform: rotate(270deg); }
+  height: 40px; }
 
 div.pin-header-name {
   color: white;
@@ -828,3 +828,51 @@ span.header-icon-btn:hover > i {
   padding: 4px;
   border-radius: 3px;
   font-size: .8em; }
+
+.editor {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 20px;
+  padding: 10px;
+  tab-size: 4;
+  width: 100%;
+  display: block;
+  resize: none !important;
+  border-radius: 0px !important; }
+
+.codejar-linenumbers {
+  padding-right: 4px;
+  text-align: right;
+  color: teal !important; }
+
+.script-editor {
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  border: solid 1px gray;
+  border-radius: 5px; }
+
+.script-editor > div:first-child {
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px; }
+
+.script-editor > div:last-child {
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px; }
+
+.script-suffix,
+.script-prefix {
+  padding-left: 4px;
+  text-shadow: 0 1px white;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+  background: #f5f2f0; }
+
+.trigger-advanced-instructions,
+.trigger-basic-instructions {
+  font-size: 9pt;
+  padding: 4px;
+  border: solid 1px silver;
+  background-color: lightyellow;
+  border-radius: 5px;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+  margin-bottom: 4px; }

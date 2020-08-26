@@ -100,8 +100,8 @@ export class ConfigRoute {
         });
         app.put('/config/pin/trigger/:headerId/:pinId', async (req, res, next) => {
             try {
-                var headerId = parseInt(req.params.headerId, 10);
-                var pinId = parseInt(req.params.pinId, 10);
+                let headerId = parseInt(req.params.headerId, 10);
+                let pinId = parseInt(req.params.pinId, 10);
                 if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
                 if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
                 let trig = await cont.setPinTriggerAsync(headerId, pinId, req.body);

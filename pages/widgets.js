@@ -309,7 +309,6 @@ jQuery.each(['get', 'put', 'delete', 'post', 'search'], function (i, method) {
         var msg;
         var overlay;
         if (typeof message !== 'undefined') {
-            console.log('Showing message: ' + message);
             // We are displaying a message while the service is underway.
             msg = $('<div style="visibility:hidden;z-index:501;"></div>').addClass('picServiceStatusMsg').appendTo(document.body);
             overlay = $('<div style="background-color:lavender;opacity:.15;z-index:500"></div>').addClass('ui-widget-overlay').addClass('ui-front').appendTo(document.body);
@@ -334,6 +333,7 @@ jQuery.each(['get', 'put', 'delete', 'post', 'search'], function (i, method) {
         var cbShowError = function (jqXHR, status, error) {
             var err = { httpCode: jqXHR.status, status: status, error: jqXHR.responseJSON };
             if (err.httpCode >= 299) {
+                console.log(error);
                 $.pic.modalDialog.createApiError($.extend(true, { url: serviceUrl, data: data }, err));
             }
         };
@@ -543,14 +543,17 @@ var dataBinder = {
             for (let i = 0; i < arr.length; i++) {
                 var s = arr[i];
                 if (typeof s === 'undefined' || !s) continue;
-                let ndx = s.indexOf('[');
-                if (ndx !== -1) {
-                    ndx = parseInt(s.substring(ndx + 1, s.indexOf(']') - 1), 10);
-                    s = s.substring(0, ndx - 1);
+                let ndxStart = s.indexOf('[');
+                var ndx = -1;
+                if (ndxStart !== -1) {
+                    var ndxEnd = s.indexOf(']');
+                    ndx = parseInt(s.substring(ndxStart + 1, s.indexOf(']')), 10);
+                    s = s.substring(0, ndxStart);
                 }
                 tval = tval[s];
                 if (typeof tval === 'undefined') break;
                 if (ndx >= 0) tval = tval[ndx];
+                if (typeof tval === 'undefined') break;
             }
             if (typeof tval !== 'undefined') {
                 if (typeof this.val === 'function') this.val(tval);
@@ -1334,12 +1337,24 @@ $.ui.position.fieldTip = {
             el[0].tabContent = function (tabId) { return self.tabContent(tabId); };
             el[0].selectTabById = function (tabId) { return self.selectTabById(tabId); };
             el[0].selectedTabId = function (tabId) { return self.selectedTabId(tabId); };
+            el[0].showTab = function (tabId, show) { return self.showTab(tabId, show); }
             el[0].addTab = function (tabObj) { return self.addTab(tabObj); };
             var evt = $.Event('initTabs');
             evt.contents = function () { return self.contents(); };
             el.trigger(evt);
         },
         isInDOM: function () { return $.contains(this.element[0].ownerDocument.documentElement, this.element[0]); },
+        showTab: function (tabId, show) {
+            var self = this, o = self.options, el = self.element;
+            var tab = el.find('div.picTabs:first').children('div.picTab[data-tabid="' + tabId + '"]');
+            //console.log({ msg: 'Showing tab', tab: tab, show: show });
+            if (show) tab.show();
+            else tab.hide();
+            if (tab.hasClass('picTabSelected')) {
+                if (show) self.contents().find('div.picTabContent[data-tabid=' + tabId + ']').show();
+                else self.contents().find('div.picTabContent[data-tabid=' + tabId + ']').hide();
+            }
+        },
         selectTabById: function (tabId) {
             var self = this, o = self.options, el = self.element;
             var evt = $.Event('tabchange');
@@ -2146,7 +2161,8 @@ $.ui.position.fieldTip = {
             inputStyle: {},
             labelStyle: {},
             inputAttrs: {},
-            labelAttrs: {}
+            labelAttrs: {},
+            isChecked: false
         },
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -2161,8 +2177,9 @@ $.ui.position.fieldTip = {
             if (typeof o.id !== 'undefined') el.attr('id', o.id);
             $('<input type="checkbox" class="picCheckbox-value"></input>').appendTo(el).attr('id', o.cbId).on('change', function (evt) {
                 evt = $.Event('changed');
-                evt.newVal = $(evt.currentTarget).is(':checked');
+                evt.newVal = el.find('input[type="checkbox"]').is(':checked');
                 evt.oldVal = !evt.newVal;
+                o.isChecked = evt.newVal;
                 el.trigger(evt);
             });
             $('<label></label>').attr('for', o.cbId).appendTo(el).text(o.labelText);
@@ -2189,7 +2206,15 @@ $.ui.position.fieldTip = {
         val: function (val) {
             var self = this, o = self.options, el = self.element;
             var cb = el.find('input.picCheckbox-value:first');
-            if (typeof val !== 'undefined') cb.prop('checked', makeBool(val));
+            if (typeof val !== 'undefined') {
+                if (makeBool(val) !== o.isChecked)
+                cb.prop('checked', makeBool(val));
+                evt = $.Event('changed');
+                evt.oldVal = o.isChecked;
+                o.isChecked = makeBool(val);
+                evt.newVal = o.isChecked;
+                el.trigger(evt);
+            }
             else return cb.is(':checked');
         }
     });
@@ -2424,6 +2449,8 @@ $.ui.position.fieldTip = {
                 var td = $('<td></td>').appendTo(row);
                 var span = $('<span class="crud-header-text"></span>').appendTo(td).text(col.text);
                 if (typeof col.style !== 'undefined') span.css(col.style);
+                if (typeof col.headStyle !== 'undefined') div.css(col.headStyle);
+
                 if (col.hidden) td.hide();
             }
             btn = $('<td></td>').appendTo(row).addClass('crud-button'); // This is the buttons column.
@@ -2467,7 +2494,8 @@ $.ui.position.fieldTip = {
                 var col = o.columns[i];
                 var td = $('<td></td>').appendTo(row);
                 var div = $('<div></div>').appendTo(td).attr('data-bind', col.binding).attr('data-fmttype', col.fmtType).attr('data-fmtMask', col.fmtMask);
-                if (typeof col.style) div.css(col.style);
+                if (typeof col.style !== 'undefined') div.css(col.style);
+                if (typeof col.cellStyle !== 'undefined') div.css(col.cellStyle);
             }
             btn = $('<td></td>').appendTo(row);
             // Add in the buttons.
@@ -2719,6 +2747,42 @@ $.ui.position.fieldTip = {
             var title = o.name;
             if (typeof o.gpioId !== 'undefined') { title += '\r\nGPIO #' + o.gpioId; }
             el.attr('title', title);
+        }
+    });
+    $.widget('pic.scriptEditor', {
+        options: {},
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].val = function (val) { return self.val(val); }
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('script-editor');
+            $('<div></div>').addClass('script-prefix').appendTo(el).html(Prism.highlight(o.prefix, Prism.languages.javascript, 'javascript'));
+            var inner = $('<div></div>').appendTo(el).addClass('script-scroller');
+            var jarElem = $('<code></code>').addClass('editor').addClass('language-javascript').appendTo(inner);
+            o.jar = $CJ.CodeJar(jarElem[0], $CJ.LineNumbers(Prism.highlightElement));
+            if (typeof o.style !== 'undefined') el.css(o.style);
+            if (typeof o.codeStyle !== 'undefined') inner.css(o.codeStyle);
+            el.attr('data-bind', o.binding);
+            $('<div></div>').addClass('script-suffix').appendTo(el).html(Prism.highlight(o.suffix, Prism.languages.javascript, 'javascript'));
+        },
+        _encode: function (code) { return code.replace(/\n/g, '\\n'); },
+        _decode: function (code) { return code.replace(/\\n/g, '\n'); },
+
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val === 'undefined') {
+                return o.jar.toString();
+            }
+            else {
+                o.jar.updateCode(val);
+            }
+        },
+        _destroy: function () {
+            o.jar.destroy();
+            o.jar = undefined;
         }
     });
 

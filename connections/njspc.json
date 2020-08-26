@@ -4,11 +4,29 @@
       "name": "valve",
       "hasId": true,
       "hasPinId": true,
-      "instructions": "If the valve is virtual it will verify the pinId set on the valve prior to checking the id field.  If you would like to only process virtual valves where the pin id is identified, then leave the Id field blank.",
+      "useExpression": false,
+      "instructions": "If the valve is defined in Pool Controller as a virtual valve check the <span style=\"font-weight:bold;\">Use Pin Id</span> checbox to ensure the event is for this pin as entered in dashPanel.",
       "bindings": [
         {
+          "label": "Id",
+          "binding": "id",
+          "type": "number",
+          "inputStyle": {
+            "width": "4rem",
+            "textAlign": "right"
+          }
+        },
+        {
+          "binding": "name",
+          "type": "string",
+          "style": {},
+          "label": "Name",
+          "inputStyle": { "width": "17rem" }
+        },
+        {
           "binding": "isDiverted",
-          "type": "boolean"
+          "type": "boolean",
+          "label": "Is Diverted"
         }
       ]
     },
@@ -16,6 +34,22 @@
       "name": "circuit",
       "hasId": true,
       "bindings": [
+        {
+          "label": "Id",
+          "binding": "id",
+          "type": "number",
+          "inputStyle": {
+            "width": "4rem",
+            "textAlign": "right"
+          }
+        },
+        {
+          "binding": "name",
+          "type": "string",
+          "style": {},
+          "label": "Name",
+          "inputStyle": { "width": "17rem" }
+        },
         {
           "binding": "isOn",
           "type": "boolean"
@@ -27,6 +61,22 @@
       "hasId": true,
       "bindings": [
         {
+          "label": "Id",
+          "binding": "id",
+          "type": "number",
+          "inputStyle": {
+            "width": "4rem",
+            "textAlign": "right"
+          }
+        },
+        {
+          "binding": "name",
+          "type": "string",
+          "style": {},
+          "label": "Name",
+          "inputStyle": { "width": "17rem" }
+        },
+        {
           "binding": "isOn",
           "type": "boolean"
         }
@@ -36,6 +86,22 @@
       "name": "circuitGroup",
       "hasId": true,
       "bindings": [
+        {
+          "label": "Id",
+          "binding": "id",
+          "type": "number",
+          "inputStyle": {
+            "width": "4rem",
+            "textAlign": "right"
+          }
+        },
+        {
+          "binding": "name",
+          "type": "string",
+          "style": {},
+          "label": "Name",
+          "inputStyle": { "width": "17rem" }
+        },
         {
           "binding": "isOn",
           "type": "boolean"
@@ -47,6 +113,21 @@
       "hasId": true,
       "bindings": [
         {
+          "label": "Id",
+          "binding": "id",
+          "type": "number",
+          "inputStyle": {
+            "width": "4rem",
+            "textAlign": "right"
+          }
+        },
+        {
+          "binding": "name",
+          "type": "string",
+          "label": "Name",
+          "inputStyle": { "width": "17rem" }
+        },
+        {
           "binding": "isOn",
           "type": "boolean"
         }
@@ -56,6 +137,21 @@
       "name": "virtualCircuit",
       "hasId": true,
       "bindings": [
+        {
+          "label": "Id",
+          "binding": "id",
+          "type": "number",
+          "inputStyle": {
+            "width": "4rem",
+            "textAlign": "right"
+          }
+        },
+        {
+          "binding": "name",
+          "type": "string",
+          "label": "Name",
+          "inputStyle": { "width": "17rem" }
+        },
         {
           "binding": "isOn",
           "type": "boolean"
@@ -67,6 +163,21 @@
       "hasId": true,
       "bindings": [
         {
+          "label": "Id",
+          "binding": "id",
+          "type": "number",
+          "inputStyle": {
+            "width": "4rem",
+            "textAlign": "right"
+          }
+        },
+        {
+          "binding": "name",
+          "type": "string",
+          "label": "Name",
+          "inputStyle": { "width": "17rem" }
+        },
+        {
           "binding": "isOn",
           "type": "boolean"
         }
@@ -76,6 +187,15 @@
       "name": "schedule",
       "hasId": true,
       "bindings": [
+        {
+          "label": "Id",
+          "binding": "id",
+          "type": "number",
+          "inputStyle": {
+            "width": "4rem",
+            "textAlign": "right"
+          }
+        },
         {
           "binding": "isOn",
           "type": "boolean"

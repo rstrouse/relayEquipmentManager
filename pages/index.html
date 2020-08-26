@@ -11,14 +11,21 @@
     <script type="text/javascript" src="../../jquery-ui-touch-punch/jquery.ui.touch-punch.min.js"></script>
     <script type="text/javascript" src="widgets.js"></script>
     <script type="text/javascript" src="configPage.js"></script>
+    <script type="text/javascript" src="../../prismjs/prism.js"></script>
     <link rel="stylesheet" type="text/css" href="../../jquery-ui/jquery-ui.css" />
     <link rel="stylesheet" type="text/css" href="../../jquery-ui/jquery-ui.theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../prismjs/themes/prism.css" />
     <link id="cssref_glyphs" rel="stylesheet" type="text/css" href="/font-awesome/css/all.css" />
     <link id="cssref_widgets" rel="stylesheet" type="text/css" href="widgets.css" />
     <script type="text/javascript">
         // Add in the current theme for the pool controller.
         var theme = getCookie('dashTheme', 'default');
         $('<link id="cssref_theme" rel="stylesheet" type="text/css" href="themes/' + theme + '/theme.css" />').appendTo($('head')).attr('data-theme', theme);
+    </script>
+    <script type="module">
+        import { CodeJar } from "../../codejar/codejar.js";
+        import { withLineNumbers } from "../../codejar/linenumbers.js";
+        window.$CJ = { CodeJar: CodeJar, LineNumbers: withLineNumbers };
     </script>
 </head>
 <body>
@@ -28,7 +35,7 @@
     <script type="text/javascript">
         $(document).ready(function () {
             $('div.dashContainer').configPage();
-        });
+    });
     </script>
 </body>
 </html>

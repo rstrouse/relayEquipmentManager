@@ -8,7 +8,7 @@ import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { vMaps, valueMap, utils } from "./Constants";
 import { PinDefinitions } from "../pinouts/Pinouts";
-import { connBroker } from "../connections/Bindings";
+import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
 interface IConfigItemCollection {
     set(data);
@@ -154,7 +154,7 @@ class ConfigItemCollection<T> implements IConfigItemCollection {
     public clear() { this.data.length = 0; }
     public get length(): number { return typeof this.data !== 'undefined' ? this.data.length : 0; }
     public set length(val: number) { if (typeof val !== 'undefined' && typeof this.data !== 'undefined') this.data.length = val; }
-    public add(obj: any): T { this.data.push(obj); return this.createItem(obj); }
+    public add(obj: any): T { let ndx = this.data.push(obj) - 1; return this.createItem(this.data[ndx]); }
     public get(): any { return this.data; }
     public emitEquipmentChange() { webApp.emitToClients(this.name, this.data); }
     public sortByName() {
@@ -162,11 +162,7 @@ class ConfigItemCollection<T> implements IConfigItemCollection {
             return a.name > b.name ? 1 : a.name !== b.name ? -1 : 0;
         });
     }
-    public sortById() {
-        this.sort((a, b) => {
-            return a.id > b.id ? 1 : a.id !== b.id ? -1 : 0;
-        });
-    }
+    public sortById() { this.sort((a, b) => { return a.id > b.id ? 1 : a.id !== b.id ? -1 : 0; }); }
     public sort(fn: (a, b) => number) { this.data.sort(fn); }
     public getMaxId(activeOnly?: boolean, defId?: number) {
         let maxId;
@@ -196,8 +192,13 @@ export class Controller extends ConfigItem {
         let cfg = this.loadConfigFile(this.cfgPath, {});
         let cfgDefault = this.loadConfigFile(path.posix.join(process.cwd(), '/defaultController.json'), {});
         cfg = extend(true, {}, cfgDefault, cfg);
+        let cfgVer = 1;
         this.data = this.onchange(cfg, function () { cont.dirty = true; });
         this.gpio = new Gpio(this.data, 'gpio');
+        if (typeof this.data.configVersion === 'undefined') {
+            this.gpio.upgrade(this.data.ver);
+        }
+        this.data.configVersion = cfgVer;
         this.connections = new ConnectionSourceCollection(this.data, 'connections');
     }
     public async stopAsync() {
@@ -334,8 +335,15 @@ export class Controller extends ConfigItem {
         }
         return new Promise<GpioPinTrigger>((resolve, reject) => {
             let trig = pin.triggers.getItemById(data.id, true);
+            if (typeof data.bindings !== 'undefined' || typeof data.expression !== 'undefined' || data.expression !== '') {
+                let test = extend(true, trig.get(true), data);
+                let err = GpioPinTrigger.validateExpression(test);
+                if (typeof err !== 'undefined') {
+                    logger.error(`Invalid Pin#${pin.id} Trigger Expression: ${err}`);
+                    return reject(new Error(`Invalid Pin#${pin.id} Trigger Expression: ${err}`));
+                }
+            }
             trig.set(data);
-            if (typeof data.equipmentId === 'undefined') trig.equipmentId = undefined;
             resolve(trig);
         });
     }
@@ -370,13 +378,40 @@ export class Gpio extends ConfigItem {
     constructor(data, name?: string) { super(data, name || 'gpio'); }
     protected initData(data?: any) {
         if (typeof this.data.pins === 'undefined') this.data.pins = [];
+        if (typeof this.data.exported === 'undefined') this.data.exported =[];
         return data;
     }
+    public upgrade(ver) { this.pins.upgrade(ver); }
+    public setExported(gpioId: number) {
+        if (this.data.exported.find(elem => elem === gpioId) === undefined) {
+            this.data.exported.push(gpioId);
+            return false;
+        }
+        return true;
+    }
+    public setUnexported(gpioId: number) {
+        let ndx = this.data.exported.indexOf(gpioId);
+        let bExported = false;
+        while (ndx >= 0) {
+            this.data.exported.splice(ndx, 1);
+            ndx = this.data.exported.indexOf(gpioId);
+            bExported = true;
+        }
+        return bExported;
+    }
+    public get exported(): number[] { return this.data.exported; }
+    public set exported(val: number[]) { this.data.exported.length = 0; this.data.exported.push.apply(this.data.exported, val); }
     public get pins(): GpioPinCollection { return new GpioPinCollection(this.data, 'pins'); }
 }
 export class GpioPinCollection extends ConfigItemCollection<GpioPin> {
     constructor(data: any, name?: string) { super(data, name || 'pins') }
     public createItem(data: any): GpioPin { return new GpioPin(data); }
+    public upgrade(ver) {
+        for (let i = 0; i < this.data.length; i++) {
+            let pin = this.getItemByIndex(i);
+            pin.upgrade(ver);
+        }
+    }
     public getPinById(headerId: number, pinId: number, add?: boolean, data?: any) {
         let pin = this.find(elem => elem.headerId === headerId && elem.id === pinId);
         if (typeof pin !== 'undefined') return pin;
@@ -391,6 +426,9 @@ export class GpioPin extends ConfigItem {
         if (typeof this.data.direction === 'undefined') this.direction = 'output';
         if (typeof this.data.triggers === 'undefined') this.data.triggers = [];
         return data;
+    }
+    public upgrade(ver) {
+        this.triggers.upgrade(ver);
     }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
@@ -431,12 +469,36 @@ export class GpioPin extends ConfigItem {
 export class GpioPinTriggerCollection extends ConfigItemCollection<GpioPinTrigger> {
     constructor(data: any, name?: string) { super(data, name || 'triggers') }
     public createItem(data: any): GpioPinTrigger { return new GpioPinTrigger(data); }
+    public upgrade(ver) {
+        for (let i = 0; i < this.data.length; i++) {
+            let trigger = this.getItemByIndex(i);
+            trigger.upgrade(ver);
+        }
+    }
 }
 export class GpioPinTrigger extends ConfigItem {
     constructor(data) { super(data); }
     public initData(data?: any) {
         if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.bindings === 'undefined') this.data.bindings = [];
         return data;
+    }
+    public upgrade(ver) {
+        if (typeof this.data.binding !== 'undefined') {
+            if (this.data.bindings.find(elem => elem.binding === this.data.binding) === undefined) {
+                this.bindings.add({
+                    isActive: true,
+                    binding: this.data.binding,
+                    operator: this.data.operator,
+                    bindValue: this.data.bindValue === 'true' || this.data.bindValue === 'false' ? utils.makeBool(this.data.bindValue) : this.data.bindValue
+                });
+                this.data.usePinId = (typeof this.data.equipmentId === 'undefined');
+            }
+            this.data.equipmentId = undefined;
+            this.data.operator = undefined;
+            this.data.binding = undefined;
+            this.data.bindValue = undefined;
+        }
     }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
@@ -444,6 +506,8 @@ export class GpioPinTrigger extends ConfigItem {
     public set isActive(val: boolean) { this.setDataVal('isActive', val); }
     public get sourceId(): number { return this.data.sourceId; }
     public set sourceId(val: number) { this.setDataVal('sourceId', val); }
+    public get usePinId(): boolean { return utils.makeBool(this.data.usePinId); }
+    public set usePinId(val: boolean) { this.setDataVal('usePinId', val); }
     public get state() { return this.getMapVal(this.data.state || 0, vMaps.triggerStates); }
     public set state(val) { this.setMapVal('state', val, vMaps.triggerStates); }
     public getExtended() {
@@ -451,52 +515,121 @@ export class GpioPinTrigger extends ConfigItem {
         trigger.state = this.state;
         trigger.connection = cont.connections.getItemById(this.sourceId).getExtended();
         trigger.filter = this.filter;
-
+        let binds = [];
+        // TODO: Move this into a normalize method so that it is only done
+        // once.  Probably during the upgrade process.
+        // Reorganize the bindings so that they match what we get from the event.
+        if (typeof this.data.bindings !== 'undefined' && typeof this.data.eventName !== 'undefined' && typeof this.data.sourceId !== 'undefined') {
+            let conn = cont.connections.getItemById(this.data.sourceId);
+            let bindings = ConnectionBindings.loadBindingsByConnectionType(conn.type.name);
+            if (typeof bindings !== 'undefined' && typeof bindings.events !== 'undefined') {
+                let event = bindings.events.find(elem => elem.name === trigger.eventName);
+                if (typeof event !== 'undefined') {
+                    for (let i = 0; i < event.bindings.length; i++) {
+                        binds.push({ binding: event.bindings[i].binding, isActive: false });
+                    }
+                }
+            }
+        }
+        for (let i = 0; i < trigger.bindings.length; i++) {
+            let bind = trigger.bindings[i];
+            let b = binds.find(elem => elem.binding === bind.binding);
+            if (typeof b !== 'undefined') {
+                b.isActive = bind.isActive;
+                b.operator = bind.operator;
+                b.bindValue = bind.bindValue;
+            }
+        }
+        trigger.bindings = binds;
         return trigger;
     }
     public get eventName(): string { return this.data.eventName; }
     public set eventName(val: string) { this.setDataVal('eventName', val); }
-    public get equipmentId(): number { return this.data.equipmentId; }
-    public set equipmentId(val: number) { this.setDataVal('equipmentId', val); }
-    public get binding(): string { return this.data.binding; }
-    public set binding(val: string) { this.setDataVal('binding', val); }
-    public get operator() { return this.getMapVal(this.data.operator || 0, vMaps.operators); }
-    public set operator(val) { this.setMapVal('operator', val, vMaps.operators); }
     public get expression(): string { return this.data.expression; }
     public set expression(val: string) { this.setDataVal('expression', val); }
-    public get bindValue(): string { return this.data.bindValue; }
-    public set bindValue(val: string) { this.setDataVal('bindValue', val); }
+    public get bindings(): GpioPinTriggerBindingCollection {
+        return new GpioPinTriggerBindingCollection(this.data, 'bindings');
+    }
     public get filter(): string {
         let filter = '';
-        if (typeof this.equipmentId !== 'undefined') {
-            filter += ('id == ' + this.equipmentId);
+        let n = 0;
+        let bindings = this.bindings;
+        for (let i = 0; i < bindings.length; i++) {
+            let b = bindings.getItemByIndex(i);
+            if (!b.isActive) continue;
+            if (n !== 0) filter += ' &&\r\n'
+            filter += `${b.binding} ${b.operator.op} `;
+            if (typeof b.bindValue === 'string') filter += `'${b.bindValue}'`;
+            else filter += `${b.bindValue}`;
+            n++;
         }
-        if (typeof this.binding !== 'undefined') {
-            if (filter.length > 0) filter += ' && '
-            filter += (this.binding + ' ');
-            if (typeof this.operator !== 'undefined') filter += (this.operator.op + ' ');
-            if (typeof this.bindValue !== 'undefined') filter += (this.bindValue + ' ');
+        if (typeof this.expression !== 'undefined' && this.expression !== '') {
+            if (n > 0) filter += ' &&\r\n';
+            filter += '<script expression>'
         }
         return filter;
     }
-    public makeExpression(dataName, usePinId?: boolean) {
+    public makeExpression() { return GpioPinTrigger._makeExpression(this.data, 'data'); }
+    private static _makeExpression(data, dataName) {
         let expression = '';
-        if (usePinId === true && typeof this.equipmentId === 'undefined') {
-            expression = 'if(data.pinId != pin.id) return false; else ';
+        if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) {
+            let n = 0;
+            expression += 'if(!('
+            if (utils.makeBool(data.usePinId)) {
+                expression += 'parseInt(data.pinId, 10) === pin.id';
+                n++;
+            }
+            for (let i = 0; i < data.bindings.length; i++) {
+                let b = data.bindings[i];
+                if (!utils.makeBool(b.isActive)) continue;
+                let op = vMaps.operators.transform(b.operator);
+                if (n !== 0) expression += ' && '
+                expression += `${dataName}.${b.binding} ${op.op} `;
+                if (typeof b.bindValue === 'string') expression += `'${b.bindValue}'`;
+                else expression += `${b.bindValue}`;
+                n++;
+            }
+            expression += ')) return false;'
         }
-        expression += 'return ';
-        if (typeof this.equipmentId !== 'undefined') {
-            expression += (`${dataName}.id == ${this.equipmentId} `);
-            if (typeof this.binding !== 'undefined') expression += ' && ';
+        if (typeof data.expression !== 'undefined' && data.expression !== '') {
+            expression += ' {' + data.expression + '}';
         }
-        if (typeof this.binding !== 'undefined') {
-            expression += (`${dataName}.${this.binding} `);
-            if (typeof this.operator !== 'undefined') expression += (this.operator.op + ' ');
-            if (typeof this.bindValue !== 'undefined') expression += (`${this.bindValue}`);
-        }
+        else if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) { expression += ' else return true;' }
         return expression;
     }
+    public static validateExpression(data) {
+        try {
+            new Function('connection', 'pin', 'trigger', 'data', GpioPinTrigger._makeExpression(data, 'data'));
+        }
+        catch (err) { return new Error(`${err} ${GpioPinTrigger._makeExpression(data, 'data')}`); }
+    }
+    public makeTriggerFunction() { return new Function('connection', 'pin', 'trigger', 'data', GpioPinTrigger._makeExpression(this.data, 'data')); }
 }
+export class GpioPinTriggerBindingCollection extends ConfigItemCollection<GpioPinTriggerBinding> {
+    constructor(data: any, name?: string) { super(data, name || 'bindings') }
+    public createItem(data: any): GpioPinTriggerBinding { return new GpioPinTriggerBinding(data); }
+}
+export class GpioPinTriggerBinding extends ConfigItem {
+    constructor(data) { super(data); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        return data;
+    }
+    public get binding(): string { return this.data.binding; }
+    public set binding(val: string) { this.setDataVal('binding', val); }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get operator() { return this.getMapVal(this.data.operator || 0, vMaps.operators); }
+    public set operator(val) { this.setMapVal('operator', val, vMaps.operators); }
+    public get bindValue(): any { return this.data.bindValue; }
+    public set bindValue(val: any) { this.setDataVal('bindValue', val); }
+    public getExtended() {
+        let exp = this.get();
+        exp.operator = this.operator;
+        return exp;
+    }
+}
+
 export class ConnectionSourceCollection extends ConfigItemCollection<ConnectionSource> {
     constructor(data: any, name?: string) { super(data, name || 'connections') }
     public createItem(data: any): ConnectionSource { return new ConnectionSource(data); }

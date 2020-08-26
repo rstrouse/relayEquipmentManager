@@ -137,12 +137,11 @@
                         el.find('div.pnl-pin-definition').each(function () { console.log(this); this.dataBind(pin); });
                     });
                 });
-                let name = $('<div></div>').appendTo(headers).addClass('pnl-gpio-board-name').text(data.pinDefinitions.name);
+                let name = $('<div></div>').appendTo(el).addClass('pnl-gpio-board-name').text(data.pinDefinitions.name);
                 if (typeof data.pinDefinitions.icon !== 'undefined') $('<i class="' + data.pinDefinitions.icon + '"></i>').appendTo(name);
                 let pos = headers.position();
-
-                console.log(name.outerHeight());
-                name.css({ left: (pos.left + (headers.width()/2)) - (name.outerHeight() * 2) + 'px', top: headers.height() / 2 + 'px' });
+                name.css({ left: (pinHeads.length == 1 ? -57 : 75) + 'px', top: headers.height() / 2 + 'px' });
+                name.css({ transform: 'rotate(270deg)' });
             });
         }
     });
@@ -227,21 +226,23 @@
         _createTriggerDialog: function (id, title, trig) {
             var self = this, o = self.options, el = self.element;
             var dlg = $.pic.modalDialog.createDialog(id, {
-                width: '547px',
+                width: '747px',
                 height: 'auto',
                 title: title,
+                position: { my: "center top", at: "center top", of: window },
                 buttons: [
                     {
                         text: 'Save', icon: '<i class="fas fa-save"></i>',
                         click: function (evt) {
                             var trigger = dataBinder.fromElement(dlg);
                             if (dataBinder.checkRequired(dlg, true)) {
+                                console.log(trigger);
                                 $.putLocalService('/config/pin/trigger/' + trig.pin.headerId + '/' + trig.pin.id, trigger, 'Saving Trigger...', function (t, status, xhr) {
                                     dataBinder.bind(dlg, t);
                                     self.reloadTriggers();
                                 });
                             }
-                            console.log(trigger);
+                            //console.log(trigger);
                         }
                     },
                     {
@@ -289,7 +290,7 @@
                 id: 'crudTriggers',
                 key: 'id',
                 caption: 'Triggers', itemName: 'Pin Trigger',
-                columns: [{ binding: 'state.desc', text: 'State', style: { width: '47px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'eventName', text: 'Event', style: { width: '127px' } }, { binding: 'filter', text: 'Filter', style: { width: '247px' } }]
+                columns: [{ binding: 'state.desc', text: 'State', style: { width: '47px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'eventName', text: 'Event', style: { width: '127px' } }, { binding: 'filter', text: 'Filter', style: { width: '247px' }, cellStyle: { fontSize: '8pt' } }]
             }).on('additem', function (evt) {
                 var p = dataBinder.fromElement(el);
                 $.getLocalService('/config/options/trigger/' + p.pin.headerId + '/' + p.pin.id + '/0', null, function (trig, status, xhr) {
@@ -298,7 +299,6 @@
                 });
             }).on('edititem', function (evt) {
                 var p = dataBinder.fromElement(el);
-                console.log(evt);
                 $.getLocalService('/config/options/trigger/' + p.pin.headerId + '/' + p.pin.id + '/' + evt.dataKey, null, function (trig, status, xhr) {
                     var dlg = self._createTriggerDialog('dlgEditPinTrigger', 'Edit Trigger on Pin#' + trig.pin.id, trig);
                 });
@@ -526,7 +526,7 @@
             var list = el.find('div.crud-list:first')[0];
             list.clear();
             for (var i = 0; i < conns.length; i++) {
-                console.log(conns[i]);
+                //console.log(conns[i]);
                 list.addRow(conns[i]);
             }
         }
@@ -540,7 +540,6 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            console.log('Building controls');
             el.addClass('pnl-connection-type');
         },
         _buildUriControls: function (type) {
@@ -617,45 +616,75 @@
         dataBind: function (data) {
             var self = this, o = self.options, el = self.element;
             self.setConnection(data.connection, function () {
-                console.log({ msg: 'binding', data: data });
-                dataBinder.bind(el, data);
+                if (typeof data.eventName !== 'undefined') {
+                    var fldEventName = el.find('div[data-bind$="eventName"');
+                    if (fldEventName[0].val() !== data.eventName) {
+                        fldEventName[0].val(data.eventName);
+                        dataBinder.bind(el, data);
+                    }
+                }
+                else {
+                    dataBinder.bind(el, data);
+                }
             });
         },
         setConnection: function (conn, callback) {
             var self = this, o = self.options, el = self.element;
-            var cb = callback;
             let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' && conn.id > 0 ? conn.type.name : '';
             if (el.attr('data-conntype') !== type || type === '') {
                 el.attr('data-conntype', type);
                 el.empty();
-                switch (type) {
-                    case 'njspc':
-                        console.log(type);
-                        console.log(typeof cb);
-                        self._build_njsPC(conn, function () {
-                            if (typeof cb === 'function') cb();
-                            console.log('calling back:' + (typeof cb));
-                            o.settingConnection = false;
-                        });
-                        break;
-                    case 'webSocket':
-                        self._build_webSocket(conn, function () { el.attr('data-conntype', type); callback(); });
-                        break;
-                    case 'wsEndpoint':
-                        self._build_wsEndpoint(conn, function () { el.attr('data-conntype', type); callback(); });
-                        break;
-                    case 'wsClient':
-                        self._build_wsClient(conn, function () { el.attr('data-conntype', type); callback(); });
-                        break;
-                    default:
-                        break;
+                o.bindings = undefined;
+                if (type !== '') {
+                    $.searchLocalService('/config/connection/bindings', { name: type }, 'Getting Connection Bindings...', function (bindings, status, xhr) {
+                        o.bindings = bindings;
+                        var line = $('<div></div>').appendTo(el);
+                        if (typeof o.bindings.events !== 'undefined' && o.bindings.events.length > 1) {
+                            $('<div></div>').appendTo(line).pickList({
+                                required: true,
+                                bindColumn: 0, displayColumn: 0, labelText: 'Event Name', binding: 'eventName',
+                                columns: [{ binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }],
+                                items: bindings.events, inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            })
+                                .on('selchanged', function (evt) {
+                                    var itm = o.bindings.events.find(elem => elem.name === evt.newItem.name);
+                                    self._build_bindings(itm);
+                                });
+                        }
+                        else {
+                            $('<div></div>').appendTo(line).inputField({
+                                required: true, binding: 'eventName', labelText: "Event Name", inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            });
+                        }
+                        $('<hr></hr>').appendTo(el);
+                        var tabBar = $('<div></div>').appendTo(el).tabBar();
+                        {
+                            // Add in the basic bindings.
+                            var basic = tabBar[0].addTab({ id: 'tabBasic', text: 'Basic Bindings' });
+                            var pnl = $('<div></div>').addClass('pnl-trigger-basic-bindings').appendTo(basic);
+                        }
+                        {
+                            var advanced = tabBar[0].addTab({ id: 'tabAdvanced', text: 'Filter Expression' });
+                            var pnl = $('<div></div>').addClass('pnl-trigger-advanced-bindings').appendTo(advanced);
+                            $('<div></div>').appendTo(pnl).addClass('trigger-advanced-instructions').html('Enter plain javascript for the filter expression below.  If you do not want to filter this trigger, then leave the expression blank.  Each of the parameter inputs (connection, trigger, pin, and data) are available within the filter function.  To view their available properties click on the parameter to see it\'s definition.  Use return <span style=\"font-weight:bold;\">true.</span> from the filter function to apply the trigger state.');
+                            $('<div></div>').appendTo(pnl).scriptEditor({ binding: 'expression', prefix: '(connection, trigger, pin, data) => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
+                        }
+                        if (typeof o.bindings.events === 'undefined' || o.bindings.events.length === 0) {
+                            self._build_bindings({ bindings: [], useExpression: true });
+                            tabBar.show();
+                        }
+                        else tabBar.hide();
+                        if (typeof callback === 'function') { callback(); }
+                    });
                 }
+                else if (typeof callback === 'function') { callback(); }
             }
+            else if (typeof callback === 'function') { callback(); }
         },
         _build_njsPC: function (conn, callback) {
             var self = this, o = self.options, el = self.element;
             $.searchLocalService('/config/connection/bindings', { name: 'njspc' }, function (bindings, status, xhr) {
-                console.log(bindings);
+                //console.log(bindings);
                 o.bindings = bindings;
                 var line = $('<div></div>').appendTo(el);
                 $('<div id="divBindingInstructions"></div>').appendTo(el).addClass('pnl-pin-binding-instructions').hide();
@@ -668,7 +697,6 @@
                 })
                     .on('selchanged', function (evt) {
                         var itm = o.bindings.events.find(elem => elem.name === evt.newItem.name);
-                        console.log(itm);
                         var fldId = el.find('div#fldEquipmentId');
                         var ddEventBinding = el.find('div#ddEventBinding');
                         var ddEventOperator = el.find('div#ddEventOperator');
@@ -699,6 +727,7 @@
                     id:'fldEquipmentId', labelText: 'Id', binding: 'equipmentId', dataType:'int',
                     inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { paddingLeft: '1rem' } }
                 }).hide();
+                line = $('<div></div>').appendTo(el);
                 $('<div></div>').appendTo(line).pickList({
                     required: true, id: 'ddEventBinding',
                     bindColumn: 0, displayColumn: 0, labelText: 'Binding', binding: 'binding',
@@ -711,7 +740,7 @@
                     var ddEventOperator = el.find('div#ddEventOperator');
                     var fldValue = el.find('div#fldValue');
                     var ddValue = el.find('div#ddValue');
-                    console.log(evt.newItem);
+                    //console.log(evt.newItem);
                     var dataType = o.bindings.dataTypes[evt.newItem.type];
 
                     // Create our array of operators.
@@ -723,7 +752,7 @@
                     }
                     ddEventOperator[0].items(ops);
                     var valType = (typeof dataType.values === 'undefined' || dataType.values === 'undefined') ? 'field' : 'dropdown';
-                    console.log({ dataType:dataType, event: event, ops: ops, valType: valType, newItem: evt.newItem, bindings: o.bindings });
+                    //console.log({ dataType:dataType, event: event, ops: ops, valType: valType, newItem: evt.newItem, bindings: o.bindings });
                     switch (valType) {
                         case 'field':
                             fldValue.show();
@@ -764,10 +793,16 @@
                 if (typeof callback === 'function') { console.log('Calling back from build'); callback(); }
             });
         },
-        _build_webSocket: function (conn) {
-            var self = this, o = self.options, el = self.element;
-
-        },
+        //_build_webSocket: function (conn) {
+        //    var self = this, o = self.options, el = self.element;
+        //    var line = $('<div></div>').appendTo(el);
+        //    $('<div></div>').appendTo(line).inputField({
+        //        labelText: 'Event Name', binding:'eventName', required: true, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+        //    });
+        //    line = $('<div></div>').appendTo(el);
+        //    $('<div></div>').appendTo(line).scriptEditor({ binding:'expression', prefix:'(connection, trigger, pin, data) => {', suffix:'}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
+        //    if (typeof callback === 'function') { console.log('Calling back from build'); callback(); }
+        //},
         _build_wsEndpoint: function (conn) {
             var self = this, o = self.options, el = self.element;
 
@@ -775,8 +810,84 @@
         _build_wsClient: function (conn) {
             var self = this, o = self.options, el = self.element;
 
+        },
+        _build_bindings: function (event) {
+            var self = this, o = self.options, el = self.element;
+            var basic = el.find('div.pnl-trigger-basic-bindings');
+            var tabBar = el.find('div.picTabBar:first');
+            basic.empty();
+            if (typeof event !== 'undefined' && event.bindings.length > 0) {
+                self._build_basicBindings(event);
+            }
+            tabBar[0].showTab('tabBasic', typeof event !== 'undefined' && event.bindings.length > 0);
+            tabBar[0].showTab('tabAdvanced', o.bindings.useExpression !== false);
+            typeof event !== 'undefined' && event.bindings.length === 0 ? tabBar[0].selectTabById('tabAdvanced') : tabBar[0].selectTabById('tabBasic');
+            tabBar.show();
+        },
+        _build_basicBindings: function (event) {
+            var self = this, o = self.options, el = self.element;
+            var div = el.find('div.pnl-trigger-basic-bindings');
+            let inst = $('<div></div>').addClass('trigger-basic-instructions').appendTo(div).html('<div>Click the checkbox next to the filter binding to enable the expression for the data.  For more advanced filters add script on the Filter Expression tab.  If you supply filters here these will be checked prior to evaluating the filter expression.</div>');
+            if (typeof event.instructions !== 'undefined' && event.instructions !== '') {
+                $('<hr></hr>').appendTo(inst);
+                $('<div></div>').appendTo(inst).html(event.instructions);
+            }
+            var line = $('<div></div>').appendTo(div);
+            //console.log({ msg: 'Building event bindings', event: event });
+            var pinId = $('<div></div>').appendTo(line).checkbox({ labelText: 'Use Pin Id', bind: 'usePinId', });
+            if (!makeBool(event.hasPinId)) pinId.hide();
+            for (var i = 0; i < event.bindings.length; i++) {
+                var bind = event.bindings[i];
+                //console.log({ msg: 'Event Binding', bind: bind });
+                var binding = 'bindings[' + i + ']';
+                var dataType = o.bindings.dataTypes[bind.type];
+                var ops = [];
+                for (var j = 0; j < dataType.operators.length; j++) {
+                    var op = dataType.operators[j];
+                    var t = o.bindings.operatorTypes.find(elem => elem.name === op);
+                    if (typeof t !== 'undefined') ops.push(t);
+                }
+                line = $('<div></div>').addClass('trigger-binding').attr('data-bindingname', bind.binding).appendTo(div);
+                $('<input type="hidden"></input>').appendTo(line).attr('data-bind', binding + '.binding').val(bind.binding);
+                $('<div></div>').appendTo(line).checkbox({ labelText: bind.binding, bind: binding + '.isActive', style: { width: '7rem' } }).on('changed', function (evt) {
+                    var l = $(evt.target).parent();
+                    var ddOp = l.find('div[data-bind$=".operator"]');
+                    var fld = l.find('div[data-bind$=".bindValue"]');
+                    //console.log(evt);
+                    if (evt.newVal) {
+                        ddOp.show();
+                        fld.show();
+                    }
+                    else {
+                        ddOp.hide();
+                        fld.hide();
+                    }
+                    ddOp[0].required(evt.newVal);
+                    fld[0].required(evt.newVal);
+                });
+                $('<div></div>').appendTo(line).pickList({
+                    bindColumn: 0, displayColumn: 1, labelText: 'Operator', binding: binding + '.operator',
+                    columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'op', text: 'Operator', style: { textAlign: 'center', whiteSpace: 'nowrap', minWidth: '4rem' } }, { binding: 'desc', text: 'Description', style: { minWidth: '12rem' } }],
+                    items: ops, inputAttrs: { style: { textAlign: 'center', width: '3rem' } }, labelAttrs: { style: { paddingLeft: '.1rem', display: 'none' } }
+                }).addClass('trigger-binding-operator').hide();
+                switch (bind.type) {
+                    case 'boolean':
+                        $('<div></div>').appendTo(line).pickList({
+                            id: 'ddValue', dataType:bind.type,
+                            bindColumn: 0, displayColumn: 1, labelText: 'Value', binding: binding + '.bindValue',
+                            columns: [{ hidden: true, binding: 'val', text: 'Value', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Value', style: {} }],
+                            items: [{ val: true, name: 'True' }, { val: false, name: 'False' }], inputAttrs: { style: { width: '3rem' } }, labelAttrs: { style: { paddingLeft: '.1rem', display: 'none' } }
+                        }).hide();
+                        break;
+                    default:
+                        $('<div></div>').appendTo(line).inputField({
+                            id: 'fldValue', labelText: 'Id', binding: binding + '.bindValue', dataType: bind.type,
+                            inputAttrs: { style: bind.inputStyle }, labelAttrs: { style: { paddingLeft: '.1rem', display: 'none' } }
+                        }).hide();
+                        break;
+                }
+            }
+            return div;
         }
-
-
     });
 })(jQuery);

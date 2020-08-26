@@ -1,0 +1,32 @@
+﻿{
+  "parameters": {
+    "connection": {
+      "_instructions": "Source connection that the socket event originated from.",
+      "name": "string",
+      "type": "string",
+      "protocol": "string",
+      "ipAddress": "string",
+      "port": "string"
+    },
+    "trigger": {
+      "_instructions": "Trigger that is currently firing for the event.",
+      "state": "string",
+      "eventName": "string"
+    },
+    "pinout": {
+      "_instructions": "Target pin for the event.",
+      "id": "number",
+      "headerId": "number",
+      "gpioId": "number",
+      "direction": "string",
+      "type": "string",
+      "isInverted": "boolean",
+      "state": "string"
+    },
+    "data": {
+      "_instructions": "The data payload tied to the websocket event.  See source program documentation for format of this value."
+    },
+    "instructions": "Enter a JavaScript filter for the socket event.  Each time the event is triggered, this Javascript snippet will be executed.  Use data as the payload of the webservice and true to set the pin to the Desired State."
+  },
+  "events": []
+}

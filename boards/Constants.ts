@@ -76,10 +76,10 @@ export class valueMaps {
     ]);
     public connectionTypes: valueMap = new valueMap([
         [0, { name: 'njspc', desc: 'nodejs-PoolController', inst: 'Socket connection to nodejs-PoolController server.', urn:'urn:schemas-upnp-org:device:PoolController:1', bindings:'njspc.json' }],
-        [1, { name: 'webSocket', desc: 'Web Socket', inst: 'Web socket connection.' }],
-        [2, { name: 'wsEndpoint', desc: 'Service Endpoint', inst: 'End points that can be called from an external process.' }],
-        [3, { name: 'wsClient', desc: 'Poll Service', inst: 'A webservice connection that can be called on an interval.' }],
-        [4, { name: 'mqttBroker', desc: 'MQTT Broker', inst: 'Sets up an internal MQTT broker to publish and subscribe to states.' }]
+        [1, { name: 'webSocket', desc: 'Web Socket', inst: 'Web socket connection.', bindings:'webservice.json' }]
+        //[2, { name: 'wsEndpoint', desc: 'Service Endpoint', inst: 'End points that can be called from an external process.' }],
+        //[3, { name: 'wsClient', desc: 'Poll Service', inst: 'A webservice connection that can be called on an interval.' }],
+        //[4, { name: 'mqttBroker', desc: 'MQTT Broker', inst: 'Sets up an internal MQTT broker to publish and subscribe to states.' }]
     ]);
     public triggerStates: valueMap = new valueMap([
         [0, { name: 'off', desc: 'Off', inst: 'Trigger will turn the pin off.' }],

@@ -24,7 +24,7 @@ export class GpioController  {
     public async stopAsync() {
         logger.info(`Stopping GPIO Controller`);
         for (let i = this.pins.length - 1; i >= 0; i--) {
-            this.pins[i].gpio.unexport();
+            //this.pins[i].gpio.unexport();
             this.pins.splice(i, 1);
         }
         return this;
@@ -48,6 +48,9 @@ export class GpioController  {
     public initPins() {
         let pinouts = cont.pinouts;
         logger.info(`Initializing GPIO Pins ${cont.gpio.pins.length}`);
+        let prevExported = cont.gpio.exported;
+        let exported = [];
+        let useGpio = gp.accessible;
         for (let i = 0; i < cont.gpio.pins.length; i++) {
             let pinDef = cont.gpio.pins.getItemByIndex(i);
             if (!pinDef.isActive) continue;
@@ -59,14 +62,16 @@ export class GpioController  {
                     if (typeof pin === 'undefined') {
                         pin = { headerId: pinDef.headerId, pinId: pinDef.id, gpioId:pinout.gpioId };
                         this.pins.push(pin);
-                        if (gp.accessible) {
+                        if (useGpio) {
                             logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${ pinDef.headerId }.`);
-                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: true });
+                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         else {
                             logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);
-                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: true });
+                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
+                        cont.gpio.setExported(pinout.gpioId);
+                        exported.push(pinout.gpioId);
                     }
                 }
                 else
@@ -74,6 +79,22 @@ export class GpioController  {
             }
             else
                 logger.error(`Cannot find Pin #${pinDef.id} for Header ${pinDef.headerId}.  Header does not exist on this board.`)
+        }
+        // Unexport any pins that we have previously been exported.
+        for (let i = 0; i < prevExported.length; i++) {
+            if (exported.find(elem => elem === prevExported[i]) === undefined) {
+                let p;
+                if (useGpio) {
+                    logger.info(`Unexporting unused Gpio #${prevExported[i]}`);
+                    p = new gp(prevExported[i], 'out');
+                }
+                else {
+                    logger.info(`Unexporting Mock unused Gpio #${prevExported[i]}`);
+                    p = new MockGpio(prevExported[i], 'out');
+                }
+                p.unexport();
+                cont.gpio.setUnexported(prevExported[i]);
+            }
         }
     }
     public readPinAsync(headerId: number, pinId: number): Promise<number> {

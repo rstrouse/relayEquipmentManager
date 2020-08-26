@@ -23,7 +23,7 @@ export class ConnectionBindings {
             bindings.dataTypes = this.dataTypes;
             bindings.operatorTypes = vMaps.operators.toArray();
         }
-        return bindings;
+        return bindings || { events: [], operatorTypes: [] };
     }
 }
 export class ConnectionBroker {
@@ -96,16 +96,22 @@ class SocketServerConnection extends ServerConnection {
             let states = [];
             for (let i = 0; i < evt.triggers.length; i++) {
                 let trigger = evt.triggers[i];
-                if (trigger.checkPinId && data.pinId !== trigger.pin.id) continue;
-                let val = trigger.filter(data);
-                if (val === true) {
-                    //console.log(trigger.trigger.state);
-                    let p = states.find(elem => elem.id === trigger.pin.id);
-                    if (typeof p === 'undefined') {
-                        p = { id: trigger.pin.id, pin: trigger.pin };
-                        states.push(p);
+                if (trigger.trigger.sourceId !== this.server.id) continue;
+                if (trigger.usePinId && data.pinId !== trigger.pin.id) continue;
+                try {
+                    let val = trigger.filter(this.server.get(true), trigger.pin.get(true), trigger.trigger.get(true), data);
+                    //console.log(trigger.filter);
+                    if (val === true) {
+                        //console.log(trigger.trigger.state);
+                        let p = states.find(elem => elem.id === trigger.pin.id);
+                        if (typeof p === 'undefined') {
+                            p = { id: trigger.pin.id, pin: trigger.pin };
+                            states.push(p);
+                        }
+                        p.state = trigger.trigger.state.name;
                     }
-                    p.state = trigger.trigger.state.name;
+                } catch (err) {
+                    logger.error(`Error processing filter expression for Pin #${trigger.pin.id}. ${err}`);
                 }
             }
             // Go through an set all my states for the event.
@@ -114,7 +120,6 @@ class SocketServerConnection extends ServerConnection {
                 state.pin.state = state.state;
             }
         }
-        //logger.info(`event:${event} data: ${JSON.stringify(data)}`);
     }
     public connect() {
         let url = this.server.url;
@@ -131,6 +136,7 @@ class SocketServerConnection extends ServerConnection {
                 for (let k = 0; k < pin.triggers.length; k++) {
                     let trigger = pin.triggers.getItemByIndex(k);
                     if (!trigger.isActive) continue;
+                    if (trigger.sourceId !== this.server.id) continue;
                     // See if there is a binding for this connection type.
                     let binding = bindings.events.find(elem => elem.name === trigger.eventName);
                     if (typeof trigger.eventName !== 'undefined' && trigger.eventName !== '') {
@@ -141,10 +147,11 @@ class SocketServerConnection extends ServerConnection {
                             logger.info(`Binding ${evt.name} from ${this.server.name}`);
                             this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data) });
                         }
-                        evt.triggers.push({
-                            pin: pin, filter: new Function('data', trigger.makeExpression('data')), trigger: trigger,
-                            checkPinId: typeof binding !== 'undefined' && binding.hasPinId === true && binding.hasId === true && typeof trigger.equipmentId === 'undefined'
-                        });
+                        try {
+                            let fnFilter = trigger.makeTriggerFunction();
+                            evt.triggers.push({ pin: pin, filter: fnFilter, trigger: trigger });
+                        }
+                        catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
                        
                     }
                 }
