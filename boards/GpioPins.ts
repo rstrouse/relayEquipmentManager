@@ -78,6 +78,7 @@ export class GpioController  {
                                 pin.gpio.watch((err, value) => {
                                     if (!err) {
                                         pin.state = value;
+                                        logger.info(`Watch called with ${value} for Pin#${pin.headerId}-${pin.pinId}`);
                                         webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pin.state });
                                     }
                                     else logger.error(err);
