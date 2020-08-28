@@ -66,7 +66,8 @@
                 console.log({ evt: 'gpioPin', data: data });
                 el.find('div.pin-header[data-id="' + data.headerId + '"]')
                     .find('div.header-pin[data-id="' + data.pinId + '"]')
-                    .each(function() { this.state(data.state); });
+                    .each(function () { this.state(data.state); });
+                el.find('div#btnPinState[data-gpioid="' + data.gpioId + '"]').each(function () { this.val(makeBool(data.state) ? 'on' : 'off'); });
             });
             o.socket.on('connect_error', function (data) {
                 console.log('connection error:' + data);
@@ -214,7 +215,7 @@
             $('<span></span>').appendTo(head).addClass('header-text').attr('data-bind', 'header.name');
             var pin = $('<div></div>').appendTo(outer).addClass('pin-definition-inner');
             var state = $('<div></div>').appendTo(outer).addClass('pin-state-panel').css({ display: 'inline-block' }).hide();
-            $('<div></div>').appendTo(state).toggleButton({ labelText: 'Pin State' })
+            $('<div></div>').appendTo(state).toggleButton({ id: 'btnPinState', labelText: 'Pin State' }).attr('data-gpioid', '')
                 .on('click', function (evt) {
                     var pin = dataBinder.fromElement(pinDef);
                     pin.state = evt.currentTarget.val();
@@ -278,10 +279,11 @@
             }
             if (typeof data.pin === 'undefined' || !makeBool(data.pin.isExported)) {
                 el.find('div.pin-state-panel').hide();
+                el.find('div.pin-state-panel').show().find('div.picToggleButton').attr('data-gpioid', '');
             }
             else {
                 console.log(data.pin.state);
-                el.find('div.pin-state-panel').show().find('div.picToggleButton')[0].val((data.pin.state || { name: 'off' }).name);
+                el.find('div.pin-state-panel').show().find('div.picToggleButton').attr('data-gpioid', data.pin.gpioId)[0].val((data.pin.state || { name: 'off' }).name);
             }
             if (typeof data.pin.gpioId !== 'undefined') el.find('div#divGPIOIdLine').show();
             else el.find('div#divGPIOLine').hide();

@@ -810,6 +810,7 @@ $.ui.position.fieldTip = {
             let div = $('<div class="picIndicator"></div>');
             el.addClass('picToggleButton');
             el.addClass('btn');
+            if (typeof o.id !== 'undefined') el.attr('id', o.id);
             //el.addClass('btn');
             el[0].val = function (val) { return self.val(val); };
             if (o.bind) el.attr('data-bind', o.bind);
@@ -818,6 +819,7 @@ $.ui.position.fieldTip = {
             el.on('click', function (evt) {
                 self.val(!o.isOn);
             });
+            
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
