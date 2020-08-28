@@ -67,7 +67,7 @@
                 el.find('div.pin-header[data-id="' + data.headerId + '"]')
                     .find('div.header-pin[data-id="' + data.pinId + '"]')
                     .each(function () { this.state(data.state); });
-                el.find('div#btnPinState[data-gpioid="' + data.gpioId + '"]').each(function () { this.val(makeBool(data.state) ? 'on' : 'off'); });
+                el.find('div#btnPinState[data-gpioid="' + data.gpioId + '"]').each(function () { this.val(makeBool(data.state)); });
             });
             o.socket.on('connect_error', function (data) {
                 console.log('connection error:' + data);
@@ -278,12 +278,12 @@
                 el.find('div.btn-panel').show();
             }
             if (typeof data.pin === 'undefined' || !makeBool(data.pin.isExported)) {
-                el.find('div.pin-state-panel').hide();
-                el.find('div.pin-state-panel').show().find('div.picToggleButton').attr('data-gpioid', '');
+                el.find('div.pin-state-panel').hide().find('div.picToggleButton').attr('data-gpioid', '').val(false);
             }
             else {
                 console.log(data.pin.state);
-                el.find('div.pin-state-panel').show().find('div.picToggleButton').attr('data-gpioid', data.pin.gpioId)[0].val((data.pin.state || { name: 'off' }).name);
+                var sval = makeBool(data.pin.state.name);
+                el.find('div.pin-state-panel').show().find('div.picToggleButton').attr('data-gpioid', data.pin.gpioId)[0].val(sval);
             }
             if (typeof data.pin.gpioId !== 'undefined') el.find('div#divGPIOIdLine').show();
             else el.find('div#divGPIOLine').hide();

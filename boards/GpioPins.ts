@@ -119,7 +119,8 @@ export class GpioController  {
                 if (typeof pin === 'undefined') return reject(new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`));
                 logger.info(`Writing Pin #${pin.headerId}:${pin.pinId} -> GPIO #${pin.gpioId} to ${val}`);
                 await pin.gpio.write(val);
-                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: val});
+                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: val });
+                pin.state = val;
                 resolve();
             }
             catch (err) { reject(err); }
