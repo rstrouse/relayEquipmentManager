@@ -60,32 +60,22 @@ export class GpioController  {
                 if (typeof pinout !== 'undefined') {
                     let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === - pinDef.headerId);
                     if (typeof pin === 'undefined') {
-                        pin = { headerId: pinDef.headerId, pinId: pinDef.id, gpioId:pinout.gpioId };
+                        pin = { headerId: pinDef.headerId, pinId: pinDef.id, gpioId: pinout.gpioId };
                         this.pins.push(pin);
                         if (useGpio) {
-                            logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${ pinDef.headerId }.`);
-                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'both', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId}.`);
+                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         else {
                             logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);
-                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'both', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         cont.gpio.setExported(pinout.gpioId);
                         exported.push(pinout.gpioId);
-                        pin.gpio.read()
-                            .then((value) => {
-                                pin.state = value;
-                                pin.gpio.watch((err, value) => {
-                                    if (!err) {
-                                        pin.state = value;
-                                        logger.info(`Watch called with ${value} for Pin#${pin.headerId}-${pin.pinId}`);
-                                        webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pin.state });
-                                    }
-                                    else logger.error(err);
-                                });
-                                
-                            })
-                            .catch((err) => { logger.error(err); });
+                        pin.gpio.read().then((value) => {
+                            pin.state = value;
+                            webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pin.state });
+                        }).catch(err => logger.error(err));
                     }
                 }
                 else
@@ -129,7 +119,7 @@ export class GpioController  {
                 if (typeof pin === 'undefined') return reject(new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`));
                 logger.info(`Writing Pin #${pin.headerId}:${pin.pinId} -> GPIO #${pin.gpioId} to ${val}`);
                 await pin.gpio.write(val);
-
+                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: val});
                 resolve();
             }
             catch (err) { reject(err); }
