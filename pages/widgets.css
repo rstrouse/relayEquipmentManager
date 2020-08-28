@@ -635,7 +635,7 @@ div.header-pin-outer {
   margin: 0px; }
 
 div.header-pin[data-state="on"] > div.header-pin-outer {
-  background-color: lightgray; }
+  background-color: darkorange; }
 
 div.header-pin[data-state="on"] > label {
   font-weight: bold;

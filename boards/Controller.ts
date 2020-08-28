@@ -354,6 +354,41 @@ export class Controller extends ConfigItem {
             resolve(pin);
         });
     }
+    public async setPinStateAsync(data): Promise<GpioPin> {
+        return new Promise<GpioPin>((resolve, reject) => {
+            let gpioId = parseInt(data.gpioId, 10);
+            let headerId = parseInt(data.headerId, 10);
+            let pin: GpioPin;
+            if (isNaN(gpioId)) {
+                let pinId = parseInt(data.pinId || data.id, 10);
+                let pin = this.gpio.pins.getPinById(headerId, pinId, false);
+            }
+            else {
+                let pinout;
+                let pinouts = this.pinouts;
+                for (let i = 0; i < pinouts.headers.length; i++) {
+                    let head = pinouts.headers[i];
+                    if (isNaN(headerId) || headerId === head.id) {
+                        let p = head.pins.find(elem => elem.gpioId === gpioId);
+                        if (typeof p !== 'undefined') {
+                            headerId = head.id;
+                            pin = this.gpio.pins.getPinById(head.id, p.id);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (typeof pin !== 'undefined' && pin.isActive) {
+                try {
+                    pin.state = utils.makeBool(data.state) ? 'on' : 'off';
+                    resolve(pin);
+                }
+                catch (err) { reject(err); }
+            }
+            else reject(new Error(`Cannot set pin state: Unidentified Pin # -- ${JSON.stringify(data)}`));
+
+        });
+    }
     public async reset(): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
             try {
@@ -444,9 +479,17 @@ export class GpioPin extends ConfigItem {
     public set isInverted(val: boolean) { this.setDataVal('isInverted', val); }
     public get state() { return this.getMapVal(this.data.state || 'unknown', vMaps.pinStates); }
     public set state(val) {
-        this.setMapVal('state', val, vMaps.pinStates);
-        let mv = this.getMapVal(this.data.state, vMaps.pinStates);
-        if (typeof mv !== 'undefined' && mv.gpio !== 'undefined' && this.isActive) gpioPins.writePinAsync(this.headerId, this.id, mv.gpio).catch(err => logger.error(err));
+        let mv = this.getMapVal(val, vMaps.pinStates);
+        if (typeof mv !== 'undefined') {
+            if (mv.gpio !== 'undefined' && this.isActive) {
+                gpioPins.writePinAsync(this.headerId, this.id, mv.gpio)
+                    .then(() => {
+                        this.setMapVal('state', val, vMaps.pinStates);
+                    })
+                    .catch(err => logger.error(err));
+            }
+            else this.setMapVal('state', val, vMaps.pinStates);
+        }
     }
     public get triggers(): GpioPinTriggerCollection { return new GpioPinTriggerCollection(this.data, 'triggers'); }
     public getExtended() {
@@ -459,6 +502,7 @@ export class GpioPin extends ConfigItem {
         pin.type = this.type;
         pin.state = this.state;
         pin.isActive = this.isActive;
+        pin.isExported = typeof cont.gpio.exported.find(elem => elem === pin.gpioId) !== 'undefined';
         for (let i = 0; i < this.triggers.length; i++) {
             pin.triggers.push(this.triggers.getItemByIndex(i).getExtended());
         }

@@ -30,7 +30,9 @@
             tab = self._addConfigTab({ id: 'tabGeneral', text: 'General', cssClass: 'cfgGeneral' });
             tab = self._addConfigTab({ id: 'tabGpio', text: 'GPIO - Pinouts', cssClass: 'cfgGpio' });
             tabs[0].selectTabById('tabGeneral');
+            self._initServices();
             el.trigger(evt);
+
         },
         _addConfigTab: function (attrs, subTabs) {
             var self = this, o = self.options, el = self.element;
@@ -56,6 +58,55 @@
                 }
             });
             return divOuter;
+        },
+        _initServices: function () {
+            var self = this, o = self.options, el = self.element;
+            o.socket = io('/', { reconnectionDelay: 2000, reconnection: true, reconnectionDelayMax: 20000 });
+            o.socket.on('gpioPin', (data) => {
+                console.log({ evt: 'gpioPin', data: data });
+                el.find('div.pin-header[data-id="' + data.headerId + '"]')
+                    .find('div.header-pin[data-id="' + data.pinId + '"]')
+                    .each(function() { this.state(data.state); });
+            });
+            o.socket.on('connect_error', function (data) {
+                console.log('connection error:' + data);
+                o.isConnected = false;
+                $('div.picController').each(function () {
+                    this.setConnectionError({ status: { val: 255, name: 'error', desc: 'Connection Error' } });
+                });
+                el.find('div.picControlPanel').each(function () {
+                    $(this).addClass('picDisconnected');
+                });
+
+            });
+            o.socket.on('connect_timeout', function (data) {
+                console.log('connection timeout:' + data);
+            });
+
+            o.socket.on('reconnect', function (data) {
+                console.log('reconnect:' + data);
+            });
+            o.socket.on('reconnect_attempt', function (data) {
+                console.log('reconnect attempt:' + data);
+            });
+            o.socket.on('reconnecting', function (data) {
+                console.log('reconnecting:' + data);
+            });
+            o.socket.on('reconnect_failed', function (data) {
+                console.log('reconnect failed:' + data);
+            });
+            o.socket.on('connect', function (sock) {
+                console.log({ msg: 'socket connected:', sock: sock });
+                o.isConnected = true;
+                el.find('div.picControlPanel').each(function () {
+                    $(this).removeClass('picDisconnected');
+                });
+            });
+            o.socket.on('close', function (sock) {
+                console.log({ msg: 'socket closed:', sock: sock });
+                o.isConnected = false;
+            });
+
         }
     });
     $.widget('pic.pnlCfgGeneral', {
@@ -126,6 +177,7 @@
                 for (var ihead = 0; ihead < pinHeads.length; ihead++) {
                     var head = pinHeads[ihead];
                     $('<div></div>').appendTo(headers).pinHeader(head);
+                    
                 }
                 $('<div></div>').appendTo(el).pnlPinDefinition({ headers: headers, pinDirections: data.pinDirections });
                 el.on('selchanged', 'div.pin-header', function (evt) {
@@ -155,20 +207,32 @@
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-pin-definition').addClass('control-panel');
-            var pinDef = $('<div></div>').appendTo(el).addClass('pin-defintion').hide();
+            var pinDef = $('<div></div>').appendTo(el).addClass('pin-definition').hide();
             var outer = $('<div></div>').appendTo(pinDef).addClass('pnl-pin-outer');
+
             var head = $('<div></div>').appendTo(outer).addClass('pnl-pin-header').addClass('control-panel-title');
             $('<span></span>').appendTo(head).addClass('header-text').attr('data-bind', 'header.name');
-            var pin = $('<div></div>').appendTo(outer).addClass('pin-definition');
+            var pin = $('<div></div>').appendTo(outer).addClass('pin-definition-inner');
+            var state = $('<div></div>').appendTo(outer).addClass('pin-state-panel').css({ display: 'inline-block' }).hide();
+            $('<div></div>').appendTo(state).toggleButton({ labelText: 'Pin State' })
+                .on('click', function (evt) {
+                    var pin = dataBinder.fromElement(pinDef);
+                    pin.state = evt.currentTarget.val();
+                    $.putLocalService('/state/setPinState', { gpioId: pin.gpioId, state: pin.state }, function(p, status, xhr) {
+                        console.log(p);
+                        evt.currentTarget.val(pin.state);
+                    });
+                });
+
             $('<input type="hidden"></input>').appendTo(pin).attr('data-bind', 'header.id').attr('data-datatype', 'int');
             $('<input type="hidden"></input>').appendTo(pin).attr('data-bind', 'id').attr('data-datatype', 'int');
             var line = $('<div></div>').appendTo(pin);
-            $('<label></label>').appendTo(line).text('Pin #').css({ width: '4.5rem', display:'inline-block' });
+            $('<label></label>').appendTo(line).text('Pin #').css({ width: '4.5rem', display: 'inline-block' });
             $('<span></span>').appendTo(line).attr('data-bind', 'id').attr('data-datatype', 'int');
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', bind: 'isActive' }).css({ marginLeft: '2rem' });
             line = $('<div></div>').attr('id', 'divGPIOLine').appendTo(pin);
             $('<label></label>').appendTo(line).text('GPIO #').css({ width: '4.5rem', display: 'inline-block' });
-            $('<span></span>').appendTo(line).attr('data-bind', 'gpioId');
+            $('<span></span>').appendTo(line).attr('data-bind', 'gpioId').attr('data-datatype', 'int');
             line = $('<div></div>').appendTo(pin);
             $('<label></label>').appendTo(line).text('Name').css({ width: '4.5rem', display: 'inline-block' });
             $('<span></span>').appendTo(line).attr('data-bind', 'name');
@@ -180,7 +244,7 @@
                 items: o.pinDirections, inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '4.5rem' } }
             });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Inverted', bind: 'isInverted' });
-            $('<hr></hr>').appendTo(pinDef);
+            $('<hr></hr>').appendTo(el);
             var trigs = $('<div></div>').appendTo(el);
             $('<div></div>').appendTo(trigs).pnlPinTriggers().hide();
             $('<div></div>').appendTo(el).addClass('select-pin-message').text('Select a pin from the displayed header(s) to edit its defintion');
@@ -201,16 +265,23 @@
             el.find('div.pnl-pin-outer').each(function () { dataBinder.bind($(this), data.pin); });
             el.find('div.pnl-pin-triggers').each(function () { this.dataBind(data); });
             if (typeof data.pin === 'undefined' || typeof data.pin.id === 'undefined' || data.pin.id === 0) {
-                el.find('div.pin-defintion').hide();
+                el.find('div.pin-definition').hide();
                 el.find('div.select-pin-message').show();
                 el.find('div.btn-panel').hide();
                 el.find('div.pnl-pin-triggers').hide();
             }
             else {
-                el.find('div.pin-defintion').show();
+                el.find('div.pin-definition').show();
                 el.find('div.select-pin-message').hide();
                 el.find('div.pnl-pin-triggers').show();
                 el.find('div.btn-panel').show();
+            }
+            if (typeof data.pin === 'undefined' || !makeBool(data.pin.isExported)) {
+                el.find('div.pin-state-panel').hide();
+            }
+            else {
+                console.log(data.pin.state);
+                el.find('div.pin-state-panel').show().find('div.picToggleButton')[0].val((data.pin.state || { name: 'off' }).name);
             }
             if (typeof data.pin.gpioId !== 'undefined') el.find('div#divGPIOIdLine').show();
             else el.find('div#divGPIOLine').hide();

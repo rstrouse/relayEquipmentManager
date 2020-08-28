@@ -800,7 +800,7 @@ $.ui.position.fieldTip = {
         }
     });
     $.widget("pic.toggleButton", {
-        options: {},
+        options: { isOn: false },
         _create: function () {
             var self = this, o = self.options, el = self.element;
             self._initToggleButton();
@@ -809,17 +809,24 @@ $.ui.position.fieldTip = {
             var self = this, o = self.options, el = self.element;
             let div = $('<div class="picIndicator"></div>');
             el.addClass('picToggleButton');
+            el.addClass('btn');
             //el.addClass('btn');
             el[0].val = function (val) { return self.val(val); };
             if (o.bind) el.attr('data-bind', o.bind);
             div.appendTo(el);
+            $('<label></label>').appendTo(el).text(o.labelText);
+            el.on('click', function (evt) {
+                self.val(!o.isOn);
+            });
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
-            if (typeof (val) !== 'undefined')
+            if (typeof (val) !== 'undefined') {
                 el.find('div.picIndicator').attr('data-status', val);
+                o.isOn = val;
+            }
             else
-                return el.find('div.picIndicator').attr('data-status');
+                return makeBool(el.find('div.picIndicator').attr('data-status'));
         }
     });
     $.widget("pic.actionButton", {
@@ -2693,6 +2700,7 @@ $.ui.position.fieldTip = {
             el.addClass(o.align);
             el.css({ backgroundColor: o.bgcolor });
             $('<div></div>').appendTo(el).addClass('pin-header-name').text(o.name);
+            console.log(o);
             var line = $('<div></div>').appendTo(el).addClass('pin-row');
             var sex = o.sex || 'male';
             var pins = o.pins || [];
@@ -2735,6 +2743,7 @@ $.ui.position.fieldTip = {
         _create: function () {
             var self = this, o = self.options, el = self.element;
             self._buildControls();
+            el[0].state = function (val) { self.state(val); }
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
@@ -2747,6 +2756,14 @@ $.ui.position.fieldTip = {
             var title = o.name;
             if (typeof o.gpioId !== 'undefined') { title += '\r\nGPIO #' + o.gpioId; }
             el.attr('title', title);
+            self.state(o.state);
+        },
+        state: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val !== 'undefined') {
+                el.attr('data-state', makeBool(val) ? 'on' : 'off');
+            }
+            else return el.attr('data-state');
         }
     });
     $.widget('pic.scriptEditor', {

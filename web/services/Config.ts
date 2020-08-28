@@ -7,6 +7,7 @@ import { cont } from "../../boards/Controller";
 import { PinDefinitions } from "../../pinouts/Pinouts";
 import { Client } from "node-ssdp";
 import { ConnectionBindings } from "../../connections/Bindings";
+import { gpioPins } from "../../boards/GpioPins";
 export class ConfigRoute {
     public static initRoutes(app: express.Application) {
         app.get('/config/options/general', (req, res) => {
@@ -17,12 +18,24 @@ export class ConfigRoute {
             return res.status(200).send(opts);
         });
         app.get('/config/options/gpio', (req, res) => {
+            let pinouts = cont.pinouts;
+            let states = gpioPins.pinStates;
+            for (let i = 0; i < states.length; i++) {
+                let state = states[i];
+                let header = pinouts.headers.find(elem => elem.id === state.headerId);
+                if (typeof header !== 'undefined') {
+                    let pinout = header.pins.find(elem => elem.id === state.pinId);
+                    if (typeof pinout !== 'undefined') pinout.state = state.state;
+                }
+            }
+            // Map the 
             let opts = {
                 controllerTypes: vMaps.controllerTypes.toArray(),
                 pinDirections: vMaps.pinDirections.toArray(),
                 pinTypes: vMaps.pinTypes.toArray(),
                 controller: cont.getExtended(),
-                pinDefinitions: PinDefinitions.loadDefintionByName(cont.controllerType.name)
+                pinDefinitions: pinouts,
+                pinStates: states
             };
             return res.status(200).send(opts);
         });
@@ -153,6 +166,13 @@ export class ConfigRoute {
             try {
                 await cont.reset();
                 res.status(200).send(cont.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/state/setPinState', async (req, res, next) => {
+            try {
+                let pin = await cont.setPinStateAsync(req.body);
+                return res.status(200).send(pin.getExtended());
             }
             catch (err) { next(err); }
         });

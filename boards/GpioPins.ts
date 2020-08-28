@@ -64,14 +64,27 @@ export class GpioController  {
                         this.pins.push(pin);
                         if (useGpio) {
                             logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${ pinDef.headerId }.`);
-                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'both', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         else {
                             logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);
-                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'both', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         cont.gpio.setExported(pinout.gpioId);
                         exported.push(pinout.gpioId);
+                        pin.gpio.readSync()
+                            .then((value) => {
+                                pin.state = value;
+                                pin.gpio.watch((err, value) => {
+                                    if (!err) {
+                                        pin.state = value;
+                                        webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pin.state });
+                                    }
+                                    else logger.error(err);
+                                });
+                                
+                            })
+                            .catch((err) => { logger.error(err); });
                     }
                 }
                 else
@@ -115,10 +128,24 @@ export class GpioController  {
                 if (typeof pin === 'undefined') return reject(new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`));
                 logger.info(`Writing Pin #${pin.headerId}:${pin.pinId} -> GPIO #${pin.gpioId} to ${val}`);
                 await pin.gpio.write(val);
+
                 resolve();
             }
             catch (err) { reject(err); }
         });
+    }
+    public get pinStates() {
+        let states = [];
+        for (let i = 0; i < this.pins.length; i++) {
+            let pin = this.pins[i];
+            states.push({
+                headerId: pin.headerId,
+                pinId: pin.pinId,
+                gpioId: pin.gpioId,
+                state: pin.state
+            });
+        }
+        return states;
     }
 }
 class MockGpio {
@@ -223,14 +250,14 @@ class MockGpio {
     }
     private setValueInternal(err, val) {
         if (!err && this._isExported) {
-            logger.info(`Wrote GPIO #${this._pinId} to ${val}`);
             let oldVal = this._value;
+            logger.info(`Wrote GPIO #${this._pinId} from ${oldVal} to ${val}`);
             this._value = val;
-            if (oldVal !== val && ((this._edge === 'both') ||
+            if ((typeof oldVal === 'undefined' || oldVal !== val) && ((this._edge === 'both') ||
                 (this._edge === 'rising' && val === 1) ||
                 (this._edge === 'falling' && val === 0))) {
                 for (let i = 0; i < this._watches.length; i++) {
-                    logger.info(`Fired GPIO #${this._pinId} watch #${i + 1}`);
+                    logger.info(`Fired GPIO #${this._pinId} watch #${i + 1} val:${val}`);
                     this._watches[i](err, val);
                 }
             }
