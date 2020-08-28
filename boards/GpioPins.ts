@@ -72,7 +72,7 @@ export class GpioController  {
                         }
                         cont.gpio.setExported(pinout.gpioId);
                         exported.push(pinout.gpioId);
-                        pin.gpio.readSync()
+                        pin.gpio.read()
                             .then((value) => {
                                 pin.state = value;
                                 pin.gpio.watch((err, value) => {
@@ -115,7 +115,7 @@ export class GpioController  {
         if (typeof pin === 'undefined') throw new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`);
         return new Promise<number>(async (resolve, reject) => {
             try {
-                let val = await pin.gpio.readSync();
+                let val = await pin.gpio.read();
                 resolve(val);
             }
             catch (err) { reject(err); }
@@ -184,7 +184,11 @@ class MockGpio {
         else
             return this._isExported ? Promise.resolve(this._value) : Promise.reject(this.notExportedError());
     }
-    public readSync(): Promise<number> { return new Promise<number>((resolve, reject) => { !this._isExported ? reject(this.checkExported()) : resolve(this._value); }); }
+    public readSync(): number {
+        if (!this._isExported)
+            throw this.notExportedError() 
+        return this._value;
+    }
     public write(val: number, callback?: (err, value) => void) {
         if (this._direction === 'in') {
             let err = !this._isExported ? this.notExportedError() : new Error(`EPERM: GPIO #${this._pinId} Write operation is not permitted for inputs.`);
