@@ -96,6 +96,7 @@ export class SpiAdcChannel {
                         resolve();
                     }
                 });
+                logger.info(`Opened SPI Bus #${opts.busNumber} Channel #${this.channel}`);
             } catch (err) { logger.error(err); }
         });
     }
