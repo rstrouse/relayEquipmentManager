@@ -11,32 +11,36 @@ export class SpiAdcBus {
     public channels: SpiAdcChannel[] = [];
     public busNumber: number;
     constructor(busNumber: number) {
-        switch (process.platform) {
-            case 'linux':
-                this._spiBus = require('spi-device');
-                break;
-            default:
-                this._spiBus = new mockSpi();
-                break;
-        }
-        //this._spiBus = require('spi-device');
-        this.busNumber = busNumber;
+        try {
+            switch (process.platform) {
+                case 'linux':
+                    this._spiBus = require('spi-device');
+                    break;
+                default:
+                    this._spiBus = new mockSpi();
+                    break;
+            }
+            //this._spiBus = require('spi-device');
+            this.busNumber = busNumber;
+        } catch (err) { console.log(err); }
     }
     public async initAsync(def: SpiController) {
-        this._ct = cont.spiAdcChips.find(elem => elem.id === def.adcChipType);
-        //this._opts = {
-        //    channelCount: this._ct.maxChannels,
-        //    maxRawValue: Math.pow(2, this._ct.bits) - 1,
-        //    speedHz: Math.round(def.spiClock * 1000) || Math.round(this._ct.spiClock * 1000)
-        //}
-        for (let i = 0; i < def.channels.length; i++) {
-            let chan = def.channels.getItemByIndex(i);
-            if (!chan.isActive) continue;
-            this.channels.push(new SpiAdcChannel(this._ct, chan, def.referenceVoltage));
-        }
-        for (let i = 0; i < this.channels.length; i++) {
-            await this.channels[i].openAsync(this._spiBus, { busNumber: this.busNumber });
-        }
+        try {
+            this._ct = cont.spiAdcChips.find(elem => elem.id === def.adcChipType);
+            //this._opts = {
+            //    channelCount: this._ct.maxChannels,
+            //    maxRawValue: Math.pow(2, this._ct.bits) - 1,
+            //    speedHz: Math.round(def.spiClock * 1000) || Math.round(this._ct.spiClock * 1000)
+            //}
+            for (let i = 0; i < def.channels.length; i++) {
+                let chan = def.channels.getItemByIndex(i);
+                if (!chan.isActive) continue;
+                this.channels.push(new SpiAdcChannel(this._ct, chan, def.referenceVoltage));
+            }
+            for (let i = 0; i < this.channels.length; i++) {
+                await this.channels[i].openAsync(this._spiBus, { busNumber: this.busNumber });
+            }
+        } catch (err) { logger.error(err); }
     }
     public async closeAsync() {
         for (let i = 0; i < this.channels.length; i++) {
@@ -80,13 +84,15 @@ export class SpiAdcChannel {
     public openAsync(spiBus, opts) {
         return new Promise((resolve, reject) => {
             this.busNumber = opts.busNumber;
-            this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, undefined, err => {
-                if (err) { logger.error(err); reject(err) }
-                else {
-                    setTimeout(() => { this.readAsync(); }, 500);
-                    resolve();
-                }
-            });
+            try {
+                this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, undefined, err => {
+                    if (err) { logger.error(err); reject(err) }
+                    else {
+                        setTimeout(() => { this.readAsync(); }, 500);
+                        resolve();
+                    }
+                });
+            } catch (err) { logger.error(err); }
 
         });
     }
