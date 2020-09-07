@@ -13,7 +13,7 @@ export class SpiAdcBus {
     constructor(busNumber: number) {
         try {
             switch (process.platform) {
-                case 'linux2':
+                case 'sunos':
                     this._spiBus = require('spi-device');
                     break;
                 default:
