@@ -13,7 +13,7 @@ export class SpiAdcBus {
     constructor(busNumber: number) {
         try {
             switch (process.platform) {
-                case 'sunos':
+                case 'linux':
                     this._spiBus = require('spi-device');
                     break;
                 default:
@@ -22,10 +22,12 @@ export class SpiAdcBus {
             }
             //this._spiBus = require('spi-device');
             this.busNumber = busNumber;
+            console.log('Successfully created Bus Interface');
         } catch (err) { console.log(err); }
     }
     public async initAsync(def: SpiController) {
         try {
+            logger.info(`Initializing SPI Bus #${this.busNumber}`);
             this._ct = cont.spiAdcChips.find(elem => elem.id === def.adcChipType);
             //this._opts = {
             //    channelCount: this._ct.maxChannels,
@@ -40,6 +42,7 @@ export class SpiAdcBus {
             for (let i = 0; i < this.channels.length; i++) {
                 await this.channels[i].openAsync(this._spiBus, { busNumber: this.busNumber });
             }
+            logger.info(`SPI Bus #${this.busNumber} Initialized`);
         } catch (err) { logger.error(err); }
     }
     public async closeAsync() {
@@ -85,6 +88,7 @@ export class SpiAdcChannel {
         return new Promise((resolve, reject) => {
             this.busNumber = opts.busNumber;
             try {
+                logger.info(`Attempting to open SPI Bus #${opts.busNumber} Channel #${this.channel}`);
                 this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, undefined, err => {
                     if (err) { logger.error(err); reject(err) }
                     else {
@@ -93,7 +97,6 @@ export class SpiAdcChannel {
                     }
                 });
             } catch (err) { logger.error(err); }
-
         });
     }
     private convertValue(val): number {
