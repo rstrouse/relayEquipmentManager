@@ -88,6 +88,7 @@ export class SpiAdcChannel {
         return new Promise((resolve, reject) => {
             this.busNumber = opts.busNumber;
             try {
+                console.log(spiBus);
                 logger.info(`Attempting to open SPI Bus #${opts.busNumber} Channel #${this.channel}`);
                 this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, undefined, err => {
                     if (err) { logger.error(err); reject(err) }
