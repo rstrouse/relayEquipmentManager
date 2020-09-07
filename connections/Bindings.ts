@@ -23,7 +23,7 @@ export class ConnectionBindings {
             bindings.dataTypes = this.dataTypes;
             bindings.operatorTypes = vMaps.operators.toArray();
         }
-        return bindings || { events: [], operatorTypes: [] };
+        return bindings || { events: [], operatorTypes: [], feeds:[] };
     }
 }
 export class ConnectionBroker {
@@ -62,14 +62,18 @@ export class ConnectionBroker {
             this.listeners[i].connect();
         }
     }
+    public findServer(connectionId: number): ServerConnection {
+        return this.listeners.find(elem => elem.connectionId === connectionId);
+    }
     public async stopAsync() {
         this.freeConnections();
         return this;
     }
 }
-class ServerConnection {
+export class ServerConnection {
     public server: ConnectionSource;
-    constructor(server: ConnectionSource) { this.server = server; }
+    public connectionId: number;
+    constructor(server: ConnectionSource) { this.server = server; this.connectionId = server.id; }
     public isOpen = false;
     public disconnect() {
         if (!this.isOpen) return;
@@ -77,6 +81,7 @@ class ServerConnection {
     public connect() {
         if (typeof this.server !== 'undefined') this.isOpen = true;
     }
+    public send(opts) {}
 }
 class SocketServerConnection extends ServerConnection {
     private _sock;
@@ -158,6 +163,12 @@ class SocketServerConnection extends ServerConnection {
             }
         });
 
+    }
+    public send(opts) {
+        let obj = {};
+        obj[opts.property] = opts.value;
+        console.log(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
+        this._sock.emit('/' + opts.eventName, JSON.stringify(obj));
     }
 }
 export const connBroker =  new ConnectionBroker()

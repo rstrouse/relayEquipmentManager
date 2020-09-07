@@ -2,6 +2,230 @@
   "name": "Raspberry Pi",
   "desc": "All current models up to 4B",
   "icon": "fab fa-raspberry-pi",
+  "overlays": [
+    {
+      "name": "spi0",
+      "desc": "Serial Peripheral Interface SPI0",
+      "options": {
+        "speed": {
+          "name": "Clock Speed",
+          "values": [
+            {
+              "val": 2,
+              "name": "125 MHz"
+            },
+            {
+              "val": 4,
+              "name": "62.5 MHz"
+            },
+            {
+              "val": 8,
+              "name": "31.2 MHz"
+            },
+            {
+              "val": 16,
+              "name": "15.6 MHz"
+            },
+            {
+              "val": 32,
+              "name": "7.8 MHz"
+            },
+            {
+              "val": 64,
+              "name": "3.9 MHz"
+            },
+            {
+              "val": 128,
+              "name": "1,953 kHz"
+            },
+            {
+              "val": 256,
+              "name": "976 kHz"
+            },
+            {
+              "val": 512,
+              "name": "488 kHz"
+            },
+            {
+              "val": 1024,
+              "name": "244 kHz"
+            },
+            {
+              "val": 2048,
+              "name": "122 kHz"
+            },
+            {
+              "val": 4096,
+              "name": "61 kHz"
+            },
+            {
+              "val": 8192,
+              "name": "30.5 kHz"
+            },
+            {
+              "val": 16384,
+              "name": "15.2 kHz"
+            },
+            {
+              "val": 32768,
+              "name":  "7,629 Hz"
+            }
+          ]
+        }
+      },
+      "pins": [
+        {
+          "id": 19,
+          "name": "MOSI - Master Out Slave In"
+        },
+        {
+          "id": 21,
+          "name": "MISO - Master In Slave Out"
+        },
+        {
+          "id": 23,
+          "name":  "SCLK - Serial Clock"
+        },
+        {
+          "id": 24,
+          "name": "CE0 - Chip Select 0"
+        },
+        {
+          "id": 26,
+          "name": "CE1 - Chip Select 1"
+        }
+      ]
+    },
+    {
+      "name": "spi1",
+      "desc": "Serial Peripheral Interface SPI1",
+      "options": {
+        "speed": {
+          "name": "Clock Speed",
+          "values": [
+            {
+              "val": 2,
+              "name": "125 MHz"
+            },
+            {
+              "val": 4,
+              "name": "62.5 MHz"
+            },
+            {
+              "val": 8,
+              "name": "31.2 MHz"
+            },
+            {
+              "val": 16,
+              "name": "15.6 MHz"
+            },
+            {
+              "val": 32,
+              "name": "7.8 MHz"
+            },
+            {
+              "val": 64,
+              "name": "3.9 MHz"
+            },
+            {
+              "val": 128,
+              "name": "1,953 kHz"
+            },
+            {
+              "val": 256,
+              "name": "976 kHz"
+            },
+            {
+              "val": 512,
+              "name": "488 kHz"
+            },
+            {
+              "val": 1024,
+              "name": "244 kHz"
+            },
+            {
+              "val": 2048,
+              "name": "122 kHz"
+            },
+            {
+              "val": 4096,
+              "name": "61 kHz"
+            },
+            {
+              "val": 8192,
+              "name": "30.5 kHz"
+            },
+            {
+              "val": 16384,
+              "name": "15.2 kHz"
+            },
+            {
+              "val": 32768,
+              "name": "7,629 Hz"
+            }
+          ]
+        }
+      },
+      "pins": [
+        {
+          "id": 11,
+          "name": "CE1 - Chip Select 1"
+        },
+        {
+          "id": 12,
+          "name": "CE0 - Chip Select 0"
+        },
+        {
+          "id": 35,
+          "name": "MISO - Master In Slave Out"
+        },
+        {
+          "id": 36,
+          "name": "CE2 - Chip Select 2"
+        },
+        {
+          "id": 38,
+          "name": "MOSI - Master Out Slave In"
+        },
+        {
+          "id": 40,
+          "name": "SCLK - Serial Clock"
+        }
+      ]
+    },
+    {
+      "name": "i2c",
+      "desc": "Inter Integrated Circuit Interface",
+      "pins": [
+        {
+          "id": 3,
+          "name": "Data"
+        },
+        {
+          "id": 5,
+          "name": "Clock"
+        },
+        {
+          "id": 27,
+          "name": "EEPROM Data"
+        },
+        {
+          "id": 28,
+          "name":  "EEPROM Clock"
+        }
+      ]
+    },
+    {
+      "name": "onewire",
+      "desc": "One-Wire-Interface",
+      "pins": [
+        {
+          "id": 7,
+          "name": "Data"
+        }
+      ]
+    }
+  ],
   "headers": [
     {
       "id": 1,
@@ -11,6 +235,247 @@
       "sex": "male",
       "bgcolor": "darkgreen",
       "align": "right",
+      "overlays": [
+        {
+          "name": "spi0",
+          "desc": "Serial Peripheral Interface SPI0",
+          "options": {
+            "speed": {
+              "name": "Clock Speed",
+              "values": [
+                {
+                  "val": 2,
+                  "name": "125 MHz"
+                },
+                {
+                  "val": 4,
+                  "name": "62.5 MHz"
+                },
+                {
+                  "val": 8,
+                  "name": "31.2 MHz"
+                },
+                {
+                  "val": 16,
+                  "name": "15.6 MHz"
+                },
+                {
+                  "val": 32,
+                  "name": "7.8 MHz"
+                },
+                {
+                  "val": 64,
+                  "name": "3.9 MHz"
+                },
+                {
+                  "val": 128,
+                  "name": "1,953 kHz"
+                },
+                {
+                  "val": 256,
+                  "name": "976 kHz"
+                },
+                {
+                  "val": 512,
+                  "name": "488 kHz"
+                },
+                {
+                  "val": 1024,
+                  "name": "244 kHz"
+                },
+                {
+                  "val": 2048,
+                  "name": "122 kHz"
+                },
+                {
+                  "val": 4096,
+                  "name": "61 kHz"
+                },
+                {
+                  "val": 8192,
+                  "name": "30.5 kHz"
+                },
+                {
+                  "val": 16384,
+                  "name": "15.2 kHz"
+                },
+                {
+                  "val": 32768,
+                  "name": "7,629 Hz"
+                }
+              ]
+            }
+          },
+          "pins": [
+            {
+              "id": 19,
+              "name": "SPI0 MOSI - Master Out Slave In",
+              "type": "spi0"
+            },
+            {
+              "id": 21,
+              "name": "SPI0 MISO - Master In Slave Out",
+              "type": "spi0"
+            },
+            {
+              "id": 23,
+              "name": "SPI0 SCLK - Serial Clock",
+              "type": "spi0"
+            },
+            {
+              "id": 24,
+              "name": "SPI0 CE0 - Chip Select 0",
+              "type": "spi0"
+            },
+            {
+              "id": 26,
+              "name": "SPI0 CE1 - Chip Select 1",
+              "type": "spi0"
+            }
+          ]
+        },
+        {
+          "name": "spi1",
+          "desc": "Serial Peripheral Interface SPI1",
+          "options": {
+            "speed": {
+              "name": "Clock Speed",
+              "values": [
+                {
+                  "val": 2,
+                  "name": "125 MHz"
+                },
+                {
+                  "val": 4,
+                  "name": "62.5 MHz"
+                },
+                {
+                  "val": 8,
+                  "name": "31.2 MHz"
+                },
+                {
+                  "val": 16,
+                  "name": "15.6 MHz"
+                },
+                {
+                  "val": 32,
+                  "name": "7.8 MHz"
+                },
+                {
+                  "val": 64,
+                  "name": "3.9 MHz"
+                },
+                {
+                  "val": 128,
+                  "name": "1,953 kHz"
+                },
+                {
+                  "val": 256,
+                  "name": "976 kHz"
+                },
+                {
+                  "val": 512,
+                  "name": "488 kHz"
+                },
+                {
+                  "val": 1024,
+                  "name": "244 kHz"
+                },
+                {
+                  "val": 2048,
+                  "name": "122 kHz"
+                },
+                {
+                  "val": 4096,
+                  "name": "61 kHz"
+                },
+                {
+                  "val": 8192,
+                  "name": "30.5 kHz"
+                },
+                {
+                  "val": 16384,
+                  "name": "15.2 kHz"
+                },
+                {
+                  "val": 32768,
+                  "name": "7,629 Hz"
+                }
+              ]
+            }
+          },
+          "pins": [
+            {
+              "id": 11,
+              "name": "SPI1 CE1 - Chip Select 1",
+              "type": "spi1"
+            },
+            {
+              "id": 12,
+              "name": "SPI1 CE0 - Chip Select 0",
+              "type": "spi1"
+            },
+            {
+              "id": 35,
+              "name": "SPI1 MISO - Master In Slave Out",
+              "type": "spi1"
+            },
+            {
+              "id": 36,
+              "name": "SPI1 CE2 - Chip Select 2",
+              "type": "spi1"
+            },
+            {
+              "id": 38,
+              "name": "SPI1 MOSI - Master Out Slave In",
+              "type": "spi1"
+            },
+            {
+              "id": 40,
+              "name": "SPI1 SCLK - Serial Clock",
+              "type": "spi1"
+            }
+          ]
+        },
+        {
+          "name": "i2c",
+          "desc": "Inter Integrated Circuit Interface",
+          "pins": [
+            {
+              "id": 3,
+              "name": "I2C Data",
+              "type": "i2c"
+
+            },
+            {
+              "id": 5,
+              "name": "I2C Clock",
+              "type": "i2c"
+            },
+            {
+              "id": 27,
+              "name": "I2C EEPROM Data",
+              "type": "i2c"
+            },
+            {
+              "id": 28,
+              "name": "I2C EEPROM Clock",
+              "type": "i2c"
+            }
+          ]
+        },
+        {
+          "name": "onewire",
+          "desc": "One-Wire-Interface",
+          "pins": [
+            {
+              "id": 7,
+              "name": "Data",
+              "type": "onewire"
+            }
+          ]
+        }
+      ],
       "pins": [
         {
           "id": 1,

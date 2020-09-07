@@ -1,4 +1,5 @@
 ﻿{
+  "dataType": "json",
   "events": [
     {
       "name": "valve",
@@ -199,6 +200,50 @@
         {
           "binding": "isOn",
           "type": "boolean"
+        }
+      ]
+    }
+  ],
+  "feeds": [
+    {
+      "name": "temps",
+      "frequency": "2",
+      "bindings": [
+        {
+          "binding": "waterSensor1",
+          "type": "number"
+        },
+        {
+          "binding": "waterSensor2",
+          "type": "number"
+        },
+        {
+          "binding": "waterSensor3",
+          "type": "number"
+        },
+        {
+          "binding": "waterSensor4",
+          "type": "number"
+        },
+        {
+          "binding": "airSensor",
+          "type": "number"
+        },
+        {
+          "binding": "solarSensor1",
+          "type": "number"
+        },
+        {
+          "binding": "solarSensor2",
+          "type": "number"
+        },
+        {
+          "binding": "solarSensor3",
+          "type": "number"
+        },
+        {
+          "binding": "solarSensor4",
+          "type": "number"
         }
       ]
     }

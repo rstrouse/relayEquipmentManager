@@ -1,0 +1,96 @@
+﻿{
+  "manufacturer": "Microchip Technology",
+  "predefined": true,
+  "chips": [
+    {
+      "id": 1,
+      "name": "MCP3008",
+      "bits": 10,
+      "maxChannels": 8,
+      "spiClock": 1350.000,
+      "transferLength":  3,
+      "readChannel": "return Buffer.from([0x01, 0x80 + (channel << 4), 0x00]);",
+      "getValue": "return ((buffer[1] & 0x03) >> 8) + buffer[2];"
+    },
+    {
+      "id": 2,
+      "name": "MCP3004",
+      "bits": 10,
+      "maxChannels": 4,
+      "spiClock": 1350.000,
+      "transferLength": 3,
+      "readChannel": "return Buffer.from([0x01, 0x80 + (channel << 4), 0x00]);",
+      "getValue": "return ((buffer[1] & 0x03) << 8) + buffer[2];"
+    },
+    {
+      "id": 3,
+      "name": "MCP3002",
+      "bits": 10,
+      "maxChannels": 2,
+      "transferLength": 2,
+      "spiClock": 1200.000,
+      "readChannel": "return Buffer.from([0x68 + (channel << 4), 0x00]);",
+      "getValue": "return ((buffer[1] & 0x03) << 8) + buffer[1];"
+    },
+    {
+      "id": 4,
+      "name": "MCP3208",
+      "bits": 12,
+      "maxChannels": 8,
+      "spiClock": 1000.000,
+      "transferLength": 3,
+      "readChannel": "return Buffer.from([0x06 + (channel >> 2), (channel & 0x03) << 6, 0x00]);",
+      "getValue": "return ((buffer[1] & 0x0f) << 8) + buffer[2];"
+    },
+    {
+      "id": 5,
+      "name": "MCP3204",
+      "bits": 12,
+      "maxChannels": 4,
+      "spiClock": 1000.000,
+      "transferLength": 3,
+      "readChannel": "return Buffer.from([0x06 + (channel >> 2), (channel & 0x03) << 6, 0x00]);",
+      "getValue": "return ((buffer[1] & 0x0f) << 8) + buffer[2];"
+    },
+    {
+      "id": 6,
+      "name": "MCP3202",
+      "bits": 12,
+      "maxChannels": 2,
+      "spiClock": 900.000,
+      "transferLength": 3,
+      "readChannel": "return Buffer.from([0x01, 0xa0 + (channel << 6), 0x00]);",
+      "getValue": "return ((buffer[1] & 0x0f) << 8) + buffer[2];"
+    },
+    {
+      "id": 7,
+      "name": "MCP3308",
+      "bits": 13,
+      "maxChannels": 8,
+      "spiClock": 1050.000,
+      "transferLength": 3,
+      "readChannel": "return Buffer.from([0x0c + (channel >> 1), (channel & 0x01) << 7, 0x00]);",
+      "getValue": "return ((buffer[1] & 0x0f) << 8) + buffer[2];"
+    },
+    {
+      "id": 8,
+      "name": "MCP3304",
+      "bits": 13,
+      "maxChannels": 4,
+      "spiClock": 1050.000,
+      "transferLength": 2,
+      "readChannel": "return Buffer.from([0x0c + (channel >> 1), (channel & 0x01) << 7, 0x00]);",
+      "getValue": "return ((buffer[1] & 0x0f) << 8) + buffer[2];"
+    },
+    {
+      "id": 9,
+      "name": "MCP3302",
+      "bits": 13,
+      "maxChannels": 2,
+      "transferLength": 2,
+      "spiClock": 1000.000,
+      "readChannel": "return Buffer.from([0x0c + (channel >> 1), (channel & 0x01) << 7, 0x00]);",
+      "getValue": "return ((buffer[1] & 0x0f) << 8) + buffer[2];"
+    }
+  ]
+}

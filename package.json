@@ -42,6 +42,7 @@
     "onoff": "^6.0.0",
     "prismjs": "^1.21.0",
     "socket.io": "^2.2.0",
+    "spi-device": "^3.1.0",
     "winston": "^3.3.3"
   }
 }

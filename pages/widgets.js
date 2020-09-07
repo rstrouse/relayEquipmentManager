@@ -601,7 +601,13 @@ var dataBinder = {
         else if (typeof val === 'undefined') return;
         else if (typeof val.getTime === 'function') return val.getTime();
         var tval = val.replace(/[^0-9\.\-]+/g, '');
-        return tval.indexOf('.') !== -1 ? parseFloat(tval) : parseInt(tval, 10);
+        var v;
+        if (tval.indexOf('.') !== -1) {
+            v = parseFloat(tval);
+            v = v.round(tval.length - tval.indexOf('.'));
+        }
+        else v = parseInt(tval, 10);
+        return v;
     },
     formatDuration: function (dur) {
         var fmt = '';
@@ -985,9 +991,26 @@ $.ui.position.fieldTip = {
             el[0].isEmpty = function () { return self.isEmpty(); };
             el[0].required = function (val) { return self.required(val); };
             if (o.required === true) self.required(true);
-            $('<label class="picSpinner-label"></label><div class="picSpinner-down fld-btn-left"><i class="fas fa-minus"></i></div><div class="picSpinner-value fld-value-center"></div><div class="picSpinner-up fld-btn-right"><i class="fas fa-plus"></i></div><span class="picSpinner-units picUnits"></span>').appendTo(el);
+            $('<label></label>').addClass('picSpinner-label').appendTo(el);
+            $('<div></div>').addClass('picSpinner-down').addClass('fld-btn-left').appendTo(el).append($('<i class="fas fa-minus"></i>'));
+            if (o.canEdit) {
+                $('<div></div>').addClass('picSpinner-value').addClass('fld-value-center').attr('contenteditable', true).appendTo(el)
+                    .on('focusout', function (evt) {
+                        console.log(evt);
+                        var val = Number($(evt.target).text().replace(/[^0-9\.\-]+/g, ''));
+                        if (isNaN(val)) self.val(o.min);
+                        else self.val(val);
+                    });
+            }
+            else {
+                $('<div></div>').addClass('picSpinner-value').addClass('fld-value-center').appendTo(el);
+            }
+            $('<div></div>').addClass('picSpinner-up').addClass('fld-btn-right').appendTo(el).append($('<i class="fas fa-plus"></i>'));
+            $('<span></span>').addClass('picSpinner-units').addClass('picUnits').appendTo(el);
+            //$('<label class="picSpinner-label"></label><div class="picSpinner-down fld-btn-left"><i class="fas fa-minus"></i></div><div class="picSpinner-value fld-value-center"></div><div class="picSpinner-up fld-btn-right"><i class="fas fa-plus"></i></div><span class="picSpinner-units picUnits"></span>').appendTo(el);
             if (typeof o.min === 'undefined' || o.min === null) o.min = 0;
             if (typeof o.val === 'undefined' || o.val === null) o.val = o.min;
+            if (typeof o.dataType !== 'undefined') el.attr('data-datatype', o.dataType);
             el.find('div.picSpinner-value').text(o.val.format(o.fmtMask, o.fmtEmpty));
             el.find('span.picSpinner-units').html(o.units);
             self._applyStyles();
@@ -1086,7 +1109,12 @@ $.ui.position.fieldTip = {
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
-            if (typeof val === 'undefined') return o.val;
+            if (typeof val === 'undefined') {
+                if (typeof o.fmtMask !== 'undefined' && o.fmtMask.indexOf('.') !== -1) {
+                    o.val = o.val.round(o.fmtMask.length - o.fmtMask.indexOf('.'));
+                }
+                return o.val;
+            }
             if (val > o.max) val = o.max;
             else if (val < o.min) val = o.min;
             o.val = Math.min(Math.max(o.min, val), o.max);
@@ -1401,7 +1429,7 @@ $.ui.position.fieldTip = {
             var tab = $('<div class="picTab tab-item"><span class="picTabText"></span></div>');
             tab.appendTo(self.tabs());
             tab.attr('data-tabid', tabObj.id);
-            tab.find('span.picTabText').each(function () { $(this).text(tabObj.text); });
+            tab.find('span.picTabText').each(function () { $(this).html(tabObj.text); });
             var content = $('<div class="picTabContent"></div>');
             content.attr('data-tabid', tabObj.id);
             content.appendTo(self.contents());
@@ -1636,6 +1664,8 @@ $.ui.position.fieldTip = {
             el.on('change', 'input.picPickList-value', function (evt) {
                 self.val(el.find('input.picPickList-value:first').val());
             });
+            $('<span></span>').addClass('picSpinner-units').addClass('picUnits').appendTo(el).html(o.units);
+
         },
         _applyStyles: function () {
             var self = this, o = self.options, el = self.element;
@@ -2014,6 +2044,103 @@ $.ui.position.fieldTip = {
             }
         }
     });
+    $.widget("pic.staticField", {
+        options: {
+            inputAttrs: {},
+            labelAttrs: {}
+        },
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._initField();
+        },
+        _initField: function () {
+            var self = this, o = self.options, el = self.element;
+            if (o.bind) el.attr('data-bind', o.bind);
+            if (typeof o.id !== 'undefined') el.attr('id', o.id);
+            el.addClass('picStaticField');
+            $('<label></label>').appendTo(el).text(o.labelText);
+            if (o.multiLine) {
+                el.addClass('multiline');
+                $('<div class="picStaticField-value"></div>').addClass('static-fld-value').appendTo(el);
+            }
+            else
+                $('<span type="text" class="picStaticField-value"></span>').addClass('static-fld-value').appendTo(el);
+            self.val(o.value);
+            el.attr('data-bind', o.binding);
+            el.attr('data-datatype', o.dataType);
+            self._applyStyles();
+            el[0].label = function () { return el.find('label:first'); };
+            el[0].field = function () { return el.find('.picStaticField-value:first'); };
+            el[0].text = function (text) { return self.text(text); };
+            el[0].val = function (val) { return self.val(val); };
+            el[0].isEmpty = function () { return self.isEmpty(); };
+        },
+        _applyStyles: function () {
+            var self = this, o = self.options, el = self.element;
+            var fld = el.find('.picStaticField-value:first');
+            var lbl = el.find('label:first');
+            if (typeof o.style !== 'undefined') el.css(o.style);
+
+            for (var ia in o.inputAttrs) {
+                switch (ia) {
+                    case 'style':
+                        if (typeof o.inputAttrs[ia] === 'object') fld.css(o.inputAttrs[ia]);
+                        break;
+                    case 'maxlength':
+                    case 'maxLength':
+                        //if (typeof o.inputStyle.width === 'undefined')
+                        fld.css({ width: parseInt(o.inputAttrs[ia], 10) * .55 + 'rem' });
+                        fld.attr('maxlength', o.inputAttrs[ia]);
+                        break;
+                    default:
+                        if (ia.startsWith('data')) fld.attr(ia, o.inputAttrs[ia]);
+                        break;
+                }
+            }
+            for (var la in o.labelAttrs) {
+                switch (la) {
+                    case 'style':
+                        if (typeof o.labelAttrs[la] === 'object') lbl.css(o.labelAttrs[la]);
+                        break;
+                    default:
+                        lbl.attr(la, o.labelAttrs[la]);
+                        break;
+                }
+            }
+        },
+        isEmpty: function () {
+            var self = this, o = self.options, el = self.element;
+            var val = self.val();
+            return typeof val === 'undefined' || val.toString() === '';
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            //if (typeof val === 'undefined') console.log({ msg: 'Getting field value', val: el.find('input.picStaticField-value:first').val(val) });
+            if (el.attr('data-datatype') === 'int' && typeof val === 'undefined') {
+                var v = el.find('.picStaticField-value:first').html();
+                var match = v.match(/(\d+)/g);
+                return (match) ? parseInt(match.join(''), 10) : undefined;
+            }
+            return typeof val !== 'undefined' ? el.find('.picStaticField-value:first').html(val) : el.find('.picStaticField-value:first').html();
+        },
+        disabled: function (val) {
+            var self = this, o = self.options, el = self.element;
+            var fld = el.find('.picStaticField-value:first');
+            if (typeof val === 'undefined') return el.hasClass('disabled');
+            else {
+                if (val) {
+                    el.addClass('disabled');
+                    fld.prop('disabled', true);
+                    fld.attr('disabled', true);
+                }
+                else {
+                    el.remove('disabled');
+                    fld.prop('disabled', false);
+                    fld.removeAttr('disabled');
+                }
+            }
+        }
+    });
     $.widget("pic.dateField", {
         options: {
             inputAttrs: {},
@@ -2191,13 +2318,13 @@ $.ui.position.fieldTip = {
                 o.isChecked = evt.newVal;
                 el.trigger(evt);
             });
-            $('<label></label>').attr('for', o.cbId).appendTo(el).text(o.labelText);
+            $('<label></label>').attr('for', o.cbId).appendTo(el).html(o.labelText);
             self.val(o.value);
             el.attr('data-bind', o.binding);
             self._applyStyles();
             el[0].label = function () { return el.find('label:first'); };
             el[0].checkbox = function () { return el.find('input.picCheckbox-value:first'); };
-            el[0].text = function (text) { return self.text(text); };
+            el[0].text = function (text) { return self.html(text); };
             el[0].val = function (val) { return self.val(val); };
         },
         _applyStyles: function () {
@@ -2696,19 +2823,27 @@ $.ui.position.fieldTip = {
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
+            var header = o.header;
             el.addClass('pin-header');
-            el.attr('data-id', o.id);
-            el.attr('data-name', o.name);
-            el.addClass(o.align);
-            el.css({ backgroundColor: o.bgcolor });
-            $('<div></div>').appendTo(el).addClass('pin-header-name').text(o.name);
-            console.log(o);
+            el.attr('data-id', header.id);
+            el.attr('data-name', header.name);
+            el.addClass(header.align);
+            el.css({ backgroundColor: header.bgcolor });
+            $('<div></div>').appendTo(el).addClass('pin-header-name').text(header.name);
+            var opins = [];
+            for (var overlay in o.overlays) {
+                if (o.overlays[overlay] !== true) continue;
+                var ov = header.overlays.find(elem => elem.name === overlay);
+                if (typeof ov !== 'undefined') opins.push(...ov.pins);
+            }
             var line = $('<div></div>').appendTo(el).addClass('pin-row');
-            var sex = o.sex || 'male';
-            var pins = o.pins || [];
-            var width = o.width || 2;
+            var sex = header.sex || 'male';
+            var pins = header.pins || [];
+            var width = header.width || 2;
             for (var ipin = 0; ipin < pins.length; ipin++) {
-                var pin = $.extend(true, { sex: sex, align:(ipin + 1) % width === 0 && pin !== 1 ? 'right' : 'left' }, pins[ipin]);
+                var p = pins[ipin];
+                var over = opins.find(elem => p.id === elem.id);
+                var pin = $.extend(true, { sex: sex, align: (ipin + 1) % width === 0 && pin !== 1 ? 'right' : 'left' }, p, over);
                 $('<div></div>').appendTo(line).headerPin(pin);
                 if ((ipin + 1) % width === 0 && pin.id !== 1) line = $('<div></div>').appendTo(el).addClass('pin-row');
             }
@@ -2725,7 +2860,7 @@ $.ui.position.fieldTip = {
                     el.parent().find('div.header-pin.selected').removeClass('selected');
                     pin.addClass('selected');
                     var evt = $.Event('selchanged');
-                    evt.headerId = o.id;
+                    evt.headerId = o.header.id;
                     evt.oldPinId = o.selectedPin;
                     evt.newPinId = o.selectedPin = pin.attr('data-id');
                     el.trigger(evt);
@@ -2887,4 +3022,5 @@ $.pic.modalDialog.createApiError = function (err, options) {
     dlg.modalDialog('open');
     return dlg;
 };
-
+$.pic.boardPanel = function () { return $('div.pnl-board-definition:first'); }
+var _controller = function () { return $.pic.boardPanel()[0]; }

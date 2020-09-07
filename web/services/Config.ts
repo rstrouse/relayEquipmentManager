@@ -8,6 +8,7 @@ import { PinDefinitions } from "../../pinouts/Pinouts";
 import { Client } from "node-ssdp";
 import { ConnectionBindings } from "../../connections/Bindings";
 import { gpioPins } from "../../boards/GpioPins";
+import { SpiAdcChips } from "../../spi-adc/SpiAdcChips";
 export class ConfigRoute {
     public static initRoutes(app: express.Application) {
         app.get('/config/options/general', (req, res) => {
@@ -38,6 +39,43 @@ export class ConfigRoute {
                 pinStates: states
             };
             return res.status(200).send(opts);
+        });
+        app.get('/config/options/spi/:controllerId', (req, res) => {
+            let opts = {
+                adcChipTypes: cont.spiAdcChips,
+                analogDevices: cont.analogDevices,
+                spi: cont['spi' + req.params.controllerId].getExtended()
+            }
+            return res.status(200).send(opts);
+        });
+        app.get('/config/options/spi/:controllerId/:channelId/feeds', (req, res) => {
+            let opts = {
+                connections: cont.connections.toExtendedArray()
+            }
+            return res.status(200).send(opts);
+        });
+        app.put('/config/spi/:controllerId', async (req, res, next) => {
+            try {
+                let spi = await cont.setSpiControllerAsync(parseInt(req.params.controllerId, 10), req.body);
+                return res.status(200).send(spi.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/options/spi/chipType', (req, res, next) => {
+            try {
+                let chip = SpiAdcChips.saveCustomDefinition(req.body);
+                let opts = { chipType: chip, adcChipTypes: cont.spiAdcChips };
+                return res.status(200).send(opts);
+            }
+            catch(err) { next(err); }
+        });
+        app.delete('/config/options/spi/chipType/:id', (req, res, next) => {
+            try {
+                let chip = SpiAdcChips.deleteCustomDefintion(parseInt(req.params.id, 10));
+                let opts = { chipType: chip, adcChipTypes: cont.spiAdcChips };
+                return res.status(200).send(opts);
+            }
+            catch (err) { next(err); }
         });
         app.get('/config/options/pin/:headerId/:pinId', (req, res) => {
             let opts = {

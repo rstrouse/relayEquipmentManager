@@ -49,9 +49,9 @@ export class valueMap extends Map<number, any> {
 export class valueMaps {
     constructor() { }
     public controllerTypes: valueMap = new valueMap([
-        [1, { name: 'raspi', desc: 'Raspberry Pi', pinouts:'raspi.json' }],
+        [1, { name: 'raspi', desc: 'Raspberry Pi', pinouts:'raspi.json', spi0:true, spi1:true, i2c:true }],
         [2, { name: 'opi', desc: 'Orange Pi' }],
-        [3, { name: 'beagle', desc: 'Beagle Bone Black', pinouts:'beaglebone.json' }]
+        [3, { name: 'beagle', desc: 'Beagle Bone Black', pinouts: 'beaglebone.json', spi0: true, spi1: false, i2c: true }]
     ]);
     public pinDirections: valueMap = new valueMap([
         [0, { name: 'input', desc: 'Input', gpio:'in' }],

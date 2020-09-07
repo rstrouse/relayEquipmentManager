@@ -45,10 +45,15 @@ div.dashContainer {
 }
 
 a.btn.disabled,
+.crud-row-btn.disabled,
 fieldset[disabled] a.btn {
     pointer-events: none;
 }
-
+.crud-row-btn.disabled {
+    opacity: 0;
+    cursor: no-drop;
+    pointer-events: none;
+}
 .btn-panel {
     padding: .2rem;
     margin-top: .2rem;
@@ -542,18 +547,18 @@ div.picFieldTip-message {
     -webkit-box-shadow: 3px 3px 3px rgba(127, 127, 127, 0.5);
     -moz-box-shadow: 3px 3px 3px rgba(127,127,127,0.5);
 }
-
+div.picStaticField,
 div.picInputField {
     user-select: none;
     display: inline-block;
     line-height: 1.4rem;
 }
-
+div.picStaticField > label,
 div.picInputField > label {
     display: inline-block;
     padding-right: .25rem;
 }
-
+div.picStaticField.multiline > label,
 div.picInputField.multiline > label {
     vertical-align: top;
 }
@@ -758,6 +763,18 @@ div.header-pin-inner {
     border: solid 1px green;
     text-align:left;
 
+}
+div.header-pin[data-type="i2c"] div.header-pin-inner {
+    background-color: deeppink;
+    border: solid 1px black;
+}
+div.header-pin[data-type="spi0"] div.header-pin-inner {
+    background-color: deepskyblue;
+    border: solid 1px black;
+}
+div.header-pin[data-type="spi1"] div.header-pin-inner {
+    background-color: blueviolet;
+    border: solid 1px black;
 }
 
 div.header-pin[data-type="power3"] div.header-pin-inner {
@@ -998,4 +1015,22 @@ span.header-icon-btn:hover > i {
     border-radius: 5px;
     box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
     margin-bottom:4px;
+}
+.pnl-adc-parameters {
+    display:inline-block;
+    padding-left:10px;
+    vertical-align:top;
+    float:right;
+    padding-right:10px;
+}
+.pnl-adc-controller-settings {
+    display:inline-block;
+}
+div.pnl-config-spi > div.control-panel {
+    width:40rem;
+}
+.pnl-adc-channels {
+    max-width: calc(100% - 4px);
+    max-height: 400px;
+    overflow-y:auto;
 }

@@ -1,5 +1,16 @@
 {
   "controllerType": "raspi",
   "gpio": { "pins": [] },
+  "spi0": {
+    "isActive": false,
+    "busNumber": 0,
+    "channels": []
+  },
+  "spi1": {
+    "isActive": false,
+    "busNumber": 1,
+    "channels": []
+  },
+  "i2c": { "isActive": false },
   "connections": []
 }

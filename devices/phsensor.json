@@ -1,0 +1,13 @@
+﻿{
+  "category": "pH Sensors",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 100,
+      "name": "Atlas Scientific pH Probe ",
+      "input": "mV",
+      "convertValue": "return value;",
+      "interfaces": ["spi", "i2c"]
+    }
+  ]
+}

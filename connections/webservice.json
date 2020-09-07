@@ -28,5 +28,7 @@
     },
     "instructions": "Enter a JavaScript filter for the socket event.  Each time the event is triggered, this Javascript snippet will be executed.  Use data as the payload of the webservice and true to set the pin to the Desired State."
   },
-  "events": []
+  "dataType": "json",
+  "events": [],
+  "feeds": []
 }

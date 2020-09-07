@@ -1,0 +1,14 @@
+﻿{
+  "category": "Pressure Transducers",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 200,
+      "name": "Pressure Transducer",
+      "input": "mV",
+      "resistor":  10000,
+      "convertValue": "return value;",
+      "interfaces": ["spi", "i2c"]
+    }
+  ]
+}

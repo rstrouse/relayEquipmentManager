@@ -8,8 +8,11 @@ import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { vMaps, valueMap, utils } from "./Constants";
 import { PinDefinitions } from "../pinouts/Pinouts";
+import { SpiAdcChips } from "../spi-adc/SpiAdcChips";
 import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
+import { config } from "../config/Config";
+import { AnalogDevices } from "../devices/AnalogDevices";
 interface IConfigItemCollection {
     set(data);
     clear();
@@ -58,7 +61,7 @@ class ConfigItem {
     public get(bCopy?: boolean): any { return bCopy ? JSON.parse(JSON.stringify(this.data)) : this.data; }
     public getExtended(): any { return this.get(true); }
     public set(data: any) {
-        let op = Object.getOwnPropertyNames(Object.getPrototypeOf(this))
+        let op = Object.getOwnPropertyNames(Object.getPrototypeOf(this));
         for (let i in op) {
             let prop = op[i];
             if (typeof this[prop] === 'function') continue;
@@ -113,7 +116,8 @@ class ConfigItemCollection<T> implements IConfigItemCollection {
                 for (let i = 0; i < data.length; i++) {
                     // We are getting clever here in that we are simply adding the object and the add method
                     // should take care of hooking it all up.
-                    this.add(data[i]);
+                    let obj = (this.getItemByIndex(i, true) as unknown) as ConfigItem;
+                    obj.set(data[i]);
                 }
             }
         }
@@ -198,6 +202,9 @@ export class Controller extends ConfigItem {
         if (typeof this.data.configVersion === 'undefined') {
             this.gpio.upgrade(this.data.ver);
         }
+        this.spi0 = new SpiController(this.data, 'spi0');
+        this.spi1 = new SpiController(this.data, 'spi1');
+        this.i2c = new I2cController(this.data, 'i2c');
         this.data.configVersion = cfgVer;
         this.connections = new ConnectionSourceCollection(this.data, 'connections');
     }
@@ -212,6 +219,8 @@ export class Controller extends ConfigItem {
     protected _timerDirty: NodeJS.Timeout = null;
     protected _timerChanges: NodeJS.Timeout;
     private _pinouts;
+    private _spiAdcChips;
+    private _analogDevices;
     public get dirty(): boolean { return this._isDirty; }
     public set dirty(val) {
         this._isDirty = val;
@@ -277,12 +286,27 @@ export class Controller extends ConfigItem {
         return new Proxy(obj, handler);
     };
     public gpio: Gpio;
+    public spi0: SpiController;
+    public spi1: SpiController;
+    public i2c: I2cController;
     public connections: ConnectionSourceCollection;
     public get pinouts() {
         if (typeof this._pinouts === 'undefined') {
             this._pinouts = PinDefinitions.loadDefintionByName(this.controllerType.name);
         }
         return this._pinouts;
+    }
+    public get spiAdcChips() {
+        if (typeof this._spiAdcChips === 'undefined') {
+            this._spiAdcChips = SpiAdcChips.loadDefintions();
+        }
+        return this._spiAdcChips;
+    }
+    public get analogDevices() {
+        if (typeof this._analogDevices === 'undefined') {
+            this._analogDevices = AnalogDevices.loadDefintions();
+        }
+        return this._analogDevices;
     }
     /**************************************************
      * Api Methods
@@ -293,6 +317,8 @@ export class Controller extends ConfigItem {
             resolve();
         });
     }
+    public resetSpiAdcChips() { this._spiAdcChips = undefined; }
+    public resetAnalogDevices() { this._analogDevices = undefined; }
     public async setConnectionAsync(data): Promise<ConnectionSource> {
         let c = this.connections.find(elem => elem.id === data.id);
         if (typeof c === 'undefined') {
@@ -345,6 +371,15 @@ export class Controller extends ConfigItem {
             }
             trig.set(data);
             resolve(trig);
+        });
+    }
+    public async setSpiControllerAsync(controllerId: number, data): Promise<SpiController> {
+        return new Promise<SpiController>((resolve, reject) => {
+            if (isNaN(controllerId) || controllerId < 0 || controllerId > 1) return reject(new Error(`Invalid SPI Controller Id ${controllerId}`));
+            let spi: SpiController = cont['spi' + controllerId];
+            if (typeof spi === 'undefined') return reject(new Error(`Could not find controller Id ${controllerId}`));
+            spi.set(data);
+            resolve(spi);
         });
     }
     public async deletePinTriggerAsync(headerId: number, pinId: number, triggerId: number): Promise<GpioPin> {
@@ -408,7 +443,28 @@ export class Controller extends ConfigItem {
         }
         return cont;
     }
+    public set(data) {
+        super.set(data);
+        if (typeof data.spi0 !== 'undefined') this.spi0.set(data.spi0);
+        if (typeof data.spi1 !== 'undefined') this.spi1.set(data.spi1);
+        if (typeof data.i2c !== 'undefined') this.i2c.set(data.i2c);
+    }
 }
+//export class Interfaces extends ConfigItem {
+//    constructor(data, name?: string) { super(data, name || 'interfaces'); }
+//    protected initData(data?: any) {
+//        if (typeof this.data.spi0 === 'undefined') this.data.spi0 = false;
+//        if (typeof this.data.spi1 === 'undefined') this.data.spi1 = false;
+//        if (typeof this.data.i2c === 'undefined') this.data.i2c = false;
+//        return data;
+//    }
+//    public get spi0(): boolean { return utils.makeBool(this.data.spi0); }
+//    public set spi0(val: boolean) { this.setDataVal('spi0', val); }
+//    public get spi1(): boolean { return utils.makeBool(this.data.spi1); }
+//    public set spi1(val: boolean) { this.setDataVal('spi1', val); }
+//    public get i2c(): boolean { return utils.makeBool(this.data.i2c); }
+//    public set i2c(val: boolean) { this.setDataVal('i2c', val); }
+//}
 export class Gpio extends ConfigItem {
     constructor(data, name?: string) { super(data, name || 'gpio'); }
     protected initData(data?: any) {
@@ -438,6 +494,108 @@ export class Gpio extends ConfigItem {
     public set exported(val: number[]) { this.data.exported.length = 0; this.data.exported.push.apply(this.data.exported, val); }
     public get pins(): GpioPinCollection { return new GpioPinCollection(this.data, 'pins'); }
 }
+export class SpiController extends ConfigItem {
+    constructor(data, name: string) { super(data, name); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.referenceVoltage === 'undefined') this.referenceVoltage = 3.3;
+        if (typeof this.data.spiClock === 'undefined') this.spiClock = 1000;
+        if (typeof this.data.channels === 'undefined') this.data.channels = [];
+        return data;
+    }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get busNumber(): number { return this.data.busNumber; }
+    public get adcChipType(): number { return this.data.adcChipType; }
+    public set adcChipType(val: number) { this.setDataVal('adcChipType', val); }
+    public get referenceVoltage(): number { return this.data.referenceVoltage; }
+    public set referenceVoltage(val: number) { this.setDataVal('referenceVoltage', val); }
+    public get spiClock(): number { return this.data.spiClock; }
+    public set spiClock(val: number) { this.setDataVal('spiClock', val); }
+    public get channels(): SpiChannelCollection { return new SpiChannelCollection(this.data, 'channels'); }
+    public getExtended() {
+        let c = this.get(true);
+        c.chipType = cont.spiAdcChips.find(elem => elem.id === this.adcChipType);
+        c.channels = [];
+        for (let i = 0; i < this.channels.length; i++) {
+            c.channels.push(this.channels.getItemByIndex(i).getExtended());
+        }
+        return c;
+    }
+}
+export class I2cController extends ConfigItem {
+    constructor(data, name: string) { super(data, name); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.channels === 'undefined') this.data.channels = [];
+        return data;
+    }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+}
+
+export class SpiChannelCollection extends ConfigItemCollection<SpiChannel> {
+    constructor(data: any, name?: string) { super(data, name || 'channels') }
+    public createItem(data: any): SpiChannel { return new SpiChannel(data); }
+}
+export class SpiChannel extends ConfigItem {
+    constructor(data) { super(data); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.feeds === 'undefined') this.data.feeds = [];
+        return data;
+    }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get deviceId(): number { return this.data.deviceId; }
+    public set deviceId(val: number) { this.setDataVal('deviceId', val); }
+    public get feeds(): SpiChannelFeedCollection { return new SpiChannelFeedCollection(this.data, 'feeds'); }
+
+    public getExtended() {
+        let chan = this.get(true);
+        chan.device = cont.analogDevices.find(elem => elem.id === this.deviceId);
+        chan.feeds = [];
+        for (let i = 0; i < this.feeds.length; i++) {
+            chan.feeds.push(this.feeds.getItemByIndex(i).getExtended());
+        }
+        return chan;
+    }
+}
+export class SpiChannelFeedCollection extends ConfigItemCollection<SpiChannelFeed> {
+    constructor(data: any, name?: string) { super(data, name || 'feeds') }
+    public createItem(data: any): SpiChannelFeed { return new SpiChannelFeed(data); }
+}
+export class SpiChannelFeed extends ConfigItem {
+    constructor(data) { super(data); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.changesOnly === 'undefined') this.changesOnly = true;
+        return data;
+    }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get connectionId(): number { return this.data.connectionId; }
+    public set connectionId(val: number) { this.setDataVal('connectionId', val); }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get eventName(): string { return this.data.eventName; }
+    public set eventName(val: string) { this.setDataVal('eventName', val); }
+    public get property(): string { return this.data.property; }
+    public set property(val: string) { this.setDataVal('property', val); }
+    public get frequency(): number { return this.data.frequency; }
+    public set frequency(val: number) { this.setDataVal('frequency', val); }
+    public get changesOnly(): boolean { return utils.makeBool(this.data.changesOnly); }
+    public set changesOnly(val: boolean) { this.setDataVal('changesOnly', val); }
+    public getExtended() {
+        let feed = this.get(true);
+        feed.connection = cont.connections.getItemById(this.connectionId).getExtended();
+        return feed;
+    }
+
+}
+
 export class GpioPinCollection extends ConfigItemCollection<GpioPin> {
     constructor(data: any, name?: string) { super(data, name || 'pins') }
     public createItem(data: any): GpioPin { return new GpioPin(data); }
