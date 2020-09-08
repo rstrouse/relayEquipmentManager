@@ -88,9 +88,8 @@ export class SpiAdcChannel {
         return new Promise((resolve, reject) => {
             this.busNumber = opts.busNumber;
             try {
-                console.log(spiBus);
                 logger.info(`Attempting to open SPI Bus #${opts.busNumber} Channel #${this.channel}`);
-                this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, undefined, err => {
+                this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, err => {
                     if (err) { logger.error(err); reject(err) }
                     else {
                         setTimeout(() => { this.readAsync(); }, 500);
@@ -203,9 +202,12 @@ class mockSpiDevice {
     constructor(busNumber, deviceNumber, opts?) {
         this.busNumber = busNumber;
         this.deviceNumber = deviceNumber;
-        for (let s in opts) {
-            this._opts[s] = opts[s];
+        if (typeof opts !== 'undefined') {
+            for (let s in opts) {
+                this._opts[s] = opts[s];
+            }
         }
+
     }
     private busNumber = 0;
     private deviceNumber = 0;
@@ -264,10 +266,10 @@ class mockSpiDevice {
     }
 }
 class mockSpi {
-    public open(busNumber, deviceNumber, opts, cb) {
+    public open(busNumber, deviceNumber, cb?) {
         logger.info(`Opening Mock SPI Device #${busNumber}-${deviceNumber}`);
         if (typeof cb !== 'undefined') cb();
-        return new mockSpiDevice(busNumber, deviceNumber, opts);
+        return new mockSpiDevice(busNumber, deviceNumber);
     }
 }
 export const spi0: SpiAdcBus = new SpiAdcBus(0);
