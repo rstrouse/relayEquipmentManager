@@ -10,7 +10,7 @@
       "spiClock": 1350.000,
       "transferLength":  3,
       "readChannel": "return Buffer.from([0x01, 0x80 + (channel << 4), 0x00]);",
-      "getValue": "return ((buffer[1] & 0x03) >> 8) + buffer[2];"
+      "getValue": "return ((buffer[1] & 0x03) << 8) + buffer[2];"
     },
     {
       "id": 2,
