@@ -167,7 +167,7 @@ class SocketServerConnection extends ServerConnection {
     public send(opts) {
         let obj = {};
         obj[opts.property] = opts.value;
-        console.log(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
+        //console.log(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
         this._sock.emit('/' + opts.eventName, JSON.stringify(obj));
     }
 }

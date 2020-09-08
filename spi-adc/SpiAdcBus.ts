@@ -135,13 +135,14 @@ export class SpiAdcChannel {
                 byteLength: readBuff.byteLength,
                 sendBuffer: readBuff,
                 receiveBuffer: Buffer.alloc(readBuff.byteLength),
-                speedHz: this.speedHz
+                speedHz: this.speedHz || 2000
             }];
             this._spiDevice.transfer(message, (err, reading) => {
                 if (err) { logger.error(err); reject(err); }
                 else {
                     try {
                         this.rawValue = this._getValue(message[0].receiveBuffer);
+                        logger.info(`Raw:${this.rawValue} Speed:${message[0].speedHz}`);
                         this.convertedValue = this.convertValue(this.rawValue);
                         // Now we need to trigger the values to all the cannel feeds.
                         if (typeof this.lastVal === 'undefined' || this.lastVal !== this.convertedValue) {
