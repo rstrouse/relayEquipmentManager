@@ -142,7 +142,7 @@ export class SpiAdcChannel {
                 else {
                     try {
                         this.rawValue = this._getValue(message[0].receiveBuffer);
-                        logger.info(`Raw:${this.rawValue} Speed:${message[0].speedHz}`);
+                        logger.info(`Raw:${this.rawValue} b(1):${message[0].receiveBuffer[1]} b(2):${message[0].receiveBuffer[2]} Speed: ${ message[0].speedHz }`);
                         this.convertedValue = this.convertValue(this.rawValue);
                         // Now we need to trigger the values to all the cannel feeds.
                         if (typeof this.lastVal === 'undefined' || this.lastVal !== this.convertedValue) {
