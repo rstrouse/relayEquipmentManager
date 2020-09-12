@@ -7,7 +7,24 @@
       "name": "Atlas Scientific pH Probe ",
       "input": "mV",
       "convertValue": "return value;",
-      "interfaces": ["spi", "i2c"]
+      "options": {
+        "address": {
+          "dataType": "number",
+          "default": 98,
+          "field": {
+            "type": "valueSpinner",
+            "required": true,
+            "canEdit": true,
+            "labelText": "Address",
+            "step": "1",
+            "min": 1,
+            "max": 1000,
+            "inputAttrs": { "style": { "width": "4rem" } },
+            "labelAttrs": { "style": { "width": "7rem" } }
+          }
+        }
+      },
+      "interfaces": ["i2c"]
     }
   ]
 }

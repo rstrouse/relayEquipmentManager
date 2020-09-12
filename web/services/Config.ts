@@ -43,7 +43,7 @@ export class ConfigRoute {
         app.get('/config/options/spi/:controllerId', (req, res) => {
             let opts = {
                 adcChipTypes: cont.spiAdcChips,
-                analogDevices: cont.analogDevices,
+                analogDevices: cont.analogDevices.filter(elem => typeof elem.interfaces === 'undefined' || elem.interfaces.indexOf('spi') !== -1),
                 spi: cont['spi' + req.params.controllerId].getExtended()
             }
             return res.status(200).send(opts);
@@ -210,6 +210,30 @@ export class ConfigRoute {
         app.put('/state/setPinState', async (req, res, next) => {
             try {
                 let pin = await cont.setPinStateAsync(req.body);
+                return res.status(200).send(pin.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/state/jogPin', async (req, res, next) => {
+            try {
+                let pin = cont.gpio.pins.getPinById(req.body.headerId, req.body.pinId || 1);
+                if (!pin.isActive) {
+                    logger.error(`GPIO Pin #${req.body.headerId} ${req.body.pinId} is not active.`);
+                    return next(new Error(`GPIO Pin #${req.body.headerId} ${req.body.pinId} is not active.`));
+                }
+                let currentState = utils.makeBool(pin.state.gpio);
+                let state = req.body.state !== 'undefined' ? utils.makeBool(req.body.state) : pin.state.gpio === 'on' ? true : false;
+                let times = req.body.times || 1;
+                if (currentState === state) {
+                    await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: !state });
+                    await new Promise((resolve, reject) => setTimeout(() => { resolve(); }, req.body.delay || 100));
+                }
+                while (times > 0) {
+                    await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: state });
+                    await new Promise((resolve, reject) => setTimeout(() => { resolve(); }, req.body.delay || 100));
+                    if(times > 1) await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: !state });
+                    times--;
+                }
                 return res.status(200).send(pin.getExtended());
             }
             catch (err) { next(err); }

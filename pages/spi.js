@@ -48,7 +48,7 @@
                 var channels = $('<div></div>').appendTo(outer).addClass('pnl-adc-channels').hide();
                 // Build out 32 channels worth for the adc.
                 for (var i = 0; i < 32; i++) {
-                    self.createAdcChannel(i).appendTo(channels);
+                    $('<div></div>').appendTo(channels).pnlSpiChannel({ controllerId: o.controllerId, channelId: i, analogDevices: o.analogDevices });
                 }
                 var btnPnl = $('<div class="btn-panel"></div>').appendTo(outer);
                 $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Define ADC Chip Types', icon: '<i class="fas fa-microchip"></i>' })
@@ -86,9 +86,11 @@
                 binding: binding + 'deviceId', labelText: 'Device',
                 bindColumn: 0, displayColumn: 1,
                 columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'name', text: 'Device Name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'category', text: 'Category', style: { whiteSpace: 'nowrap' } }],
-                items: o.analogDevices, inputAttrs: { style: { width: '20.7rem' } }, labelAttrs: { style: { marginLeft: '1rem' } }
-            });
-            $('<div></div>').appendTo(contents).pnlSpiFeeds({ binding: binding + 'feeds', channelId: channelId, controllerId: o.controllerId });
+                items: o.analogDevices, inputAttrs: { style: { width: '14rem' } }, labelAttrs: { style: { marginLeft: '1rem' } }
+            }).on('selchanged', function (evt) {
+                console.log(evt.newItem);
+                });
+
             return acc;
 
         },
@@ -216,7 +218,7 @@
                 }
                 el.find('div[data-bind="spiClock"]').each(function () { this.val(chipType.spiClock); })
                 pnl.attr('data-chiptype', chipType.id);
-                var channels = el.find('div.pnl-adc-channels > div.picAccordian');
+                var channels = el.find('div.pnl-adc-channels > div.pnl-spi-channel');
                 channels.each(function () {
                     var chan = $(this);
                     if (parseInt(chan.attr('data-channelid'), 10) > chipType.maxChannels - 1) chan.hide();
@@ -233,6 +235,131 @@
                 cols[2].elText().text(data.raw + '/' + data.converted);
             });
         }
+    });
+    $.widget('pic.pnlSpiChannel', {
+        options: {},
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].dataBind = function (data) { return self.dataBind(data); };
+            el[0].val = function (val) { return self.val(val); }
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-spi-channel');
+            el.attr('data-channelid', o.channelId);
+            var channelId = o.channelId;
+            el.attr('data-bind', 'channels[' + channelId + ']');
+            var binding = 'channels[' + channelId + '].';
+            var acc = $('<div></div>').appendTo(el).accordian({
+                columns: [{ text: 'Channel #' + channelId, glyph: 'fas fa-code-branch', style: { width: '10.5rem' } },
+                { binding: 'device', style: { width: '14rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis' } }, { binding: 'value', style: { textAlign: 'right', width: '10rem' } }]
+            });
+            acc.attr('data-channelid', channelId);
+            var contents = acc.find('div.picAccordian-contents');
+            var line = $('<div></div>').appendTo(contents);
+            $('<div></div>').appendTo(line).checkbox({ binding: binding + 'isActive', labelText: 'Is Active', style: {} }).on('changed', function (evt) {
+                acc[0].columns()[0].elGlyph().attr('class', evt.newVal ? 'fas fa-share-alt' : 'fas fa-share-alt').css({ textShadow: evt.newVal ? '0px 0px 3px green' : '', color: evt.newVal ? 'darkGreen' : '' });
+            });
+            $('<div></div>').appendTo(line).pickList({
+                binding: binding + 'deviceId', labelText: 'Device',
+                bindColumn: 0, displayColumn: 1,
+                columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'name', text: 'Device Name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'category', text: 'Category', style: { whiteSpace: 'nowrap' } }],
+                items: o.analogDevices, inputAttrs: { style: { width: '14rem' } }, labelAttrs: { style: { marginLeft: '1rem' } }
+            }).on('selchanged', function (evt) {
+                console.log('Sel Changed called');
+                self.createDeviceOptions(evt.newItem);
+            });
+            var fs = $('<fieldset></fieldset>').appendTo(line).addClass('pnl-analog-device-options').hide();
+            $('<legend></legend>').appendTo(fs).text('Device Options');
+            $('<div></div>').appendTo(fs).addClass('pnl-analog-device-options');
+            $('<div></div>').appendTo(contents).pnlSpiFeeds({ binding: binding + 'feeds', channelId: channelId, controllerId: o.controllerId });
+
+        },
+        createDeviceOptions: function (devType, data) {
+            var self = this, o = self.options, el = self.element;
+            var fs = el.find('fieldset.pnl-analog-device-options');
+            var pnl = el.find('div.pnl-analog-device-options');
+            if (typeof devType !== 'undefined' && typeof devType.options !== 'undefined') {
+                fs.show();
+                var binding = 'channels[' + o.channelId + '].options.'
+                if (pnl.attr('data-devicetypeid') !== devType.id.toString()) {
+                    pnl.empty();
+                    //console.log(`Resetting Options ${pnl.attr("data-devicetypeid")} - ${devType.id}`);
+                    pnl.attr('data-devicetypeid', devType.id);
+                    for (var prop in devType.options) {
+                        var opt = devType.options[prop];
+                        var val = typeof data !== 'undefined' ? data[prop] || opt.default : opt.default;
+                        if (typeof opt.field !== 'undefined') {
+                            var fld;
+                            switch (opt.field.type) {
+                                case 'hidden':
+                                    $('<input type="hidden"></input>').appendTo(pnl).attr('data-bind', binding + prop).attr('data-datatype', opt.dataType).val(val);
+                                    break;
+                                case 'pickList':
+                                    fld = $('<div></div>').appendTo(pnl).pickList(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'valueSpinner':
+                                    fld = $('<div></div>').appendTo(pnl).pickList(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'timeSpinner':
+                                    fld = $('<div></div>').appendTo(pnl).timeSpinner(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'inputField':
+                                    fld = $('<div></div>').appendTo(pnl).staticField(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'dateField':
+                                    fld = $('<div></div>').appendTo(pnl).dateField(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'optionButton':
+                                    fld = $('<div></div>').appendTo(pnl).optionButton(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'staticField':
+                                    fld = $('<div></div>').appendTo(pnl).staticField(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'checkbox':
+                                    fld = $('<div></div>').appendTo(pnl).checkbox(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'actionButton':
+                                    fld = $('<div></div>').appendTo(pnl).actionButton(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'toggleButton':
+                                    fld = $('<div></div>').appendTo(pnl).toggleButton(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                                case 'colorPicker':
+                                    fld = $('<div></div>').appendTo(pnl).colorPicker(opt.field).attr('data-bind', binding + prop);
+                                    break;
+                            }
+                            if (typeof fld !== 'undefined' && typeof fld[0].val === 'function') fld[0].val(val);
+                        }
+                    }
+                }
+            }
+            else {
+                fs.hide(); pnl.empty();
+            }
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val === 'undefined') {
+                var baseBinding = el.attr('data-bind');
+                if (typeof baseBinding !== 'undefined' && !baseBinding.endsWith('.')) baseBinding += '.';
+                return dataBinder.fromElement(el.find('div.picAccordian-contents:first'), undefined, undefined, baseBinding);
+            }
+            else {
+                self.dataBind(val);
+            }
+        },
+        dataBind: function (data) {
+            var self = this, o = self.options, el = self.element;
+            el.find('div[data-bind$="deviceId"]').each(function () {
+                var devType = o.analogDevices.find(elem => elem.id === data.deviceId);
+                if (typeof devType !== 'undefined') {
+                    self.createDeviceOptions(devType, data.options);
+                }
+                this.val(data.deviceId);
+            });
+        },
     });
     $.widget('pic.pnlDefineChipTypes', {
         options: {},

@@ -621,42 +621,85 @@ var dataBinder = {
         if (sec > 0) fmt += ' ' + (sec + 'sec');
         return fmt.trim();
     },
-    fromElement: function (el, obj, arrayRef) {
+    fromBaseElement: function (el, binding) {
         if (typeof arrayRef === 'undefined' || arrayRef === null) arrayRef = [];
         if (typeof obj === 'undefined' || obj === null) obj = {};
         var self = this;
         if (el.is(':input')) {
             if (el[0].type === 'checkbox') self._bindValue(obj, el, el.is(':checked'), arrayRef);
-            else self._bindValue(obj, el, el.val(), arrayRef);
+            else self._bindValue(obj, el, el.val(), arrayRef, binding);
         }
         else if (el.is('select'))
-            self._bindValue(obj, el, el.val(), arrayRef);
+            self._bindValue(obj, el, el.val(), arrayRef, binding);
         else {
             if (typeof el.attr('data-bind') !== 'undefined') {
                 if (typeof el[0].val === 'function')
                     self._bindValue(obj, el, el[0].val(), arrayRef);
-                else
+                else {
                     self._bindValue(obj, el, el.text(), arrayRef);
+                    el.find('*[data-bind^="' + binding + '"]').each(function () {
+                        $this = $(this);
+                        if (typeof this.val === 'function')
+                            self._bindValue(obj, $this, this.val(), arrayRef);
+                        else if ($this.is('input')) {
+                            if (this.type === 'checkbox') self._bindValue(obj, $this, $this.is(':checked'), arrayRef);
+                            else self._bindValue(obj, $this, $this.val(), arrayRef, binding);
+                        }
+                        else if ($this.is('select'))
+                            self._bindValue(obj, $this, $this.val(), arrayRef, binding);
+                        else
+                            self._bindValue(obj, $this, $this.text(), arrayRef, binding);
+                    });
+                }
+            }
+        }
+        return obj;
+    },
+    fromElement: function (el, obj, arrayRef, baseBinding) {
+        if (typeof arrayRef === 'undefined' || arrayRef === null) arrayRef = [];
+        if (typeof obj === 'undefined' || obj === null) obj = {};
+        var self = this;
+        if (el.is(':input')) {
+            if (el[0].type === 'checkbox') self._bindValue(obj, el, el.is(':checked'), arrayRef);
+            else self._bindValue(obj, el, el.val(), arrayRef, baseBinding);
+        }
+        else if (el.is('select'))
+            self._bindValue(obj, el, el.val(), arrayRef, baseBinding);
+        else {
+            if (typeof el.attr('data-bind') !== 'undefined') {
+                if (typeof el[0].val === 'function') {
+                    self._bindValue(obj, el, el[0].val(), arrayRef, baseBinding);
+                }
+                else
+                    self._bindValue(obj, el, el.text(), arrayRef, baseBinding);
             }
             el.find('*[data-bind]').each(function () {
                 $this = $(this);
-                if (typeof this.val === 'function')
-                    self._bindValue(obj, $this, this.val(), arrayRef);
+                if (typeof this.val === 'function') {
+                    if ($this.attr('data-bind').endsWith(']')) console.log({ msg: 'This should be the object', binding: $this.attr('data-bind'), val: this.val() });
+                    self._bindValue(obj, $this, this.val(), arrayRef, baseBinding);
+                }
                 else if ($this.is('input')) {
-                    if (this.type === 'checkbox') self._bindValue(obj, $this, $this.is(':checked'), arrayRef);
-                    else self._bindValue(obj, $this, $this.val(), arrayRef);
+                    if (this.type === 'checkbox') self._bindValue(obj, $this, $this.is(':checked'), arrayRef, baseBinding);
+                    else self._bindValue(obj, $this, $this.val(), arrayRef, baseBinding);
                 }
                 else if ($this.is('select'))
-                    self._bindValue(obj, $this, $this.val(), arrayRef);
+                    self._bindValue(obj, $this, $this.val(), arrayRef, baseBinding);
                 else
-                    self._bindValue(obj, $this, $this.text(), arrayRef);
+                    self._bindValue(obj, $this, $this.text(), arrayRef, baseBinding);
             });
         }
-
         return obj;
     },
-    _bindValue: function (obj, el, val, arrayRef) {
+    _bindValue: function (obj, el, val, arrayRef, baseBinding) {
         var binding = el.attr('data-bind');
+        if (typeof baseBinding !== 'undefined' && baseBinding) {
+            if (!binding.startsWith(baseBinding)) return;
+            else binding = binding.substring(baseBinding.length);
+        }
+        else {
+            if (el.parents('*[data-bind]:first') > 0) return;
+        }
         var dataType = el.attr('data-datatype');
         if (binding && binding.length > 0) {
             var sRef = '';
@@ -736,6 +779,7 @@ var dataBinder = {
                     break;
                 default:
                     t[arr[arr.length - 1]] = val;
+                    if (binding.endsWith(']')) console.log({ binding: binding, val:val });
                     break;
             }
         }
@@ -1733,8 +1777,7 @@ $.ui.position.fieldTip = {
                     var span = $('<span class="optText"></span>').appendTo(td);
                     if (col.style) td.css(col.style);
                     if (col.hidden) td.hide();
-                    span.text(dataBinder.createValue(itm, col.binding, col.fmtType, col.fmtEmpty));
-
+                    span.html(dataBinder.createValue(itm, col.binding, col.fmtType, col.fmtEmpty));
                 }
             }
             div.appendTo(el);

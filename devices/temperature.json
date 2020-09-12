@@ -4,20 +4,164 @@
   "devices": [
     {
       "id": 1,
-      "name": "10k Temperature Probe (Fahrenheit)",
+      "name": "10k Temperature Probe",
       "input": "ohms",
-      "resistor": 10000,
       "precision": 2,
-      "convertValue": "return maps.thermistor10k.interpolate(value, 'F');",
-      "interfaces": ["spi", "i2c"]
+      "convertValue": "return maps.thermistor10k.interpolate(value, opts.units);",
+      "options": {
+        "resistance": {
+          "dataType": "number",
+          "default": 10000,
+          "field": {
+            "type": "hidden"
+          }
+        },
+        "units": {
+          "dataType": "string",
+          "default": "F",
+          "field": {
+            "type": "pickList",
+            "labelText": "Units",
+            "required": true,
+            "canEdit": false,
+            "inputAttrs": { "style": { "width":"2rem" } },
+            "columns": [
+              {
+                "binding": "val",
+                "hidden": true,
+                "text": "Units",
+                "style": { "whiteSpace": "nowrap" }
+              },
+              {
+                "binding": "name",
+                "text": "",
+                "style": { "whiteSpace": "nowrap" }
+              },
+              {
+                "binding": "desc",
+                "text": "Temp Units",
+                "style": { "whiteSpace": "nowrap" }
+              }
+            ],
+            "items": [
+              {
+                "val": "F",
+                "name": "F",
+                "desc": "Fahrenheit"
+              },
+              {
+                "val": "C",
+                "name": "C",
+                "desc": "Celcius"
+              }
+            ]
+          }
+        }
+      },
+      "interfaces": [ "spi", "i2c" ]
     },
     {
       "id": 2,
-      "name": "10k Temperature Probe (Celcius)",
+      "name": "NTC Thermister Probe",
       "input": "ohms",
       "precision": 2,
-      "resistor": 10000,
-      "convertValue": "return maps.thermistor10k.interpolate(value, 'C');",
+      "convertValue": "return maps.thermistor10k.interpolate(value, opts.units);",
+      "options": {
+        "resistance": {
+          "dataType": "number",
+          "default": 10000,
+          "field": {
+            "type": "pickList",
+            "fmtMask": "#,###",
+            "labelText": "Resistance",
+            "required": true,
+            "units": "&#937;",
+            "inputAttrs": { "style": { "width": "4rem" } },
+            "canEdit": true,
+            "columns": [
+              {
+                "binding": "val",
+                "hidden": true,
+                "text": "Units",
+                "style": { "whiteSpace": "nowrap" }
+              },
+              {
+                "binding": "name",
+                "text": "",
+                "style": { "whiteSpace": "nowrap" }
+              }
+            ],
+            "items": [
+              {
+                "val": 1,
+                "name": "1&#937;"
+              },
+              {
+                "val": 10,
+                "name": "10&#937;"
+              },
+              {
+                "val": 100,
+                "name": "100&#937;"
+              },
+              {
+                "val": 1000,
+                "name": "1k&#937;"
+              },
+              {
+                "val": 10000,
+                "name": "10k&#937;"
+              },
+              {
+                "val": 100000,
+                "name": "100k&#937;"
+              }
+            ]
+          }
+        },
+        "units": {
+          "dataType": "string",
+          "default": "F",
+          "field": {
+            "type": "pickList",
+            "labelText": "Units",
+            "required": true,
+            "canEdit": false,
+            "labelAttrs": { "style": { "marginLeft": ".25rem" } },
+            "inputAttrs": { "style": { "width": "2rem" } },
+            "columns": [
+              {
+                "binding": "val",
+                "hidden": true,
+                "text": "Units",
+                "style": { "whiteSpace": "nowrap" }
+              },
+              {
+                "binding": "name",
+                "text": "",
+                "style": { "whiteSpace": "nowrap" }
+              },
+              {
+                "binding": "desc",
+                "text": "Temp Units",
+                "style": { "whiteSpace": "nowrap" }
+              }
+            ],
+            "items": [
+              {
+                "val": "F",
+                "name": "F",
+                "desc": "Fahrenheit"
+              },
+              {
+                "val": "C",
+                "name": "C",
+                "desc": "Celcius"
+              }
+            ]
+          }
+        }
+      },
       "interfaces": [ "spi", "i2c" ]
     }
   ],

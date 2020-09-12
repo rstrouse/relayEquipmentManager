@@ -21,7 +21,7 @@ export class AnalogDevices {
     //    }
     //    catch (err) { logger.error(err); }
     //}
-    public static loadDefintions() {
+    public static loadDefintions(filter?:string) {
         let defs = [];
         try {
             let filePath = path.posix.join(process.cwd(), `/devices/`);
@@ -30,7 +30,7 @@ export class AnalogDevices {
                 let f = dirEnt[i];
                 if (f.isFile) {
                     if (f.name.endsWith('.json')) {
-                        let d = AnalogDevices.loadFile(path.posix.join(filePath, f.name));
+                        let d = AnalogDevices.loadFile(path.posix.join(filePath, f.name), filter);
                         defs.push(...d);
                     }
                 }
@@ -39,7 +39,7 @@ export class AnalogDevices {
         catch (err) { logger.error(err); }
         return defs;
     }
-    private static loadFile(filePath) {
+    private static loadFile(filePath, filter:string) {
         let defs = [];
         try {
             if (fs.existsSync(filePath)) {
@@ -47,7 +47,9 @@ export class AnalogDevices {
                 let objs = JSON.parse(txt.trim());
                 if (typeof objs.devices !== 'undefined') {
                     for (let j = 0; j < objs.devices.length; j++) {
-                        defs.push(extend(true, { category: objs.category, predefined: objs.predefined }, objs.devices[j]));
+                        let obj = extend(true, { category: objs.category, predefined: objs.predefined }, objs.devices[j]);
+                        if (typeof filter === 'undefined' || obj.interfaces === 'undefined' || obj.interfaces.indexOf(filter) !== -1)
+                            defs.push(obj);
                     }
                 }
                 // Add in the maps.
@@ -63,7 +65,7 @@ export class AnalogDevices {
     }
     public static saveCustomDefinition(device) {
         let filePath = path.posix.join(process.cwd(), `/devices/`, 'custom-devices.json');
-        let defs = AnalogDevices.loadFile(filePath);
+        let defs = AnalogDevices.loadFile(filePath, undefined);
         if (typeof defs !== 'undefined') {
             let id = typeof device.id === 'undefined' ? -1 : parseInt(device.id, 10)
             if (isNaN(id)) id = -1;
@@ -93,7 +95,7 @@ export class AnalogDevices {
     }
     public static deleteCustomDefintion(id:number) {
         let filePath = path.posix.join(process.cwd(), `/devices/`, 'custom-devices.json');
-        let defs = AnalogDevices.loadFile(filePath);
+        let defs = AnalogDevices.loadFile(filePath, undefined);
         let device;
         for (let i = defs.length - 1; i >= 0; i--) {
             if (defs[i].id === id) {

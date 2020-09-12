@@ -4,6 +4,7 @@ import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";
 import { connBroker, ServerConnection } from "../connections/Bindings";
+import * as extend from "extend";
 export class SpiAdcBus {
     private _spiBus;
     //private _opts;
@@ -45,6 +46,12 @@ export class SpiAdcBus {
             logger.info(`SPI Bus #${this.busNumber} Initialized`);
         } catch (err) { logger.error(err); }
     }
+    public async resetAsync(spiBus) {
+        try {
+            await this.closeAsync();
+            await this.initAsync(spiBus);
+        } catch (err) { logger.error(err); }
+    }
     public async closeAsync() {
         for (let i = 0; i < this.channels.length; i++) {
             await this.channels[i].closeAsync();
@@ -70,13 +77,15 @@ export class SpiAdcChannel {
     private _timerRead: NodeJS.Timeout;
     public feeds: SpiAdcFeed[] = [];
     public lastVal: number;
+    public deviceOptions: any;
     constructor(ct, chan: SpiChannel, refVoltage) {
         this._ct = ct;
         this.channel = chan.id - 1;
         this._readCommand = new Function('channel', ct.readChannel);
         this._getValue = new Function('buffer', ct.getValue);
         this.device = cont.analogDevices.find(elem => elem.id === chan.deviceId);
-        this._convertValue = new Function('maps', 'value', this.device.convertValue);
+        this._convertValue = new Function('maps', 'opts', 'value', this.device.convertValue);
+        this.deviceOptions = extend(true, {}, chan.options);
         this.maxRawValue = Math.pow(2, this._ct.bits) - 1;
         this.precision = this.device.precision;
         for (let i = 0; i < chan.feeds.length; i++) {
@@ -105,15 +114,15 @@ export class SpiAdcChannel {
         let lval;
         switch (this.device.input.toLowerCase()) {
             case 'ohms':
-                lval = this._convertValue(AnalogDevices.maps, this.device.resistor * ratio);
+                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, (this.deviceOptions.resistance || this.device.resistance) * ratio); 
                 break;
             case 'v':
             case 'volts':
-                lval = this._convertValue(AnalogDevices.maps, this.refVoltage * ratio);
+                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, this.refVoltage * ratio);
                 break;
             case 'mv':
             case 'millivolts':
-                lval = this._convertValue(AnalogDevices.maps, (this.refVoltage * 1000) * ratio);
+                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, (this.refVoltage * 1000) * ratio);
                 break;
             default:
                 lval = val;
@@ -160,6 +169,8 @@ export class SpiAdcChannel {
     }
     public closeAsync(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
+            if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead);
+            this._timerRead = null;
             this._spiDevice.close(err => {
                 if (err) reject(err);
                 resolve();
@@ -198,6 +209,10 @@ class SpiAdcFeed {
         }
         this._timerSend = setTimeout(() => this.send(), this.frequency);
     }
+    public closeAsync() {
+        if (typeof this._timerSend !== 'undefined') clearTimeout(this._timerSend);
+        this._timerSend = null;
+    }
 }
 class mockSpiDevice {
     constructor(busNumber, deviceNumber, opts?) {
@@ -225,7 +240,7 @@ class mockSpiDevice {
     };
     public transfer(message: { byteLength: number, sendBuffer?:Buffer, receiveBuffer?:Buffer, speedHz?:number, microSecondDelay?:number, bitsPerWord?:number, chipSelectChange?:boolean }[], cb) {
         // Put together the message.
-        logger.info(`Send SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].sendBuffer.join(',')}`);
+        logger.verbose(`Send SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].sendBuffer.join(',')}`);
         let spi = this.deviceNumber === 0 ? spi0 : spi1;
         let chan = spi.channels.find(elem => elem.channel === this.deviceNumber);
         let maxRawValue = chan.maxRawValue;
@@ -250,7 +265,7 @@ class mockSpiDevice {
                 v = v >> bbw;
             }
         }
-        logger.info(`Receive SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].receiveBuffer.join(',')}`);
+        logger.verbose(`Receive SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].receiveBuffer.join(',')}`);
         if (typeof cb === 'function') return cb(undefined, message);
     }
     public getOptions(cb) { if (typeof cb === 'function') return cb(undefined, this._opts); }

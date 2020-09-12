@@ -11,6 +11,7 @@ import { PinDefinitions } from "../pinouts/Pinouts";
 import { SpiAdcChips } from "../spi-adc/SpiAdcChips";
 import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
+import { spi0, spi1 } from "../spi-adc/SpiAdcBus";
 import { config } from "../config/Config";
 import { AnalogDevices } from "../devices/AnalogDevices";
 interface IConfigItemCollection {
@@ -396,7 +397,7 @@ export class Controller extends ConfigItem {
             let pin: GpioPin;
             if (isNaN(gpioId)) {
                 let pinId = parseInt(data.pinId || data.id, 10);
-                let pin = this.gpio.pins.getPinById(headerId, pinId, false);
+                pin = this.gpio.pins.getPinById(headerId, pinId, false);
             }
             else {
                 let pinout;
@@ -429,6 +430,8 @@ export class Controller extends ConfigItem {
             try {
                 await gpioPins.reset();
                 await connBroker.compile();
+                await spi0.resetAsync(this.spi0);
+                await spi1.resetAsync(this.spi1);
                 resolve();
             }
             catch (err) { reject(err); }
@@ -552,7 +555,8 @@ export class SpiChannel extends ConfigItem {
     public get deviceId(): number { return this.data.deviceId; }
     public set deviceId(val: number) { this.setDataVal('deviceId', val); }
     public get feeds(): SpiChannelFeedCollection { return new SpiChannelFeedCollection(this.data, 'feeds'); }
-
+    public get options(): any { return this.data.options; }
+    public set options(val: any) { this.data.options = val; }
     public getExtended() {
         let chan = this.get(true);
         chan.device = cont.analogDevices.find(elem => elem.id === this.deviceId);

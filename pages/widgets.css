@@ -915,3 +915,7 @@ div.pnl-config-spi > div.control-panel {
   max-width: calc(100% - 4px);
   max-height: 400px;
   overflow-y: auto; }
+
+.pnl-analog-device-options {
+  display: inline-block;
+  vertical-align: top; }
