@@ -110,7 +110,7 @@ export class SpiAdcChannel {
         });
     }
     private convertValue(val): number {
-        let ratio = val !== 0 ? ((this.maxRawValue / val) - 1) : 0;
+        let ratio = val !== 0 ? this.maxRawValue - ((this.maxRawValue / val) - 1) : 0;
         let lval;
         switch (this.device.input.toLowerCase()) {
             case 'ohms':
