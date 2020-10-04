@@ -110,11 +110,12 @@ export class SpiAdcChannel {
         });
     }
     private convertValue(val): number {
-        let ratio = val !== 0 ? this.maxRawValue - ((this.maxRawValue / val) - 1) : 0;
+        let ratio = val !== 0 ? ((this.maxRawValue / val) - 1) : 0;
         let lval;
         switch (this.device.input.toLowerCase()) {
             case 'ohms':
-                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, (this.deviceOptions.resistance || this.device.resistance) * ratio); 
+                let ohms = (this.deviceOptions.resistance || this.device.resistance);
+                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, ohms - (ohms * ratio)); 
                 break;
             case 'v':
             case 'volts':
