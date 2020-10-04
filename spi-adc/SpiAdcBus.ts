@@ -118,7 +118,8 @@ export class SpiAdcChannel {
                 // val = 500
                 // ohms = 10000
                 // maxRawValue = 1023
-                // 
+                // ratio = .48875855327
+                // resistance = 4887.58553
                 lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, (ohms * ratio)); 
                 break;
             case 'v':
@@ -160,7 +161,7 @@ export class SpiAdcChannel {
                         this.convertedValue = this.convertValue(this.rawValue);
                         // Now we need to trigger the values to all the cannel feeds.
                         if (typeof this.lastVal === 'undefined' || this.lastVal !== this.convertedValue) {
-                            webApp.emitToClients('spiChannel', { bus: this.busNumber, channel: this.channel, raw: this.rawValue, converted: this.convertedValue });
+                            webApp.emitToClients('spiChannel', { bus: this.busNumber, channel: this.channel, raw: this.rawValue, converted: this.convertedValue, buffer: message[0].receiveBuffer });
                             for (let i = 0; i < this.feeds.length; i++) this.feeds[i].value = this.convertedValue;
                         }
 

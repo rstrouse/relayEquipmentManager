@@ -233,6 +233,7 @@
             el.find('div.picAccordian[data-channelid="' + data.channel + '"]').each(function () {
                 var cols = this.columns();
                 cols[2].elText().text(data.raw + '/' + data.converted);
+                console.log(data);
             });
         }
     });
