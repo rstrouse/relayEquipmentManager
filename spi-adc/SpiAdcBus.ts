@@ -110,17 +110,21 @@ export class SpiAdcChannel {
         });
     }
     private convertValue(val): number {
-        let ratio = val !== 0 ? ((val/this.maxRawValue)) : 0;
+        let ratio = val !== 0 ? ((this.maxRawValue / val - 1)) : 0;
         let lval;
+        let vout = (this.refVoltage * val) / this.maxRawValue;
+
         switch (this.device.input.toLowerCase()) {
             case 'ohms':
                 let ohms = (this.deviceOptions.resistance || this.device.resistance);
+                let resistance = (this.refVoltage * ohms / vout) - ohms;
                 // val = 500
                 // ohms = 10000
                 // maxRawValue = 1023
+                
                 // ratio = .48875855327
                 // resistance = 4887.58553
-                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, (ohms * ratio)); 
+                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, resistance); 
                 break;
             case 'v':
             case 'volts':
@@ -247,7 +251,7 @@ class mockSpiDevice {
     public transfer(message: { byteLength: number, sendBuffer?:Buffer, receiveBuffer?:Buffer, speedHz?:number, microSecondDelay?:number, bitsPerWord?:number, chipSelectChange?:boolean }[], cb) {
         // Put together the message.
         logger.verbose(`Send SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].sendBuffer.join(',')}`);
-        let spi = this.deviceNumber === 0 ? spi0 : spi1;
+        let spi = this.busNumber === 0 ? spi0 : spi1;
         let chan = spi.channels.find(elem => elem.channel === this.deviceNumber);
         let maxRawValue = chan.maxRawValue;
         let rand = Math.random();
