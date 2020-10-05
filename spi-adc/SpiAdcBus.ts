@@ -118,9 +118,9 @@ export class SpiAdcChannel {
         switch (this.device.input.toLowerCase()) {
             case 'ohms':
                 let ohms = (this.deviceOptions.resistance || this.device.resistance);
-          
                 let resistance = (this.refVoltage * ohms / vout - 1);
-                resistance = ohms * (this.maxRawValue / val - 1);
+                resistance = ohms * val / (this.maxRawValue - val);
+                //resistance = ohms * (this.maxRawValue / val - 1);
                 let ln = function (x) {
                     let y = (x - 1) / (x + 1);
                     let sum = 1;
