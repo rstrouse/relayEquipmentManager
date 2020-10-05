@@ -87,6 +87,7 @@ export class SpiAdcChannel {
         this._convertValue = new Function('maps', 'opts', 'value', this.device.convertValue);
         this.deviceOptions = extend(true, {}, chan.options);
         this.maxRawValue = Math.pow(2, this._ct.bits) - 1;
+        this.refVoltage = refVoltage;
         this.precision = this.device.precision;
         for (let i = 0; i < chan.feeds.length; i++) {
             let f = chan.feeds.getItemByIndex(i);
@@ -118,6 +119,7 @@ export class SpiAdcChannel {
             case 'ohms':
                 let ohms = (this.deviceOptions.resistance || this.device.resistance);
                 let resistance = (this.refVoltage * ohms / vout) - ohms;
+                //console.log({ vcc: this.refVoltage, vout: vout, ohms: ohms, resistance: resistance, max: this.maxRawValue });
                 // val = 500
                 // ohms = 10000
                 // maxRawValue = 1023
