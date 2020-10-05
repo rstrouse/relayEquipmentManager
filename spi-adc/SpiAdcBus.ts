@@ -114,48 +114,32 @@ export class SpiAdcChannel {
         let ratio = val !== 0 ? ((this.maxRawValue / val - 1)) : 0;
         let lval;
         let vout = (this.refVoltage * val) / this.maxRawValue;
-        //let vout = (this.refVoltage * 512) / this.maxRawValue;
         switch (this.device.input.toLowerCase()) {
             case 'ohms':
                 let ohms = (this.deviceOptions.resistance || this.device.resistance);
-                let resistance = (this.refVoltage * ohms / vout - 1);
-                resistance = ohms * val / (this.maxRawValue - val);
-                //resistance = ohms * (this.maxRawValue / val - 1);
-                let ln = function (x) {
-                    let y = (x - 1) / (x + 1);
-                    let sum = 1;
-                    let val = 1;
-                    if (isNaN(x)) return 0;
-                    for (let i = 3; i < 10000; i += 2) {
-                        val = val * (y * y)
-                        sum = sum + (val / i)
-                    }
-                    return 2 * y * sum
-                }
-                let A = 0.001129148
-                let B = 0.000234125
-                let C = 0.0000000876741;
+                let resistance = ohms * val / (this.maxRawValue - val);
 
-                //let tk = (1 / (A + (B * Math.log(resistance)) + (C * (Math.pow(Math.log(resistance), 3)))));
-                //let tk = (1 / (A + (B * ln(resistance)) + (C * (ln(resistance)) ^ 3)));
-                let Rth = resistance;
-                let tk = (1 / (A + (B * Math.log(Rth)) + (C * Math.pow((Math.log(Rth)), 3))));
-                let tc = tk - 273.15;
-                let tf = tc * 9 / 5 + 32;
+                // Below is Steinhart/Hart equation.
+                //let A = 0.001129148
+                //let B = 0.000234125
+                //let C = 0.0000000876741;
+                //let Rth = resistance;
+                //let tk = (1 / (A + (B * Math.log(resistance)) + (C * Math.pow((Math.log(resistance)), 3))));
+                //let tc = tk - 273.15;
+                //let tf = tc * 9 / 5 + 32;
+                // lval = tf;
+
+
+
                 //console.log({
                 //    vcc: this.refVoltage, vout: vout, ohms: ohms, resistance: resistance, max: this.maxRawValue,
                 //    tk: tk,
                 //    tc: tc,
                 //    tf: tf
                 //});
-                // val = 500
-                // ohms = 10000
-                // maxRawValue = 1023
-                
-                // ratio = .48875855327
-                // resistance = 4887.58553
-                lval = tf;
-                //lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, resistance); 
+                //lval = tf;
+
+                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, resistance); 
                 break;
             case 'v':
             case 'volts':
