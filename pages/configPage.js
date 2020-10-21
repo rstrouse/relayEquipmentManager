@@ -6,6 +6,7 @@
             self._buildControls();
             el[0].boardType = function (val) { return typeof val === 'undefined' ? o.boardType : o.boardType = val; };
             el[0].interfaces = function (val) { return typeof val === 'undefined' ? o.interfaces : o.interfaces = val; };
+            console.log({ msg: 'Building', opts: o });
         },
         _onTabChanged: function (evt) {
             var self = this, o = self.options, el = self.element;
@@ -26,6 +27,12 @@
                     evt.newTab.contents.empty();
                     $('<div></div>').appendTo(evt.newTab.contents).pnlCfgSpi({ controllerId: 1 });
                     break;
+                default:
+                    if (evt.newTab.id.startsWith('tabI2c')) {
+                        $('<div></div>').appendTo(evt.newTab.contents).pnlI2cBus({ busId: parseInt(evt.newTab.id.replace('tabI2c', ''), 10) });
+
+                    }
+                    break;
             }
         },
         _buildControls: function () {
@@ -42,10 +49,8 @@
             tab = self._addConfigTab({ id: 'tabGpio', text: 'GPIO - Pinouts', cssClass: 'cfgGpio' });
             tab = self._addConfigTab({ id: 'tabSpi0', text: 'SPI0 - Devices', cssClass: 'cfgSpi0' });
             tab = self._addConfigTab({ id: 'tabSpi1', text: 'SPI1 - Devices', cssClass: 'cfgSpi1' });
-            tab = self._addConfigTab({ id: 'tabI2c', text: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Devices' })
             tabs[0].showTab('tabSpi0', false);
             tabs[0].showTab('tabSpi1', false);
-            tabs[0].showTab('tabI2c', false);
             tabs[0].selectTabById('tabGeneral');
             tabs.on('tabchange', function (evt) {
                 if (typeof evt.oldTab === 'undefined' || evt.oldTab.id === evt.newTab.id) return;
@@ -60,6 +65,13 @@
                 //evt.preventDefault();
             });
             self._initServices();
+            $.getLocalService('/config/options/i2c', null, function (i2c, status, xhr) {
+                for (var i = 0; i < i2c.busses.length; i++) {
+                    var bus = i2c.busses[i];
+                    self._addConfigTab({ id: 'tabI2c' + bus.id, text: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + bus.busNumber });
+                   
+                }
+            });
             el.trigger(evt);
 
         },

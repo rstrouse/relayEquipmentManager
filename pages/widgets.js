@@ -898,7 +898,7 @@ $.ui.position.fieldTip = {
             if (o.hidden) el.hide();
             el.addClass('picActionButton');
             el.addClass('btn');
-            if (o.text) text.text(o.text);
+            if (o.text) text.html(o.text);
             el[0].buttonText = function (val) { return self.buttonText(val); };
             if (o.bind) el.attr('data-bind', o.bind);
             el[0].buttonIcon = function (val) { return self.buttonIcon(val); };
@@ -2730,6 +2730,8 @@ $.ui.position.fieldTip = {
         },
         _create: function () {
             var self = this, o = self.options, el = self.element;
+            console.log('modalDialog: Create');
+            console.log(o);
             el[0].returnValue = function (value) { return self.returnValue(value); };
             el[0].dialogArguments = function (args) { return self.dialogArguments(args); };
             var btns = o.buttons.slice();

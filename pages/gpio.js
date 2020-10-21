@@ -343,7 +343,7 @@
                         {
                             var advanced = tabBar[0].addTab({ id: 'tabAdvanced', text: 'Filter Expression' });
                             var pnl = $('<div></div>').addClass('pnl-trigger-advanced-bindings').appendTo(advanced);
-                            $('<div></div>').appendTo(pnl).addClass('trigger-advanced-instructions').html('Enter plain javascript for the filter expression below.  If you do not want to filter this trigger, then leave the expression blank.  Each of the parameter inputs (connection, trigger, pin, and data) are available within the filter function.  To view their available properties click on the parameter to see it\'s definition.  Use return <span style=\"font-weight:bold;\">true.</span> from the filter function to apply the trigger state.');
+                            $('<div></div>').appendTo(pnl).addClass('script-advanced-instructions').html('Enter plain javascript for the filter expression below.  If you do not want to filter this trigger, then leave the expression blank.  Each of the parameter inputs (connection, trigger, pin, and data) are available within the filter function.  To view their available properties click on the parameter to see it\'s definition.  Use return <span style=\"font-weight:bold;\">true.</span> from the filter function to apply the trigger state.');
                             $('<div></div>').appendTo(pnl).scriptEditor({ binding: 'expression', prefix: '(connection, trigger, pin, data) => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
                         }
                         if (typeof o.bindings.events === 'undefined' || o.bindings.events.length === 0) {

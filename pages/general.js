@@ -43,7 +43,7 @@
                         }
                     });
                 var grpInterfaces = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpInterfaces');
-                $('<legend></legend>').appendTo(grpInterfaces).text('Interfaces');
+                $('<legend></legend>').appendTo(grpInterfaces).text('SPI - Interface');
                 line = $('<div></div>').appendTo(grpInterfaces);
                 $('<div></div>').appendTo(line).checkbox({ id: 'cbSpi0', labelText: 'SPI0 - Serial Peripheral Interface', binding: 'spi0.isActive' }).hide()
                     .on('changed', function (evt) { $(evt.target).parents('div#tabsMain')[0].showTab('tabSpi0', evt.newVal); });
@@ -51,8 +51,19 @@
                 $('<div></div>').appendTo(line).checkbox({ id: 'cbSpi1', labelText: 'SPI1 - Serial Peripheral Interface', binding: 'spi1.isActive' }).hide()
                     .on('changed', function (evt) { $(evt.target).parents('div#tabsMain')[0].showTab('tabSpi1', evt.newVal); });
                 line = $('<div></div>').appendTo(grpInterfaces);
-                $('<div></div>').appendTo(line).checkbox({ id: 'cbI2c', labelText: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Inter-Integrated Circuit', binding: 'i2c.isActive' }).hide()
-                    .on('changed', function (evt) { $(evt.target).parents('div#tabsMain')[0].showTab('tabI2c', evt.newVal); });
+                //$('<div></div>').appendTo(line).checkbox({ id: 'cbI2c', labelText: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Inter-Integrated Circuit', binding: 'i2c.isActive' }).hide()
+                //    .on('changed', function (evt) { $(evt.target).parents('div#tabsMain')[0].showTab('tabI2c', evt.newVal); });
+                grpInterfaces = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpInterfaces');
+                $('<legend></legend>').appendTo(grpInterfaces).html('I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Interface');
+                line = $('<div></div>').appendTo(grpInterfaces);
+                $('<div></div>').appendTo(line).actionButton({
+                    text: 'Add I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Bus',
+                    icon: '<i class= "fas fa-bus-alt" ></i>'
+                }).css({ marginRight: '1rem' })
+                    .on('click', function (evt) {
+                        $('<div id="dlgAddI2cBus" style="display:block;position:relative;padding:4px;"></div>').dlgI2cBus();
+
+                    });
 
 
                 $('<hr></hr>').appendTo(outer);
@@ -65,6 +76,8 @@
                             console.log(controller);
                         });
                     });
+
+
                 $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Save Settings', icon: '<i class="fas fa-save"></i>' })
                     .on('click', function (evt) { self.saveSettings(); });
                 o.controllerTypes = data.controllerTypes;
@@ -93,8 +106,7 @@
             var cont = dataBinder.fromElement(settings);
             if (o.controller.controllerType !== cont.controllerType ||
                 cont.spi0.isActive !== o.controller.spi0.isActive ||
-                cont.spi1.isActive !== o.controller.spi1.isActive ||
-                cont.i2c.isActive !== o.controller.i2c.isActive) bChanged = true;
+                cont.spi1.isActive !== o.controller.spi1.isActive) bChanged = true;
             if (bChanged) {
                 var dlg = $.pic.modalDialog.createDialog('dlgConfirmChanges', {
                     width: '447px',
@@ -332,6 +344,31 @@
             line = $('<div></div>').appendTo(el);
             $('<div></div>').appendTo(line).inputField({ labelText: 'Cert File', binding: binding + 'sslCertFile', labelAttrs: { style: { width: '5.5rem' } }, inputAttrs: { maxlength: 50 } });
         },
+        _buildMqttClientControls: function (type) {
+            var self = this, o = self.options, el = self.element;
+            var binding = '';
+            var line = $('<div></div>').appendTo(el);
+            $('<div></div>').appendTo(line).inputField({ labelText: 'Client Id', binding: binding + 'options.clientId', labelAttrs: { style: { width: '5.5rem' } }, inputAttrs: { maxlength: 20 } });
+            line = $('<div></div>').appendTo(el);
+            $('<div></div>').appendTo(line).pickList({
+                labelText: 'Server', binding: binding + 'protocol', required: true,
+                inputAttrs: { maxlength: 5 }, labelAttrs: { style: { width: '5.5rem' } },
+                columns: [{ binding: 'val', hidden: true, text: 'Protocol', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Protocol', style: { whiteSpace: 'nowrap', width: '4rem' } }, { binding: 'desc', text: 'Description', style: { minWidth: '300px' } }],
+                bindColumn: 0, displayColumn: 1, items: [{ val: 'mqtt:', name: 'mqtt:', desc: 'Communication with the broker over TCP socket.' },
+                { val: 'mqtts:', name: 'mqtts:', desc: 'Communication with the broker over a TLS connection.' }]
+            });
+            $('<div></div>').appendTo(line).inputField({ labelText: '', binding: binding + 'ipAddress', inputAttrs: { maxlength: 20 }, labelAttrs: { style: { width: '0px' } } });
+            $('<div></div>').appendTo(line).inputField({ labelText: ':', dataType: 'int', binding: binding + 'port', inputAttrs: { maxlength: 7 }, labelAttrs: { style: { marginLeft: '.15rem', marginRigt: '.15rem' } } });
+            line = $('<div></div>').appendTo(el);
+            $('<div></div>').appendTo(line).inputField({ labelText: 'User Name', binding: binding + 'userName', labelAttrs: { style: { width: '5.5rem' } }, inputAttrs: { maxlength: 20 } });
+            line = $('<div></div>').appendTo(el);
+            $('<div></div>').appendTo(line).inputField({ labelText: 'Password', binding: binding + 'password', labelAttrs: { style: { width: '5.5rem' } }, inputAttrs: { maxlength: 20 } });
+            $('<hr></hr').appendTo(el);
+            line = $('<div></div>').appendTo(el);
+            $('<div></div>').appendTo(line).inputField({ labelText: 'Key File', binding: binding + 'sslKeyFile', labelAttrs: { style: { width: '5.5rem' } }, inputAttrs: { maxlength: 50 } });
+            line = $('<div></div>').appendTo(el);
+            $('<div></div>').appendTo(line).inputField({ labelText: 'Cert File', binding: binding + 'sslCertFile', labelAttrs: { style: { width: '5.5rem' } }, inputAttrs: { maxlength: 50 } });
+        },
         dataBind: function (conn) {
             var self = this, o = self.options, el = self.element;
             var connType = el.attr('data-conntype');
@@ -348,6 +385,9 @@
                         break;
                     case 'wsClient':
                         self._buildUriControls(conn.type);
+                        break;
+                    case 'mqttClient':
+                        self._buildMqttClientControls(conn.type);
                         break;
                     case 'mqttBroker':
                         break;

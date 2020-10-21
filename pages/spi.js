@@ -270,6 +270,8 @@
                 console.log('Sel Changed called');
                 self.createDeviceOptions(evt.newItem);
             });
+            $('<div></div>').appendTo(line).valueSpinner({ required: true, binding: binding + 'sampling', labelText: 'Sampling', min: 1, max: 100, labelAttrs: { style: { width: '5rem' } } });
+
             var fs = $('<fieldset></fieldset>').appendTo(line).addClass('pnl-analog-device-options').hide();
             $('<legend></legend>').appendTo(fs).text('Device Options');
             $('<div></div>').appendTo(fs).addClass('pnl-analog-device-options');
@@ -282,61 +284,92 @@
             var pnl = el.find('div.pnl-analog-device-options');
             if (typeof devType !== 'undefined' && typeof devType.options !== 'undefined') {
                 fs.show();
-                var binding = 'channels[' + o.channelId + '].options.'
+                var binding = 'channels[' + o.channelId + '].options';
                 if (pnl.attr('data-devicetypeid') !== devType.id.toString()) {
                     pnl.empty();
                     //console.log(`Resetting Options ${pnl.attr("data-devicetypeid")} - ${devType.id}`);
                     pnl.attr('data-devicetypeid', devType.id);
-                    for (var prop in devType.options) {
-                        var opt = devType.options[prop];
-                        var val = typeof data !== 'undefined' ? data[prop] || opt.default : opt.default;
-                        if (typeof opt.field !== 'undefined') {
-                            var fld;
-                            switch (opt.field.type) {
-                                case 'hidden':
-                                    $('<input type="hidden"></input>').appendTo(pnl).attr('data-bind', binding + prop).attr('data-datatype', opt.dataType).val(val);
-                                    break;
-                                case 'pickList':
-                                    fld = $('<div></div>').appendTo(pnl).pickList(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'valueSpinner':
-                                    fld = $('<div></div>').appendTo(pnl).pickList(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'timeSpinner':
-                                    fld = $('<div></div>').appendTo(pnl).timeSpinner(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'inputField':
-                                    fld = $('<div></div>').appendTo(pnl).staticField(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'dateField':
-                                    fld = $('<div></div>').appendTo(pnl).dateField(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'optionButton':
-                                    fld = $('<div></div>').appendTo(pnl).optionButton(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'staticField':
-                                    fld = $('<div></div>').appendTo(pnl).staticField(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'checkbox':
-                                    fld = $('<div></div>').appendTo(pnl).checkbox(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'actionButton':
-                                    fld = $('<div></div>').appendTo(pnl).actionButton(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'toggleButton':
-                                    fld = $('<div></div>').appendTo(pnl).toggleButton(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                                case 'colorPicker':
-                                    fld = $('<div></div>').appendTo(pnl).colorPicker(opt.field).attr('data-bind', binding + prop);
-                                    break;
-                            }
-                            if (typeof fld !== 'undefined' && typeof fld[0].val === 'function') fld[0].val(val);
-                        }
-                    }
+                    self._createObjectOptions(pnl, devType, binding);
                 }
             }
             else {
                 fs.hide(); pnl.empty();
+            }
+        },
+        _createControlOptions: function (pnl, opt, binding) {
+            var self = this, o = self.options, el = self.element;
+            var fld = null;
+            var prop = '';
+            switch (opt.field.type) {
+                case 'hidden':
+                    fld = $('<input type="hidden"></input>').appendTo(pnl).attr('data-bind', binding + prop).attr('data-datatype', opt.dataType);
+                    if (typeof opt.default !== 'undefined') fld.val(opt.default);
+                    break;
+                case 'pickList':
+                    fld = $('<div></div>').appendTo(pnl).pickList(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'valueSpinner':
+                    fld = $('<div></div>').appendTo(pnl).valueSpinner(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'timeSpinner':
+                    fld = $('<div></div>').appendTo(pnl).timeSpinner(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'inputField':
+                    fld = $('<div></div>').appendTo(pnl).staticField(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'dateField':
+                    fld = $('<div></div>').appendTo(pnl).dateField(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'optionButton':
+                    fld = $('<div></div>').appendTo(pnl).optionButton(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'staticField':
+                    fld = $('<div></div>').appendTo(pnl).staticField(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'checkbox':
+                    fld = $('<div></div>').appendTo(pnl).checkbox(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'actionButton':
+                    fld = $('<div></div>').appendTo(pnl).actionButton(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'toggleButton':
+                    fld = $('<div></div>').appendTo(pnl).toggleButton(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'colorPicker':
+                    fld = $('<div></div>').appendTo(pnl).colorPicker(opt.field).attr('data-bind', binding + prop);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'fieldset':
+                    fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                    if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
+                    if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
+                    if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
+                    if (typeof opt.field.legend !== 'undefined') $('<legend></legend>').appendTo(fld).html(opt.field.legend);
+                    break;
+                default:
+                    fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                    if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
+                    if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
+                    if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
+                    break;
+            }
+            return fld;
+        },
+        _createObjectOptions: function (pnl, opts, binding) {
+            var self = this, o = self.options, el = self.element;
+            var bind = opts.binding || binding;
+            for (var prop in opts.options) {
+                self._createControlOptions(pnl, opts.options[prop], bind + '.' + prop);
             }
         },
         val: function (val) {
@@ -531,7 +564,7 @@
             $('<hr></hr>').appendTo(dlg);
             var line = $('<div></div>').appendTo(dlg);
             $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(-1);
-            $('<div></div>').appendTo(line).pickList({
+            var conn = $('<div></div>').appendTo(line).pickList({
                 required: true,
                 bindColumn: 0, displayColumn: 1, labelText: 'Connection', binding: 'connectionId',
                 columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Name', style: { minWidth: '197px' } }, { binding: 'type.desc', text: 'Type', style: { minWidth: '147px' } }],
@@ -542,14 +575,23 @@
                 });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
             line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).valueSpinner({
+                required: true, canEdit: true, binding: 'frequency', labelText: 'Send Every', fmtMask: '#,###.##', dataType: 'number', step: .1,
+                min: .1, max: 1000, units: 'seconds', inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
+            });
+            $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed', style: { marginLeft: '1rem' } });
+            line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(dlg).pnlSpiFeedParams({});
+            console.log(f.feed);
             if (typeof f.feed.id !== 'undefined') {
+                conn[0].disabled(true);
                 dlg.find('div.pnl-spi-feed-params').each(function () {
                     var pnl = this;
                     this.dataBind(f.feed);
                 });
                 dataBinder.bind(dlg, f.feed);
             }
+            
             dlg.css({ overflow: 'visible' });
             return dlg;
         },
@@ -687,10 +729,19 @@
                         }
                         else {
                             $('<div></div>').appendTo(line).inputField({
-                                required: true, binding: 'eventName', labelText: "Topic", inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '7rem' } }
+                                required: true, binding: 'eventName', labelText: "Topic", inputAttrs: { style: { width: '17rem' } }, labelAttrs: { style: { width: '7rem' } }
                             });
+                            line = $('<div></div>').appendTo(el);
+                            $('<div></div>').appendTo(line).addClass('script-advanced-instructions').html('Enter plain javascript for the generated payload.  Return a string, number, or object from the function.');
+
+                            line = $('<div></div>').appendTo(el);
+                            $('<div></div>').appendTo(line).scriptEditor({ binding: 'payloadExpression', prefix: '(feed, value): any => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
                         }
                         $('<hr></hr>').appendTo(el);
+                        switch (type) {
+                            case 'mqttClient':
+                                break;
+                        }
                         if (typeof callback === 'function') { callback(); }
                     });
                 }
@@ -709,12 +760,8 @@
                 items: feed.bindings, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
             });
 
-            $('<div></div>').appendTo(line).valueSpinner({
-                required: true, canEdit:true, binding: 'frequency', labelText: 'Send Every', fmtMask: '#,###.##', dataType: 'number', step:.1,
-                min: .1, max: 1000, units: 'seconds', inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
-            });
-            $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed', style: { marginLeft: '1rem' } });
 
         }
+        
     });
 })(jQuery);

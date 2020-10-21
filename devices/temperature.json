@@ -19,12 +19,13 @@
         "units": {
           "dataType": "string",
           "default": "F",
+          "binding": "units",
           "field": {
             "type": "pickList",
             "labelText": "Units",
             "required": true,
             "canEdit": false,
-            "inputAttrs": { "style": { "width":"2rem" } },
+            "inputAttrs": { "style": { "width": "2rem" } },
             "columns": [
               {
                 "binding": "val",
@@ -159,6 +160,144 @@
                 "desc": "Celcius"
               }
             ]
+          }
+        },
+        "calibration": {
+          "dataType": "object",
+          "default": {
+            "a": {
+              "resistance": 25000,
+              "temp": 41
+            },
+            "b": {
+              "resistance": 10000,
+              "temp": 77
+            },
+            "c": {
+              "resistance": 4000,
+              "temp": 113
+            }
+          },
+          "field": {
+            "type": "fieldset",
+            "style": { "padding": "2px", "display": "inline-block" },
+            "legend": "Calibration"
+          },
+          "options": {
+            "a": {
+              "dataType": "object",
+              "field": { "type": "div" },
+              "options": {
+                "resistance": {
+                  "default": 25000,
+                  "field": {
+                    "type": "valueSpinner",
+                    "min": 0,
+                    "max": 500000,
+                    "canEdit": true,
+                    "units": "&#937;",
+                    "labelText": "A",
+                    "inputAttrs": { "maxLength": "7rem" },
+                    "labelAttrs": { "style": { "marginRight": ".15rem" } }
+                  }
+                },
+                "temp": {
+                  "default": 41,
+                  "field": {
+                    "type": "valueSpinner",
+                    "min": -60,
+                    "max": 200,
+                    "step": 0.1,
+                    "canEdit": true,
+                    "units": "&deg;",
+                    "labelText": "Temp",
+                    "inputAttrs": { "maxLength": "5rem" },
+                    "labelAttrs": {
+                      "style": {
+                        "marginRight": ".15rem",
+                        "display": "none"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "b": {
+              "dataType": "object",
+              "field": { "type": "div" },
+              "options": {
+                "resistance": {
+                  "default": 10000,
+                  "field": {
+                    "type": "valueSpinner",
+                    "min": 0,
+                    "max": 500000,
+                    "canEdit": true,
+                    "units": "&#937;",
+                    "labelText": "B",
+                    "inputAttrs": { "maxLength": "7rem" },
+                    "labelAttrs": { "style": { "marginRight": ".15rem" } }
+                  }
+                },
+                "temp": {
+                  "default": 77,
+                  "field": {
+                    "type": "valueSpinner",
+                    "min": -60,
+                    "max": 200,
+                    "step": 0.1,
+                    "canEdit": true,
+                    "units": "&deg;",
+                    "labelText": "Temp",
+                    "inputAttrs": { "maxLength": "5rem" },
+                    "labelAttrs": {
+                      "style": {
+                        "marginRight": ".15rem",
+                        "display": "none"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "c": {
+              "dataType": "object",
+              "field": { "type": "div" },
+              "options": {
+                "resistance": {
+                  "default": 4000,
+                  "field": {
+                    "type": "valueSpinner",
+                    "min": 0,
+                    "max": 500000,
+                    "canEdit": true,
+                    "units": "&#937;",
+                    "labelText": "C",
+                    "inputAttrs": { "maxLength": "7rem" },
+                    "labelAttrs": { "style": { "marginRight": ".15rem" } }
+                  }
+                },
+                "temp": {
+                  "default": 113,
+                  "field": {
+                    "type": "valueSpinner",
+                    "min": -60,
+                    "max": 200,
+                    "step": 0.1,
+                    "canEdit": true,
+                    "units": "&deg;",
+                    "labelText": "Temp",
+                    "inputAttrs": { "maxLength": "5rem" },
+                    "labelAttrs": {
+                      "style": {
+                        "marginRight": ".15rem",
+                        "display": "none"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },

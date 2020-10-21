@@ -21,9 +21,8 @@ export class SpiAdcBus {
                     this._spiBus = new mockSpi();
                     break;
             }
-            //this._spiBus = require('spi-device');
             this.busNumber = busNumber;
-            console.log('Successfully created Bus Interface');
+            //console.log(`Successfully created SPI Bus #${busNumber} Interface`);
         } catch (err) { console.log(err); }
     }
     public async initAsync(def: SpiController) {
@@ -56,6 +55,7 @@ export class SpiAdcBus {
         for (let i = 0; i < this.channels.length; i++) {
             await this.channels[i].closeAsync();
         }
+        this.channels.length = 0;
     }
 }
 export class SpiAdcChannel {
@@ -78,6 +78,9 @@ export class SpiAdcChannel {
     public feeds: SpiAdcFeed[] = [];
     public lastVal: number;
     public deviceOptions: any;
+    public sampling: number = 1;
+    public samples: number[] = [];
+    public isOpen: boolean = false;
     constructor(ct, chan: SpiChannel, refVoltage) {
         this._ct = ct;
         this.channel = chan.id - 1;
@@ -89,6 +92,7 @@ export class SpiAdcChannel {
         this.maxRawValue = Math.pow(2, this._ct.bits) - 1;
         this.refVoltage = refVoltage;
         this.precision = this.device.precision;
+        this.sampling = chan.sampling || 1;
         for (let i = 0; i < chan.feeds.length; i++) {
             let f = chan.feeds.getItemByIndex(i);
             if (f.isActive) this.feeds.push(new SpiAdcFeed(f));
@@ -102,6 +106,7 @@ export class SpiAdcChannel {
                 this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, err => {
                     if (err) { logger.error(err); reject(err) }
                     else {
+                        this.isOpen = true;
                         setTimeout(() => { this.readAsync(); }, 500);
                         resolve();
                     }
@@ -162,6 +167,7 @@ export class SpiAdcChannel {
     }
     public readAsync(): Promise<number> {
         return new Promise<number>((resolve, reject) => {
+            if (!this.isOpen) return reject(new Error(`SPI Channel is closed and cannot be read`));
             if (this._timerRead) clearTimeout(this._timerRead);
             let readBuff = this._readCommand(this.channel);
             let b: Buffer = Buffer.from([0, 0, 0]);
@@ -171,19 +177,33 @@ export class SpiAdcChannel {
                 receiveBuffer: Buffer.alloc(readBuff.byteLength),
                 speedHz: this.speedHz || 2000
             }];
+            //if (this.channel === 1) console.log(readBuff);
             this._spiDevice.transfer(message, (err, reading) => {
                 if (err) { logger.error(err); reject(err); }
                 else {
                     try {
-                        this.rawValue = this._getValue(message[0].receiveBuffer);
+                        let rawVal = this.rawValue = this._getValue(message[0].receiveBuffer);
+                        if (this.sampling > 1) {
+                            this.samples.push(rawVal);
+                            if (this.samples.length >= this.sampling) {
+                                let mid = Math.floor(this.samples.length / 2);
+                                let nums = [...this.samples].sort((a, b) => a - b);
+                                rawVal = this.samples.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid] / 2);
+                                this.samples.length = 0;
+                            }
+                            else {
+                                this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
+                                resolve(rawVal);
+                                return;
+                            }
+                        }
                         //logger.info(`Raw:${this.rawValue} b(1):${message[0].receiveBuffer[1]} b(2):${message[0].receiveBuffer[2]} Speed: ${ message[0].speedHz }`);
-                        this.convertedValue = this.convertValue(this.rawValue);
+                        this.convertedValue = this.convertValue(rawVal);
                         // Now we need to trigger the values to all the cannel feeds.
                         if (typeof this.lastVal === 'undefined' || this.lastVal !== this.convertedValue) {
-                            webApp.emitToClients('spiChannel', { bus: this.busNumber, channel: this.channel, raw: this.rawValue, converted: this.convertedValue, buffer: message[0].receiveBuffer });
+                            webApp.emitToClients('spiChannel', { bus: this.busNumber, channel: this.channel, raw: rawVal, converted: this.convertedValue, buffer: message[0].receiveBuffer });
                             for (let i = 0; i < this.feeds.length; i++) this.feeds[i].value = this.convertedValue;
                         }
-
                         this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
                     }
                     catch (err) { logger.error(err); reject(err); }
@@ -195,7 +215,10 @@ export class SpiAdcChannel {
     public closeAsync(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead);
+            for (let i = 0; i < this.feeds.length; i++) this.feeds[i].closeAsync();
             this._timerRead = null;
+            this.isOpen = false;
+            console.log(`Closing SPI Channel ${this.busNumber} ${this.channel}`);
             this._spiDevice.close(err => {
                 if (err) reject(err);
                 resolve();
@@ -212,6 +235,7 @@ class SpiAdcFeed {
     public value: number;
     public changesOnly: boolean;
     private _timerSend: NodeJS.Timeout;
+    public translatePayload: Function;
     constructor(feed: SpiChannelFeed) {
         this.server = connBroker.findServer(feed.connectionId);
         this.frequency = feed.frequency * 1000;
@@ -219,6 +243,8 @@ class SpiAdcFeed {
         this.property = feed.property;
         this.changesOnly = feed.changesOnly;
         this._timerSend = setTimeout(() => this.send(), this.frequency);
+        if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0)
+            this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
     }
     public send() {
         if (this._timerSend) clearTimeout(this._timerSend);
@@ -227,7 +253,7 @@ class SpiAdcFeed {
                 this.server.send({
                     eventName: this.eventName,
                     property: this.property,
-                    value: this.value
+                    value: typeof this.translatePayload === 'function' ? this.translatePayload(this, this.value) : this.value
                 });
                 this.lastSent = this.value;
             }

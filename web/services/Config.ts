@@ -54,6 +54,24 @@ export class ConfigRoute {
             }
             return res.status(200).send(opts);
         });
+        app.get('/config/options/i2c/:busId', (req, res) => {
+            let opts = { bus: cont.i2c.busses.getItemById(parseInt(req.params.busId, 10)) };
+            return res.status(200).send(opts);
+        });
+        app.get('/config/options/i2c', (req, res) => {
+            let opts = {
+                busses: cont.i2c.busses.toExtendedArray()
+            }
+            return res.status(200).send(opts);
+        });
+
+        app.put('/config/i2c/bus', async (req, res, next) => {
+            try {
+                let bus = await cont.setI2cBusAsync(req.body);
+                return res.status(200).send(bus.getExtended());
+            }
+            catch (err) { next(err); }
+        });
         app.put('/config/spi/:controllerId', async (req, res, next) => {
             try {
                 let spi = await cont.setSpiControllerAsync(parseInt(req.params.controllerId, 10), req.body);
@@ -61,6 +79,7 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+
         app.put('/config/options/spi/chipType', (req, res, next) => {
             try {
                 let chip = SpiAdcChips.saveCustomDefinition(req.body);

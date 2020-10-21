@@ -1,4 +1,5 @@
-﻿import { vMaps } from "../boards/Constants";
+﻿import { connect, MqttClient, Client } from 'mqtt';
+import { vMaps } from "../boards/Constants";
 import * as path from "path";
 import * as fs from "fs";
 import { cont, ConnectionSource } from "../boards/Controller";
@@ -55,6 +56,9 @@ export class ConnectionBroker {
                 case 'njspc':
                 case 'webSocket':
                     this.listeners.push(new SocketServerConnection(source));
+                    break;
+                case 'mqttClient':
+                    this.listeners.push(new MqttConnection(source));
                     break;
             }
         }
@@ -171,4 +175,49 @@ class SocketServerConnection extends ServerConnection {
         this._sock.emit('/' + opts.eventName, JSON.stringify(obj));
     }
 }
-export const connBroker =  new ConnectionBroker()
+class MqttConnection extends ServerConnection {
+    private _mqtt: MqttClient;
+    constructor(server: ConnectionSource) { super(server); }
+    public disconnect() {
+        if (typeof this._mqtt !== 'undefined') this._mqtt.removeAllListeners();
+        this._mqtt.end(false);
+        this.isOpen = false;
+        super.disconnect();
+    }
+    private initSubscribe() {
+
+    }
+    private initPublish() {
+
+    }
+    public connect() {
+        let url = this.server.url;
+        logger.info(`Connecting mqtt to ${url}`);
+        this._mqtt = connect(url, this.server.options);
+        this._mqtt.on('connect', () => {
+            logger.info(`MQTT Connected to ${url}`);
+            this.isOpen = true;
+            //this._mqtt.disconnecting = false;
+            this.initSubscribe();
+            this.initPublish();
+        });
+    }
+    public send(opts) {
+        if (typeof this._mqtt === 'undefined' || !this._mqtt) {
+            logger.warn(`MQTT Channel disconnected`);
+        }
+        else if (this._mqtt.disconnected) {
+            logger.warn('MQTT Channel disconnected');
+        }
+        else if (this._mqtt.disconnecting) {
+            logger.warn(`MQTT Channel disconnecting`);
+        }
+        else if (this._mqtt.connected) {
+            logger.silly(`Sending on MQTT Channel ${JSON.stringify(opts)}`);
+            this._mqtt.publish(opts.eventName, JSON.stringify(opts.value), { retain: true, qos: 2 }, (err) => {
+                if (err) console.log(err);
+            });
+        }
+    }
+}
+export const connBroker = new ConnectionBroker()

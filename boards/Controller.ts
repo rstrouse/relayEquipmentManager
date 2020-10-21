@@ -12,6 +12,7 @@ import { SpiAdcChips } from "../spi-adc/SpiAdcChips";
 import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
 import { spi0, spi1 } from "../spi-adc/SpiAdcBus";
+import { i2c } from "../i2c-bus/I2cBus";
 import { config } from "../config/Config";
 import { AnalogDevices } from "../devices/AnalogDevices";
 interface IConfigItemCollection {
@@ -304,9 +305,9 @@ export class Controller extends ConfigItem {
         return this._spiAdcChips;
     }
     public get analogDevices() {
-        if (typeof this._analogDevices === 'undefined') {
+        //if (typeof this._analogDevices === 'undefined') {
             this._analogDevices = AnalogDevices.loadDefintions();
-        }
+        //}
         return this._analogDevices;
     }
     /**************************************************
@@ -383,6 +384,34 @@ export class Controller extends ConfigItem {
             resolve(spi);
         });
     }
+    public async setI2cBusAsync(data): Promise<I2cBus> {
+        return new Promise<I2cBus>((resolve, reject) => {
+            let bus: I2cBus;
+            let id = parseInt(data.id || -1, 10);
+            if (isNaN(id)) return reject(new Error(`An invalid I2C id was supplied`));
+            let busNumber = parseInt(data.busNumber, 10);
+            if (id < 0) {
+                // We are adding a new bus.
+                if (isNaN(busNumber)) return reject(new Error(`The I2C bus number was not supplied`));
+                bus = this.i2c.busses.find(elem => elem.busNumber === busNumber);
+                if (typeof bus !== 'undefined') return reject(new Error(`There is already an I2C bus defined at Bus #${busNumber}.`));
+                bus = this.i2c.busses.getItemById((this.i2c.busses.getMaxId() || 0) + 1, true);
+                bus.set(data);
+            }
+            else {
+                bus = this.i2c.busses.find(elem => elem.id === id);
+                if (typeof bus === 'undefined') return reject(new Error(`Could not find I2C bus definition at id ${id}.`));
+                if (typeof data.busNumber !== 'undefined') {
+                    if (isNaN(busNumber)) return reject(new Error(`An invalid bus number was supplied for the bus ${data.busNumber}`));
+                    bus = this.i2c.busses.find(elem => elem.busNumber === busNumber);
+                    if (bus.id !== id) return reject(new Error(`Cannot change bus number because another bus shares ${data.busNumber}`));
+                }
+                bus = this.i2c.busses.getItemById(id);
+                bus.set(data);
+            }
+            resolve(bus);
+        });
+    }
     public async deletePinTriggerAsync(headerId: number, pinId: number, triggerId: number): Promise<GpioPin> {
         let pin = this.gpio.pins.getPinById(headerId, pinId);
         return new Promise<GpioPin>((resolve, reject) => {
@@ -432,6 +461,7 @@ export class Controller extends ConfigItem {
                 await connBroker.compile();
                 await spi0.resetAsync(this.spi0);
                 await spi1.resetAsync(this.spi1);
+                await i2c.resetAsync(this.i2c);
                 resolve();
             }
             catch (err) { reject(err); }
@@ -530,12 +560,115 @@ export class I2cController extends ConfigItem {
     constructor(data, name: string) { super(data, name); }
     public initData(data?: any) {
         if (typeof this.data.isActive === 'undefined') this.isActive = false;
-        if (typeof this.data.channels === 'undefined') this.data.channels = [];
+        if (typeof this.data.busses === 'undefined') this.data.busses = [];
         return data;
     }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
     public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
     public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get busses(): I2cBusCollection { return new I2cBusCollection(this.data, 'busses'); }
+    public getExtended() {
+        let c = this.get(true);
+        return c;
+    }
 }
+export class I2cBusCollection extends ConfigItemCollection<I2cBus> {
+    constructor(data: any, name?: string) { super(data, name) }
+    public createItem(data: any): I2cBus { return new I2cBus(data); }
+}
+
+export class I2cBus extends ConfigItem {
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = true;
+        if (typeof this.data.devices === 'undefined') this.data.devices = [];
+        return data;
+    }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get busNumber(): number { return this.data.busNumber; }
+    public set busNumber(val: number) { this.setDataVal('busNumber', val); }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get addresses(): { address: number, name: string, product: number, manufacturer: number }[] { return this.data.addresses || []; }
+    public set addresses(val: { address: number, name: string, product: number, manufacturer: number }[]) { this.setDataVal('addresses', val); }
+    public get functions(): any { return this.data.functions || {}; }
+    public set functions(val: any) { this.setDataVal('functions', val); }
+    public get devices(): I2cDeviceCollection { return new I2cDeviceCollection(this.data, 'devices'); }
+    public getExtended() {
+        let c = this.get(true);
+        c.devices = [];
+        for (let i = 0; i < this.devices.length; i++) {
+            c.devices.push(this.devices.getItemByIndex(i).getExtended());
+        }
+        return c;
+    }
+
+}
+export class I2cDeviceCollection extends ConfigItemCollection<I2cDevice> {
+    constructor(data: any, name?: string) { super(data, name || 'devices') }
+    public createItem(data: any): I2cDevice { return new I2cDevice(data); }
+}
+export class I2cDevice extends ConfigItem {
+    constructor(data) { super(data); }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get deviceId(): number { return this.data.deviceId; }
+    public set deviceId(val: number) { this.setDataVal('deviceId', val); }
+    public get address(): number { return this.data.address; }
+    public set address(val: number) { this.setDataVal('address', val); }
+    public get feeds(): I2cDeviceFeedCollection { return new I2cDeviceFeedCollection(this.data, 'feeds'); }
+    public get options(): any { return this.data.options; }
+    public set options(val: any) { this.data.options = val; }
+    public get sampling(): number { return this.data.sampling; }
+    public set sampling(val: number) { this.setDataVal('sampling', val); }
+    public getExtended() {
+        let dev = this.get(true);
+        dev.device = cont.analogDevices.find(elem => elem.id === this.deviceId);
+        dev.feeds = [];
+        for (let i = 0; i < this.feeds.length; i++) {
+            dev.feeds.push(this.feeds.getItemByIndex(i).getExtended());
+        }
+        return dev;
+    }
+}
+export class I2cDeviceFeedCollection extends ConfigItemCollection<I2cDeviceFeed> {
+    constructor(data: any, name?: string) { super(data, name || 'feeds') }
+    public createItem(data: any): I2cDeviceFeed { return new I2cDeviceFeed(data); }
+}
+export class I2cDeviceFeed extends ConfigItem {
+    constructor(data) { super(data); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.changesOnly === 'undefined') this.changesOnly = true;
+        return data;
+    }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get connectionId(): number { return this.data.connectionId; }
+    public set connectionId(val: number) { this.setDataVal('connectionId', val); }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get eventName(): string { return this.data.eventName; }
+    public set eventName(val: string) { this.setDataVal('eventName', val); }
+    public get property(): string { return this.data.property; }
+    public set property(val: string) { this.setDataVal('property', val); }
+    public get frequency(): number { return this.data.frequency; }
+    public set frequency(val: number) { this.setDataVal('frequency', val); }
+    public get changesOnly(): boolean { return utils.makeBool(this.data.changesOnly); }
+    public set changesOnly(val: boolean) { this.setDataVal('changesOnly', val); }
+    public get payloadExpression(): string { return this.data.payloadExpression; }
+    public set payloadExpression(val: string) { this.setDataVal('payloadExpression', val); }
+    public getExtended() {
+        let feed = this.get(true);
+        feed.connection = cont.connections.getItemById(this.connectionId).getExtended();
+        return feed;
+    }
+
+}
+
+
+
 
 export class SpiChannelCollection extends ConfigItemCollection<SpiChannel> {
     constructor(data: any, name?: string) { super(data, name || 'channels') }
@@ -557,6 +690,8 @@ export class SpiChannel extends ConfigItem {
     public get feeds(): SpiChannelFeedCollection { return new SpiChannelFeedCollection(this.data, 'feeds'); }
     public get options(): any { return this.data.options; }
     public set options(val: any) { this.data.options = val; }
+    public get sampling(): number { return this.data.sampling; }
+    public set sampling(val: number) { this.setDataVal('sampling', val); }
     public getExtended() {
         let chan = this.get(true);
         chan.device = cont.analogDevices.find(elem => elem.id === this.deviceId);
@@ -592,6 +727,8 @@ export class SpiChannelFeed extends ConfigItem {
     public set frequency(val: number) { this.setDataVal('frequency', val); }
     public get changesOnly(): boolean { return utils.makeBool(this.data.changesOnly); }
     public set changesOnly(val: boolean) { this.setDataVal('changesOnly', val); }
+    public get payloadExpression(): string { return this.data.payloadExpression; }
+    public set payloadExpression(val: string) { this.setDataVal('payloadExpression', val); }
     public getExtended() {
         let feed = this.get(true);
         feed.connection = cont.connections.getItemById(this.connectionId).getExtended();
@@ -877,6 +1014,8 @@ export class ConnectionSource extends ConfigItem {
         let port = typeof this.port !== 'undefined' ? ':' + this.port.toString() : '';
         return `${this.protocol}//${this.ipAddress}${port}`;
     }
+    public get options(): any { return typeof this.data.optons === 'undefined' ? this.data.options = {} : this.data.options; }
+    public set options(val: any) { this.setDataVal('options', val); }
 }
 
 export let cont = new Controller({});
