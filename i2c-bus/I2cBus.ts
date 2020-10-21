@@ -14,7 +14,7 @@ export class i2cController {
             console.log(process.platform);
             switch (process.platform) {
                 case 'linux':
-                    //this.i2cBus = require('i2c-bus');
+                    this.i2cBus = require('i2c-bus');
                     break;
                 default:
                     this.i2cBus = new mockI2c();
