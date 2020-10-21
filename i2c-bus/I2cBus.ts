@@ -59,11 +59,16 @@ export class i2cBus {
             logger.info(`Initializing i2c Bus #${bus.busNumber}`);
             this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, {});
             bus.functions = await this._i2cBus.i2cFuncs()
-            let addrs = await this._i2cBus.scan();
+            let addrs = await this._i2cBus.scan(0x03, 0x77);
             let devs = [];
             for (let i = 0; i < addrs.length; i++) {
-                let o = await this._i2cBus.deviceId(addrs[i]);
-                devs.push({ address: addrs[i], manufacturer: o.manufacturer, product: o.product, name: o.name });
+                try {
+                    let o = await this._i2cBus.deviceId(addrs[i]);
+                    devs.push({ address: addrs[i], manufacturer: o.manufacturer, product: o.product, name: o.name });
+                }
+                catch (err) {
+                    logger.error(err); devs.push({ address: addrs[i], manufacturer: 0, product: 0, name: err.message });
+                }
             }
             bus.addresses = devs;
             logger.info(`i2c Bus #${bus.busNumber} Initialized`);
