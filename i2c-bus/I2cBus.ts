@@ -63,8 +63,10 @@ export class i2cBus {
                 try {
                     let byte = await this._i2cBus.receiveByte(i);
                     addrs.push(i);
+                    logger.info(`Found I2C device at address: 0x${i.toString(16)}`);
                 } catch (err) {}
             }
+            
             //let addrs = await this._i2cBus.scan(0x03, 0x77);
             let devs = [];
             for (let i = 0; i < addrs.length; i++) {
