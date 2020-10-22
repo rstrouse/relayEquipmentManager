@@ -57,9 +57,9 @@ export class i2cBus {
     public async initAsync(bus: I2cBus) {
         try {
             logger.info(`Initializing i2c Bus #${bus.busNumber}`);
-            this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, { });
-            //bus.functions = await this._i2cBus.i2cFuncs();
-            console.log(this._i2cBus);
+            this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, {});
+            console.log(this._i2cBus.bus());
+            bus.functions = await this._i2cBus.i2cFuncs();
             let addrs = await this._i2cBus.scan(0x03, 0x77);
             let devs = [];
             for (let i = 0; i < addrs.length; i++) {
