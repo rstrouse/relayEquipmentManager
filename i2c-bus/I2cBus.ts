@@ -71,6 +71,7 @@ export class i2cBus {
             let devs = [];
             for (let i = 0; i < addrs.length; i++) {
                 try {
+                    logger.info(`Found I2C device at address: 0x${addrs[i].toString(16)}`);
                     let o = await this._i2cBus.deviceId(addrs[i]);
                     console.log(o);
                     devs.push({ address: addrs[i], manufacturer: o.manufacturer, product: o.product, name: o.name });
