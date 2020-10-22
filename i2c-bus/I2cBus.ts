@@ -58,28 +58,19 @@ export class i2cBus {
     public async scanBus(start:number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
-            //let addrs = [];
-            //for (let i = start; i <= end; i++) {
-            //    try {
-            //        let byte = await this._i2cBus.receiveByte(i);
-            //        addrs.push(i);
-            //        logger.info(`Found I2C device at address: 0x${i.toString(16)}`);
-            //    } catch (err) {}
-            //}
-            
             let addrs = await this._i2cBus.scan(start, end);
             let devs = [];
             let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown'};
-            console.log(addrs.length);
             for (let i = 0; i < addrs.length; i++) {
                 try {
                     logger.info(`Found I2C device at address: 0x${addrs[i].toString(16)}`);
                     cdev = { address: addrs[i], manufacturer: 0, product: 0, name: 'Unkown' };
                     devs.push(cdev);
                     let o = await this._i2cBus.deviceId(addrs[i]);
-                    console.log(o);
                 }
-                catch (err) { logger.error(`Error Executing deviceId for address ${cdev.address}: ${err}`); }
+                catch (err) {
+                    logger.silly(`Error Executing deviceId for address ${cdev.address}: ${err}`);
+                }
             }
             return Promise.resolve(devs);
         }
@@ -91,14 +82,8 @@ export class i2cBus {
             logger.info(`Initializing i2c Bus #${bus.busNumber}`);
             this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, {});
             bus.functions = await this._i2cBus.i2cFuncs();
-            let addrs = await this._i2cBus.scan(0x03, 0x77);
+            bus.addresses = await this.scanBus();
             logger.info(`i2c Bus #${bus.busNumber} Initialized`);
-            setTimeout(async () => {
-                let byte = await this.readByte(0x10, 0x01);
-                console.log(byte);
-            }, 10);
-            setTimeout(async () => { await this.scanBus(); }, 100);
-           
         } catch (err) { logger.error(err); }
     }
     public async readByte(addr: number, cmd:number): Promise<number> {
