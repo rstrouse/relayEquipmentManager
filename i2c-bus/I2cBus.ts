@@ -79,9 +79,7 @@ export class i2cBus {
                     let o = await this._i2cBus.deviceId(addrs[i]);
                     console.log(o);
                 }
-                catch (err) {
-                    logger.error(err); });
-                }
+                catch (err) { logger.error(err); }
             }
             return Promise.resolve(devs);
         }
