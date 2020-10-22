@@ -6,6 +6,7 @@ import { webApp } from "../web/Server";
 import { PromisifiedBus } from "i2c-bus";
 import { connBroker, ServerConnection } from "../connections/Bindings";
 import * as extend from "extend";
+import { Buffer } from "buffer";
 
 export class i2cController {
     public i2cBus;
@@ -81,10 +82,22 @@ export class i2cBus {
             bus.functions = await this._i2cBus.i2cFuncs();
             let addrs = await this._i2cBus.scan(0x03, 0x77);
             logger.info(`i2c Bus #${bus.busNumber} Initialized`);
+            setTimeout(async () => {
+                let byte = await this.readByte(0x10, 0x01);
+                console.log(byte);
+            }, 10);
             setTimeout(async () => { await this.scanBus(); }, 100);
+           
         } catch (err) { logger.error(err); }
     }
-
+    public async readByte(addr: number, cmd:number): Promise<number> {
+        try {
+            let buff: Buffer = new Buffer(length);
+            let byte = await this._i2cBus.readByte(addr, cmd);
+            return Promise.resolve(byte);
+        }
+        catch (err) { logger.error(err); }
+    }
     public async resetAsync(bus) {
         try {
             await this.closeAsync();
