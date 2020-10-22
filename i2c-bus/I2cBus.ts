@@ -92,7 +92,6 @@ export class i2cBus {
     }
     public async readByte(addr: number, cmd:number): Promise<number> {
         try {
-            let buff: Buffer = new Buffer(length);
             let byte = await this._i2cBus.readByte(addr, cmd);
             return Promise.resolve(byte);
         }
