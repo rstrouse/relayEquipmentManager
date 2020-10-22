@@ -84,10 +84,13 @@ export class i2cBus {
         } catch (err) { logger.error(err); }
     }
     public async closeAsync() {
-        for (let i = 0; i < this.devices.length; i++) {
-            await this.devices[i].closeAsync();
-        }
-        this.devices.length = 0;
+        try {
+            for (let i = 0; i < this.devices.length; i++) {
+                await this.devices[i].closeAsync();
+            }
+            this.devices.length = 0;
+            await this._i2cBus.close();
+        } catch (err) { logger.error(err); }
     }
 }
 export class i2cDevice {
