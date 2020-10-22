@@ -3,6 +3,7 @@ import { I2cController, cont, I2cBus, I2cDevice, I2cDeviceFeed } from "../boards
 import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";
+import { PromisifiedBus } from "i2c-bus";
 import { connBroker, ServerConnection } from "../connections/Bindings";
 import * as extend from "extend";
 
@@ -49,7 +50,7 @@ export class i2cController {
 }
 export class i2cBus {
     //private _opts;
-    private _i2cBus: any | mockI2cBus;
+    private _i2cBus: PromisifiedBus | mockI2cBus;
     public devices: i2cDevice[] = [];
     public busNumber: number;
     constructor() {
