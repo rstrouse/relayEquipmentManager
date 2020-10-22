@@ -54,12 +54,18 @@ export class i2cBus {
     private _i2cBus: PromisifiedBus | mockI2cBus;
     public devices: i2cDevice[] = [];
     public busNumber: number;
-    constructor() {
-    }
-    public async scanBus(): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
+    constructor() {}
+    public async scanBus(start:number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
-            let addrs = await this._i2cBus.scan(0x03, 0x77);
+            let addrs = [];
+            for (let i = start; i <= end; i++) {
+                try {
+                    let byte = await this._i2cBus.receiveByte(i);
+                    addrs.push(i);
+                } catch (err) {}
+            }
+            //let addrs = await this._i2cBus.scan(0x03, 0x77);
             let devs = [];
             for (let i = 0; i < addrs.length; i++) {
                 try {
