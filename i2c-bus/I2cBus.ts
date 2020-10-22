@@ -69,7 +69,7 @@ export class i2cBus {
             
             let addrs = await this._i2cBus.scan(start, end);
             let devs = [];
-            let cdev = {};
+            let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown'};
             console.log(addrs.length);
             for (let i = 0; i < addrs.length; i++) {
                 try {
@@ -79,7 +79,7 @@ export class i2cBus {
                     let o = await this._i2cBus.deviceId(addrs[i]);
                     console.log(o);
                 }
-                catch (err) { logger.error(err); }
+                catch (err) { logger.error(`Error Executing deviceId for address ${cdev.address}: ${err}`); }
             }
             return Promise.resolve(devs);
         }
