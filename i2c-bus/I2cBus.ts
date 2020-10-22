@@ -58,7 +58,7 @@ export class i2cBus {
     public async scanBus(start:number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
-            let addrs = [];
+            //let addrs = [];
             //for (let i = start; i <= end; i++) {
             //    try {
             //        let byte = await this._i2cBus.receiveByte(i);
@@ -67,13 +67,14 @@ export class i2cBus {
             //    } catch (err) {}
             //}
             
-            addrs = await this._i2cBus.scan(start, end);
-            console.log(addrs);
+            let addrs = await this._i2cBus.scan(start, end);
             let devs = [];
             for (let i = 0; i < addrs.length; i++) {
                 try {
                     let o = await this._i2cBus.deviceId(addrs[i]);
+                    console.log(o);
                     devs.push({ address: addrs[i], manufacturer: o.manufacturer, product: o.product, name: o.name });
+                   
                 }
                 catch (err) {
                     logger.error(err); devs.push({ address: addrs[i], manufacturer: 0, product: 0, name: err.message });
