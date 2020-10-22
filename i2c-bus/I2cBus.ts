@@ -371,6 +371,7 @@ class mockI2cBus {
     private isOpen: boolean;
     private funcs = new mockI2cFuncs(3);
     constructor(busNumber, options) { this.busNumber = busNumber; this.options = options; }
+    public bus() { return {}; }
     public close(): Promise<void> { return Promise.resolve(); }
     public i2cFuncs(): Promise<mockI2cFuncs> { return Promise.resolve(this.funcs); }
     public scan(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([10, 99]); }
