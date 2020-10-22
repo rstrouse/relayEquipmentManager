@@ -49,17 +49,14 @@ export class i2cController {
 }
 export class i2cBus {
     //private _opts;
-    private _i2cBus: mockI2cBus;
+    private _i2cBus: any | mockI2cBus;
     public devices: i2cDevice[] = [];
     public busNumber: number;
     constructor() {
     }
-    public async initAsync(bus: I2cBus) {
+    public async scanBus(): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
-            logger.info(`Initializing i2c Bus #${bus.busNumber}`);
-            this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, {});
-            console.log(this._i2cBus.bus());
-            bus.functions = await this._i2cBus.i2cFuncs();
+            logger.info(`Scanning i2c Bus #${this.busNumber}`);
             let addrs = await this._i2cBus.scan(0x03, 0x77);
             let devs = [];
             for (let i = 0; i < addrs.length; i++) {
@@ -71,9 +68,19 @@ export class i2cBus {
                     logger.error(err); devs.push({ address: addrs[i], manufacturer: 0, product: 0, name: err.message });
                 }
             }
-            bus.addresses = devs;
+            return Promise.resolve(devs);
+        }
+        catch (err) { logger.error(`Error Scanning i2c Bus #${this.busNumber}: ${err}`); }
+    }
+    public async initAsync(bus: I2cBus) {
+        try {
+            this.busNumber = bus.busNumber;
+            logger.info(`Initializing i2c Bus #${bus.busNumber}`);
+            this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, {});
+            bus.functions = await this._i2cBus.i2cFuncs();
+            let addrs = await this._i2cBus.scan(0x03, 0x77);
             logger.info(`i2c Bus #${bus.busNumber} Initialized`);
-            
+            setTimeout(async () => { await this.scanBus(); }, 100);
         } catch (err) { logger.error(err); }
     }
 
@@ -90,6 +97,7 @@ export class i2cBus {
             }
             this.devices.length = 0;
             await this._i2cBus.close();
+            logger.info(`Closed i2c Bus #${this.busNumber}`);
         } catch (err) { logger.error(err); }
     }
 }
