@@ -188,7 +188,7 @@ export class SpiAdcChannel {
                             if (this.samples.length >= this.sampling) {
                                 let mid = Math.floor(this.samples.length / 2);
                                 let nums = [...this.samples].sort((a, b) => a - b);
-                                rawVal = this.samples.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid] / 2);
+                                rawVal = this.samples.length % 2 !== 0 ? nums[mid] : ((nums[mid - 1] + nums[mid]) / 2);
                                 this.samples.length = 0;
                             }
                             else {
@@ -218,7 +218,7 @@ export class SpiAdcChannel {
             for (let i = 0; i < this.feeds.length; i++) this.feeds[i].closeAsync();
             this._timerRead = null;
             this.isOpen = false;
-            console.log(`Closing SPI Channel ${this.busNumber} ${this.channel}`);
+            logger.info(`Closing SPI Channel ${this.busNumber} ${this.channel}`);
             this._spiDevice.close(err => {
                 if (err) reject(err);
                 resolve();

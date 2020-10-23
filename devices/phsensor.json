@@ -7,10 +7,151 @@
       "name": "Atlas Scientific pH Probe ",
       "input": "mV",
       "convertValue": "return value;",
+      "ouputUnits": "pH",
+      "encoding": "ASCII",
+      "format": "string",
+      "responses": [
+        {
+          "value": 255,
+          "name": "nodata",
+          "desc": "No data to send"
+        },
+        {
+          "value": 254,
+          "name": "notready",
+          "desc": "Still processing, not ready"
+        },
+        {
+          "value": 2,
+          "name": "syntaxerror",
+          "desc": "Command syntax error"
+        },
+        {
+          "value": 1,
+          "name": "success",
+          "desc": "Successful request"
+        }
+      ],
+      "commands": [
+        {
+          "name": "setCalMid",
+          "desc": "Set Calibration Midpoint",
+          "type": "interactive",
+          "command": [ "cal", "mid", "$calMidValue" ],
+          "delay": 900,
+          "inputs": [
+            {
+              "name": "calMidValue",
+              "field": {
+                "type": "valueSpinner",
+                "min": 0.00,
+                "max": 14.00,
+                "fmtMask": "0.##",
+                "step": ".1",
+                "canEdit": true,
+                "units": "pH",
+                "labelText": "A",
+                "inputAttrs": { "maxLength": "7rem" },
+                "labelAttrs": {
+                  "style": { "marginRight": ".15rem" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCalLow",
+          "desc": "Set Calibration Lowpoint",
+          "type": "interactive",
+          "command": [ "cal", "low", "$calLowValue" ],
+          "delay": 900,
+          "inputs": [
+            {
+              "name": "calLowValue",
+              "field": {
+                "type": "valueSpinner",
+                "min": 0.00,
+                "max": 14.00,
+                "fmtMask": "0.##",
+                "step": ".1",
+                "canEdit": true,
+                "units": "pH",
+                "labelText": "A",
+                "inputAttrs": { "maxLength": "7rem" },
+                "labelAttrs": {
+                  "style": { "marginRight": ".15rem" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "setCalHigh",
+          "desc": "Set Calibration Highpoint",
+          "type": "interactive",
+          "command": [ "cal", "low", "$calHighValue" ],
+          "delay": 900,
+          "responses": [
+            {
+              "value": 1,
+              "name": "success",
+              "desc": "Successfully calibrated highpoint"
+            }
+          ],
+          "inputs": [
+            {
+              "name": "calHighValue",
+              "field": {
+                "type": "valueSpinner",
+                "min": 0.00,
+                "max": 14.00,
+                "fmtMask": "0.##",
+                "step": ".1",
+                "canEdit": true,
+                "units": "pH",
+                "labelText": "A",
+                "inputAttrs": { "maxLength": "7rem" },
+                "labelAttrs": {
+                  "style": { "marginRight": ".15rem" }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "clearCalibration",
+          "desc": "Clear Calibration",
+          "type": "momentary",
+          "command": [ "cal", "clear" ],
+          "delay": 300
+        },
+        {
+          "name": "sleep",
+          "desc": "Sleep mode/low power",
+          "type": "momentary",
+          "command": [ "Sleep" ],
+          "delay": 300
+        },
+        {
+          "name": "reset",
+          "desc": "Factory Reset",
+          "type": "momentary",
+          "command": [ "Factory" ],
+          "delay": 300
+        },
+        {
+          "name": "lock",
+          "desc": "Protocol Lock",
+          "type": "toggle",
+          "command": [ "Factory" ],
+          "delay": 300
+        }
+      ],
+
       "options": {
         "address": {
           "dataType": "number",
-          "default": 98,
+          "default": 99,
           "field": {
             "type": "valueSpinner",
             "required": true,

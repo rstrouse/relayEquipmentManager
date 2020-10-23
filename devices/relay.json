@@ -1,0 +1,54 @@
+﻿{
+  "category": "Relays",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 300,
+      "name": "4 - Relay Board",
+      "input": "boolean",
+      "convertValue": "return value > 0;",
+      "i2c": {
+        "registers": [
+          {
+            "value": 1,
+            "name": "relay1",
+            "type": "byte",
+            "desc": "Relay #1 state"
+          },
+          {
+            "value": 2,
+            "name": "relay2",
+            "type": "byte",
+            "desc": "Relay #2 state"
+          },
+          {
+            "value": 3,
+            "name": "relay3",
+            "type": "byte",
+            "desc": "Relay #3 state"
+          },
+          {
+            "value": 4,
+            "name": "relay4",
+            "type": "byte",
+            "desc": "Relay #4 state"
+          }
+        ],
+        "commands": [
+          {
+            "register": 1,
+            "name": "Set Relay #1",
+            "states": [
+              {
+                "name": "On",
+                "desc": "Turns relay #1 on",
+                "value": 255
+              }
+            ]
+          }
+        ]
+      },
+      "interfaces": [ "i2c" ]
+    }
+  ]
+}

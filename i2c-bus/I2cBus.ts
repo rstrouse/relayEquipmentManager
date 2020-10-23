@@ -32,6 +32,7 @@ export class i2cController {
                 if (!bus.isActive) continue;
                 let ibus = new i2cBus();
                 await ibus.initAsync(bus);
+                this.busses.push(ibus);
             }
         } catch (err) { logger.error(err); }
     }
