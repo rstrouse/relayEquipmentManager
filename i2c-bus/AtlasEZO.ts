@@ -7,7 +7,7 @@ import { setTimeout, clearTimeout } from "timers";
 //import { connBroker, ServerConnection } from "../connections/Bindings";
 import * as extend from "extend";
 import { Buffer } from "buffer";
-import { i2cDeviceBase } from "./i2cFactory";
+import { i2cDeviceBase } from "./i2cBus";
 
 export class AtlasEZO extends i2cDeviceBase {
     public static addClasses() {
