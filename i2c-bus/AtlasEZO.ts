@@ -48,8 +48,7 @@ export class AtlasEZO extends i2cDeviceBase {
                     let err = this.createError(value.buffer[0]);
                     return Promise.reject(err);
             }
-            let data = value.buffer.toString('utf8', 1);
-            
+            let data = value.buffer.toString('utf8', 1).replace(/^[\s\uFEFF\xA0\0]+|[\s\uFEFF\xA0\0]+$/g, '');
             console.log(data);
             return Promise.resolve(data);
         }
