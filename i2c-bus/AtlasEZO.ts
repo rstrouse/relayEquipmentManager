@@ -49,6 +49,7 @@ export class AtlasEZO extends i2cDeviceBase {
                     return Promise.reject(err);
             }
             let data = value.buffer.toString('ascii', 1);
+            console.log(data);
             return Promise.resolve(data);
         }
         catch (err) { logger.error(err); }
