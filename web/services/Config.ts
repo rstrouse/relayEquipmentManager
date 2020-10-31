@@ -45,7 +45,7 @@ export class ConfigRoute {
                 adcChipTypes: cont.spiAdcChips,
                 analogDevices: cont.analogDevices.filter(elem => typeof elem.interfaces === 'undefined' || elem.interfaces.indexOf('spi') !== -1),
                 spi: cont['spi' + req.params.controllerId].getExtended()
-            }
+            };
             return res.status(200).send(opts);
         });
         app.get('/config/options/spi/:controllerId/:channelId/feeds', (req, res) => {
@@ -54,21 +54,36 @@ export class ConfigRoute {
             }
             return res.status(200).send(opts);
         });
+        app.get('/config/options/i2c/:busNumber/:deviceAddress', (req, res) => {
+            let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busId, 10));
+            let device = bus.devices.getItemByAddress(parseInt(req.params.deviceAddress, 10));
+            let opts = {
+                device: device.getExtended(),
+                deviceTypes: cont.analogDevices.filter(elem => typeof elem.interfaces === 'undefined' || elem.interfaces.indexOf('i2c') !== -1)
+            };
+            return res.status(200).send(opts);
+        });
         app.get('/config/options/i2c/:busId', (req, res) => {
-            let opts = { bus: cont.i2c.busses.getItemById(parseInt(req.params.busId, 10)) };
+            let opts = { bus: cont.i2c.buses.getItemById(parseInt(req.params.busId, 10)).getExtended() };
             return res.status(200).send(opts);
         });
         app.get('/config/options/i2c', (req, res) => {
             let opts = {
-                busses: cont.i2c.busses.toExtendedArray()
+                buses: cont.i2c.buses.toExtendedArray()
             }
             return res.status(200).send(opts);
         });
-
         app.put('/config/i2c/bus', async (req, res, next) => {
             try {
                 let bus = await cont.setI2cBusAsync(req.body);
                 return res.status(200).send(bus.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/i2c/device', async (req, res, next) => {
+            try {
+                let dev = await cont.i2c.setI2cDevice(req.body);
+                return res.status(200).send(dev.getExtended());
             }
             catch (err) { next(err); }
         });

@@ -4,13 +4,13 @@ import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";
 import { PromisifiedBus } from "i2c-bus";
+import { i2cDeviceBase } from "./i2cFactory";
 import { connBroker, ServerConnection } from "../connections/Bindings";
 import * as extend from "extend";
 import { Buffer } from "buffer";
-
 export class i2cController {
     public i2cBus;
-    public busses: i2cBus[] = [];
+    public buses: i2cBus[] = [];
     constructor() {
         try {
             console.log(process.platform);
@@ -27,20 +27,20 @@ export class i2cController {
     public async initAsync(i2c: I2cController) {
         try {
             logger.info(`Initializing i2c Interface`);
-            for (let i = 0; i < i2c.busses.length; i++) {
-                let bus = i2c.busses.getItemByIndex(i);
+            for (let i = 0; i < i2c.buses.length; i++) {
+                let bus = i2c.buses.getItemByIndex(i);
                 if (!bus.isActive) continue;
                 let ibus = new i2cBus();
                 await ibus.initAsync(bus);
-                this.busses.push(ibus);
+                this.buses.push(ibus);
             }
         } catch (err) { logger.error(err); }
     }
     public async closeAsync() {
-        for (let i = 0; i < this.busses.length; i++) {
-            await this.busses[i].closeAsync();
+        for (let i = 0; i < this.buses.length; i++) {
+            await this.buses[i].closeAsync();
         }
-        this.busses.length = 0;
+        this.buses.length = 0;
     }
     public async resetAsync(i2c) {
         try {
@@ -53,15 +53,15 @@ export class i2cController {
 export class i2cBus {
     //private _opts;
     private _i2cBus: PromisifiedBus | mockI2cBus;
-    public devices: i2cDevice[] = [];
+    public devices: i2cDeviceBase[] = [];
     public busNumber: number;
-    constructor() {}
-    public async scanBus(start:number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
+    constructor() { }
+    public async scanBus(start: number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
             let addrs = await this._i2cBus.scan(start, end);
             let devs = [];
-            let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown'};
+            let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown' };
             for (let i = 0; i < addrs.length; i++) {
                 try {
                     logger.info(`Found I2C device at address: 0x${addrs[i].toString(16)}`);
@@ -84,13 +84,76 @@ export class i2cBus {
             this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, {});
             bus.functions = await this._i2cBus.i2cFuncs();
             bus.addresses = await this.scanBus();
+            //let device = await i2cDeviceBase.factoryCreate(this, {} as I2cDevice);
+            for (let i = 0; i < bus.devices.length; i++) {
+                let dev = bus.devices.getItemByIndex(i);
+                try {
+                    let dt = dev.getDeviceType();
+                    let device = await i2cDeviceBase.factoryCreate(this, dev);
+                }
+                catch (err) { logger.error(err); }
+            }
+
+
             logger.info(`i2c Bus #${bus.busNumber} Initialized`);
         } catch (err) { logger.error(err); }
     }
-    public async readByte(addr: number, cmd:number): Promise<number> {
+    public async readByte(addr: number, cmd: number): Promise<number> {
         try {
             let byte = await this._i2cBus.readByte(addr, cmd);
             return Promise.resolve(byte);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async writeCommand(address: number, command: string | number | Buffer, length?: number): Promise<number> {
+        try {
+            let ret = { bytesWritten: -1 };
+            if (typeof command === 'string') {
+                if (typeof length === 'undefined') length = command.length;
+                ret = await this._i2cBus.i2cWrite(address, command.length, Buffer.from(command));
+            }
+            else if (typeof command === 'number') {
+                if (typeof length === 'undefined') length = 1;
+                let buffer = Buffer.allocUnsafe(length);
+                switch (length) {
+                    case 1:
+                        buffer.writeUInt8(command, 0);
+                        break;
+                    case 2:
+                        buffer.writeInt16BE(command, 0);
+                        break;
+                    case 4:
+                        buffer.writeInt32BE(command, 0);
+                        break;
+                    default:
+                        return Promise.reject(new Error(`Error writing I2c ${command}.  Improper length specified for number.`));
+                        break;
+                }
+                ret = await this._i2cBus.i2cWrite(address, length, buffer);
+            }
+            else if (typeof command === 'object' && Buffer.isBuffer(command)) {
+                if (typeof length === 'undefined') length = command.length;
+                ret = await this._i2cBus.i2cWrite(address, length, command);
+            }
+            else {
+                let err = new Error(`Error writing I2c ${command}.  Invalid type for command.`);
+                logger.error(err);
+                return Promise.reject(err);
+            }
+            if (ret.bytesWritten !== length) {
+                let err = new Error(`Error writing I2c ${command}.  Mismatch on bytes written ${ret.bytesWritten}.`);
+                logger.error(err);
+                return Promise.reject(err);
+            }
+            return Promise.resolve(ret.bytesWritten);
+        }
+        catch (err) { logger.error(err); return Promise.resolve(0); }
+    }
+    public async read(address: number, length: number): Promise<{ bytesRead: number, buffer: Buffer }> {
+        try {
+            let buffer: Buffer = Buffer.alloc(length);
+            let ret = await this._i2cBus.i2cRead(address, length, buffer);
+            return Promise.resolve(ret);
         }
         catch (err) { logger.error(err); }
     }
@@ -111,174 +174,174 @@ export class i2cBus {
         } catch (err) { logger.error(err); }
     }
 }
-export class i2cDevice {
-    private _readCommand: Function;
-    private _getValue: Function;
-    private _convertValue: Function;
-    public maxRawValue: number;
-    private _ct;
-    public busNumber: number;
-    public channel: number;
-    public refVoltage: number;
-    private rawValue: number;
-    private convertedValue: number;
-    private units: string;
-    public device;
-    public precision: number;
-    private _i2cDevice;
-    public speedHz: number;
-    private _timerRead: NodeJS.Timeout;
-    public feeds: i2cFeed[] = [];
-    public lastVal: number;
-    public deviceOptions: any;
-    public sampling: number = 1;
-    public samples: number[] = [];
-    public isOpen: boolean = false;
-    constructor(ct, dev: I2cDevice, refVoltage) {
-        this._ct = ct;
-        this.channel = dev.id - 1;
-        this._readCommand = new Function('channel', ct.readChannel);
-        this._getValue = new Function('buffer', ct.getValue);
-        this.device = cont.analogDevices.find(elem => elem.id === dev.deviceId);
-        this._convertValue = new Function('maps', 'opts', 'value', this.device.convertValue);
-        this.deviceOptions = extend(true, {}, dev.options);
-        this.maxRawValue = Math.pow(2, this._ct.bits) - 1;
-        this.refVoltage = refVoltage;
-        this.precision = this.device.precision;
-        this.sampling = dev.sampling || 1;
-        for (let i = 0; i < dev.feeds.length; i++) {
-            let f = dev.feeds.getItemByIndex(i);
-            if (f.isActive) this.feeds.push(new i2cFeed(f));
-        }
-    }
-    public openAsync(i2cBus, opts) {
-        return new Promise((resolve, reject) => {
-            this.busNumber = opts.busNumber;
-            try {
-                logger.info(`Attempting to open i2c Bus #${opts.busNumber} Channel #${this.channel}`);
-                this._i2cDevice = i2cBus.open(opts.busNumber || 0, this.channel, err => {
-                    if (err) { logger.error(err); reject(err) }
-                    else {
-                        this.isOpen = true;
-                        setTimeout(() => { this.readAsync(); }, 500);
-                        resolve();
-                    }
-                });
-                logger.info(`Opened i2c Bus #${opts.busNumber} Channel #${this.channel}`);
-            } catch (err) { logger.error(err); }
-        });
-    }
-    private convertValue(val): number {
-        let ratio = val !== 0 ? ((this.maxRawValue / val - 1)) : 0;
-        let lval;
-        let vout = (this.refVoltage * val) / this.maxRawValue;
-        switch (this.device.input.toLowerCase()) {
-            case 'ohms':
-                let ohms = (this.deviceOptions.resistance || this.device.resistance);
-                let resistance = ohms * val / (this.maxRawValue - val);
+//export class i2cDevice {
+//    private _readCommand: Function;
+//    private _getValue: Function;
+//    private _convertValue: Function;
+//    public maxRawValue: number;
+//    private _ct;
+//    public busNumber: number;
+//    public channel: number;
+//    public refVoltage: number;
+//    private rawValue: number;
+//    private convertedValue: number;
+//    private units: string;
+//    public device;
+//    public precision: number;
+//    private _i2cDevice;
+//    public speedHz: number;
+//    private _timerRead: NodeJS.Timeout;
+//    public feeds: i2cFeed[] = [];
+//    public lastVal: number;
+//    public deviceOptions: any;
+//    public sampling: number = 1;
+//    public samples: number[] = [];
+//    public isOpen: boolean = false;
+//    constructor(ct, dev: I2cDevice, refVoltage) {
+//        this._ct = ct;
+//        this.channel = dev.id - 1;
+//        this._readCommand = new Function('channel', ct.readChannel);
+//        this._getValue = new Function('buffer', ct.getValue);
+//        this.device = cont.analogDevices.find(elem => elem.id === dev.deviceId);
+//        this._convertValue = new Function('maps', 'opts', 'value', this.device.convertValue);
+//        this.deviceOptions = extend(true, {}, dev.options);
+//        this.maxRawValue = Math.pow(2, this._ct.bits) - 1;
+//        this.refVoltage = refVoltage;
+//        this.precision = this.device.precision;
+//        this.sampling = dev.sampling || 1;
+//        for (let i = 0; i < dev.feeds.length; i++) {
+//            let f = dev.feeds.getItemByIndex(i);
+//            if (f.isActive) this.feeds.push(new i2cFeed(f));
+//        }
+//    }
+//    public openAsync(i2cBus, opts) {
+//        return new Promise((resolve, reject) => {
+//            this.busNumber = opts.busNumber;
+//            try {
+//                logger.info(`Attempting to open i2c Bus #${opts.busNumber} Channel #${this.channel}`);
+//                this._i2cDevice = i2cBus.open(opts.busNumber || 0, this.channel, err => {
+//                    if (err) { logger.error(err); reject(err) }
+//                    else {
+//                        this.isOpen = true;
+//                        setTimeout(() => { this.readAsync(); }, 500);
+//                        resolve();
+//                    }
+//                });
+//                logger.info(`Opened i2c Bus #${opts.busNumber} Channel #${this.channel}`);
+//            } catch (err) { logger.error(err); }
+//        });
+//    }
+//    private convertValue(val): number {
+//        let ratio = val !== 0 ? ((this.maxRawValue / val - 1)) : 0;
+//        let lval;
+//        let vout = (this.refVoltage * val) / this.maxRawValue;
+//        switch (this.device.input.toLowerCase()) {
+//            case 'ohms':
+//                let ohms = (this.deviceOptions.resistance || this.device.resistance);
+//                let resistance = ohms * val / (this.maxRawValue - val);
 
-                // Below is Steinhart/Hart equation.
-                //let A = 0.001129148
-                //let B = 0.000234125
-                //let C = 0.0000000876741;
-                //let Rth = resistance;
-                //let tk = (1 / (A + (B * Math.log(resistance)) + (C * Math.pow((Math.log(resistance)), 3))));
-                //let tc = tk - 273.15;
-                //let tf = tc * 9 / 5 + 32;
-                // lval = tf;
+//                // Below is Steinhart/Hart equation.
+//                //let A = 0.001129148
+//                //let B = 0.000234125
+//                //let C = 0.0000000876741;
+//                //let Rth = resistance;
+//                //let tk = (1 / (A + (B * Math.log(resistance)) + (C * Math.pow((Math.log(resistance)), 3))));
+//                //let tc = tk - 273.15;
+//                //let tf = tc * 9 / 5 + 32;
+//                // lval = tf;
 
 
 
-                //console.log({
-                //    vcc: this.refVoltage, vout: vout, ohms: ohms, resistance: resistance, max: this.maxRawValue,
-                //    tk: tk,
-                //    tc: tc,
-                //    tf: tf
-                //});
-                //lval = tf;
+//                //console.log({
+//                //    vcc: this.refVoltage, vout: vout, ohms: ohms, resistance: resistance, max: this.maxRawValue,
+//                //    tk: tk,
+//                //    tc: tc,
+//                //    tf: tf
+//                //});
+//                //lval = tf;
 
-                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, resistance); 
-                break;
-            case 'v':
-            case 'volts':
-                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, this.refVoltage * ratio);
-                break;
-            case 'mv':
-            case 'millivolts':
-                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, (this.refVoltage * 1000) * ratio);
-                break;
-            default:
-                lval = val;
-                break;
-        }
-        return this.setPrecision(lval);
-    }
-    private setPrecision(val: number): number {
-        if (typeof this.precision !== 'number') return val;
-        let pow = Math.pow(10, this.precision);
-        return Math.round(val * pow) / pow;
-    }
-    public readAsync(): Promise<number> {
-        return new Promise<number>((resolve, reject) => {
-            if (!this.isOpen) return reject(new Error(`i2c Channel is closed and cannot be read`));
-            if (this._timerRead) clearTimeout(this._timerRead);
-            let readBuff = this._readCommand(this.channel);
-            let b: Buffer = Buffer.from([0, 0, 0]);
-            let message = [{
-                byteLength: readBuff.byteLength,
-                sendBuffer: readBuff,
-                receiveBuffer: Buffer.alloc(readBuff.byteLength),
-                speedHz: this.speedHz || 2000
-            }];
-            //if (this.channel === 1) console.log(readBuff);
-            this._i2cDevice.transfer(message, (err, reading) => {
-                if (err) { logger.error(err); reject(err); }
-                else {
-                    try {
-                        let rawVal = this.rawValue = this._getValue(message[0].receiveBuffer);
-                        if (this.sampling > 1) {
-                            this.samples.push(rawVal);
-                            if (this.samples.length >= this.sampling) {
-                                let mid = Math.floor(this.samples.length / 2);
-                                let nums = [...this.samples].sort((a, b) => a - b);
-                                rawVal = this.samples.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid] / 2);
-                                this.samples.length = 0;
-                            }
-                            else {
-                                this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
-                                resolve(rawVal);
-                                return;
-                            }
-                        }
-                        //logger.info(`Raw:${this.rawValue} b(1):${message[0].receiveBuffer[1]} b(2):${message[0].receiveBuffer[2]} Speed: ${ message[0].speedHz }`);
-                        this.convertedValue = this.convertValue(rawVal);
-                        // Now we need to trigger the values to all the cannel feeds.
-                        if (typeof this.lastVal === 'undefined' || this.lastVal !== this.convertedValue) {
-                            webApp.emitToClients('i2cChannel', { bus: this.busNumber, channel: this.channel, raw: rawVal, converted: this.convertedValue, buffer: message[0].receiveBuffer });
-                            for (let i = 0; i < this.feeds.length; i++) this.feeds[i].value = this.convertedValue;
-                        }
-                        this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
-                    }
-                    catch (err) { logger.error(err); reject(err); }
-                    resolve(reading);
-                }
-            });
-        });
-    }
-    public closeAsync(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead);
-            for (let i = 0; i < this.feeds.length; i++) this.feeds[i].closeAsync();
-            this._timerRead = null;
-            this.isOpen = false;
-            console.log(`Closing i2c Channel ${this.busNumber} ${this.channel}`);
-            this._i2cDevice.close(err => {
-                if (err) reject(err);
-                resolve();
-            });
-        });
-    }
-}
+//                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, resistance); 
+//                break;
+//            case 'v':
+//            case 'volts':
+//                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, this.refVoltage * ratio);
+//                break;
+//            case 'mv':
+//            case 'millivolts':
+//                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, (this.refVoltage * 1000) * ratio);
+//                break;
+//            default:
+//                lval = val;
+//                break;
+//        }
+//        return this.setPrecision(lval);
+//    }
+//    private setPrecision(val: number): number {
+//        if (typeof this.precision !== 'number') return val;
+//        let pow = Math.pow(10, this.precision);
+//        return Math.round(val * pow) / pow;
+//    }
+//    public readAsync(): Promise<number> {
+//        return new Promise<number>((resolve, reject) => {
+//            if (!this.isOpen) return reject(new Error(`i2c Channel is closed and cannot be read`));
+//            if (this._timerRead) clearTimeout(this._timerRead);
+//            let readBuff = this._readCommand(this.channel);
+//            let b: Buffer = Buffer.from([0, 0, 0]);
+//            let message = [{
+//                byteLength: readBuff.byteLength,
+//                sendBuffer: readBuff,
+//                receiveBuffer: Buffer.alloc(readBuff.byteLength),
+//                speedHz: this.speedHz || 2000
+//            }];
+//            //if (this.channel === 1) console.log(readBuff);
+//            this._i2cDevice.transfer(message, (err, reading) => {
+//                if (err) { logger.error(err); reject(err); }
+//                else {
+//                    try {
+//                        let rawVal = this.rawValue = this._getValue(message[0].receiveBuffer);
+//                        if (this.sampling > 1) {
+//                            this.samples.push(rawVal);
+//                            if (this.samples.length >= this.sampling) {
+//                                let mid = Math.floor(this.samples.length / 2);
+//                                let nums = [...this.samples].sort((a, b) => a - b);
+//                                rawVal = this.samples.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid] / 2);
+//                                this.samples.length = 0;
+//                            }
+//                            else {
+//                                this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
+//                                resolve(rawVal);
+//                                return;
+//                            }
+//                        }
+//                        //logger.info(`Raw:${this.rawValue} b(1):${message[0].receiveBuffer[1]} b(2):${message[0].receiveBuffer[2]} Speed: ${ message[0].speedHz }`);
+//                        this.convertedValue = this.convertValue(rawVal);
+//                        // Now we need to trigger the values to all the cannel feeds.
+//                        if (typeof this.lastVal === 'undefined' || this.lastVal !== this.convertedValue) {
+//                            webApp.emitToClients('i2cChannel', { bus: this.busNumber, channel: this.channel, raw: rawVal, converted: this.convertedValue, buffer: message[0].receiveBuffer });
+//                            for (let i = 0; i < this.feeds.length; i++) this.feeds[i].value = this.convertedValue;
+//                        }
+//                        this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
+//                    }
+//                    catch (err) { logger.error(err); reject(err); }
+//                    resolve(reading);
+//                }
+//            });
+//        });
+//    }
+//    public closeAsync(): Promise<void> {
+//        return new Promise<void>((resolve, reject) => {
+//            if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead);
+//            for (let i = 0; i < this.feeds.length; i++) this.feeds[i].closeAsync();
+//            this._timerRead = null;
+//            this.isOpen = false;
+//            console.log(`Closing i2c Channel ${this.busNumber} ${this.channel}`);
+//            this._i2cDevice.close(err => {
+//                if (err) reject(err);
+//                resolve();
+//            });
+//        });
+//    }
+//}
 class i2cFeed {
     public server: ServerConnection;
     public frequency: number;
@@ -392,7 +455,7 @@ class mockI2cBus {
     public bus() { return {}; }
     public close(): Promise<void> { return Promise.resolve(); }
     public i2cFuncs(): Promise<mockI2cFuncs> { return Promise.resolve(this.funcs); }
-    public scan(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([10, 99]); }
+    public scan(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([15 + this.busNumber, 98 + this.busNumber]); }
     public deviceId(addr: number): Promise<{ manufacturer: number, product: number, name: string }> { return Promise.resolve({ manufacturer: 0, product: 0, name: 'Mock product' }); }
     public i2cRead(addr: number, length: number, buffer: Buffer): Promise<{ bytesRead: number, buffer: Buffer }> { return Promise.resolve({ bytesRead: length, buffer: buffer }); }
     public i2cWrite(addr: number, length: number, buffer: Buffer): Promise<{ bytesWritten: number, buffer: Buffer }> { return Promise.resolve({ bytesWritten: length, buffer: buffer }); }

@@ -4,7 +4,8 @@
   "devices": [
     {
       "id": 100,
-      "name": "Atlas Scientific pH Probe ",
+      "name": "Atlas Scientific pH EZO",
+      "deviceClass": "AtlasEZOpH",
       "input": "mV",
       "convertValue": "return value;",
       "ouputUnits": "pH",
@@ -147,7 +148,6 @@
           "delay": 300
         }
       ],
-
       "options": {
         "address": {
           "dataType": "number",

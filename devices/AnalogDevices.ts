@@ -169,5 +169,4 @@ export class UnitsConverter {
 export class AnalogDevice {
     public category: string;
     public name: string;
-
 }

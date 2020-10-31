@@ -173,12 +173,12 @@ table.optBody td,
 table.optHeader td {
     border-right: solid 1px gray;
 }
-
+table.slist-table > tbody > tr.selected,
 table.optBody > tbody > tr.selected {
     @include selected_background();
     color: white;
 }
-
+table.slist-table > tbody > tr:hover,
 table.optBody > tbody > tr:hover {
     @include hover_background();
     color: white;

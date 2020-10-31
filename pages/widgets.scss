@@ -878,14 +878,14 @@ div.pnl-pin-definition {
     vertical-align: top;
     @include box_shadow(5px 5px 5px, rgba(27, 27, 27, 0.4), gainsboro);
 }
-
+.slist-list,
 .crud-list {
     border: solid 1px black;
     border-radius: 5px;
     min-height: 50px;
     display: inline-block;
 }
-
+.slist-caption,
 .crud-caption,
 .list-caption {
     @include linear_gradient(180deg, #fde4be 0%, #E78F08 65%);
@@ -896,15 +896,15 @@ div.pnl-pin-definition {
     padding-top: 4px;
     padding-bottom: 4px;
 }
-
+tr.slist-header,
 tr.crud-header {
     @include header_background();
 }
-
+tr.slist-header > td:nth-child(n + 2),
 tr.crud-header > td:nth-child(n + 2) {
     border-left: solid 1px black;
 }
-
+tr.slist-header > td > span,
 tr.crud-header > td > span {
     padding-left: 2px;
     padding-right: 2px;
@@ -913,7 +913,10 @@ tr.crud-header > td > span {
     display: inline-block;
     vertical-align: middle;
 }
-
+table.slist-table > tbody > tr {
+    cursor:pointer;
+}
+table.slist-table > tbody > tr > td > div,
 table.crud-table > tbody > tr > td > div {
     padding-left: 2px;
     padding-right: 2px;
@@ -922,11 +925,11 @@ table.crud-table > tbody > tr > td > div {
     display: inline-block;
     vertical-align: top;
 }
-
+table.slist-table > tbody > tr:nth-child(n+2) > td,
 table.crud-table > tbody > tr:nth-child(n+2) > td {
     border-top: solid 1px silver;
 }
-
+table.slist-table > tbody > tr > td:nth-child(n+2),
 table.crud-table > tbody > tr > td:nth-child(n+2) {
     border-left: solid 1px silver;
 }
@@ -936,11 +939,12 @@ span.crud-row-btn {
     text-align:center;
     cursor:pointer;
 }
+.slist-header table,
 .crud-header table {
     border-collapse: collapse;
     border-bottom: solid 2px black;
 }
-
+.slist-table,
 .crud-table {
     border-collapse: collapse;
 }
@@ -1039,5 +1043,10 @@ div.pnl-config-spi > div.control-panel {
 }
 .pnl-analog-device-options {
     display:inline-block;
+    vertical-align:top;
+}
+.pnl-i2c-bus > div {
+    display:inline-block;
+    margin-right:.4rem;
     vertical-align:top;
 }
