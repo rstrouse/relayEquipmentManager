@@ -48,7 +48,8 @@ export class AtlasEZO extends i2cDeviceBase {
                     let err = this.createError(value.buffer[0]);
                     return Promise.reject(err);
             }
-            let data = value.buffer.toString('ascii', 1);
+            let data = value.buffer.toString('utf8', 1);
+            
             console.log(data);
             return Promise.resolve(data);
         }
@@ -157,7 +158,7 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             let result = await this.execCommand('Name,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve(arrDims[1]);
+            return Promise.resolve(arrDims[1] || '');
         }
         catch (err) { logger.error(err); }
     }
@@ -173,7 +174,7 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             let result = await this.execCommand('T,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve(parseFloat(arrDims[1]));
+            return Promise.resolve(parseFloat(arrDims[1] || '0'));
         }
         catch (err) { logger.error(err); }
 
