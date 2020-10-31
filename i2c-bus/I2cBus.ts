@@ -474,7 +474,7 @@ export class i2cDeviceBase {
         try {
             let dt = dev.getDeviceType();
             if (typeof dt === 'undefined') return Promise.reject(new Error(`Cannot initialize I2c device id${dev.id} on Bus ${i2c.busNumber}: Device type not found ${dev.typeId}`));
-            let d = i2cDeviceFactory.createDevice(dt.deviceClass, i2c, dev);
+            let d = await i2cDeviceFactory.createDevice(dt.module, dt.deviceClass, i2c, dev);
             if (typeof d !== 'undefined') {
                 if (await d.initAsync(dt)) logger.info(`Device ${dt.name} initialized for i2c bus #${i2c.busNumber} address ${dev.address}`);
             }
