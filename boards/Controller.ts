@@ -693,6 +693,10 @@ export class I2cDeviceCollection extends ConfigItemCollection<I2cDevice> {
     public getItemByAddress(address: number | string, add?: boolean, data?: any): I2cDevice {
         let itm = this.find(elem => elem.address === address && typeof elem.address !== 'undefined');
         if (typeof itm !== 'undefined') return itm;
+        else {
+            console.log(`Could not find device at address ${address}`);
+            console.log(this);
+        }
         let id = this.getMaxId() + 1 || 1;
         if (typeof add !== 'undefined' && add) return this.add(data || { id: id, address: address });
         return this.createItem(data || { id: id, address: address });

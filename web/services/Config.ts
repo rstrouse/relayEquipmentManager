@@ -55,9 +55,10 @@ export class ConfigRoute {
             return res.status(200).send(opts);
         });
         app.get('/config/options/i2c/:busNumber/:deviceAddress', (req, res) => {
-            let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busId, 10));
+            let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
             let device = bus.devices.getItemByAddress(parseInt(req.params.deviceAddress, 10));
             let opts = {
+                bus: bus.getExtended(),
                 device: device.getExtended(),
                 deviceTypes: cont.analogDevices.filter(elem => typeof elem.interfaces === 'undefined' || elem.interfaces.indexOf('i2c') !== -1)
             };

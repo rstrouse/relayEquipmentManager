@@ -56,8 +56,8 @@
 
             var addrs = data.bus.addresses.slice();
             for (var i = 0; i < data.bus.devices.length; i++) {
-                var dev = data.devices[i];
-                var addr = addrs.devices.find(elem => elem.address === dev.address);
+                var dev = data.bus.devices[i];
+                var addr = addrs.find(elem => elem.address === dev.address);
                 if (typeof addr === 'undefined') {
                     addrs.push({ address: dev.address, id: dev.id, manufacturer: 0, product: 0, name: 'Unknown' });
                 }
@@ -104,7 +104,10 @@
                     self.createDeviceOptions(evt.newItem);
                 });
                 $('<div></div>').appendTo(line).valueSpinner({ required: true, binding: binding + 'sampling', labelText: 'Sampling', min: 1, max: 100, labelAttrs: { style: { width: '5rem' } } });
-                self.dataBind(i2cDevice);
+                var dt = o.deviceTypes.find(elem => elem.id === i2cDevice.device.typeId);
+                $('<div></div>').appendTo(pnl).addClass('pnl-i2cdevice-options');
+                if (typeof dt !== 'undefined') self.createDeviceOptions(dt);
+                self.dataBind(i2cDevice.device);
             });
             var btnPnl = $('<div class="btn-panel"></div>').appendTo(outer);
             $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Save Device', icon: '<i class="fas fa-save"></i>' })
@@ -129,11 +132,19 @@
         },
         createDeviceOptions: function (dev) {
             var self = this, o = self.options, el = self.element;
-            console.log(dev);
+            if (el.attr('data-typeid') !== dev.id.toString()) {
+                el.attr('data-typeid', dev.id);
+                var pnl = el.find('div.pnl-i2cdevice-options:first');
+                pnl.empty();
+
+
+                console.log(dev);
+            }
         },
 
         dataBind: function (data) {
             var self = this, o = self.options, el = self.element;
+            dataBinder.bind(el, data);
         },
     });
     $.widget('pic.dlgI2cBus', $.pic.modalDialog, {

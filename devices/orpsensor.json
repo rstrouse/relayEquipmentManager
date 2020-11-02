@@ -3,13 +3,13 @@
   "predefined": true,
   "devices": [
     {
-      "id": 100,
-      "name": "Atlas Scientific pH EZO",
-      "deviceClass": "AtlasEZOpH",
-      "module":  "./AtlasEZO",
+      "id": 150,
+      "name": "Atlas Scientific ORP EZO",
+      "deviceClass": "AtlasEZOorp",
+      "module": "./AtlasEZO",
       "input": "mV",
       "convertValue": "return value;",
-      "ouputUnits": "pH",
+      "ouputUnits": "mV",
       "encoding": "ASCII",
       "format": "string",
       "responses": [
@@ -151,7 +151,7 @@
       ],
       "options": {
         "address": {
-          "dataType": "address",
+          "dataType": "number",
           "default": 99,
           "field": {
             "type": "valueSpinner",
@@ -164,36 +164,9 @@
             "inputAttrs": { "style": { "width": "4rem" } },
             "labelAttrs": { "style": { "width": "7rem" } }
           }
-        },
-        "name": {
-          "dataType": "string",
-          "default": "",
-          "field": {
-            "type": "inputField",
-            "required": false,
-            "labelText": "Name",
-            "inputAttrs": { "maxLength": 16 }
-          }
-        },
-        "isProtocolLocked": {
-          "dataType": "boolean",
-          "default": false,
-          "field": {
-            "type": "checkbox",
-            "labelText": "Lock Protocol"
-          }
-        },
-        "extendedScale": {
-          "dataType": "boolean",
-          "default": false,
-          "field": {
-            "type": "checkbox",
-            "labelText": "Use Extended Scale"
-          }
         }
-
       },
-      "interfaces": ["i2c"]
+      "interfaces": [ "i2c" ]
     }
   ]
 }
