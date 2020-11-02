@@ -294,14 +294,14 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [] };
+            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };
             for (let i = 0; i <= dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
             }
             return Promise.resolve(dims);
         }
-        catch(err) { logger.error(err); }
+        catch (err) { logger.error(err); }
     }
 }
 export class AtlasEZOpmp extends AtlasEZO {
