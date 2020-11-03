@@ -4,13 +4,10 @@ import { setTimeout, clearTimeout } from "timers";
 import * as extend from "extend";
 import { Buffer } from "buffer";
 import { i2cDeviceBase } from "./I2cBus";
+import { webApp } from "../web/Server";
 
 export class AtlasEZO extends i2cDeviceBase {
-    public static addClasses() {
-        console.log(`Adding classes`);
-        //deviceClasses.AtlasEZOpH = AtlasEZOpH.prototype.constructor;
-        //deviceClasses.AtlasEZOorp = AtlasEZOorp.prototype.constructor;
-    }
+    protected _timerRead: NodeJS.Timeout;
     protected createError(byte): Error {
         let err: Error;
         switch (byte) {
@@ -58,7 +55,6 @@ export class AtlasEZO extends i2cDeviceBase {
         }
         catch (err) { logger.error(err); }
     }
-
     public async lockProtocol(val: boolean): Promise<boolean> {
         try {
             await this.execCommand('Plock,' + (val ? '1' : '0'), 300);
@@ -183,6 +179,7 @@ export class AtlasEZOorp extends AtlasEZO {
 export class AtlasEZOpH extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
+            if (this._timerRead) clearTimeout(this._timerRead);
             this.device.options.name = await this.getName();
             this.device.options.deviceInfo = await this.getDeviceInformation();
             this.device.options.isProtoLocked = await this.isProtocolLocked();
@@ -190,15 +187,31 @@ export class AtlasEZOpH extends AtlasEZO {
             this.device.options.calibrationMode = await this.getCalibrated();
             this.device.options.slope = await this.getSlope();
             this.device.options.status = await this.getStatus();
+            this.device.options.tempCompensation = await this.getTempCompensation();
             this.device.options.calibration = await this.exportCalibration();
+            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.pH.interval.default;
+            this.readContinuous();
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); return Promise.resolve(false); }
     }
-    public async readProbeAysnc(tempCompensation?: number): Promise<number> {
+    public async readContinuous(): Promise<number> {
+        try {
+            if (this._timerRead) clearTimeout(this._timerRead);
+            let temp = this.device.options.tempCompensation;
+            let pH = this.readProbe(temp);
+            this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
+            return Promise.resolve(pH);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async stopReadContinuous() { clearTimeout(this._timerRead); }
+    public async readProbe(tempCompensation?: number): Promise<number> {
         try {
             let result = typeof tempCompensation !== 'undefined' ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 900);
-            return Promise.resolve(parseFloat(result));
+            let val = parseFloat(result)
+            webApp.emitToClients('i2cData', { bus: this.i2c.busNumber, address: this.i2c.address, raw: val, converted: val });
+            return Promise.resolve(val);
         }
         catch (err) { logger.error(err); }
     }
@@ -210,6 +223,7 @@ export class AtlasEZOpH extends AtlasEZO {
         }
         catch (err) { logger.error(err); }
     }
+    
     public async getCalibrated(): Promise<number> {
         try {
             let result = await this.execCommand('cal,?', 300);

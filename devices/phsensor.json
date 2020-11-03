@@ -6,6 +6,16 @@
       "id": 100,
       "name": "Atlas Scientific pH EZO",
       "deviceClass": "AtlasEZOpH",
+      "readings": {
+        "pH": {
+          "label": "pH",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
       "module":  "./AtlasEZO",
       "input": "mV",
       "convertValue": "return value;",
