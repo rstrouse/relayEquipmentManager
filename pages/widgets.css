@@ -229,6 +229,14 @@ div.picValueSpinner > input.picSpinner-value {
 div.picSpinner-value {
   font-size: 1.1rem; }
 
+span.picStatic-units {
+  display: inline-block;
+  margin-left: .15rem;
+  vertical-align: baseline;
+  font-size: 1em !important;
+  padding-left: 0px !important;
+  padding-right: 0px !important; }
+
 span.picSpinner-units {
   display: inline-block;
   margin-left: .15rem;
