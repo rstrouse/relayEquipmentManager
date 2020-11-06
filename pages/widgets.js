@@ -2181,7 +2181,7 @@ $.ui.position.fieldTip = {
             el.attr('data-fmtMask', o.fmtMask);
             el.attr('data-emptyMask', o.emptyMask);
             $('<span class="picStatic-units picUnits"></span>').appendTo(el);
-            if(typeof o.units !== 'undefined') el.find('span.picSpinner-units').html(o.units);
+            if(typeof o.units !== 'undefined') el.find('span.picStatic-units').html(o.units);
 
             self._applyStyles();
             el[0].label = function () { return el.find('label:first'); };

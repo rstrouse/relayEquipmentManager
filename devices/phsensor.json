@@ -161,6 +161,9 @@
                     "type": "staticField",
                     "labelText": "Ideal Acid",
                     "binding": "options.slope.acid",
+                    "dataType": "numeric",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
                     "style": {
                       "display": "block",
                       "marginLeft": "1rem",
@@ -184,6 +187,9 @@
                     "type": "staticField",
                     "labelText": "Ideal Base",
                     "binding": "options.slope.base",
+                    "dataType": "numeric",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
                     "style": {
                       "display": "block",
                       "marginLeft": "1rem",
@@ -205,8 +211,11 @@
                 {
                   "field": {
                     "type": "staticField",
-                    "labelText": "vcc Offset",
+                    "labelText": "Vcc Offset",
                     "binding": "options.slope.mV",
+                    "dataType": "numeric",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
                     "style": {
                       "display": "block",
                       "marginLeft": "1rem",
@@ -222,7 +231,6 @@
                         "textAlign": "right"
                       }
                     },
-
                     "units": "mV"
                   }
                 }
