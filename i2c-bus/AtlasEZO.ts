@@ -21,17 +21,17 @@ import { I2cDevice } from "../boards/Controller";
 
 export class AtlasEZO extends i2cDeviceBase {
     protected _timerRead: NodeJS.Timeout;
-    protected createError(byte): Error {
+    protected createError(byte, command): Error {
         let err: Error;
         switch (byte) {
             case 255:
-                err = new Error('No I2c data to send');
+                err = new Error(`${this.device.address} ${ command }. No I2c data to send`);
                 break;
             case 254:
-                err = new Error('Still processing not ready');
+                err = new Error(`${this.device.address} ${ command }. Still processing not ready`);
                 break;
             case 2:
-                err = new Error('Syntax error');
+                err = new Error(`${this.device.address} ${command }. Syntax error`);
                 break;
         }
         return err;
@@ -49,7 +49,7 @@ export class AtlasEZO extends i2cDeviceBase {
                 case 0:
                     break;
                 default:
-                    let err = this.createError(value.buffer[0]);
+                    let err = this.createError(value.buffer[0], command);
                     return Promise.reject(err);
             }
             let data = value.buffer.toString('utf8', 1).replace(/^[\s\uFEFF\xA0\0]+|[\s\uFEFF\xA0\0]+$/g, '');
