@@ -62,14 +62,15 @@ export class i2cBus {
             let addrs = await this._i2cBus.scan(start, end);
             let devs = [];
             let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown' };
-            let bus = cont.i2c.buses.getItemById(this.busNumber);
+            let bus = cont.i2c.buses.getItemByBusNumber(this.busNumber);
             for (let i = 0; i < addrs.length; i++) {
                 try {
                     logger.info(`Found I2C device at address: 0x${addrs[i].toString(16)}`);
                     cdev = { address: addrs[i], manufacturer: 0, product: 0, name: 'Unkown' };
                     devs.push(cdev);
-                    let o = await this._i2cBus.deviceId(addrs[i]);
+                    //let o = await this._i2cBus.deviceId(addrs[i]);
                     let d = bus.devices.getItemByAddress(addrs[i]);
+                    console.log(d.name);
                     cdev.name = d.name || 'Unknown';
                 }
                 catch (err) {

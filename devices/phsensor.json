@@ -161,7 +161,7 @@
                     "type": "staticField",
                     "labelText": "Ideal Acid",
                     "binding": "options.slope.acid",
-                    "dataType": "numeric",
+                    "dataType": "number",
                     "fmtMask": "#,##0.####",
                     "emptyMask": "---",
                     "style": {
@@ -171,11 +171,11 @@
                       "lineHeight": "1.2"
                     },
                     "labelAttrs": {
-                      "style": { "width": "5rem" }
+                      "style": { "width": "4.5rem" }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "1rem",
+                        "width": "2.5rem",
                         "textAlign": "right"
                       }
                     },
@@ -187,7 +187,7 @@
                     "type": "staticField",
                     "labelText": "Ideal Base",
                     "binding": "options.slope.base",
-                    "dataType": "numeric",
+                    "dataType": "number",
                     "fmtMask": "#,##0.####",
                     "emptyMask": "---",
                     "style": {
@@ -197,11 +197,11 @@
                       "lineHeight": "1.2"
                     },
                     "labelAttrs": {
-                      "style": { "width": "5rem" }
+                      "style": { "width": "4.5rem" }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "1rem",
+                        "width": "2.5rem",
                         "textAlign": "right"
                       }
                     },
@@ -213,7 +213,7 @@
                     "type": "staticField",
                     "labelText": "Vcc Offset",
                     "binding": "options.slope.mV",
-                    "dataType": "numeric",
+                    "dataType": "number",
                     "fmtMask": "#,##0.####",
                     "emptyMask": "---",
                     "style": {
@@ -223,11 +223,11 @@
                       "lineHeight": "1.2"
                     },
                     "labelAttrs": {
-                      "style": { "width": "5rem" }
+                      "style": { "width": "4.5rem" }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "1rem",
+                        "width": "2.5rem",
                         "textAlign": "right"
                       }
                     },
@@ -253,6 +253,9 @@
                     "type": "staticField",
                     "labelText": "Probe pH",
                     "binding": "values.pH",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "---.-",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",
@@ -268,6 +271,9 @@
                     "type": "staticField",
                     "labelText": "Temperature",
                     "binding": "values.temperature",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",
@@ -276,16 +282,9 @@
                     "labelAttrs": {
                       "style": { "width": "5rem" }
                     },
-                    "inputAttrs": {
-                      "style": {
-                        "width": "1rem",
-                        "textAlign": "right"
-                      }
-                    },
                     "units": "&deg;C"
                   }
                 }
-
               ]
             }
           ]
