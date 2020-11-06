@@ -371,7 +371,7 @@ export class AtlasEZOpH extends AtlasEZO {
     }
     public async getSlope(): Promise<{ acid: number, base: number, mV: number }> {
         try {
-            let result = await this.execCommand('Name,?', 300);
+            let result = await this.execCommand('Slope,?', 300);
             let arrDims = result.split(',');
             return Promise.resolve({ acid: parseFloat(arrDims[1] || '0'), base: parseFloat(arrDims[2] || '0'), mV: parseFloat(arrDims[3] || '0') });
         }
