@@ -29,3 +29,6 @@ $outline_border: solid 1px gray;
 @mixin selected_background() {
     @include linear_gradient(180deg, #159FCF, #13647F);
 }
+@mixin value-background() {
+    background:white;
+}

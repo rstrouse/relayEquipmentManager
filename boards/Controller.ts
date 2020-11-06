@@ -15,12 +15,13 @@ import { spi0, spi1 } from "../spi-adc/SpiAdcBus";
 import { i2c } from "../i2c-bus/I2cBus";
 import { config } from "../config/Config";
 import { AnalogDevices } from "../devices/AnalogDevices";
+import { lavender } from "color-name";
 interface IConfigItemCollection {
     set(data);
     clear();
 }
 
-class ConfigItem {
+export class ConfigItem {
     constructor(data: any, name?: string) {
         if (typeof name === 'undefined') {
             this.data = data;
@@ -81,7 +82,7 @@ class ConfigItem {
         }
     }
 }
-class ConfigItemCollection<T> implements IConfigItemCollection {
+export class ConfigItemCollection<T> implements IConfigItemCollection {
     protected data: any;
     protected name: string;
     constructor(data: [], name: string) {
@@ -572,7 +573,7 @@ export class I2cController extends ConfigItem {
         let c = this.get(true);
         return c;
     }
-    public async setI2cDevice(dev): Promise<I2cDevice> {
+    public async setDevice(dev): Promise<I2cDevice> {
         try {
             let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
             let busNumber = (typeof dev.busNumber !== 'undefined') ? parseInt(dev.busNumber, 10) : undefined;
@@ -588,7 +589,27 @@ export class I2cController extends ConfigItem {
             else {
                 return Promise.reject(new Error(`The specified I2c bus could not be found at busId:${dev.busId} or busNumber:${dev.busNumber}`));
             }
-            let device = await bus.setI2cDevice(dev);
+            let device = await bus.setDevice(dev);
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async runDeviceCommand(busNumber: number, address: number, command: string, options: any): Promise<any> {
+        try {
+            let dbus = i2c.buses.find(elem => elem.busNumber === busNumber);
+            if (typeof dbus === 'undefined') return Promise.reject(`Cannot execute command Bus #${busNumber} could not be found`);
+            let ddevice = dbus.devices.find(elem => elem.device.address === address);
+            if (typeof ddevice === 'undefined') { return Promise.reject(`Cannot execute command Bus #${busNumber} Address ${address} could not be found`); }
+            let result = await ddevice.callCommand({ name: command, params: [options] });
+            return Promise.resolve(result);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDevice(dev): Promise<I2cDevice> {
+        try {
+            let bus = (typeof dev.busId !== 'undefined') ? this.buses.getItemById(dev.busId) : typeof dev.busNumber !== 'undefined' ? this.buses.getItemByBusNumber(dev.busNumber) : undefined;
+            if (typeof bus === 'undefined') return Promise.reject(`Could not find bus by bus #${dev.busNumber} or id ${dev.busId}`);
+            let device = await bus.deleteDevice(dev);
             return Promise.resolve(device);
         }
         catch (err) { return Promise.reject(err); }
@@ -631,12 +652,13 @@ export class I2cBus extends ConfigItem {
         }
         return c;
     }
-    public async setI2cDevice(dev): Promise<I2cDevice> {
+    public async setDevice(dev): Promise<I2cDevice> {
         try {
-            let id = typeof dev.id !== 'undefined' ? parseInt(dev.id, 10) : undefined;
+            let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
             let address = typeof dev.address !== 'undefined' ? parseInt(dev.address, 10) : undefined;
             let typeId = typeof dev.typeId !== 'undefined' ? parseInt(dev.typeId, 10) : undefined;
             let device: I2cDevice;
+            let added = false;
             if (typeof id === 'undefined') {
                 // We are adding a device.
                 if (typeof address === 'undefined' || isNaN(address) || address < 1) return Promise.reject(new Error(`An valid I2c device address was not supplied ${dev.address}`));
@@ -647,6 +669,7 @@ export class I2cBus extends ConfigItem {
                 device.address = address;
                 device.typeId = typeId;
                 device.options = dev.options || {};
+                added = true;
             }
             else {
                 if (typeof typeId !== 'undefined') { if (isNaN(typeId)) return Promise.reject(new Error(`An invalid deviceTypeId was supplied ${dev.deviceTypeId}`)); }
@@ -672,16 +695,49 @@ export class I2cBus extends ConfigItem {
             if (typeof dev.sampling !== 'undefined' && !isNaN(parseInt(dev.sampling, 10))) device.sampling = parseInt(dev.sampling, 10);
             if (typeof dev.isActive !== 'undefined') device.isActive = utils.makeBool(dev.isActive);
             // Need to deal with the triggers and feeds.
-            if (typeof dev.options !== 'undefined') {
-                let op = Object.getOwnPropertyNames(dev.options);
-                for (let i in op) {
-                    let prop = op[i];
-                    if (typeof this[prop] === 'function') continue;
-                    if (typeof dev.options[prop] !== 'undefined') {
-                        device.options[prop] = dev.options[prop];
-                    }
+            //if (typeof dev.options !== 'undefined') {
+            //    let op = Object.getOwnPropertyNames(dev.options);
+            //    for (let i in op) {
+            //        let prop = op[i];
+            //        if (typeof this[prop] === 'function') continue;
+            //        if (typeof dev.options[prop] !== 'undefined') {
+            //            device.options[prop] = dev.options[prop];
+            //        }
+            //    }
+            //}
+            let dbus = i2c.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus !== 'undefined') {
+                let ddev = dbus.devices.find(elem => elem.device.id === device.id);
+                if (typeof ddev === 'undefined') {
+                    await dbus.addDevice(device);
+                }
+                else {
+                    if (typeof dev.options !== 'undefined') await ddev.setOptions(dev.options);
                 }
             }
+            let addr = this.addresses.find(elem => elem.address === device.address);
+            if (typeof addr !== 'undefined') addr.name = device.name;
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDevice(dev): Promise<I2cDevice> {
+        try {
+            let id = parseInt(dev.id, 10);
+            if (isNaN(id)) return Promise.reject(`Cannot delete device. Invalid device id ${dev.id}`);
+            let dbus = i2c.buses.find(elem => elem.busNumber == this.busNumber);
+            if (typeof dbus !== 'undefined') {
+                dbus.devices.forEach(async (item, index) => {
+                    if (item.device.id === id) {
+                        dbus.devices.splice(index, 1);
+                        await item.closeAsync();
+                    }
+                });
+            }
+            let device = this.devices.getItemById(id);
+            this.devices.removeItemById(id);
+            let addr = this.addresses.find(elem => elem.address === device.address);
+            if (typeof addr !== 'undefined') addr.name = 'Unknown';
             return Promise.resolve(device);
         }
         catch (err) { return Promise.reject(err); }
@@ -693,19 +749,17 @@ export class I2cDeviceCollection extends ConfigItemCollection<I2cDevice> {
     public getItemByAddress(address: number | string, add?: boolean, data?: any): I2cDevice {
         let itm = this.find(elem => elem.address === address && typeof elem.address !== 'undefined');
         if (typeof itm !== 'undefined') return itm;
-        else {
-            console.log(`Could not find device at address ${address}`);
-            console.log(this);
-        }
         let id = this.getMaxId() + 1 || 1;
         if (typeof add !== 'undefined' && add) return this.add(data || { id: id, address: address });
-        return this.createItem(data || { id: id, address: address });
+        return this.createItem(data || { address: address });
     }
 }
 export class I2cDevice extends ConfigItem {
     constructor(data) { super(data); }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
+    public get name(): string { return this.data.name; }
+    public set name(val: string) { this.setDataVal('name', val); }
     public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
     public set isActive(val: boolean) { this.setDataVal('isActive', val); }
     public get typeId(): number { return this.data.typeId; }
@@ -713,8 +767,10 @@ export class I2cDevice extends ConfigItem {
     public get address(): number { return this.data.address; }
     public set address(val: number) { this.setDataVal('address', val); }
     public get feeds(): I2cDeviceFeedCollection { return new I2cDeviceFeedCollection(this.data, 'feeds'); }
-    public get options(): any { return this.data.options; }
+    public get options(): any { return typeof this.data.options === 'undefined' ? this.data.options = {} : this.data.options; }
     public set options(val: any) { this.data.options = val; }
+    public get values(): any { return typeof this.data.values === 'undefined' ? this.data.values = {} : this.data.values; }
+    public set values(val: any) { this.data.values = val; }
     public get sampling(): number { return this.data.sampling; }
     public set sampling(val: number) { this.setDataVal('sampling', val); }
     public getExtended() {

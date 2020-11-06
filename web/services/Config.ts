@@ -3,7 +3,7 @@ import * as extend from 'extend';
 import { config } from "../../config/Config";
 import { logger } from "../../logger/Logger";
 import { utils, vMaps } from "../../boards/Constants";
-import { cont } from "../../boards/Controller";
+import { cont, ConfigItem } from "../../boards/Controller";
 import { PinDefinitions } from "../../pinouts/Pinouts";
 import { Client } from "node-ssdp";
 import { ConnectionBindings } from "../../connections/Bindings";
@@ -83,8 +83,23 @@ export class ConfigRoute {
         });
         app.put('/config/i2c/device', async (req, res, next) => {
             try {
-                let dev = await cont.i2c.setI2cDevice(req.body);
+                let dev = await cont.i2c.setDevice(req.body);
                 return res.status(200).send(dev.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/i2c/device', async (req, res, next) => {
+            try {
+                let dev = await cont.i2c.deleteDevice(req.body);
+                return res.status(200).send(dev.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/i2c/:busNumber/:deviceAddress/deviceCommand/:command', async (req, res, next) => {
+            try {
+                let result = await cont.i2c.runDeviceCommand(parseInt(req.params.busNumber, 10), parseInt(req.params.deviceAddress, 10), req.params.command, req.body);
+                if (result instanceof ConfigItem) return res.status(200).send((result as ConfigItem).getExtended());
+                return res.status(200).send(result);
             }
             catch (err) { next(err); }
         });

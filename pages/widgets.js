@@ -598,7 +598,7 @@ var dataBinder = {
     },
     parseNumber: function (val) {
         if (typeof val === 'number') return val;
-        else if (typeof val === 'undefined') return;
+        else if (typeof val === 'undefined' || val === null) return;
         else if (typeof val.getTime === 'function') return val.getTime();
         var tval = val.replace(/[^0-9\.\-]+/g, '');
         var v;
@@ -783,7 +783,77 @@ var dataBinder = {
                     break;
             }
         }
+    },
+    parseValue: function (val, dataType) {
+        switch (dataType) {
+            case 'bool':
+            case 'boolean':
+                return makeBool(val);
+            case 'int':
+                return Math.floor(this.parseNumber(val));
+            case 'uint':
+                return Math.abs(this.parseNumber(val));
+            case 'float':
+            case 'real':
+            case 'double':
+            case 'decimal':
+            case 'number':
+                return this.parseNumber(val);
+            case 'date':
+                if (typeof val === 'string') return Date.parseISO(val);
+                else if (typeof val === 'number') return new Date(number);
+                else if (typeof val.getMonth === 'function') return val;
+                return undefined;
+            case 'time':
+                var dt = new Date();
+                if (typeof val === 'number') {
+                    dt.setHours(0, 0, 0);
+                    dt.addMinutes(tval);
+                    return dt;
+                }
+                else if (typeof val === 'string' && val.indexOf(':') !== -1) {
+                    var n = val.lastIndexOf(':');
+                    var min = this.parseNumber(val.substring(n));
+                    var nsp = val.substring(0, n).lastIndexOf(' ') + 1;
+                    var hrs = this.parseNumber(val.substring(nsp, n));
+                    dt.setHours(0, 0, 0);
+                    if (hrs <= 12 && val.substring(n).indexOf('p')) hrs += 12;
+                    dt.addMinutes(hrs * 60 + min);
+                    return dt;
+                }
+                break;
+            case 'duration':
+                if (typeof val === 'number') return val;
+                return Math.floor(this.parseNumber(val));
+            default:
+                return val;
+        }
+    },
+    formatValue: function (val, dataType, fmtMask, emptyMask) {
+        var v = this.parseValue(val, dataType);
+        if (typeof v === 'undefined') return emptyMask || '';
+        switch (dataType) {
+            case 'boolean':
+            case 'bool':
+                return v ? 'True' : 'False';
+            case 'int':
+            case 'uint':
+            case 'float':
+            case 'real':
+            case 'double':
+            case 'decimal':
+            case 'number':
+                return v.format(fmtMask, emptyMask || '');
+            case 'time':
+            case 'date':
+            case 'dateTime':
+                return v.format(fmtMask, emptyMask || '');
+            case 'duration':
+                return this.formatDuration(dur);
+        }
+        return v;
     }
+
 };
 $.ui.position.fieldTip = {
     left: function (position, data) {
@@ -903,6 +973,7 @@ $.ui.position.fieldTip = {
             if (o.bind) el.attr('data-bind', o.bind);
             el[0].buttonIcon = function (val) { return self.buttonIcon(val); };
             el[0].disabled = function (val) { return self.disabled(val); };
+            if (typeof o.style !== 'undefined') el.css(o.style);
            
         },
         buttonText: function (val) {
@@ -1027,7 +1098,6 @@ $.ui.position.fieldTip = {
         _initValueSpinner: function () {
             var self = this, o = self.options, el = self.element;
             if (!el.hasClass) el.addClass('picSpinner');
-            if (typeof o.id !== 'undefined') el.attr('id', o.id);
             el[0].increment = function () { return self.increment(); };
             el[0].decrement = function () { return self.decrement(); };
             el[0].val = function (val) { return self.val(val); };
@@ -1035,6 +1105,8 @@ $.ui.position.fieldTip = {
             el[0].isEmpty = function () { return self.isEmpty(); };
             el[0].required = function (val) { return self.required(val); };
             if (o.required === true) self.required(true);
+            //$('<label class="picSpinner-label"></label><div class="picSpinner-down fld-btn-left"><i class="fas fa-minus"></i></div><div class="picSpinner-value fld-value-center"></div><div class="picSpinner-up fld-btn-right"><i class="fas fa-plus"></i></div><span class="picSpinner-units picUnits"></span>').appendTo(el);
+
             $('<label></label>').addClass('picSpinner-label').appendTo(el);
             $('<div></div>').addClass('picSpinner-down').addClass('fld-btn-left').appendTo(el).append($('<i class="fas fa-minus"></i>'));
             if (o.canEdit) {
@@ -1061,17 +1133,17 @@ $.ui.position.fieldTip = {
             if (typeof o.value !== 'undefined') self.val(o.value);
             if (typeof o.binding !== 'undefined') el.attr('data-bind', o.binding);
             if (o.labelText) el.find('label.picSpinner-label:first').html(o.labelText);
-            el.on('mousedown', 'div.picSpinner-down', function (evt) {
+            el.on('mousedown touchstart', 'div.picSpinner-down', function (evt) {
                 self._rampDecrement();
                 evt.preventDefault();
                 evt.stopPropagation();
             });
-            el.on('mousedown', 'div.picSpinner-up', function (evt) {
+            el.on('mousedown touchstart', 'div.picSpinner-up', function (evt) {
                 self._rampIncrement();
                 evt.preventDefault();
                 evt.stopPropagation();
             });
-            el.on('mouseup', 'div.picSpinner-up, div.picSpinner-down', function (evt) {
+            el.on('mouseup touchend', 'div.picSpinner-up, div.picSpinner-down', function (evt) {
                 o.ramps = 0;
                 clearTimeout(o.timer);
                 o.timer = null;
@@ -1153,12 +1225,7 @@ $.ui.position.fieldTip = {
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
-            if (typeof val === 'undefined') {
-                if (typeof o.fmtMask !== 'undefined' && o.fmtMask.indexOf('.') !== -1) {
-                    o.val = o.val.round(o.fmtMask.length - o.fmtMask.indexOf('.'));
-                }
-                return o.val;
-            }
+            if (typeof val === 'undefined') return o.val;
             if (val > o.max) val = o.max;
             else if (val < o.min) val = o.min;
             o.val = Math.min(Math.max(o.min, val), o.max);
@@ -2043,7 +2110,6 @@ $.ui.position.fieldTip = {
                         lbl.attr(la, o.labelAttrs[la]);
                         break;
                 }
-
             }
             //console.log(o);
             //if (typeof o.inputStyle !== 'undefined') fld.css(o.inputStyle);
@@ -2111,6 +2177,11 @@ $.ui.position.fieldTip = {
             self.val(o.value);
             el.attr('data-bind', o.binding);
             el.attr('data-datatype', o.dataType);
+            el.attr('data-fmtMask', o.fmtMask);
+            el.attr('data-emptyMask', o.emptyMask);
+            $('<span class="picSpinner-units picUnits"></span>').appendTo(el);
+            if(typeof o.units !== 'undefined') el.find('span.picSpinner-units').html(o.units);
+
             self._applyStyles();
             el[0].label = function () { return el.find('label:first'); };
             el[0].field = function () { return el.find('.picStaticField-value:first'); };
@@ -2127,7 +2198,10 @@ $.ui.position.fieldTip = {
             for (var ia in o.inputAttrs) {
                 switch (ia) {
                     case 'style':
-                        if (typeof o.inputAttrs[ia] === 'object') fld.css(o.inputAttrs[ia]);
+                        if (typeof o.inputAttrs[ia] === 'object') {
+                            //console.log({ style: o.inputAttrs[ia], fld: fld });
+                            fld.css(o.inputAttrs[ia]);
+                        }
                         break;
                     case 'maxlength':
                     case 'maxLength':
@@ -2158,13 +2232,20 @@ $.ui.position.fieldTip = {
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
-            //if (typeof val === 'undefined') console.log({ msg: 'Getting field value', val: el.find('input.picStaticField-value:first').val(val) });
-            if (el.attr('data-datatype') === 'int' && typeof val === 'undefined') {
-                var v = el.find('.picStaticField-value:first').html();
-                var match = v.match(/(\d+)/g);
-                return (match) ? parseInt(match.join(''), 10) : undefined;
-            }
-            return typeof val !== 'undefined' ? el.find('.picStaticField-value:first').html(val) : el.find('.picStaticField-value:first').html();
+            var dataType = el.attr('data-datatype') || 'string';
+            var fld = el.find('.picStaticField-value:first')
+            if (typeof val === 'undefined')
+                return dataBinder.parseValue(fld.html(), dataType);
+            else
+                fld.html(dataBinder.formatValue(val, dataType, el.attr('data-fmtmask'), el.attr('data-emptymask')));
+
+            ////if (typeof val === 'undefined') console.log({ msg: 'Getting field value', val: el.find('input.picStaticField-value:first').val(val) });
+            //if (el.attr('data-datatype') === 'int' && typeof val === 'undefined') {
+            //    var v = el.find('.picStaticField-value:first').html();
+            //    var match = v.match(/(\d+)/g);
+            //    return (match) ? parseInt(match.join(''), 10) : undefined;
+            //}
+            //return typeof val !== 'undefined' ? el.find('.picStaticField-value:first').html(val) : el.find('.picStaticField-value:first').html();
         },
         disabled: function (val) {
             var self = this, o = self.options, el = self.element;
@@ -2377,7 +2458,14 @@ $.ui.position.fieldTip = {
             if (typeof o.style !== 'undefined') el.css(o.style);
 
             for (var la in o.labelAttrs) {
-                lbl.attr(la, o.labelAttrs[la]);
+                switch (la) {
+                    case 'style':
+                        if (typeof o.labelAttrs[la] === 'object') lbl.css(o.labelAttrs[la]);
+                        break;
+                    default:
+                        lbl.attr(la, o.labelAttrs[la]);
+                        break;
+                }
             }
             if (typeof o.inputStyle !== 'undefined') fld.css(o.inputStyle);
             if (typeof o.labelStyle !== 'undefined') lbl.css(o.labelStyle);

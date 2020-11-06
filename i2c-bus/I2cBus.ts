@@ -62,12 +62,15 @@ export class i2cBus {
             let addrs = await this._i2cBus.scan(start, end);
             let devs = [];
             let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown' };
+            let bus = cont.i2c.buses.getItemById(this.busNumber);
             for (let i = 0; i < addrs.length; i++) {
                 try {
                     logger.info(`Found I2C device at address: 0x${addrs[i].toString(16)}`);
                     cdev = { address: addrs[i], manufacturer: 0, product: 0, name: 'Unkown' };
                     devs.push(cdev);
                     let o = await this._i2cBus.deviceId(addrs[i]);
+                    let d = bus.devices.getItemByAddress(addrs[i]);
+                    cdev.name = d.name || 'Unknown';
                 }
                 catch (err) {
                     logger.silly(`Error Executing deviceId for address ${cdev.address}: ${err}`);
@@ -77,6 +80,15 @@ export class i2cBus {
         }
         catch (err) { logger.error(`Error Scanning i2c Bus #${this.busNumber}: ${err}`); }
     }
+    public async addDevice(dev: I2cDevice) {
+        try {
+            let dt = dev.getDeviceType();
+            let device = await i2cDeviceBase.factoryCreate(this, dev);
+            if (typeof device !== 'undefined') this.devices.push(device);
+        }
+        catch (err) { return Promise.reject(err); }
+
+    }
     public async initAsync(bus: I2cBus) {
         try {
             this.busNumber = bus.busNumber;
@@ -84,17 +96,10 @@ export class i2cBus {
             this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, {});
             bus.functions = await this._i2cBus.i2cFuncs();
             bus.addresses = await this.scanBus();
-            //let device = await i2cDeviceBase.factoryCreate(this, {} as I2cDevice);
             for (let i = 0; i < bus.devices.length; i++) {
                 let dev = bus.devices.getItemByIndex(i);
-                try {
-                    let dt = dev.getDeviceType();
-                    let device = await i2cDeviceBase.factoryCreate(this, dev);
-                }
-                catch (err) { logger.error(err); }
+                await this.addDevice(dev).catch(err => { logger.error(err); });
             }
-
-
             logger.info(`i2c Bus #${bus.busNumber} Initialized`);
         } catch (err) { logger.error(err); }
     }
@@ -455,7 +460,7 @@ class mockI2cBus {
     public bus() { return {}; }
     public close(): Promise<void> { return Promise.resolve(); }
     public i2cFuncs(): Promise<mockI2cFuncs> { return Promise.resolve(this.funcs); }
-    public scan(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([15 + this.busNumber, 98 + this.busNumber]); }
+    public scan(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([15 + this.busNumber, 97 + this.busNumber, 98 + this.busNumber, 102 + this.busNumber, 105 + this.busNumber]); }
     public deviceId(addr: number): Promise<{ manufacturer: number, product: number, name: string }> { return Promise.resolve({ manufacturer: 0, product: 0, name: 'Mock product' }); }
     public i2cRead(addr: number, length: number, buffer: Buffer): Promise<{ bytesRead: number, buffer: Buffer }> { return Promise.resolve({ bytesRead: length, buffer: buffer }); }
     public i2cWrite(addr: number, length: number, buffer: Buffer): Promise<{ bytesWritten: number, buffer: Buffer }> { return Promise.resolve({ bytesWritten: length, buffer: buffer }); }
@@ -494,6 +499,21 @@ export class i2cDeviceBase {
     public device: I2cDevice;
     public async closeAsync() { return Promise.resolve(); }
     public async initAsync(deviceType: any): Promise<boolean> { return Promise.resolve(true); }
+    public async callCommand(cmd: any): Promise<any> {
+        try {
+            if (typeof cmd.name !== 'string') return Promise.reject(new Error(`Invalid command ${cmd.name}`));
+            if (typeof this[cmd.name] !== 'function') return Promise.reject(new Error(`Command function not found ${cmd.name}`));
+            let res = await this[cmd.name].apply(this, cmd.params);
+            return Promise.resolve(res);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async setOptions(opts: any): Promise<any> {
+        try {
+            return Promise.resolve(this);
+        }
+        catch (err) { logger.error(err); }
+    }
 }
 
 export let i2c = new i2cController();

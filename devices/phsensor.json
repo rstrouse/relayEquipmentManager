@@ -4,7 +4,7 @@
   "devices": [
     {
       "id": 100,
-      "name": "Atlas Scientific pH EZO",
+      "name": "Atlas EZO-pH",
       "deviceClass": "AtlasEZOpH",
       "readings": {
         "pH": {
@@ -16,194 +16,466 @@
           }
         }
       },
-      "module":  "./AtlasEZO",
-      "input": "mV",
-      "convertValue": "return value;",
-      "ouputUnits": "pH",
-      "encoding": "ASCII",
-      "format": "string",
-      "responses": [
+      "module": "./AtlasEZO",
+      "options": [
         {
-          "value": 255,
-          "name": "nodata",
-          "desc": "No data to send"
-        },
-        {
-          "value": 254,
-          "name": "notready",
-          "desc": "Still processing, not ready"
-        },
-        {
-          "value": 2,
-          "name": "syntaxerror",
-          "desc": "Command syntax error"
-        },
-        {
-          "value": 1,
-          "name": "success",
-          "desc": "Successful request"
-        }
-      ],
-      "commands": [
-        {
-          "name": "setCalMid",
-          "desc": "Set Calibration Midpoint",
-          "type": "interactive",
-          "command": [ "cal", "mid", "$calMidValue" ],
-          "delay": 900,
-          "inputs": [
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
             {
-              "name": "calMidValue",
+              "dataType": "string",
+              "default": "",
               "field": {
-                "type": "valueSpinner",
-                "min": 0.00,
-                "max": 14.00,
-                "fmtMask": "0.##",
-                "step": ".1",
-                "canEdit": true,
-                "units": "pH",
-                "labelText": "A",
-                "inputAttrs": { "maxLength": "7rem" },
-                "labelAttrs": {
-                  "style": { "marginRight": ".15rem" }
-                }
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
               }
-            }
-          ]
-        },
-        {
-          "name": "setCalLow",
-          "desc": "Set Calibration Lowpoint",
-          "type": "interactive",
-          "command": [ "cal", "low", "$calLowValue" ],
-          "delay": 900,
-          "inputs": [
+            },
             {
-              "name": "calLowValue",
+              "dataType": "boolean",
+              "default": false,
               "field": {
-                "type": "valueSpinner",
-                "min": 0.00,
-                "max": 14.00,
-                "fmtMask": "0.##",
-                "step": ".1",
-                "canEdit": true,
-                "units": "pH",
-                "labelText": "A",
-                "inputAttrs": { "maxLength": "7rem" },
-                "labelAttrs": {
-                  "style": { "marginRight": ".15rem" }
-                }
+                "type": "checkbox",
+                "bind": "options.isProtocolLocked",
+                "labelText": "Lock Protocol",
+                "style": { "display": "block" }
               }
-            }
-          ]
-        },
-        {
-          "name": "setCalHigh",
-          "desc": "Set Calibration Highpoint",
-          "type": "interactive",
-          "command": [ "cal", "low", "$calHighValue" ],
-          "delay": 900,
-          "responses": [
+            },
             {
-              "value": 1,
-              "name": "success",
-              "desc": "Successfully calibrated highpoint"
-            }
-          ],
-          "inputs": [
-            {
-              "name": "calHighValue",
+              "bind": "options.extendedScale",
+              "dataType": "boolean",
+              "default": false,
               "field": {
-                "type": "valueSpinner",
-                "min": 0.00,
-                "max": 14.00,
-                "fmtMask": "0.##",
-                "step": ".1",
-                "canEdit": true,
-                "units": "pH",
-                "labelText": "A",
-                "inputAttrs": { "maxLength": "7rem" },
-                "labelAttrs": {
-                  "style": { "marginRight": ".15rem" }
-                }
+                "type": "checkbox",
+                "bind": "options.extendedScale",
+                "labelText": "Use Extended Scale",
+                "style": { "display": "block" }
               }
-            }
-          ]
-        },
-        {
-          "name": "clearCalibration",
-          "desc": "Clear Calibration",
-          "type": "momentary",
-          "command": [ "cal", "clear" ],
-          "delay": 300
-        },
-        {
-          "name": "sleep",
-          "desc": "Sleep mode/low power",
-          "type": "momentary",
-          "command": [ "Sleep" ],
-          "delay": 300
-        },
-        {
-          "name": "reset",
-          "desc": "Factory Reset",
-          "type": "momentary",
-          "command": [ "Factory" ],
-          "delay": 300
-        },
-        {
-          "name": "lock",
-          "desc": "Protocol Lock",
-          "type": "toggle",
-          "command": [ "Factory" ],
-          "delay": 300
-        }
-      ],
-      "options": {
-        "address": {
-          "dataType": "address",
-          "default": 99,
-          "field": {
-            "type": "valueSpinner",
-            "required": true,
-            "canEdit": true,
-            "labelText": "Address",
-            "step": "1",
-            "min": 1,
-            "max": 1000,
-            "inputAttrs": { "style": { "width": "4rem" } },
-            "labelAttrs": { "style": { "width": "7rem" } }
-          }
-        },
-        "name": {
-          "dataType": "string",
-          "default": "",
-          "field": {
-            "type": "inputField",
-            "required": false,
-            "labelText": "Name",
-            "inputAttrs": { "maxLength": 16 }
-          }
-        },
-        "isProtocolLocked": {
-          "dataType": "boolean",
-          "default": false,
-          "field": {
-            "type": "checkbox",
-            "labelText": "Lock Protocol"
-          }
-        },
-        "extendedScale": {
-          "dataType": "boolean",
-          "default": false,
-          "field": {
-            "type": "checkbox",
-            "labelText": "Use Extended Scale"
-          }
-        }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Device Info",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Firmware",
+                    "binding": "options.deviceInfo.firmware",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "lineHeight": ".8" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Last Restart",
+                        "binding": "options.status.lastRestart.name",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "-",
+                        "binding": "options.status.lastRestart.desc",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    }
 
-      },
-      "interfaces": ["i2c"]
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Vcc Voltage",
+                    "binding": "options.status.vcc",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.2em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    },
+                    "units": "volts"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Calibration Curve",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Ideal Acid",
+                    "binding": "options.slope.acid",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "1rem",
+                        "textAlign": "right"
+                      }
+                    },
+                    "units": "%"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Ideal Base",
+                    "binding": "options.slope.base",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "1rem",
+                        "textAlign": "right"
+                      }
+                    },
+                    "units": "%"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "vcc Offset",
+                    "binding": "options.slope.mV",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "1rem",
+                        "textAlign": "right"
+                      }
+                    },
+
+                    "units": "mV"
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Probe pH",
+                    "binding": "values.pH",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Temperature",
+                    "binding": "values.temperature",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "1rem",
+                        "textAlign": "right"
+                      }
+                    },
+                    "units": "&deg;C"
+                  }
+                }
+
+              ]
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "fieldset",
+            "legend": "Calibration",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            },
+            "attrs": { "data-bindingcontext": "calibration" }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "div",
+                "style": { "width": "21rem" },
+                "html": "Calibrate the midpoint first, then the lowpoint, and finally the high point.  This must be done in this order for 1, 2, or 3 point calibration.<hr style=\"margin:2px\"></hr>At each calibration step place the probe in the reference solution and wait a couple of minutes for the readings to stabilize.",
+                "cssClass": "script-advanced-instructions"
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "div",
+                "style": {
+                  "display": "inline-block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "div",
+                    "attrs": { "data-bindingcontext": "calibrate" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Mid Point",
+                        "icon": "<i class=\"fas fa-cogs\"></i>",
+                        "style": { "width": "7rem" }
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/calibrate`",
+                          "message": "Calibrating Mid Point...",
+                          "callContext": "calibrate",
+                          "resultContext": "calibration"
+                        }
+                      }
+                    },
+                    {
+                      "default": 7.00,
+                      "field": {
+                        "binding": "options.calMidPoint",
+                        "type": "valueSpinner",
+                        "labelText": "Mid Point",
+                        "min": 0,
+                        "max": 10,
+                        "labelAttrs": {
+                          "style": {
+                            "display": "none"
+                          }
+                        },
+                        "style": { "marginLeft": ".25rem" }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "div",
+                    "attrs": { "data-bindingcontext": "calibrate" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Low Point",
+                        "icon": "<i class=\"fas fa-cogs\"></i>",
+                        "style": { "width": "7rem" }
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/calibrate`",
+                          "message": "Calibrating Low Point...",
+                          "callContext": "calibrate",
+                          "resultContext": "calibration"
+                        }
+                      }
+
+                    },
+                    {
+                      "bind": "options.calLowPoint",
+                      "default": 4.00,
+                      "field": {
+                        "type": "valueSpinner",
+                        "labelText": "Low Point",
+                        "min": 0,
+                        "max": 10,
+                        "labelAttrs": {
+                          "style": {
+                            "display": "none"
+                          }
+                        },
+                        "style": { "marginLeft": ".25rem" }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "div",
+                    "attrs": { "data-bindingcontext": "calibrate" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "High Point",
+                        "icon": "<i class=\"fas fa-cogs\"></i>",
+                        "style": { "width": "7rem" }
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/calibrate`",
+                          "message": "Calibrating High Point...",
+                          "callContext": "calibrate",
+                          "resultContext": "calibration"
+                        }
+                      }
+                    },
+                    {
+                      "bind": "options.calHighPoint",
+                      "default": 10.00,
+                      "field": {
+                        "type": "valueSpinner",
+                        "labelText": "High Point",
+                        "min": 0,
+                        "max": 10,
+                        "labelAttrs": {
+                          "style": {
+                            "display": "none"
+                          }
+                        },
+                        "style": { "marginLeft": ".25rem" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "panel",
+              "field": {
+                "type": "div",
+                "style": { "display": "inline-block", "verticalAlign": "top", "marginLeft": "1rem" }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "html": "Calibration Points",
+                    "style": {
+                      "whiteSpace": "nowrap",
+                      "fontSize": ".8rem"
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "binding": "options.calibrationMode",
+                    "style": {
+                      "whiteSpace": "nowrap",
+                      "fontSize": "3rem",
+                      "textAlign": "center"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [ "i2c" ]
     }
   ]
 }

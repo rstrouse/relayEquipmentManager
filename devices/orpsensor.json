@@ -4,168 +4,285 @@
   "devices": [
     {
       "id": 150,
-      "name": "Atlas Scientific ORP EZO",
+      "name": "Atlas EZO-ORP",
       "deviceClass": "AtlasEZOorp",
       "module": "./AtlasEZO",
-      "input": "mV",
-      "convertValue": "return value;",
-      "ouputUnits": "mV",
-      "encoding": "ASCII",
-      "format": "string",
-      "responses": [
-        {
-          "value": 255,
-          "name": "nodata",
-          "desc": "No data to send"
-        },
-        {
-          "value": 254,
-          "name": "notready",
-          "desc": "Still processing, not ready"
-        },
-        {
-          "value": 2,
-          "name": "syntaxerror",
-          "desc": "Command syntax error"
-        },
-        {
-          "value": 1,
-          "name": "success",
-          "desc": "Successful request"
-        }
-      ],
-      "commands": [
-        {
-          "name": "setCalMid",
-          "desc": "Set Calibration Midpoint",
-          "type": "interactive",
-          "command": [ "cal", "mid", "$calMidValue" ],
-          "delay": 900,
-          "inputs": [
-            {
-              "name": "calMidValue",
-              "field": {
-                "type": "valueSpinner",
-                "min": 0.00,
-                "max": 14.00,
-                "fmtMask": "0.##",
-                "step": ".1",
-                "canEdit": true,
-                "units": "pH",
-                "labelText": "A",
-                "inputAttrs": { "maxLength": "7rem" },
-                "labelAttrs": {
-                  "style": { "marginRight": ".15rem" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "setCalLow",
-          "desc": "Set Calibration Lowpoint",
-          "type": "interactive",
-          "command": [ "cal", "low", "$calLowValue" ],
-          "delay": 900,
-          "inputs": [
-            {
-              "name": "calLowValue",
-              "field": {
-                "type": "valueSpinner",
-                "min": 0.00,
-                "max": 14.00,
-                "fmtMask": "0.##",
-                "step": ".1",
-                "canEdit": true,
-                "units": "pH",
-                "labelText": "A",
-                "inputAttrs": { "maxLength": "7rem" },
-                "labelAttrs": {
-                  "style": { "marginRight": ".15rem" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "setCalHigh",
-          "desc": "Set Calibration Highpoint",
-          "type": "interactive",
-          "command": [ "cal", "low", "$calHighValue" ],
-          "delay": 900,
-          "responses": [
-            {
-              "value": 1,
-              "name": "success",
-              "desc": "Successfully calibrated highpoint"
-            }
-          ],
-          "inputs": [
-            {
-              "name": "calHighValue",
-              "field": {
-                "type": "valueSpinner",
-                "min": 0.00,
-                "max": 14.00,
-                "fmtMask": "0.##",
-                "step": ".1",
-                "canEdit": true,
-                "units": "pH",
-                "labelText": "A",
-                "inputAttrs": { "maxLength": "7rem" },
-                "labelAttrs": {
-                  "style": { "marginRight": ".15rem" }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "clearCalibration",
-          "desc": "Clear Calibration",
-          "type": "momentary",
-          "command": [ "cal", "clear" ],
-          "delay": 300
-        },
-        {
-          "name": "sleep",
-          "desc": "Sleep mode/low power",
-          "type": "momentary",
-          "command": [ "Sleep" ],
-          "delay": 300
-        },
-        {
-          "name": "reset",
-          "desc": "Factory Reset",
-          "type": "momentary",
-          "command": [ "Factory" ],
-          "delay": 300
-        },
-        {
-          "name": "lock",
-          "desc": "Protocol Lock",
-          "type": "toggle",
-          "command": [ "Factory" ],
-          "delay": 300
-        }
-      ],
-      "options": {
-        "address": {
-          "dataType": "number",
-          "default": 99,
-          "field": {
-            "type": "valueSpinner",
-            "required": true,
-            "canEdit": true,
-            "labelText": "Address",
-            "step": "1",
-            "min": 1,
-            "max": 1000,
-            "inputAttrs": { "style": { "width": "4rem" } },
-            "labelAttrs": { "style": { "width": "7rem" } }
+      "readings": {
+        "orp": {
+          "label": "ORP",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
           }
         }
       },
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "bind": "options.isProtocolLocked",
+              "dataType": "boolean",
+              "default": false,
+              "field": {
+                "type": "checkbox",
+                "bind": "options.isProtocolLocked",
+                "labelText": "Lock Protocol",
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Device Info",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Firmware",
+                    "binding": "options.deviceInfo.firmware",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "lineHeight": ".8" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Last Restart",
+                        "binding": "options.status.lastRestart.name",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "-",
+                        "binding": "options.status.lastRestart.desc",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    }
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Vcc Voltage",
+                    "binding": "options.status.vcc",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.2em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    },
+                    "units": "volts"
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Probe ORP",
+                    "binding": "values.orp",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "units": "mV",
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "fieldset",
+            "legend": "Calibration",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            },
+            "attrs": { "data-bindingcontext": "calibration" }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "div",
+                "style": { "width": "21rem" },
+                "html": "Calibrate the probe by immersing it into calibration ORP/redox solution that is approx 25&deg;C/77&deg;F.  Set the solution rating in mV in the field next to the calibrate button.<hr style=\"margin:2px\"></hr>Wait a couple of minutes for the ORP reading to stabilize then press the calibrate button.",
+                "cssClass": "script-advanced-instructions"
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "div",
+                "style": {
+                  "display": "inline-block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "div",
+                    "attrs": { "data-bindingcontext": "calibrate" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Calibrate",
+                        "icon": "<i class=\"fas fa-cogs\"></i>",
+                        "style": { "width": "7rem" }
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/calibrate`",
+                          "message": "Calibrating Probe...",
+                          "callContext": "calibrate",
+                          "resultContext": "calibration"
+                        }
+                      }
+                    },
+                    {
+                      "default": 225,
+                      "field": {
+                        "binding": "options.calPoint",
+                        "type": "valueSpinner",
+                        "labelText": "Redox Value",
+                        "min": 0,
+                        "max": 800,
+                        "labelAttrs": {
+                          "style": {
+                            "display": "none"
+                          }
+                        },
+                        "units": "mV",
+                        "style": { "marginLeft": ".25rem" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "panel",
+              "field": {
+                "type": "div",
+                "style": {
+                  "display": "inline-block",
+                  "verticalAlign": "top",
+                  "marginLeft": "1rem"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "html": "Calibrated",
+                    "style": {
+                      "whiteSpace": "nowrap",
+                      "fontSize": ".8rem"
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "binding": "options.calibrationMode",
+                    "style": {
+                      "whiteSpace": "nowrap",
+                      "fontSize": "1.4rem",
+                      "textAlign": "center"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "interfaces": [ "i2c" ]
     }
   ]

@@ -6,9 +6,334 @@
       "id": 200,
       "name": "Pressure Transducer",
       "input": "mV",
-      "resistor":  10000,
+      "resistor": 10000,
       "convertValue": "return value;",
-      "interfaces": ["spi", "i2c"]
+      "interfaces": [ "spi" ]
+    },
+    {
+      "id": 201,
+      "name": "Altas EZO-PRS",
+      "deviceClass": "AtlasEZOprs",
+      "module": "./AtlasEZO",
+      "readings": {
+        "pressure": {
+          "label": "Pressure",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "bind": "options.isProtocolLocked",
+              "dataType": "boolean",
+              "default": false,
+              "field": {
+                "type": "checkbox",
+                "bind": "options.isProtocolLocked",
+                "labelText": "Lock Protocol",
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Device Info",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Firmware",
+                    "binding": "options.deviceInfo.firmware",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "lineHeight": ".8" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Last Restart",
+                        "binding": "options.status.lastRestart.name",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "-",
+                        "binding": "options.status.lastRestart.desc",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    }
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Vcc Voltage",
+                    "binding": "options.status.vcc",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.2em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    },
+                    "units": "volts"
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Pressure",
+                    "binding": "values.pressure",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Precision"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "default": 0,
+                      "field": {
+                        "binding": "options.decPlaces",
+                        "type": "valueSpinner",
+                        "labelText": "Decimals",
+                        "min": 0,
+                        "max": 3,
+                        "labelAttrs": {
+                          "style": { "width": "5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "default": "psi",
+                      "field": {
+                        "type": "pickList",
+                        "labelText": "Units",
+                        "binding": "options.units.name",
+                        "bindColumn": 0,
+                        "displayColumn": 0,
+                        "style": { "display": "block" },
+                        "labelAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "columns": [
+                          {
+                            "hidden": false,
+                            "binding": "name",
+                            "text": "name",
+                            "style": { "whiteSpace": "nowrap" }
+                          },
+                          {
+                            "hidden": false,
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": { "whiteSpace": "nowrap" }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "name": "psi",
+                            "desc": "Pounds per Square Inch"
+                          },
+                          {
+                            "name": "atm",
+                            "desc": "Atmospheres"
+                          },
+                          {
+                            "name": "bar",
+                            "desc": "Metric Pressure"
+                          },
+                          {
+                            "name": "kPa",
+                            "desc": "Kilo-Pascals"
+                          },
+                          {
+                            "name": "inh2o",
+                            "desc": "Inches of Water Column"
+                          },
+                          {
+                            "name": "cmh2o",
+                            "desc": "Centimeters of Water Column"
+                          }
+                        ],
+                        "inputAttrs": { "style": { "width": "4rem" } }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "High Pressure Alarm"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "15rem" },
+                    "html": "These settings will trigger the alarm pin when the pressure is exceeded.  This trigger will not be identified in the REM although it could be wired to a GPIO pin to reflect the alarm state.<hr style=\"margin:2px\"></hr>Provide the max pressure as well as the tolerance for when the alarm will reset.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.enable",
+                    "type": "checkbox",
+                    "labelText": "Enable",
+                    "style": { "display": "block" }
+                  }
+                },
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.pressure",
+                    "type": "valueSpinner",
+                    "labelText": "Pressure",
+                    "min": 0,
+                    "max": 1000,
+                    "style": { "display": "block" },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "inputAttrs": { "style": { "width": "5rem" } }
+                  }
+                },
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.tolerance",
+                    "type": "valueSpinner",
+                    "labelText": "Tolerance",
+                    "min": 0,
+                    "max": 1000,
+                    "style": { "display": "block" },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "inputAttrs": { "style": { "width": "5rem" } }
+                  }
+                }
+              ]
+            }
+
+          ]
+        }
+      ],
+      "interfaces": [ "i2c" ]
     }
   ]
 }

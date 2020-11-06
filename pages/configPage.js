@@ -114,10 +114,12 @@
             o.socket.on('spiChannel', (data) => {
                 //console.log({ evt: 'spiChannel', data: data });
                 el.find('div.pnl-config-spi[data-controllerid=' + data.bus + ']').each(function () { this.setChannelValue(data); });
-
             });
-            o.socket.on('i2cData', function (data) {
-                console.log({ evt: 'i2cData', data: data });
+            o.socket.on('i2cDataValues', function (data) {
+                console.log({ evt: 'i2cDataValues', data: data });
+                el.find('.pnl-i2c-device .i2cReadingValues').each(function () {
+                    dataBinder.bind($(this), data);
+                });
             });
             o.socket.on('connect_error', function (data) {
                 console.log('connection error:' + data);

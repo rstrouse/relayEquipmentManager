@@ -1,0 +1,662 @@
+﻿{
+  "category": "Peristalic Pumps",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 400,
+      "name": "Atlas EZO-PMP",
+      "deviceClass": "AtlasEZOpmp",
+      "module": "./AtlasEZO",
+      "readings": {
+        "dispensed": {
+          "label": "Dispensed Volume",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "bind": "options.isProtocolLocked",
+              "dataType": "boolean",
+              "default": false,
+              "field": {
+                "type": "checkbox",
+                "bind": "options.isProtocolLocked",
+                "labelText": "Lock Protocol",
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Device Info",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Firmware",
+                    "binding": "options.deviceInfo.firmware",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "lineHeight": ".8" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Last Restart",
+                        "binding": "options.status.lastRestart.name",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "-",
+                        "binding": "options.status.lastRestart.desc",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    }
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Vcc Voltage",
+                    "binding": "options.status.vcc",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.2em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    },
+                    "units": "volts"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Pump Voltage",
+                    "binding": "options.pumpVoltage",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.2em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    },
+                    "units": "volts"
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "html": "Total Dispensed"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Volume",
+                    "binding": "options.totalVolume.total",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "marginLeft": "1rem"
+                    },
+                    "units": "mL",
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Absolute",
+                    "binding": "options.totalVolume.absolute",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "marginLeft": "1rem"
+                    },
+                    "units": "mL",
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "html": "Current Status"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Mode",
+                    "binding": "values.mode.desc",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "marginLeft": "1rem"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Reverse",
+                    "dataType": "boolean",
+                    "binding": "values.reverse",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "marginLeft": "1rem"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Volume",
+                    "binding": "values.volume",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "marginLeft": "1rem"
+                    },
+                    "units": "mL",
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Max Flow",
+                    "binding": "values.maxRate",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "marginLeft": "1rem"
+                    },
+                    "units": "mL/min",
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                }
+
+              ]
+            }
+          ]
+        },
+        {
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Dispense",
+                "attrs": { "data-bindingcontext": "dispense" }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Continuous",
+                        "icon": "<i class=\"fas fa-running\"></i>"
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                          "message": "Dispensing Pump...",
+                          "callContext": "dispense",
+                          "callObj": { "dispense": { "method": "continuous" } } 
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "By Volume",
+                        "icon": "<i class=\"fas fa-flask\"></i>"
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                          "message": "Dispensing Pump...",
+                          "callContext": "dispense",
+                          "callObj": { "dispense": { "method": "volume" } } 
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Over Time",
+                        "icon": "<i class=\"far fa-clock\"></i>"
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                          "message": "Dispensing Pump...",
+                          "callContext": "dispense",
+                          "callObj": { "dispense": { "method": "volumeOverTime" } }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "hr",
+                        "style": { "margin": "3px" }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "checkbox",
+                        "labelText": "Reverse Flow",
+                        "bind": "dispense.reverse"
+
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "default": 10,
+                      "field": {
+                        "type": "valueSpinner",
+                        "labelText": "Volume",
+                        "binding": "dispense.volume",
+                        "min": 0,
+                        "max": 10000,
+                        "step": 0.1,
+                        "fmtMask": "#,##0.##",
+                        "canEdit": true,
+                        "labelAttrs": {
+                          "style": { "width": "4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "units": "mL"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "default": 1.5,
+                      "field": {
+                        "type": "valueSpinner",
+                        "labelText": "Time",
+                        "binding": "dispense.time",
+                        "min": 0,
+                        "max": 10000,
+                        "step": 0.1,
+                        "fmtMask": "#,##0.##",
+                        "canEdit": true,
+                        "labelAttrs": {
+                          "style": { "width": "4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "units": "minutes"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {"textAlign": "center"}
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "hr",
+                        "style": { "margin": "3px" }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Pause",
+                        "icon": "<i class=\"far fa-pause-circle\"></i>",
+                        "style": { "width": "5rem" }
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/pauseDispense`",
+                          "message": "Pausing Dispense..."
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Stop",
+                        "icon": "<i class=\"far fa-stop-circle\"></i>",
+                        "style": { "width": "5rem" }
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/stopDispense`",
+                          "message": "Stopping Dispense..."
+                        }
+                      }
+                    }
+                  ]
+                }
+
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Calibration",
+                "attrs": { "data-bindingcontext": "calibration" }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "21rem" },
+                    "html": "Calibrate the pump by volume and/or volume over time.  Run the pump using the dispense section above then set the calibration by indicating the actual pumped volume measured in an accurate cylinder.<hr style=\"margin:2px\"></hr>Provide volume measured below then press the calibrate button.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "inline-block",
+                      "verticalAlign": "top"
+                    }
+                  },
+                  "options": [
+                    {
+                      "dataType": "panel",
+                      "field": {
+                        "type": "div",
+                        "attrs": { "data-bindingcontext": "calibrate" }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "actionButton",
+                            "text": "Calibrate",
+                            "icon": "<i class=\"fas fa-cogs\"></i>",
+                            "style": { "width": "6.4rem" }
+                          },
+                          "fieldEvents": {
+                            "click": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/calibrate`",
+                              "message": "Calibrating Pump...",
+                              "callContext": "calibrate",
+                              "resultContext": "calibration"
+                            }
+                          }
+                        },
+                        {
+                          "default": 10,
+                          "field": {
+                            "binding": "options.calPoint",
+                            "type": "valueSpinner",
+                            "labelText": "Volume Pumped",
+                            "min": 0,
+                            "max": 10000,
+                            "step": 0.1,
+                            "fmtMask": "#,##0.##",
+                            "canEdit": true,
+                            "labelAttrs": {
+                              "style": {
+                                "display": "none"
+                              }
+                            },
+                            "inputAttrs": {
+                              "style": { "width": "4.15rem" }
+                            },
+                            "units": "mL",
+                            "style": { "marginLeft": ".25rem" }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "panel",
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "inline-block",
+                      "verticalAlign": "top",
+                      "marginLeft": ".25rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div",
+                        "html": "Calibration",
+                        "style": {
+                          "whiteSpace": "nowrap",
+                          "textAlign": "center",
+                          "fontSize": ".8rem"
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "hr",
+                        "style": { "margin": "3px" }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "binding": "options.calibration.time",
+                        "dataType": "boolean",
+                        "labelText": "Time",
+                        "style": {
+                          "whiteSpace": "nowrap",
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "3rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "binding": "options.calibration.volume",
+                        "dataType": "boolean",
+                        "labelText": "Volume",
+                        "style": {
+                          "whiteSpace": "nowrap",
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "3rem" }
+                        }
+
+                      }
+                    }
+
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [ "i2c" ]
+    }
+  ]
+}
