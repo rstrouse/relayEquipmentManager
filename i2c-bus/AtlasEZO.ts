@@ -283,7 +283,6 @@ export class AtlasEZOpH extends AtlasEZO {
     }
     public async setOptions(opts): Promise<any> {
         try {
-            console.log(opts);
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
             if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.extendedScale !== 'undefined' && this.device.options.extendedScale !== opts.extendedScale) await this.setExtendedScale(utils.makeBool(opts.extendedScale));
@@ -364,7 +363,7 @@ export class AtlasEZOpH extends AtlasEZO {
     }
     public async setName(name: string): Promise<boolean> {
         try {
-            await this.execCommand(`Name,${name.substring(0, 15)}`, 300);
+            await this.execCommand(`Name,${name.substring(0, 15).replace(/\s+/g, '_') }`, 300);
             this.device.name = this.device.options.name = name;
             return Promise.resolve(true);
         }
