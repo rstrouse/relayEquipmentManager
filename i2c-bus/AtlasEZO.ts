@@ -36,6 +36,7 @@ export class AtlasEZO extends i2cDeviceBase {
         }
         return err;
     }
+    protected escapeName(name: string): string { return name.substring(0, 15).replace(/\s+/g, '_'); }
     protected get version(): number { return typeof this.device !== 'undefined' && this.device.options !== 'undefined' && typeof this.device.options.deviceInfo !== 'undefined' ? parseFloat(this.device.options.deviceInfo.firmware) : 0 }
     protected async execCommand(command: string, timeout: number, length: number = 31): Promise<string> {
         try {
@@ -230,8 +231,8 @@ export class AtlasEZOorp extends AtlasEZO {
     }
     public async setName(name: string): Promise<boolean> {
         try {
-            await this.execCommand(`Name,${name.substring(0, 15)}`, 300);
-            this.device.options.name = this.device.name = name.substring(0, 15);
+            await this.execCommand(`Name,${this.escapeName(name)}`, 300);
+            this.device.options.name = this.device.name = this.escapeName(name);
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }
@@ -275,7 +276,7 @@ export class AtlasEZOpH extends AtlasEZO {
             this.device.options.calibration = await this.exportCalibration();
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.pH.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.device.options.name;
+            else this.device.name = this.escapeName(this.device.options.name);
             this.readContinuous();
             return Promise.resolve(true);
         }
@@ -294,8 +295,8 @@ export class AtlasEZOpH extends AtlasEZO {
     public async readContinuous(): Promise<number> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
-            let temp = this.device.options.tempCompensation;
-            let pH = this.readProbe(temp);
+            //let temp = this.device.options.tempCompensation;
+            let pH = this.readProbe();
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
             return Promise.resolve(pH);
         }
@@ -363,8 +364,8 @@ export class AtlasEZOpH extends AtlasEZO {
     }
     public async setName(name: string): Promise<boolean> {
         try {
-            await this.execCommand(`Name,${name.substring(0, 15).replace(/\s+/g, '_') }`, 300);
-            this.device.name = this.device.options.name = name;
+            await this.execCommand(`Name,${this.escapeName(name)}`, 300);
+            this.device.name = this.device.options.name = this.escapeName(name);
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }
@@ -437,6 +438,22 @@ export class AtlasEZOpmp extends AtlasEZO {
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); return Promise.resolve(false); }
+    }
+    public async getName(): Promise<string> {
+        try {
+            let result = await this.execCommand('Name,?', 300);
+            let arrDims = result.split(',');
+            return Promise.resolve(arrDims[1] || '');
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async setName(name: string): Promise<boolean> {
+        try {
+            await this.execCommand(`Name,${this.escapeName(name)}`, 300);
+            this.device.name = this.device.options.name = this.escapeName(name);
+            return Promise.resolve(true);
+        }
+        catch (err) { logger.error(err); }
     }
     private transformDispenseMode(code: string): { name: string, desc: string } {
         let mode = { name: code, desc: 'Unknown' };

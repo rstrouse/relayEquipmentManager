@@ -3212,7 +3212,182 @@ $.ui.position.fieldTip = {
             o.jar = undefined;
         }
     });
-
+    $.widget('pic.relayBoard', {
+        options: { columns: 4, total: 0, relays: [] },
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].val = function (val) { return self.val(val); };
+            el[0].relayCount = function (val) { return self.relayCount(val); };
+            el[0].setRelay = function (val) { return self.setRelay(val); }
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('relay-board');
+            if (typeof o.binding !== 'undefined') el.attr('data-bind', o.binding);
+            for (var i = 0; i < o.total; i++) {
+                self.addRelay(o.relays.find(elem => elem.id === i + 1) || { id: i + 1, name: `Relay #${i + 1}`, enabled: false });
+            }
+            el.on('click', 'span.relay-module-configure', function (e) {
+                var evt = $.Event('configureRelay');
+                var elemRelay = $(e.currentTarget).parents('div.relay-module:first');
+                var id = parseInt(elemRelay.attr('data-relayid'), 10);
+                evt.relay = o.relays.find(elem => elem.id === id) || { id: id, name: `Relay #${id}`, enabled: false };
+                el.trigger(evt);
+                if (!evt.isDefaultPrevented()) {
+                    self.openConfigureRelay(evt.relay);
+                }
+                e.stopImmediatePropagation();
+                e.preventDefault();
+            });
+            el.on('click', 'div.relay-module', function (e) {
+                if (!$(e.currentTarget).hasClass('disabled')) {
+                    var evt = $.Event('clickRelay');
+                    var elemRelay = $(e.currentTarget);
+                    var id = parseInt(elemRelay.attr('data-relayid'), 10);
+                    evt.relay = o.relays.find(elem => elem.id === id) || { id: id, name: `Relay #${id}`, enabled: false };
+                    el.trigger(evt);
+                }
+                e.stopImmediatePropagation();
+                e.preventDefault();
+            });
+        },
+        openConfigureRelay: function (relay) {
+            var self = this, o = self.options, el = self.element;
+            var dlg = $.pic.modalDialog.createDialog(`dlgEditRelay${relay.id}`, {
+                width: '407px',
+                height: 'auto',
+                title: `Edit Relay #${relay.id}`,
+                position: { my: "center center", at: "center center", of: window },
+                buttons: [
+                    {
+                        text: 'Save', icon: '<i class="fas fa-save"></i>',
+                        click: (evt) => {
+                            var r = dataBinder.fromElement(dlg);
+                            if (dataBinder.checkRequired(dlg, true)) {
+                                self.saveRelay(r);
+                            }
+                            $.pic.modalDialog.closeDialog(dlg[0]);
+                        }
+                    },
+                    {
+                        text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                        click: function () { $.pic.modalDialog.closeDialog(this); }
+                    }
+                ]
+            });
+            $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(relay.id);
+            $('<div></div>').appendTo(dlg).html('Enable this relay if you are controlling it from REM.  Changes to the relay will not be saved until you save the overall relay.<hr style="margin:3px"></hr>The relay adddress register will either be interpolated from the id.');
+            $('<hr></hr>').appendTo(dlg);
+            var line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });
+            $('<div></div>').appendTo(line).checkbox({ labelText: 'Enabled', binding: 'enabled' });
+            line = $('<div></div>').appendTo(dlg);
+            dataBinder.bind(dlg, relay);
+            dlg.css({ overflow: 'visible' });
+        },
+        createRelayElem: function (relay) {
+            var self = this, o = self.options, el = self.element;
+            var module = $('<div></div>').addClass('relay-module');
+            var header = $('<div></div>').appendTo(module);
+            $('<span></span>').addClass('relay-module-indicator').appendTo(header);
+            $('<i class="fas fa-cogs"></i>').appendTo($('<span></span>').addClass('relay-module-configure').addClass('header-icon-btn').appendTo(header));
+            module.attr('data-relayid', relay.id);
+            var name = $('<div></div>').addClass('relay-module-name').appendTo(module);
+            $('<span></span>').appendTo(name).text(relay.name);
+            if (typeof relay === 'undefined' || !makeBool(relay.enabled)) module.addClass('disabled');
+            module.attr('data-state', makeBool(relay.state));
+            return module;
+        },
+        addRelay: function (relay) {
+            var self = this, o = self.options, el = self.element;
+            var before;
+            el.children('div.relay-module').each(function () {
+                if (parseInt($(this).attr('data-relayid'), 10) > relay.id) {
+                    before = $(this);
+                    return false;
+                }
+            });
+            if (typeof before !== 'undefined' && before.length > 0) self.createRelayElem(relay).insertBefore(before);
+            else self.createRelayElem(relay).appendTo(el);
+            if (typeof o.relays.find(elem => elem.id === relay.id) === 'undefined') {
+                o.relays.push(relay);
+                o.relays.sort((a, b) => { return a.id - b.id; });
+            }
+        },
+        setRelay: function (relay) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof relay.id === 'undefined') return;
+            var r = o.relays.find(elem => elem.id === relay.id);
+            if (typeof r === 'undefined') {
+                relay.enabled = makeBool(relay.enabled);
+                if (typeof relay.name === 'undefined') relay.name(`Relay #${relay.id}`);
+                self.addRelay(relay);
+            }
+            else {
+                for (var prop in relay) {
+                    if(prop !== 'id') r[prop] = relay[prop];
+                }
+            }
+            var elemRelay = el.find(`div.relay-module[data-relayid="${relay.id}"]`);
+            if (typeof relay.state !== 'undefined') elemRelay.attr('data-state', makeBool(relay.state));
+            if (elemRelay.length === 0) self.addRelay(relay);
+            else {
+                elemRelay.find('div.relay-module-name > span').text(relay.name);
+                if (relay.enabled) elemRelay.removeClass('disabled');
+                else elemRelay.addClass('disabled');
+            }
+        },
+        saveRelay: function (relay) {
+            var self = this, o = self.options, el = self.element;
+            var evt = $.Event('saveRelay');
+            evt.relay = relay;
+            el.trigger(evt);
+            if (!evt.isDefaultPrevented()) {
+                self.setRelay(evt.relay);
+            }
+        },
+        removeRelay: function (relayId) {
+            var self = this, o = self.options, el = self.element;
+            for (var i = o.relays.length - 1; i >= 0; i--) {
+                if (o.relays[i].id > count) o.relays.splice(i, 1);
+            }
+            el.find(`div.relay-module[data-relayid = "${relayId}]`).remove();
+        },
+        relayCount: function (count) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof count !== 'undefined') {
+                console.log(o.relays);
+                o.relays.sort((a, b) => { return a.id - b.id; });
+                if (count < o.relays.length) {
+                    for (var i = o.relays.length - 1; i >= 0; i--) {
+                        if(o.relays[i].id > count) o.relays.splice(i, 1);
+                    }
+                    el.find('div.relay-module').each(function () {
+                        var id = parseInt($(this).attr('data-relayid'), 10);
+                        if (id > count) $(this).remove();
+                    });
+                }
+                else if (count > o.relays.length) {
+                    for (var i = o.relays.length; i < count; i++) {
+                        self.addRelay({ id: i + 1, name: `Relay #${i + 1}`, enabled: false });
+                    }
+                }
+            }
+            else return o.relays.length;
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val !== 'undefined') {
+                self.relayCount(val.length);
+                val.sort((a, b) => { return a.id - b.id });
+                for (var i = 0; i < val.length; i++) {
+                    self.setRelay(val[i]);
+                }
+            }
+            else return o.relays;
+        }
+    });
 })(jQuery);
 $.pic.modalDialog.createDialog = function (id, options) {
     var opt = typeof options !== 'undefined' && options !== null ? options : {

@@ -98,3 +98,12 @@ div.pin-state-panel {
     float:right;
     display:inline-block;
 }
+div.relay-module:not(.disabled):active {
+    color: white;
+    @include active_background();
+}
+div.relay-module:not(.disabled):hover {
+    color: white;
+    @include hover_background();
+}
+

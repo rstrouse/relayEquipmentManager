@@ -948,3 +948,51 @@ div.pnl-config-spi > div.control-panel {
 
 span.picStaticField-value {
   display: inline-block; }
+
+div.relay-module {
+  display: inline-block;
+  padding: 4px;
+  overflow: hidden;
+  width: 5rem;
+  height: 4rem;
+  border: solid 1px black;
+  border-radius: 5px;
+  margin-right: .15rem;
+  margin-bottom: 0px;
+  background-color: #2a2a72;
+  background-image: linear-gradient(315deg, #2a2a72 0%, #009ffd 100%);
+  cursor: pointer; }
+
+div.relay-module.disabled {
+  opacity: .7; }
+
+div.relay-module.disabled .relay-module-indicator {
+  visibility: hidden; }
+
+.relay-module-configure {
+  float: right;
+  color: lightsteelblue; }
+
+.relay-module-indicator {
+  border: solid 2px gray;
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: white; }
+
+div.relay-module[data-state=true] .relay-module-indicator {
+  background: lawngreen; }
+
+div.relay-module[data-state=false] .relay-module-indicator {
+  background: gainsboro; }
+
+div.relay-module-name {
+  text-align: center; }
+
+div.relay-module-name > span {
+  font-size: .8rem;
+  color: white; }
+
+.ui-widget input {
+  font-size: 1rem; }

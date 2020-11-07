@@ -146,6 +146,7 @@
                 dev.busId = o.busId;
                 dev.busNumber = o.busNumber;
                 dev.address = o.address;
+                console.log(dev);
                 if (isNaN(dev.id)) delete dev.id;
                 $.putLocalService('/config/i2c/device', dev, 'Saving I2c Device...', function (i2cDev, status, xhr) {
                     self.dataBind(i2cDev);
@@ -303,6 +304,15 @@
                     if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
                     if (typeof opt.field.legend !== 'undefined') $('<legend></legend>').appendTo(fld).html(opt.field.legend);
                     break;
+                case 'panel':
+                    fld = $('<div></div>').appendTo(pnl)[`${opt.field.class}`](opt.field);
+                    if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
+                    if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
+                    if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
+                    if (typeof opt.field.attrs !== 'undefined') {
+                        for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
+                    }
+                    break;
                 default:
                     fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
                     if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
@@ -372,7 +382,6 @@
             el.addClass('i2cdevice-feeds');
         }
     });
-
     $.widget('pic.dlgI2cBus', $.pic.modalDialog, {
         options: {},
         _create: function () {
@@ -420,6 +429,44 @@
                 self.close();
             });
 
+        }
+    });
+    $.widget('pic.pnlI2cRelay', {
+        options: {},
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-i2cdevice-relay');
+            self._buildControls();
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            var line = $('<div></div>').appendTo(el);
+            var idType = $('<input type="hidden"></input>').appendTo(line).attr('data-bind', 'options.idType');
+            $('<div></div>').appendTo(line).pickList({
+                labelText: "Controller",
+                binding: 'options.controllerType',
+                columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'desc', text: 'Controller', style: { whiteSpace: 'nowrap' } }],
+                items: o.controllerTypes,
+                inputAttrs: { style: { width: '10rem' } }
+            }).on('selchanged', function (evt) {
+                el.find('div.relay-board').each(function () {
+                    this.relayCount(evt.newItem.options.maxRelays);
+                    idType.val(evt.newItem.options.idType);
+                });
+            });
+            line = $('<div></div>').appendTo(line);
+            $('<hr></hr>').appendTo(line);
+            line = $('<div></div>').appendTo(line);
+            $('<div></div>').appendTo(el).css({ width: '21rem' }).relayBoard({ binding: 'options.relays' })
+                .on('saveRelay', function (evt) {
+                })
+                .on('clickRelay', function (evt) {
+                    console.log(evt);
+                    var dev = dataBinder.fromElement(el.parents('div.pnl-i2c-device:first'));
+                    $.putLocalService(`/config/i2c/${dev.busNumber}/${dev.address}/deviceCommand/setRelayState`, { id: evt.relay.id, state: !makeBool(evt.relay.state) }, 'Setting Relay State...', function (res, status, xhr) {
+                        evt.currentTarget.setRelay(res);
+                    });
+                });
         }
     });
     

@@ -93,6 +93,18 @@ div.pin-state-panel {
   float: right;
   display: inline-block; }
 
+div.relay-module:not(.disabled):active {
+  color: white;
+  background: #159FCF;
+  background: -webkit-linear-gradient(-90deg, #159FCF, #13647F);
+  background: linear-gradient(180deg, #159FCF, #13647F); }
+
+div.relay-module:not(.disabled):hover {
+  color: white;
+  background: #ffaf4b;
+  background: -webkit-linear-gradient(-90deg, #ffaf4b, #ff920a);
+  background: linear-gradient(180deg, #ffaf4b, #ff920a); }
+
 body {
   font-family: Arial; }
 

@@ -4,50 +4,113 @@
   "devices": [
     {
       "id": 300,
-      "name": "4 - Relay Board",
+      "name": "Multi-Relay Board",
       "input": "boolean",
-      "convertValue": "return value > 0;",
-      "i2c": {
-        "registers": [
-          {
-            "value": 1,
-            "name": "relay1",
-            "type": "byte",
-            "desc": "Relay #1 state"
-          },
-          {
-            "value": 2,
-            "name": "relay2",
-            "type": "byte",
-            "desc": "Relay #2 state"
-          },
-          {
-            "value": 3,
-            "name": "relay3",
-            "type": "byte",
-            "desc": "Relay #3 state"
-          },
-          {
-            "value": 4,
-            "name": "relay4",
-            "type": "byte",
-            "desc": "Relay #4 state"
-          }
-        ],
-        "commands": [
-          {
-            "register": 1,
-            "name": "Set Relay #1",
-            "states": [
-              {
-                "name": "On",
-                "desc": "Turns relay #1 on",
-                "value": 255
-              }
-            ]
-          }
-        ]
+      "deviceClass": "i2cRelayMulti",
+      "module": "./I2c-Relay",
+      "relayOptions": {
+        "maxRelays": 32,
+        "minRelays": 1,
+        "idType": "bit"
       },
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 24,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
+              }
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "fieldset",
+            "legend": "Relays",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            },
+            "attrs": { "data-bindingcontext": "relays" }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "div",
+                "style": { "width": "21rem" },
+                "html": "Enable each relay you are going to control or monitor state. Each relay must be given a unique number that represents the relay position on the relay board.<hr style=\"margin:2px\"></hr>Only the relays you identify here will be available for triggers and feeds.",
+                "cssClass": "script-advanced-instructions"
+              }
+            },
+            {
+              "field": {
+                "type": "panel",
+                "class": "pnlI2cRelay",
+                "controllerTypes": [
+                  {
+                    "name": "mcp23017",
+                    "desc": "MCP23017 Based",
+                    "options": {
+                      "idType": "bit",
+                      "maxRelays": 16
+                    }
+                  },
+                  {
+                    "name": "mcp23008",
+                    "desc": "MCP23008 Based",
+                    "options": {
+                      "idType": "bit",
+                      "maxRelays": 8
+                    }
+                  },
+                  {
+                    "name": "pcf8574",
+                    "desc": "PCF8574 Based",
+                    "options": {
+                      "idType": "bit",
+                      "maxRelays": 8
+                    }
+                  },
+                  {
+                    "name": "PCA9654x",
+                    "desc": "PCA9654x Based",
+                    "options": {
+                      "idType": "bit",
+                      "maxRelays": 8
+                    }
+                  },
+                  {
+                    "name": "dockerPi4",
+                    "desc": "Docker Pi 4",
+                    "options": {
+                      "idType": "ordinal",
+                      "maxRelays": 4
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
       "interfaces": [ "i2c" ]
     }
   ]
