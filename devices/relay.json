@@ -49,6 +49,7 @@
               "verticalAlign": "top",
               "marginLeft": ".5rem"
             },
+            "cssClass": "i2cReadingValues",
             "attrs": { "data-bindingcontext": "relays" }
           },
           "options": [

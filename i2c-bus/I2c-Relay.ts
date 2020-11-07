@@ -48,7 +48,7 @@ export class i2cRelay extends i2cDeviceBase {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             let orp = await this.readAllRelayStates();
-            this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
+            this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval || 500);
             return Promise.resolve(orp);
         }
         catch (err) { logger.error(err); }
@@ -71,6 +71,21 @@ export class i2cRelay extends i2cDeviceBase {
         try {
             switch (this.device.options.idType) {
                 case 'bit':
+                    let bmVals = [];
+                    // Force a sort so that it gets the correct address.
+                    this.device.options.relays.sort((a, b) => { return b.id - a.id; });
+                    for (let i = 0; i < this.device.options.relays.length; i++) {
+                        let relay = this.device.options.relay[i];
+                        // Get the byte map data from the controller.
+                        let bmOrd = Math.floor(relay.id / 8);
+                        if (bmOrd + 1 < bmVals.length) bmVals.push(await this.readCommand(0x0a + (bmOrd * 16)));
+                        let byte = bmVals[bmOrd];
+                        let state = utils.makeBool((byte & 1 << ((relay.id - (bmOrd * 8)) - 1)));
+                        if (state !== relay.state) {
+                            relay.state = state;
+                            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates:[relay] });
+                        }
+                    }
                     break;
                 default:
                     for (let i = 0; i < this.device.options.relays.length; i++) {
@@ -84,15 +99,26 @@ export class i2cRelay extends i2cDeviceBase {
     }
     public async readRelayState(relay): Promise<boolean> {
         let byte: number;
+        let cmdByte = relay.id;
         try {
             switch (this.device.options.idType) {
                 case 'bit':
+                    let bmOrd = Math.floor(relay.id / 8);
+                    cmdByte = 0x0a + (bmOrd * 16);
+                    byte = await this.readCommand(cmdByte);
+                    byte = byte & 1 << ((relay.id - (bmOrd * 8) - 1));
                     break;
                 default:
                     byte = await this.readCommand(relay.id);
                     break;
             }
-            if (typeof byte !== 'undefined') relay.state = utils.makeBool(byte);
+            if (typeof byte !== 'undefined') {
+                let b = utils.makeBool(byte);
+                if (relay.state !== b) {
+                    relay.state = b;
+                    webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+                }
+            }
             return Promise.resolve(true);
         }
         catch (err) { return Promise.reject(err); }

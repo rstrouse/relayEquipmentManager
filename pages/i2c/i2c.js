@@ -436,6 +436,9 @@
         _create: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-i2cdevice-relay');
+            el.attr('data-bind', 'relayStates');
+            el[0].val = function (val) { return self.val(val); }
+
             self._buildControls();
         },
         _buildControls: function () {
@@ -466,6 +469,13 @@
                     $.putLocalService(`/config/i2c/${dev.busNumber}/${dev.address}/deviceCommand/setRelayState`, { id: evt.relay.id, state: !makeBool(evt.relay.state) }, 'Setting Relay State...', function (res, status, xhr) {
                         evt.currentTarget.setRelay(res);
                     });
+                });
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val !== 'undefined')
+                el.find('div.relay-board').each(function () {
+                    for (var i = 0; i < val.length; i++)  this.setRelay(val[i]);
                 });
         }
     });
