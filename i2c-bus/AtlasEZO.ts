@@ -2,7 +2,7 @@
 //*EZO-ORP
 //EZO-DO(Dissolved Oxygen)
 //EZO-EC(Conductivity)
-//EZO-RTD(Temperature)
+//*EZO-RTD(Temperature)
 //EZO-CO2 sensor
 //EZO-O2 sensor
 //EZO-RGB Color Sensor
@@ -284,11 +284,14 @@ export class AtlasEZOpH extends AtlasEZO {
     }
     public async setOptions(opts): Promise<any> {
         try {
+            this.stopReadContinuous();
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
             if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.extendedScale !== 'undefined' && this.device.options.extendedScale !== opts.extendedScale) await this.setExtendedScale(utils.makeBool(opts.extendedScale));
             if (typeof opts.tempCompensation === 'number' && this.device.options.tempCompensation !== opts.tempCompensation) await this.setTempCompensation(opts.tempCompensation);
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
+            this.readContinuous();
+            return Promise.resolve(this.device.options);
         }
         catch (err) { logger.error(err); Promise.reject(err); }
     }
@@ -814,3 +817,124 @@ export class AtlasEZOprs extends AtlasEZO {
     }
 
 }
+export class AtlasEZOrtd extends AtlasEZO {
+    public async initAsync(deviceType): Promise<boolean> {
+        try {
+            this.device.options.name = await this.getName();
+            this.device.options.deviceInfo = await this.getDeviceInformation();
+            this.device.options.isProtocolLocked = await this.isProtocolLocked();
+            this.device.options.calibrationMode = await this.getCalibrated();
+            this.device.options.status = await this.getStatus();
+            this.device.options.calibration = await this.exportCalibration();
+            this.device.options.scale = await this.getScale();
+            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.temperature.interval.default;
+            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.device.options.name;
+            this.readContinuous();
+            return Promise.resolve(true);
+        }
+        catch (err) { logger.error(err); return Promise.resolve(false); }
+    }
+    public async setOptions(opts): Promise<any> {
+        try {
+            if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
+            if (typeof opts.scale === 'string' && opts.scale.length > 0) await this.setScale(opts.scale);
+        }
+        catch (err) { logger.error(err); Promise.reject(err); }
+    }
+
+    public async readContinuous(): Promise<number> {
+        try {
+            if (this._timerRead) clearTimeout(this._timerRead);
+            let temperature = await this.readProbe();
+            this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
+            return Promise.resolve(temperature);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async getCalibrated(): Promise<boolean> {
+        try {
+            let result = await this.execCommand('cal,?', 300);
+            let arrDims = result.split(',');
+            return Promise.resolve(utils.makeBool(arrDims[1]));
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async getScale(): Promise<string> {
+        try {
+            let result = await this.execCommand('S,?', 300);
+            let arrDims = result.split(',');
+            return Promise.resolve(arrDims[1]);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async setScale(value: string): Promise<boolean> {
+        try {
+            await this.execCommand(`S,${value}`, 300);
+            this.device.options.scale = value;
+            return Promise.resolve(true);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async setCalibrationPoint(value: number): Promise<boolean> {
+        try {
+            await this.execCommand(`Cal,${Math.floor(value)}`, 900);
+            this.device.options.calPoint = Math.floor(value);
+            return Promise.resolve(true);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async calibrate(data): Promise<I2cDevice> {
+        try {
+            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-RTD invalid data format. ${JSON.stringify(data)}`);
+            if (typeof data.options.calPoint !== 'undefined') await this.setCalibrationPoint(parseFloat(data.options.calPoint));
+            else { return Promise.reject(`Could not calibrate EZO-RTD no setpoint was provided. ${JSON.stringify(data)}`) }
+            this.device.options.calibrationMode = await this.getCalibrated();
+            return Promise.resolve(this.device);
+        }
+        catch (err) { logger.error(err); return Promise.reject(err); }
+    }
+
+    public async getName(): Promise<string> {
+        try {
+            let result = await this.execCommand('Name,?', 300);
+            let arrDims = result.split(',');
+            return Promise.resolve(arrDims[1] || '');
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async setName(name: string): Promise<boolean> {
+        try {
+            await this.execCommand(`Name,${this.escapeName(name)}`, 300);
+            this.device.options.name = this.device.name = this.escapeName(name);
+            return Promise.resolve(true);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async readProbe(): Promise<number> {
+        try {
+            let result = await this.execCommand('R', 900);
+            let val = parseFloat(result);
+            this.device.values.temperature = val;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            return Promise.resolve(val);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async exportCalibration(): Promise<{ len: number, total: number, data: string[] }> {
+        try {
+            let result = await this.execCommand('Export,?', 300);
+            let arrDims = result.split(',');
+            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };
+            for (let i = 0; i < dims.len; i++) {
+                let val = await this.execCommand('Export', 300);
+                dims.data.push(val);
+            }
+            return Promise.resolve(dims);
+        }
+        catch (err) { logger.error(err); }
+    }
+}
+

@@ -180,7 +180,10 @@
           },
           "field": {
             "type": "fieldset",
-            "style": { "padding": "2px", "display": "inline-block" },
+            "style": {
+              "padding": "2px",
+              "display": "inline-block"
+            },
             "legend": "Calibration"
           },
           "options": {
@@ -302,6 +305,335 @@
         }
       },
       "interfaces": [ "spi", "i2c" ]
+    },
+    {
+      "id": 3,
+      "name": "Atlas EZO-RTD",
+      "deviceClass": "AtlasEZOrtd",
+      "module": "./AtlasEZO",
+      "readings": {
+        "temperature": {
+          "label": "temperature",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "bind": "options.isProtocolLocked",
+              "dataType": "boolean",
+              "default": false,
+              "field": {
+                "type": "checkbox",
+                "bind": "options.isProtocolLocked",
+                "labelText": "Lock Protocol",
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "default": "f",
+              "field": {
+                "type": "pickList",
+                "labelText": "Units",
+                "binding": "options.scale",
+                "bindColumn": 0,
+                "displayColumn": 1,
+                "style": { "display": "block" },
+                "labelAttrs": {
+                  "style": { "width": "3rem" }
+                },
+                "columns": [
+                  {
+                    "hidden": true,
+                    "binding": "name",
+                    "text": "name",
+                    "style": { "whiteSpace": "nowrap" }
+                  },
+                  {
+                    "hidden": false,
+                    "binding": "desc",
+                    "text": "Description",
+                    "style": { "whiteSpace": "nowrap" }
+                  }
+                ],
+                "items": [
+                  {
+                    "name": "f",
+                    "desc": "Fahrenheit"
+                  },
+                  {
+                    "name": "c",
+                    "desc": "Celcius"
+                  },
+                  {
+                    "name": "k",
+                    "desc": "Kelvin"
+                  }
+                ],
+                "inputAttrs": { "style": { "width": "7rem" } }
+              }
+            },
+
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Device Info",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Firmware",
+                    "binding": "options.deviceInfo.firmware",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "lineHeight": ".8" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Last Restart",
+                        "binding": "options.status.lastRestart.name",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "-",
+                        "binding": "options.status.lastRestart.desc",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    }
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Vcc Voltage",
+                    "binding": "options.status.vcc",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.2em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    },
+                    "units": "volts"
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Temperature",
+                    "binding": "values.temperature",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "units": "&deg;",
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "fieldset",
+            "legend": "Calibration",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            },
+            "attrs": { "data-bindingcontext": "calibration" }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "div",
+                "style": { "width": "21rem" },
+                "html": "Calibrate the probe by supplying the temperature from a reliable device in the in the field next to the calibrate button.  The units should be in the units set for the RTD.<hr style=\"margin:2px\"></hr>Wait a couple of minutes for the RTD reading to stabilize then press the calibrate button.",
+                "cssClass": "script-advanced-instructions"
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "div",
+                "style": {
+                  "display": "inline-block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "div",
+                    "attrs": { "data-bindingcontext": "calibrate" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Calibrate",
+                        "icon": "<i class=\"fas fa-cogs\"></i>",
+                        "style": { "width": "7rem" }
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/calibrate`",
+                          "message": "Calibrating Probe...",
+                          "callContext": "calibrate",
+                          "resultContext": "calibration"
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "binding": "options.calPoint",
+                        "type": "valueSpinner",
+                        "labelText": "Temperature",
+                        "min": 0,
+                        "max": 200,
+                        "labelAttrs": {
+                          "style": {
+                            "display": "none"
+                          }
+                        },
+                        "units": "&deg;",
+                        "style": { "marginLeft": ".25rem" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "panel",
+              "field": {
+                "type": "div",
+                "style": {
+                  "display": "inline-block",
+                  "verticalAlign": "top",
+                  "marginLeft": "1rem"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "html": "Calibrated",
+                    "style": {
+                      "whiteSpace": "nowrap",
+                      "fontSize": ".8rem"
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "binding": "options.calibrationMode",
+                    "style": {
+                      "whiteSpace": "nowrap",
+                      "fontSize": "1.4rem",
+                      "textAlign": "center"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [ "i2c" ]
     }
   ],
   "maps": [
