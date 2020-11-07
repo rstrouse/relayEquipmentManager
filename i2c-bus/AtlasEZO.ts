@@ -425,8 +425,6 @@ export class AtlasEZOpH extends AtlasEZO {
 export class AtlasEZOpmp extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.device.options.name;
             if (this._timerRead) clearTimeout(this._timerRead);
             this.device.options.name = await this.getName();
             this.device.options.values = await this.getDispenseStatus();
@@ -437,6 +435,9 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.options.pumpVoltage = await this.getPumpVoltage();
             this.device.options.status = await this.getStatus();
             this.device.options.totalVolume = await this.getVolumeDispensed();
+            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.escapeName(this.device.options.name);
+
             await this.getDispenseStatus();
             return Promise.resolve(true);
         }
