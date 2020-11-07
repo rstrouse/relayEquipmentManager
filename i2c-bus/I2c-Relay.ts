@@ -25,16 +25,24 @@ export class i2cRelay extends i2cDeviceBase {
         return err;
     }
     protected toHexString(bytes: number[]) { return bytes.reduce((output, elem) => (output + '0x' + ('0' + elem.toString(16)).slice(-2)) + ' ', ''); }
-    protected async sendCommand(command: number[]): Promise<{bytesRead:number, buffer:Buffer}> {
+    protected async sendCommand(command: number[]): Promise<{ bytesWritten: number, buffer: Buffer }> {
         try {
             let buffer = Buffer.from(command);
-            logger.info(`Executing send command ${this.toHexString(command)}`);
             let w = await this.i2c.writeCommand(this.device.address, buffer);
             logger.info(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
             return Promise.resolve(w);
         }
         catch (err) { logger.error(err); }
     }
+    protected async readCommand(command: number): Promise<number> {
+        try {
+            let r = await this.i2c.readByte(this.device.address, command);
+            logger.info(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
+            return Promise.resolve(r);
+        }
+        catch (err) { logger.error(err); }
+    }
+
     public async stopReadContinuous() { if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead); return Promise.resolve(); }
     public async initAsync(deviceType): Promise<boolean> {
         try {
@@ -44,9 +52,40 @@ export class i2cRelay extends i2cDeviceBase {
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
             if (typeof this.device.options.idType === 'undefined' || this.device.options.idType.length === 0) this.device.options.idType = 'bit';
+            await this.readAllRelayStates();
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); return Promise.resolve(false); }
+    }
+    public async readAllRelayStates(): Promise<boolean> {
+        try {
+            switch (this.device.options.idType) {
+                case 'bit':
+                    break;
+                default:
+                    for (let i = 0; i < this.device.options.relays.length; i++) {
+                        await this.readRelayState(this.device.options.relays[i]);
+                    }
+                    break;
+            }
+            return Promise.resolve(true);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async readRelayState(relay): Promise<boolean> {
+        let byte: number;
+        try {
+            switch (this.device.options.idType) {
+                case 'bit':
+                    break;
+                default:
+                    byte = await this.readCommand(relay.id);
+                    break;
+            }
+            if (typeof byte !== 'undefined') relay.state = utils.makeBool(byte);
+            return Promise.resolve(true);
+        }
+        catch (err) { return Promise.reject(err); }
     }
     public async setOptions(opts): Promise<any> {
         try {
