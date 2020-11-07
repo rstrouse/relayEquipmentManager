@@ -188,7 +188,7 @@ export class AtlasEZOorp extends AtlasEZO {
     public async readContinuous(): Promise<number> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
-            let orp = this.readProbe();
+            let orp = await this.readProbe();
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
             return Promise.resolve(orp);
         }
@@ -296,7 +296,7 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             //let temp = this.device.options.tempCompensation;
-            let pH = this.readProbe();
+            let pH = await this.readProbe();
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
             return Promise.resolve(pH);
         }
@@ -710,7 +710,7 @@ export class AtlasEZOprs extends AtlasEZO {
     public async readContinuous(): Promise<number> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
-            let pressure = this.readProbe();
+            let pressure = await this.readProbe();
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
             return Promise.resolve(pressure);
         }

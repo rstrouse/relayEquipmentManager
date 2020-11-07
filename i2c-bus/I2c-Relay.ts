@@ -44,6 +44,16 @@ export class i2cRelay extends i2cDeviceBase {
     }
 
     public async stopReadContinuous() { if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead); return Promise.resolve(); }
+    public async readContinuous(): Promise<boolean> {
+        try {
+            if (this._timerRead) clearTimeout(this._timerRead);
+            let orp = await this.readAllRelayStates();
+            this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
+            return Promise.resolve(orp);
+        }
+        catch (err) { logger.error(err); }
+    }
+
     public async initAsync(deviceType): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
@@ -52,7 +62,7 @@ export class i2cRelay extends i2cDeviceBase {
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
             if (typeof this.device.options.idType === 'undefined' || this.device.options.idType.length === 0) this.device.options.idType = 'bit';
-            await this.readAllRelayStates();
+            this.readContinuous();
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); return Promise.resolve(false); }
