@@ -405,7 +405,7 @@
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-defineChipTypes');
             var crudChips = $('<div></div>').appendTo(el).crudList({
-                id: 'crudSpiAdcChips',
+                id: 'crudSpiAdcChips', actions: { canCreate: true, canEdit: true, canRemove: true },
                 key: 'id',
                 caption: 'SPI ADC Chip Definitions', itemName: 'Chip Definition',
                 columns: [{ binding: 'name', text: 'Name', dataType: 'int', style: { width: '97px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'manufacturer', text: 'Supplier', style: { width: '197px' } }]
@@ -600,7 +600,7 @@
             el.addClass('pnl-spi-feeds').addClass('list-outer');
             el.attr('data-bind', o.binding)
             $('<div></div>').appendTo(el).crudList({
-                id: 'crudFeeds' + o.channelId,
+                id: 'crudFeeds' + o.channelId, actions: { canCreate: true, canEdit: true, canRemove: true },
                 key: 'id',
                 caption: 'Channel Feeds', itemName: 'Channel Feeds',
                 columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'eventName', text: 'Topic/Event', style: { width: '127px' } }, { binding: 'property', text: 'Property', style: { width: '247px' }, cellStyle: { } }]

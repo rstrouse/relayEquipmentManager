@@ -878,6 +878,7 @@ $.ui.position.fieldTip = {
         }
     }
 };
+// Control Widgets
 (function ($) {
     $.widget("pic.fieldTip", {
         options: {
@@ -2685,22 +2686,29 @@ $.ui.position.fieldTip = {
         options: {
             caption: '',
             itemName: 'Item',
-            columns: []
+            columns: [],
+            actions: {canCreate: false, canEdit:false, canRemove: false, canClear:false}
         },
         _create: function () {
             var self = this, o = self.options, el = self.element;
             self._initList();
             el[0].addRow = function (data) { return self.addRow(data); };
             el[0].saveRow = function (data) { return self.saveRow(data); };
-            el[0].clear = function () { self.clear(); }
+            el[0].clear = function () { self.clear(); };
+            el[0].actions = function (val) { return self.actions(val); };
         },
         _getColumn: function (nCol) { return this.options.columns[nCol]; },
         _createCaption: function () {
             var self = this, o = self.options, el = self.element;
-            var caption = $('<div></div>').addClass('crud-caption').text(o.caption);
+            var caption = $('<div></div>').addClass('crud-caption').html(o.caption);
             $('<span></span>').appendTo(caption).addClass('header-icon-btn').addClass('btn-add').append($('<i class="fas fa-plus"></i>')).attr('title', 'Add a new ' + o.itemName)
                 .on('click', function (evt) {
                     var evt = $.Event('additem');
+                    el.trigger(evt);
+                });
+            $('<span></span>').appendTo(caption).addClass('header-icon-btn').addClass('btn-clear').append($('<i class="fas fa-broom"></i>')).attr('title', 'Clear all ' + o.itemName)
+                .on('click', function (evt) {
+                    var evt = $.Event('clearitems');
                     el.trigger(evt);
                 });
             return caption;
@@ -2710,7 +2718,7 @@ $.ui.position.fieldTip = {
             var header = $('<div></div>').addClass('crud-header');
             var tbody = $('<tbody></tbody>').appendTo($('<table></table>').appendTo(header));
             var row = $('<tr></tr>').appendTo(tbody).addClass('crud-header');
-            var btn = $('<td></td>').appendTo(row).addClass('crud-button'); // This is the buttons column.
+            var btn = $('<td></td>').appendTo(row).addClass('crud-button').addClass('btn-edit'); // This is the buttons column.
             $('<span></span>').appendTo(btn).addClass('crud-row-btn');
             for (var i = 0; i < o.columns.length; i++) {
                 var col = self._getColumn(i);
@@ -2721,7 +2729,7 @@ $.ui.position.fieldTip = {
 
                 if (col.hidden) td.hide();
             }
-            btn = $('<td></td>').appendTo(row).addClass('crud-button'); // This is the buttons column.
+            btn = $('<td></td>').appendTo(row).addClass('crud-button').addClass('btn-remove'); // This is the buttons column.
             $('<span></span>').appendTo(btn).addClass('crud-row-btn');
             return header;
         },
@@ -2756,7 +2764,7 @@ $.ui.position.fieldTip = {
             var tbl = el.find('table.crud-table:first');
             var tbody = tbl.find('tbody:first');
             var row = $('<tr></tr>').appendTo(tbody);
-            var btn = $('<td></td>').appendTo(row);
+            var btn = $('<td></td>').addClass('btn-edit').appendTo(row);
             self._createActionButton('fas fa-edit', 'Edit ' + o.itemName).addClass('btn-edit').appendTo(btn);
             for (var i = 0; i < o.columns.length; i++) {
                 var col = o.columns[i];
@@ -2765,7 +2773,7 @@ $.ui.position.fieldTip = {
                 if (typeof col.style !== 'undefined') div.css(col.style);
                 if (typeof col.cellStyle !== 'undefined') div.css(col.cellStyle);
             }
-            btn = $('<td></td>').appendTo(row);
+            btn = $('<td></td>').addClass('btn-remove').appendTo(row);
             // Add in the buttons.
             self.dataBindRow(row, data);
             self._createActionButton('fas fa-trash', 'Remove ' + o.itemName).addClass('btn-remove').appendTo(btn);
@@ -2811,7 +2819,44 @@ $.ui.position.fieldTip = {
             el.on('span.crud-row-btn.btn-remove', function (evt) {
                 console.log('Remove clicked');
             });
+            self.actions(o.actions);
+        },
+        actions: function(val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val === 'undefined') {
+                return o.actions = {
+                    canCreate: makeBool(el.attr('data-cancreate')),
+                    canEdit: makeBool(el.attr('data-canedit')),
+                    canRemove: makeBool(el.attr('data-canremove')),
+                    canClear: makeBool(el.attr('data-canclear'))
+                }
+            }
+            else {
+                var acts = typeof o.actions !== 'undefined' ? o.actions : o.actions = {}
+                for (var prop in val) {
+                    var name = prop.toLowerCase();
+                    switch (name) {
+                        case 'cancreate':
+                            acts.canCreate = makeBool(val[prop]);
+                            el.attr(`data-${name}`, makeBool(val[prop]));
+                            break;
+                        case 'canedit':
+                            acts.canUpdate = makeBool(val[prop]);
+                            el.attr(`data-${name}`, makeBool(val[prop]));
+                            break;
+                        case 'canremove':
+                            acts.canRemove = makeBool(val[prop]);
+                            el.attr(`data-${name}`, makeBool(val[prop]));
+                            break;
+                        case 'canclear':
+                            acts.canClear = makeBool(val[prop]);
+                            el.attr(`data-${name}`, makeBool(val[prop]));
+                    }
+                }
+            }
+            
         }
+
     });
     $.widget("pic.selectList", {
         options: {
@@ -2951,7 +2996,6 @@ $.ui.position.fieldTip = {
         }
 
     });
-
     $.widget("pic.modalDialog", $.ui.dialog, {
         options: {
             screenLayer: 0

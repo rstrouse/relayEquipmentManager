@@ -208,7 +208,7 @@
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-pin-triggers').addClass('list-outer');
             $('<div></div>').appendTo(el).crudList({
-                id: 'crudTriggers',
+                id: 'crudTriggers', actions: { canCreate: true, canEdit: true, canRemove: true },
                 key: 'id',
                 caption: 'Triggers', itemName: 'Pin Trigger',
                 columns: [{ binding: 'state.desc', text: 'State', style: { width: '47px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'eventName', text: 'Event', style: { width: '127px' } }, { binding: 'filter', text: 'Filter', style: { width: '247px' }, cellStyle: { fontSize: '8pt' } }]

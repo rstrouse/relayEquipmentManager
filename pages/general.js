@@ -56,14 +56,7 @@
                 grpInterfaces = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpInterfaces');
                 $('<legend></legend>').appendTo(grpInterfaces).html('I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Interface');
                 line = $('<div></div>').appendTo(grpInterfaces);
-                $('<div></div>').appendTo(line).actionButton({
-                    text: 'Add I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Bus',
-                    icon: '<i class= "fas fa-bus-alt" ></i>'
-                }).css({ marginRight: '1rem' })
-                    .on('click', function (evt) {
-                        $('<div id="dlgAddI2cBus" style="display:block;position:relative;padding:4px;"></div>').dlgI2cBus();
-
-                    });
+                $('<div></div>').appendTo(grpInterfaces).pnlI2cBuses();
 
 
                 $('<hr></hr>').appendTo(outer);
@@ -89,6 +82,13 @@
             var self = this, o = self.options, el = self.element;
             var settings = el.find('div.pnl-board-settings:first');
             _controller().boardType(o.controllerTypes.find(elem => elem.name === data.controllerType));
+            el.find('div.crud-list#crudI2cBuses').each(function () {
+                this.clear();
+                for (var i = 0; i < data.i2c.buses.length; i++) {
+                    var bus = data.i2c.buses[i];
+                    this.addRow(bus);
+                }
+            });
             dataBinder.bind(settings, data);
             o.controller = data;
         },
@@ -261,7 +261,7 @@
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
             $('<div></div>').appendTo(el).crudList({
-                key: 'id',
+                key: 'id', actions: {canCreate: true, canEdit: true, canRemove:true },
                 caption: 'Connections', itemName: 'Connection',
                 columns: [{ binding: 'name', text: 'Name', style: { width: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'type.desc', text: 'Type', style: { width: '177px' } }]
             }).on('additem', function (evt) {
@@ -309,6 +309,57 @@
                 list.addRow(conns[i]);
             }
         }
+    });
+    $.widget('pic.pnlI2cBuses', {
+        options: { cfg: {} },
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].dataBind = function (conns) { self.dataBind(conns); }
+        },
+        _reloadBuses() {
+            var self = this, o = self.options, el = self.element;
+            $.getLocalService('/config/options/I2c', null, function (i2c, status, xhr) {
+                console.log(i2c);
+                self.dataBind(i2c.buses);
+            });
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            $('<div></div>').appendTo(el).crudList({
+                id: 'crudI2cBuses',
+                key: 'busNumber', actions: { canCreate: true, canEdit: false, canRemove: true },
+                caption: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Buses', itemName: 'Bus',
+                columns: [{ binding: 'busNumber', text: '#', style: { width: '2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' } }, { binding: 'detected.path', text: 'Path', style: { width: '177px' } }]
+            }).css({ display: 'inline-block' }).on('additem', function (evt) {
+                $('<div id="dlgAddI2cBus" style="display:block;position:relative;padding:4px;"></div>').dlgI2cBus();
+            }).on('removeitem', function (evt) {
+                $.getLocalService('/config/options/i2cBus/' + evt.dataKey, null, function (bus, status, xhr) {
+                    $.pic.modalDialog.createConfirm('dlgConfirmI2cBus', {
+                        message: '<div>Are you sure you want to delete I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + bus.busNumber + '?</div><hr></hr><div><span style="color:red;font-weight:bold;">WARNING:</span> If you delete this bus it will remove all <span style="font-weight:bold;">devices</span> configured on the bus.</div>',
+                        width: '377px',
+                        height: 'auto',
+                        title: 'Confirm Delete I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Bus',
+                        buttons: [{
+                            text: 'Yes', icon: '<i class="fas fa-trash"></i>',
+                            click: function () {
+                                $.pic.modalDialog.closeDialog(this);
+                                $.deleteLocalService('/config/options/connections/' + evt.dataKey, {}, 'Deleting Connection...', function (c, status, xhr) {
+                                    evt.dataRow.remove();
+                                });
+                            }
+                        },
+                        {
+                            text: 'No', icon: '<i class="far fa-window-close"></i>',
+                            click: function () { $.pic.modalDialog.closeDialog(this); }
+                        }]
+                    });
+                });
+                });
+            var line = $('<div></div>').css({ display: 'inline-block', verticalAlign: 'top' }).appendTo(el);
+            $('<div></div>').appendTo(line).addClass('script-advanced-instructions').css({ width: '13rem', marginLeft:'.5rem' }).html('Add the I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Buses you would like to control by clicking the plus sign.');
+        }
+
     });
     $.widget('pic.pnlConnectionType', {
         options: {},

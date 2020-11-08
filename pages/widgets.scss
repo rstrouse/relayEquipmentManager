@@ -891,6 +891,18 @@ div.pnl-pin-definition {
     min-height: 50px;
     display: inline-block;
 }
+.crud-list[data-cancreate="false"] .btn-add {
+    display:none;
+}
+.crud-list[data-canedit="false"] .btn-edit {
+    display:none;
+}
+.crud-list[data-canremove="false"] .btn-remove {
+    display:none;
+}
+.crud-list[data-canclear="false"] .btn-clear {
+    display:none;
+}
 .slist-caption,
 .crud-caption,
 .list-caption {

@@ -8,6 +8,9 @@ import { i2cDeviceFactory } from "./i2cFactory";
 import { connBroker, ServerConnection } from "../connections/Bindings";
 import * as extend from "extend";
 import { Buffer } from "buffer";
+import * as path from 'path';
+import * as fs from 'fs';
+
 export class i2cController {
     public i2cBus;
     public buses: i2cBus[] = [];
@@ -33,6 +36,7 @@ export class i2cController {
                 let ibus = new i2cBus();
                 await ibus.initAsync(bus);
                 this.buses.push(ibus);
+                i2c.detected = await this.findBuses();
             }
         } catch (err) { logger.error(err); }
     }
@@ -48,7 +52,69 @@ export class i2cController {
             await this.initAsync(i2c);
         } catch (err) { logger.error(err); }
     }
-
+    public async findBuses() {
+        let buses = [];
+        try {
+            if (fs.existsSync(`/proc/bus/i2c`)) {
+                let fd = fs.openSync(`/proc/bus/i2c`, 'r');
+                let buff = Buffer.alloc(120);
+                let pos = 0;
+                let read = 0;
+                do {
+                    read = fs.readSync(fd, buff, 0, 120, pos);
+                    let bus: any = {};
+                    if (read > 0) {
+                        // The data is tab delimited.
+                        let arr = buff.toString().split('\t');
+                        bus.driver = arr[0].trim();
+                        bus.name = arr[1].trim();
+                        bus.type = arr[2].trim();
+                        bus.busNumber = parseInt(bus.name.replace('i2c-', ''), 10);
+                        bus.path = `/proc/bus/i2c/${bus.name}`;
+                        buses.push(bus);
+                    }
+                    pos += read;
+                } while (read === 120);
+            } else if (fs.existsSync(`/sys/class/i2c-dev`)) {
+                let dirs = fs.readdirSync('/sys/class/i2c-dev');
+                for (let dir in dirs) {
+                    let bus: any = {};
+                    if (dir === '.' || dir === '...') continue;
+                    if (fs.existsSync(`/sys/class/i2c-dev/${dir}/name`)) {
+                        // Read out the name for the device.
+                        bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/name`, { flag: 'r' });
+                        bus.path = `/sys/class/i2c-dev/${dir}`;
+                        bus.name = dir;
+                        bus.busNumber = parseInt(dir.replace('i2c-', ''), 10);
+                        buses.push(bus);
+                    }
+                    if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device/name`)) {
+                        // Read out the name for the device.
+                        bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/name`, { flag: 'r' });
+                        bus.path = `/sys/class/i2c-dev/${dir}`;
+                        bus.name = dir;
+                        bus.busNumber = parseInt(dir.replace('i2c-', ''), 10);
+                        buses.push(bus);
+                    }
+                    else if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device`)) {
+                        // Non-ISA devices.
+                        let ddirs = fs.readdirSync(`/sys/class/i2c-dev/${dir}/device`);
+                        for (let ddir in ddirs) {
+                            if (!ddir.toLowerCase().startsWith('i2c-')) continue;
+                            if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device/${ddir}/name`)) {
+                                bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/device/${ddir}/name`);
+                                bus.path = `/sys/class/i2c-dev/${dir}/device/${ddir}`;
+                                bus.name = ddir;
+                                bus.busNumber = parseInt(ddir.replace(/i2c-/gi, ''), 10);
+                                buses.push(bus);
+                            }
+                        }
+                    }
+                }
+            }
+            return Promise.resolve(buses);
+        } catch (err) { logger.error(err); }
+    }
 }
 export class i2cBus {
     //private _opts;

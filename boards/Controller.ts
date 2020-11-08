@@ -562,15 +562,19 @@ export class I2cController extends ConfigItem {
     public initData(data?: any) {
         if (typeof this.data.isActive === 'undefined') this.isActive = false;
         if (typeof this.data.buses === 'undefined') this.data.buses = [];
+        if (typeof this.data.detectect === 'undefined') this.data.detected = [];
         return data;
     }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
     public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get detected(): any[] { return this.data.detected; }
+    public set detected(val: any[]) { this.data.detected = val; }
     public get buses(): I2cBusCollection { return new I2cBusCollection(this.data, 'buses'); }
     public getExtended() {
         let c = this.get(true);
+        c.buses = this.buses.toExtendedArray();
         return c;
     }
     public async setDevice(dev): Promise<I2cDevice> {
@@ -646,6 +650,7 @@ export class I2cBus extends ConfigItem {
     public get devices(): I2cDeviceCollection { return new I2cDeviceCollection(this.data, 'devices'); }
     public getExtended() {
         let c = this.get(true);
+        c.detected = cont.i2c.detected.find(elem => elem.busNumber === this.busNumber);
         c.devices = [];
         for (let i = 0; i < this.devices.length; i++) {
             c.devices.push(this.devices.getItemByIndex(i).getExtended());
