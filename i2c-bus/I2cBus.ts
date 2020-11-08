@@ -55,7 +55,9 @@ export class i2cController {
     public async findBuses() {
         let buses = [];
         try {
+            logger.info(`Detecting i2c Buses`);
             if (fs.existsSync(`/proc/bus/i2c`)) {
+                logger.info(`Detecting i2c Buses /proc/bus/i2c`);
                 let fd = fs.openSync(`/proc/bus/i2c`, 'r');
                 let buff = Buffer.alloc(120);
                 let pos = 0;
@@ -80,6 +82,7 @@ export class i2cController {
                 for (let dir in dirs) {
                     let bus: any = {};
                     if (dir === '.' || dir === '...') continue;
+                    logger.info(`Detecting i2c Buses /sys/class/i2c-dev/${dir}`);
                     if (fs.existsSync(`/sys/class/i2c-dev/${dir}/name`)) {
                         // Read out the name for the device.
                         bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/name`, { flag: 'r' });
@@ -88,7 +91,7 @@ export class i2cController {
                         bus.busNumber = parseInt(dir.replace('i2c-', ''), 10);
                         buses.push(bus);
                     }
-                    if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device/name`)) {
+                    else if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device/name`)) {
                         // Read out the name for the device.
                         bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/name`, { flag: 'r' });
                         bus.path = `/sys/class/i2c-dev/${dir}`;
@@ -100,6 +103,7 @@ export class i2cController {
                         // Non-ISA devices.
                         let ddirs = fs.readdirSync(`/sys/class/i2c-dev/${dir}/device`);
                         for (let ddir in ddirs) {
+                            logger.info(`Detecting i2c Buses /sys/class/i2c-dev/${dir}/device/${ddir}`);
                             if (!ddir.toLowerCase().startsWith('i2c-')) continue;
                             if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device/${ddir}/name`)) {
                                 bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/device/${ddir}/name`);
