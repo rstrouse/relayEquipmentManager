@@ -200,7 +200,7 @@ export class Controller extends ConfigItem {
         let cfgDefault = this.loadConfigFile(path.posix.join(process.cwd(), '/defaultController.json'), {});
         cfg = extend(true, {}, cfgDefault, cfg);
         let cfgVer = 1;
-        this.data = this.onchange(cfg, () => { cont.dirty = true; });
+        this.data = this.onchange(cfg, function() { cont.dirty = true; });
         this.gpio = new Gpio(this.data, 'gpio');
         if (typeof this.data.configVersion === 'undefined') {
             this.gpio.upgrade(this.data.ver);
@@ -240,6 +240,7 @@ export class Controller extends ConfigItem {
     public persist() {
         this._isDirty = false;
         // Don't overwrite the configuration if we failed during the initialization.
+        logger.info(`Persisting configuration`);
         Promise.resolve()
             .then(() => { fs.writeFileSync(this.cfgPath, JSON.stringify(this.data, undefined, 2)); })
             .catch(function (err) { if (err) logger.error('Error writing controller config %s %s', err, this.cfgPath); });

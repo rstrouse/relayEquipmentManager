@@ -27,10 +27,11 @@ export class i2cController {
             }
         } catch (err) { console.log(err); }
     }
-    public async initAsync(i2c: I2cController) {
+    public async initAsync(i2c: I2cController): Promise<void> {
         try {
             logger.info(`Initializing i2c Interface`);
             i2c.detected = await this.findBuses();
+            console.log(i2c.detected);
             for (let i = 0; i < i2c.buses.length; i++) {
                 let bus = i2c.buses.getItemByIndex(i);
                 if (!bus.isActive) continue;
@@ -38,21 +39,27 @@ export class i2cController {
                 await ibus.initAsync(bus);
                 this.buses.push(ibus);
             }
+            return Promise.resolve();
         } catch (err) { logger.error(err); }
     }
-    public async closeAsync() {
-        for (let i = 0; i < this.buses.length; i++) {
-            await this.buses[i].closeAsync();
+    public async closeAsync(): Promise<void> {
+        try {
+            for (let i = 0; i < this.buses.length; i++) {
+                await this.buses[i].closeAsync();
+            }
+            this.buses.length = 0;
+            return Promise.resolve();
         }
-        this.buses.length = 0;
+        catch (err) { logger.error(err); }
     }
-    public async resetAsync(i2c) {
+    public async resetAsync(i2c): Promise<void> {
         try {
             await this.closeAsync();
             await this.initAsync(i2c);
+            return Promise.resolve();
         } catch (err) { logger.error(err); }
     }
-    public async findBuses() {
+    public async findBuses(): Promise<any[]> {
         let buses = [];
         try {
             logger.info(`Detecting i2c Buses`);
