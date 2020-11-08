@@ -119,7 +119,7 @@ export class i2cController {
                 }
             }
             return Promise.resolve(buses);
-        } catch (err) { logger.error(err); }
+        } catch (err) { logger.error(err); Promise.reject(err); }
     }
 }
 export class i2cBus {
@@ -401,9 +401,12 @@ export class i2cDeviceBase {
     public writable: boolean = false;
     public i2c;
     public device: I2cDevice;
-    public async closeAsync() {
-        logger.info(`Stopped I2c ${this.device.name}`);
-        return Promise.resolve();
+    public async closeAsync(): Promise<void> {
+        try {
+            logger.info(`Stopped I2c ${this.device.name}`);
+            return Promise.resolve();
+        }
+        catch(err) { logger.error(err); }
     }
     public async initAsync(deviceType: any): Promise<boolean> { return Promise.resolve(true); }
     public async callCommand(cmd: any): Promise<any> {

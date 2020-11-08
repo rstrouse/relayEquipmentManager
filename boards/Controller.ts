@@ -200,7 +200,7 @@ export class Controller extends ConfigItem {
         let cfgDefault = this.loadConfigFile(path.posix.join(process.cwd(), '/defaultController.json'), {});
         cfg = extend(true, {}, cfgDefault, cfg);
         let cfgVer = 1;
-        this.data = this.onchange(cfg, function () { cont.dirty = true; });
+        this.data = this.onchange(cfg, () => { cont.dirty = true; });
         this.gpio = new Gpio(this.data, 'gpio');
         if (typeof this.data.configVersion === 'undefined') {
             this.gpio.upgrade(this.data.ver);
@@ -562,7 +562,7 @@ export class I2cController extends ConfigItem {
     public initData(data?: any) {
         if (typeof this.data.isActive === 'undefined') this.isActive = false;
         if (typeof this.data.buses === 'undefined') this.data.buses = [];
-        if (typeof this.data.detectect === 'undefined') this.data.detected = [];
+        if (typeof this.data.detected === 'undefined') this.data.detected = [];
         return data;
     }
     public get id(): number { return this.data.id; }

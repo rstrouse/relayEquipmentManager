@@ -128,14 +128,14 @@ export class AtlasEZO extends i2cDeviceBase {
         }
         catch (err) { logger.error(err); }
     }
-    public async stopReadContinuous() { if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead); return Promise.resolve(); }
+    public async stopReadContinuous(): Promise<void> { if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead); return Promise.resolve(); }
     public async closeAsync(): Promise<void> {
         try {
             await this.stopReadContinuous();
             await super.closeAsync();
             return Promise.resolve();
         }
-        catch (err) { return Promise.reject(err); }
+        catch (err) { return logger.error(err); }
     }
     protected transformRestart(code: string): { name: string, desc: string } {
         let status = { name: code, desc: 'Unknown' };
