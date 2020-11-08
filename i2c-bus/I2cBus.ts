@@ -30,13 +30,13 @@ export class i2cController {
     public async initAsync(i2c: I2cController) {
         try {
             logger.info(`Initializing i2c Interface`);
+            i2c.detected = await this.findBuses();
             for (let i = 0; i < i2c.buses.length; i++) {
                 let bus = i2c.buses.getItemByIndex(i);
                 if (!bus.isActive) continue;
                 let ibus = new i2cBus();
                 await ibus.initAsync(bus);
                 this.buses.push(ibus);
-                i2c.detected = await this.findBuses();
             }
         } catch (err) { logger.error(err); }
     }
