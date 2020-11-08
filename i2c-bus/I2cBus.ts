@@ -79,7 +79,7 @@ export class i2cController {
                 } while (read === 120);
             } else if (fs.existsSync(`/sys/class/i2c-dev`)) {
                 let dirs = fs.readdirSync('/sys/class/i2c-dev');
-                for (let dir in dirs) {
+                for (let dir in dirs.values) {
                     let bus: any = {};
                     if (dir === '.' || dir === '...') continue;
                     logger.info(`Detecting i2c Buses /sys/class/i2c-dev/${dir}`);
@@ -102,7 +102,7 @@ export class i2cController {
                     else if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device`)) {
                         // Non-ISA devices.
                         let ddirs = fs.readdirSync(`/sys/class/i2c-dev/${dir}/device`);
-                        for (let ddir in ddirs) {
+                        for (let ddir in ddirs.values) {
                             logger.info(`Detecting i2c Buses /sys/class/i2c-dev/${dir}/device/${ddir}`);
                             if (!ddir.toLowerCase().startsWith('i2c-')) continue;
                             if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device/${ddir}/name`)) {
