@@ -234,7 +234,7 @@ export class Controller extends ConfigItem {
             this._timerDirty = null;
         }
         if (this._isDirty) {
-            this._timerDirty = setTimeout(() => this.persist(), 3000);
+            this._timerDirty = setTimeout(() => cont.persist(), 3000);
         }
     }
     public persist() {

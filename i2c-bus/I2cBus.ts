@@ -240,14 +240,16 @@ export class i2cBus {
             await this.initAsync(bus);
         } catch (err) { logger.error(err); }
     }
-    public async closeAsync() {
+    public async closeAsync(): Promise<void> {
         try {
+            logger.info(`Closing ${this.devices.length} devices.`);
             for (let i = 0; i < this.devices.length; i++) {
                 await this.devices[i].closeAsync();
             }
             this.devices.length = 0;
             await this._i2cBus.close();
             logger.info(`Closed i2c Bus #${this.busNumber}`);
+            return Promise.resolve();
         } catch (err) { logger.error(err); }
     }
 }
