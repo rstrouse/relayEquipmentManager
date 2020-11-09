@@ -827,8 +827,8 @@ export class AtlasEZOrtd extends AtlasEZO {
             this.device.options.isProtocolLocked = await this.isProtocolLocked();
             this.device.options.calibrationMode = await this.getCalibrated();
             this.device.options.status = await this.getStatus();
-            this.device.options.calibration = await this.exportCalibration();
             this.device.options.scale = await this.getScale();
+            this.device.options.calibration = await this.exportCalibration();
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.temperature.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.device.options.name;
@@ -933,7 +933,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
             let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };
-            for (let i = 0; i < dims.len; i++) {
+            for (let i = 0; i <= dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
             }
