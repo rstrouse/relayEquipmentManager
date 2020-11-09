@@ -509,6 +509,7 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async getDispenseStatus(): Promise<{ dispensing: boolean, volume?: number, continuous: boolean, reverse: boolean, maxRate: number, mode: { name: string, desc: string } }> {
         try {
+            this.stopReadContinuous();
             let result = await this.execCommand('D,?', 300);
             let arrDims = result.split(',');
             let disp = {
@@ -525,7 +526,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values = disp;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             if (disp.dispensing) {
-                setTimeout(async () => { await this.getDispenseStatus(); }, 1000);
+                this._timerRead = setTimeout(async () => { await this.getDispenseStatus(); }, 1000);
             }
             return Promise.resolve(disp);
         }
