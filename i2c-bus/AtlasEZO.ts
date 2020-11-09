@@ -438,7 +438,6 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.options.totalVolume = await this.getVolumeDispensed();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.device.options.name);
-
             await this.getDispenseStatus();
             return Promise.resolve(true);
         }
@@ -525,6 +524,9 @@ export class AtlasEZOpmp extends AtlasEZO {
             disp.mode = this.transformDispenseMode(disp.dispensing ? this.device.values.mode : 'off');
             this.device.values = disp;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            if (disp.dispensing) {
+                setTimeout(async () => { await this.getDispenseStatus(); }, 1000);
+            }
             return Promise.resolve(disp);
         }
         catch (err) { logger.error(err); }
