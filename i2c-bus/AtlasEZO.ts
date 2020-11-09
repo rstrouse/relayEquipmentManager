@@ -593,6 +593,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : 0;
             this.device.values.mode = this.transformDispenseMode(this.device.values.dispensing ? typeof minutes !== 'undefined' ? 'volOverTime' : 'vol' : 'off');
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.getDispenseStatus();
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }
@@ -607,6 +608,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : 0;
             this.device.values.mode = this.transformDispenseMode(this.device.values.dispensing ? typeof minutes !== 'undefined' ? 'flowOverTime' : 'flow' : 'off');
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.getDispenseStatus();
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }
