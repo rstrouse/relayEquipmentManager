@@ -523,7 +523,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             if (!disp.continuous) disp['volume'] = parseFloat(arrDims[2]);
             let mode = 'off';
             if (disp.continuous) mode = 'continuous';
-            else if (disp.dispensing || disp.paused) mode = this.device.values.mode;
+            else if (disp.dispensing || disp.paused) mode = this.device.values.mode.name;
             result = await this.execCommand('DC,?', 300);
             arrDims = result.split(',');
             disp.maxRate = parseFloat(arrDims[1]);
