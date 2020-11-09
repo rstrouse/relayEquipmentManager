@@ -526,13 +526,12 @@ export class AtlasEZOpmp extends AtlasEZO {
                 volume: this.device.values.volume,
                 totalVolume: {}
             };
-            if (!disp.continuous) disp['volume'] = parseFloat(arrDims[2]);
-            else disp.volume = undefined;
-
-
             let mode = 'off';
             if (disp.continuous) mode = 'continuous';
             else if (disp.dispensing || disp.paused) mode = this.device.values.mode.name;
+            if (mode.startsWith('vol')) disp['volume'] = parseFloat(arrDims[2]);
+            else disp.volume = null;
+
             result = await this.execCommand('DC,?', 300);
             arrDims = result.split(',');
             disp.maxRate = parseFloat(arrDims[1]);
@@ -543,6 +542,7 @@ export class AtlasEZOpmp extends AtlasEZO {
                 disp.flowRate = null;
                 disp.dispenseTime = null;
             }
+            
             this.device.values = disp;
             
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
@@ -628,7 +628,7 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async dispenseFlowRate(rate: number, minutes?: number): Promise<boolean> {
         try {
-            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)}`, 300) : await this.execCommand(`DC,${rate.toFixed(2)}, ${Math.round(minutes)}`, 300);
+            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)},*`, 300) : await this.execCommand(`DC,${rate.toFixed(2)}, ${Math.round(minutes)}`, 300);
             this.device.values.flowRate = rate;
             this.device.values.dispensing = true;
             this.device.values.continuous = false;
@@ -678,12 +678,11 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async getCalibrated(): Promise<{ volume: boolean, time: boolean }> {
         try {
             let opts = { volume: false, time: false };
-            let result = await this.execCommand('cal,?', 300);
+            let result = await this.execCommand('Cal,?', 300);
             let arrDims = result.split(',');
             let val = parseInt(arrDims[1] || '0');
             opts.volume = (val & 0x0001) > 0;
             opts.time = (val & 0x0002) > 0;
-            
             return Promise.resolve(opts);
         }
         catch (err) { logger.error(err); }
@@ -700,7 +699,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-PMP invalid data format. ${JSON.stringify(data)}`);
             if (typeof data.options.calPoint !== 'undefined') await this.setCalibration(parseFloat(data.options.calPoint));
             else { return Promise.reject(`Could not calibrate EZO-PMP no setpoint was provided. ${JSON.stringify(data)}`) }
-            this.device.options.calibrationMode = await this.getCalibrated();
+            this.device.options.calibration = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
         catch (err) { logger.error(err); return Promise.reject(err); }
