@@ -517,12 +517,13 @@ export class AtlasEZOpmp extends AtlasEZO {
                 continuous: utils.makeBool(arrDims[2]) && typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('*') !== -1,
                 reverse: typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') === 0,
                 maxRate: 0, mode: { name: 'off', desc: 'Off' },
+                paused: utils.makeBool(this.device.values.paused),
                 totalVolume: {}
             };
             if (!disp.continuous) disp['volume'] = parseFloat(arrDims[2]);
             let mode = 'off';
             if (disp.continuous) mode = 'continuous';
-            else if (disp.dispensing) mode = this.device.values.mode;
+            else if (disp.dispensing || disp.paused) mode = this.device.values.mode;
             result = await this.execCommand('DC,?', 300);
             arrDims = result.split(',');
             disp.maxRate = parseFloat(arrDims[1]);
@@ -531,9 +532,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values = disp;
             
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
-            if (disp.dispensing) {
-                this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000);
-            }
+            if (disp.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000);
             return Promise.resolve(disp);
         }
         catch (err) { logger.error(err); }
@@ -570,7 +569,8 @@ export class AtlasEZOpmp extends AtlasEZO {
             let paused = utils.makeBool(arrDims[1]);
             this.device.values.paused = paused;
             this.device.values.mode = this.transformDispenseMode(this.device.values.mode.name, paused);
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            await this.getDispenseStatus();
+            //webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }
