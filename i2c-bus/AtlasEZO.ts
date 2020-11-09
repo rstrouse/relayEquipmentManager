@@ -518,6 +518,8 @@ export class AtlasEZOpmp extends AtlasEZO {
                 reverse: typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') === 0,
                 maxRate: 0, mode: { name: 'off', desc: 'Off' },
                 paused: utils.makeBool(this.device.values.paused),
+                dispenseTime: this.device.values.dispenseTime,
+                flowRate: this.device.values.flowRate,
                 totalVolume: {}
             };
             if (!disp.continuous) disp['volume'] = parseFloat(arrDims[2]);
@@ -580,9 +582,11 @@ export class AtlasEZOpmp extends AtlasEZO {
             let result = await this.execCommand(`D,${utils.makeBool(reverse) ? '-*' : '*'}`, 300);
             let arrDims = result.split(',');
             this.device.values.continuous = typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('*') !== -1;
-            this.device.values.dispensing = utils.makeBool(arrDims[2]);
-            this.device.values.reverse = typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') !== -1;
+            this.device.values.volume = undefined;
+            this.device.values.dispensing = true;
+            this.device.values.reverse = reverse;
             this.device.values.paused = false;
+            this.device.values.dispenseTime = undefined;
             this.device.values.mode = this.transformDispenseMode(this.device.values.dispensing ? 'continuous' : 'off', false);
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             this.getDispenseStatus();
@@ -594,12 +598,12 @@ export class AtlasEZOpmp extends AtlasEZO {
         try {
             let result = typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)}, ${Math.round(minutes)}`, 300);
             let arrDims = result.split(',');
-            this.device.values.volume = parseFloat(arrDims[1]);
-            this.device.values.dispensing = utils.makeBool(arrDims[2]);
-            this.device.values.reverse = typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') !== -1;
-            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : 0;
+            this.device.values.volume = volume;
+            this.device.values.dispensing = true;
+            this.device.values.reverse = volume < 0;
+            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : undefined;
             this.device.values.paused = false;
-            this.device.values.mode = this.transformDispenseMode(this.device.values.dispensing ? typeof minutes !== 'undefined' ? 'volOverTime' : 'vol' : 'off', false);
+            this.device.values.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'volOverTime' : 'vol', false);
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             this.getDispenseStatus();
             return Promise.resolve(true);
@@ -610,12 +614,13 @@ export class AtlasEZOpmp extends AtlasEZO {
         try {
             let result = typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)}`, 300) : await this.execCommand(`DC,${rate.toFixed(2)}, ${Math.round(minutes)}`, 300);
             let arrDims = result.split(',');
-            this.device.values.volume = parseFloat(arrDims[1]);
-            this.device.values.dispensing = utils.makeBool(arrDims[2]);
+            this.device.values.volume = undefined;
+            this.device.values.flowRate = rate;
+            this.device.values.dispensing = true;
             this.device.values.reverse = typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') !== -1;
-            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : 0;
+            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : undefined;
             this.device.values.paused = false;
-            this.device.values.mode = this.transformDispenseMode(this.device.values.dispensing ? typeof minutes !== 'undefined' ? 'flowOverTime' : 'flow' : 'off', false);
+            this.device.values.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'flowOverTime' : 'flow', false);
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             this.getDispenseStatus();
             return Promise.resolve(true);
