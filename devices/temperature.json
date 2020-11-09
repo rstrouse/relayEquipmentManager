@@ -583,10 +583,17 @@
                         "labelText": "Temperature",
                         "min": 0,
                         "max": 200,
+                        "canEdit": true,
+                        "dataType": "number",
+                        "fmtMask": "#.##0.####",
+                        "emptyMask": "---",
                         "labelAttrs": {
                           "style": {
                             "display": "none"
                           }
+                        },
+                        "inputAttrs": {
+                          "style": {"width": "4.5rem"}
                         },
                         "units": "&deg;",
                         "style": { "marginLeft": ".25rem" }

@@ -416,7 +416,7 @@ export class i2cDeviceBase {
             logger.info(`Stopped I2c ${this.device.name}`);
             return Promise.resolve();
         }
-        catch(err) { logger.error(err); }
+        catch (err) { logger.error(err); return Promise.resolve(); }
     }
     public async initAsync(deviceType: any): Promise<boolean> { return Promise.resolve(true); }
     public async callCommand(cmd: any): Promise<any> {

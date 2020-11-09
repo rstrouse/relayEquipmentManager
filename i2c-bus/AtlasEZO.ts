@@ -840,9 +840,10 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.isProtocolLocked !== 'undefined' && utils.makeBool(this.device.options.isProtocolLocked) !== utils.makeBool(opts.isProcolLocked)) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
-            if (typeof opts.scale === 'string' && opts.scale.length > 0) await this.setScale(opts.scale);
+            if (typeof this.device.options.scale === 'undefined') this.device.options.scale = await this.getScale();
+            if (typeof opts.scale === 'string' && opts.scale.length > 0 && opts.scale.toLowerCase() !== this.device.options.scale.toLowerCase()) await this.setScale(opts.scale);
         }
         catch (err) { logger.error(err); Promise.reject(err); }
     }
@@ -883,7 +884,7 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async setCalibrationPoint(value: number): Promise<boolean> {
         try {
             await this.execCommand(`Cal,${value.toFixed(2)}`, 600);
-            this.device.options.calPoint = Math.floor(value);
+            this.device.options.calPoint = value;
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }

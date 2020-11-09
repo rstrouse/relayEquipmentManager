@@ -23,11 +23,11 @@ export function initAsync() {
 export function stopAsync(): Promise<void> {
     return Promise.resolve()
         .then(function () { console.log('Shutting down open processes'); })
+        .then(function () { connBroker.stopAsync(); }) // Stop communicating first.
         .then(function () { i2c.closeAsync(); })
         .then(function () { spi0.closeAsync(); })
         .then(function () { spi1.closeAsync(); })
         .then(function () { gpioPins.stopAsync(); })
-        .then(function () { connBroker.stopAsync(); })
         .then(function () { cont.stopAsync(); })
         .then(function () { process.exit(); });
 }
