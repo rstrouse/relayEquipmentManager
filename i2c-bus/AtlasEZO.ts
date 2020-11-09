@@ -40,6 +40,7 @@ export class AtlasEZO extends i2cDeviceBase {
     protected get version(): number { return typeof this.device !== 'undefined' && this.device.options !== 'undefined' && typeof this.device.options.deviceInfo !== 'undefined' ? parseFloat(this.device.options.deviceInfo.firmware) : 0 }
     protected async execCommand(command: string, timeout: number, length: number = 31): Promise<string> {
         try {
+            logger.info(`Writing Command ${command} Timeout ${timeout}...`);
             let w = await this.i2c.writeCommand(this.device.address, command);
             await new Promise((resolve, reject) => { setTimeout(() => resolve(), timeout); });
             let value = await this.i2c.read(this.device.address, length);
@@ -865,8 +866,10 @@ export class AtlasEZOrtd extends AtlasEZO {
     }
     public async getScale(): Promise<string> {
         try {
+            logger.warn(`Getting Scale`);
             let result = await this.execCommand('S,?', 300);
             let arrDims = result.split(',');
+            logger.warn(`Getting Scale`);
             return Promise.resolve(arrDims[1]);
         }
         catch (err) { logger.error(err); }
