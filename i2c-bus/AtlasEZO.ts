@@ -40,7 +40,7 @@ export class AtlasEZO extends i2cDeviceBase {
     protected get version(): number { return typeof this.device !== 'undefined' && this.device.options !== 'undefined' && typeof this.device.options.deviceInfo !== 'undefined' ? parseFloat(this.device.options.deviceInfo.firmware) : 0 }
     protected async execCommand(command: string, timeout: number, length: number = 31): Promise<string> {
         try {
-            logger.info(`Writing Command ${command} Timeout ${timeout}...`);
+            //logger.info(`Writing Command ${command} Timeout ${timeout}...`);
             let w = await this.i2c.writeCommand(this.device.address, command);
             await new Promise((resolve, reject) => { setTimeout(() => resolve(), timeout); });
             let value = await this.i2c.read(this.device.address, length);
@@ -471,7 +471,10 @@ export class AtlasEZOpmp extends AtlasEZO {
                 mode.desc = 'Continuous';
                 break;
             case 'flowRate':
-                mode.desc = 'Maintain Flow Rate';
+                mode.desc = 'Flow Rate';
+                break;
+            case 'flowOverTime':
+                mode.desc = 'Flow Rate over Time'
                 break;
             case 'pause':
                 mode.desc = 'Dispense Paused';
@@ -520,9 +523,13 @@ export class AtlasEZOpmp extends AtlasEZO {
                 paused: utils.makeBool(this.device.values.paused),
                 dispenseTime: this.device.values.dispenseTime,
                 flowRate: this.device.values.flowRate,
+                volume: this.device.values.volume,
                 totalVolume: {}
             };
             if (!disp.continuous) disp['volume'] = parseFloat(arrDims[2]);
+            else disp.volume = undefined;
+
+
             let mode = 'off';
             if (disp.continuous) mode = 'continuous';
             else if (disp.dispensing || disp.paused) mode = this.device.values.mode.name;
@@ -531,13 +538,18 @@ export class AtlasEZOpmp extends AtlasEZO {
             disp.maxRate = parseFloat(arrDims[1]);
             disp.mode = this.transformDispenseMode(mode, this.device.values.paused);
             disp.totalVolume = await this.getVolumeDispensed();
+            if (mode === 'off') {
+                disp.volume = null;
+                disp.flowRate = null;
+                disp.dispenseTime = null;
+            }
             this.device.values = disp;
             
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             if (disp.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000);
             return Promise.resolve(disp);
         }
-        catch (err) { logger.error(err); this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000); }
+        catch (err) { logger.error(new Error(`Could not get dispense status: ${err.message}`)); this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000); }
     }
     public async getVolumeDispensed(): Promise<{ total: number, absolute: number }> {
         try {
@@ -554,9 +566,12 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async stopDispense(): Promise<boolean> {
         try {
-            let result = await this.execCommand('X', 300);
-            let arrDims = result.split(',');
+            await this.execCommand('X', 300);
             this.device.values.mode = this.transformDispenseMode('off', false);
+            this.device.values.paused = false;
+            this.device.values.volume = null;
+            this.device.values.flowRate = null;
+            this.device.values.dispenseTime = null;
             this.device.values.dispensing = false;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
@@ -572,22 +587,22 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values.paused = paused;
             this.device.values.mode = this.transformDispenseMode(this.device.values.mode.name, paused);
             await this.getDispenseStatus();
-            //webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }
     }
     public async dispenseContinuous(reverse: boolean = false): Promise<boolean> {
         try {
-            let result = await this.execCommand(`D,${utils.makeBool(reverse) ? '-*' : '*'}`, 300);
-            let arrDims = result.split(',');
-            this.device.values.continuous = typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('*') !== -1;
-            this.device.values.volume = undefined;
+            await this.execCommand(`D,${utils.makeBool(reverse) ? '-*' : '*'}`, 300);
+            this.device.values.continuous = true;
             this.device.values.dispensing = true;
             this.device.values.reverse = reverse;
             this.device.values.paused = false;
-            this.device.values.dispenseTime = undefined;
-            this.device.values.mode = this.transformDispenseMode(this.device.values.dispensing ? 'continuous' : 'off', false);
+            this.device.values.volume = null;
+            this.device.values.dispenseTime = null;
+            this.device.values.flowRate = null;
+            this.device.values.mode = this.transformDispenseMode('continuous', false);
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             this.getDispenseStatus();
             return Promise.resolve(true);
@@ -596,12 +611,14 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async dispenseVolume(volume: number, minutes?:number): Promise<boolean> {
         try {
-            let result = typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)}, ${Math.round(minutes)}`, 300);
-            this.device.values.volume = volume;
+            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)}, ${Math.round(minutes)}`, 300);
             this.device.values.dispensing = true;
             this.device.values.reverse = volume < 0;
-            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : undefined;
+            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
             this.device.values.paused = false;
+            this.device.values.continuous = false;
+            this.device.values.volume = volume;
+            this.device.values.flowRate = null;
             this.device.values.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'volOverTime' : 'vol', false);
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             this.getDispenseStatus();
@@ -611,15 +628,15 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async dispenseFlowRate(rate: number, minutes?: number): Promise<boolean> {
         try {
-            let result = typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)}`, 300) : await this.execCommand(`DC,${rate.toFixed(2)}, ${Math.round(minutes)}`, 300);
-            let arrDims = result.split(',');
-            this.device.values.volume = undefined;
+            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)}`, 300) : await this.execCommand(`DC,${rate.toFixed(2)}, ${Math.round(minutes)}`, 300);
             this.device.values.flowRate = rate;
             this.device.values.dispensing = true;
-            this.device.values.reverse = typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') !== -1;
-            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : undefined;
+            this.device.values.continuous = false;
+            this.device.values.reverse = rate < 0;
+            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
+            this.device.values.volume = null;
             this.device.values.paused = false;
-            this.device.values.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'flowOverTime' : 'flow', false);
+            this.device.values.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'flowOverTime' : 'flowRate', false);
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             this.getDispenseStatus();
             return Promise.resolve(true);
@@ -643,13 +660,13 @@ export class AtlasEZOpmp extends AtlasEZO {
                 case 'volumeOverTime':
                     if (isNaN(volume)) return Promise.reject(new Error(`Cannot dispense EZO-PMP by volume over time. Invalid volume ${opts.dispense.volume}`));
                     if (typeof opts.dispense.time === 'undefined' || isNaN(parseFloat(opts.dispense.time))) return Promise.reject(new Error(`Cannot dispense EZO-PMP by volume over time. Invalid time ${opts.dispense.time}`));
-                    await this.dispenseVolume(parseFloat(opts.dispense.volume), parseFloat(opts.dispense.time));
+                    await this.dispenseVolume(volume, parseFloat(opts.dispense.time));
                     break;
                 case 'flowRate':
                     if (isNaN(flowRate)) return Promise.reject(new Error(`Cannot dispense EZO-PMP by flow rate. Invalid flow rate ${opts.dispense.flowRate}`));
-                    await this.dispenseFlowRate(parseFloat(opts.dispense.flowRate));
+                    await this.dispenseFlowRate(flowRate);
                     break;
-                case 'flowRateOverTime':
+                case 'flowOverTime':
                     if (isNaN(flowRate)) return Promise.reject(new Error(`Cannot dispense EZO-PMP by flow rate over time. Invalid flow rate ${opts.dispense.flowRate}`));
                     if (typeof opts.dispense.time === 'undefined' || isNaN(parseFloat(opts.dispense.time))) return Promise.reject(new Error(`Cannot dispense EZO-PMP by flow rate over time. Invalid time ${opts.dispense.time}`));
                     await this.dispenseFlowRate(parseFloat(opts.dispense.flowRate), parseFloat(opts.dispense.time));

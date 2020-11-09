@@ -292,6 +292,26 @@
                 {
                   "field": {
                     "type": "staticField",
+                    "labelText": "Flow Rate",
+                    "binding": "values.flowRate",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "marginLeft": "1rem"
+                    },
+                    "units": "mL/min",
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
                     "labelText": "Max Flow",
                     "binding": "values.maxRate",
                     "dataType": "number",
@@ -337,52 +357,58 @@
                   },
                   "options": [
                     {
-                      "field": {
-                        "type": "actionButton",
-                        "text": "Continuous",
-                        "icon": "<i class=\"fas fa-running\"></i>"
-                      },
-                      "fieldEvents": {
-                        "click": {
-                          "type": "putservice",
-                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
-                          "message": "Dispensing Pump...",
-                          "callContext": "dispense",
-                          "callObj": { "dispense": { "method": "continuous" } } 
+                      "field": { "type": "div" },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "actionButton",
+                            "text": "Continuous",
+                            "icon": "<i class=\"fas fa-running\"></i>",
+                            "style": { "width": "7rem" }
+                          },
+                          "fieldEvents": {
+                            "click": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                              "message": "Dispensing Pump...",
+                              "callContext": "dispense",
+                              "callObj": { "dispense": { "method": "continuous" } }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "type": "actionButton",
+                            "text": "By Volume",
+                            "icon": "<i class=\"fas fa-flask\"></i>"
+                          },
+                          "fieldEvents": {
+                            "click": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                              "message": "Dispensing Pump...",
+                              "callContext": "dispense",
+                              "callObj": { "dispense": { "method": "volume" } }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "type": "actionButton",
+                            "text": "Vol/Time",
+                            "icon": "<i class=\"far fa-clock\"></i>"
+                          },
+                          "fieldEvents": {
+                            "click": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                              "message": "Dispensing Pump...",
+                              "callContext": "dispense",
+                              "callObj": { "dispense": { "method": "volumeOverTime" } }
+                            }
+                          }
                         }
-                      }
-                    },
-                    {
-                      "field": {
-                        "type": "actionButton",
-                        "text": "By Volume",
-                        "icon": "<i class=\"fas fa-flask\"></i>"
-                      },
-                      "fieldEvents": {
-                        "click": {
-                          "type": "putservice",
-                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
-                          "message": "Dispensing Pump...",
-                          "callContext": "dispense",
-                          "callObj": { "dispense": { "method": "volume" } } 
-                        }
-                      }
-                    },
-                    {
-                      "field": {
-                        "type": "actionButton",
-                        "text": "Over Time",
-                        "icon": "<i class=\"far fa-clock\"></i>"
-                      },
-                      "fieldEvents": {
-                        "click": {
-                          "type": "putservice",
-                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
-                          "message": "Dispensing Pump...",
-                          "callContext": "dispense",
-                          "callObj": { "dispense": { "method": "volumeOverTime" } }
-                        }
-                      }
+                      ]
                     }
                   ]
                 },
@@ -393,16 +419,56 @@
                   "options": [
                     {
                       "field": {
-                        "type": "hr",
-                        "style": { "margin": "3px" }
+                        "type": "checkbox",
+                        "labelText": "Reverse",
+                        "bind": "dispense.reverse",
+                        "style": { "width": "7rem", "margin": ".1rem" }
                       }
                     },
                     {
                       "field": {
-                        "type": "checkbox",
-                        "labelText": "Reverse Flow",
-                        "bind": "dispense.reverse"
+                        "type": "actionButton",
+                        "text": "By Flow",
+                        "icon": "<i class=\"fas fa-wind\"></i>"
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                          "message": "Dispensing Pump...",
+                          "callContext": "dispense",
+                          "callObj": { "dispense": { "method": "flowRate" } }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "actionButton",
+                        "text": "Flow/Time",
+                        "icon": "<i class=\"far fa-clock\"></i>"
+                      },
+                      "fieldEvents": {
+                        "click": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                          "message": "Dispensing Pump...",
+                          "callContext": "dispense",
+                          "callObj": { "dispense": { "method": "flowOverTime" } }
+                        }
+                      }
+                    }
+                  ]
 
+                },
+                {
+                  "field": {
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "hr",
+                        "style": { "margin": "3px" }
                       }
                     }
                   ]
@@ -424,12 +490,39 @@
                         "fmtMask": "#,##0.##",
                         "canEdit": true,
                         "labelAttrs": {
-                          "style": { "width": "4rem" }
+                          "style": { "width": "5rem" }
                         },
                         "inputAttrs": {
                           "style": { "width": "5rem" }
                         },
                         "units": "mL"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "default": 20,
+                      "field": {
+                        "type": "valueSpinner",
+                        "labelText": "Flow Rate",
+                        "binding": "dispense.flowRate",
+                        "min": 0,
+                        "max": 60,
+                        "step": 0.1,
+                        "fmtMask": "#,##0.##",
+                        "canEdit": true,
+                        "labelAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "inputAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "units": "mL/min"
                       }
                     }
                   ]
@@ -451,7 +544,7 @@
                         "fmtMask": "#,##0.##",
                         "canEdit": true,
                         "labelAttrs": {
-                          "style": { "width": "4rem" }
+                          "style": { "width": "5rem" }
                         },
                         "inputAttrs": {
                           "style": { "width": "5rem" }
@@ -464,7 +557,7 @@
                 {
                   "field": {
                     "type": "div",
-                    "style": {"textAlign": "center"}
+                    "style": { "textAlign": "center" }
                   },
                   "options": [
                     {
