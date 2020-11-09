@@ -435,7 +435,6 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.options.calibration = await this.getCalibrated();
             this.device.options.pumpVoltage = await this.getPumpVoltage();
             this.device.options.status = await this.getStatus();
-            this.device.options.totalVolume = await this.getVolumeDispensed();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.device.options.name);
             await this.getDispenseStatus();
@@ -516,17 +515,20 @@ export class AtlasEZOpmp extends AtlasEZO {
                 dispensing: utils.makeBool(arrDims[2]),
                 continuous: typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('*') !== -1,
                 reverse: typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') === 0,
-                maxRate: 0, mode: { name: 'off', desc: 'Off' }
+                maxRate: 0, mode: { name: 'off', desc: 'Off' },
+                totalVolume: {}
             };
             if (!disp.continuous) disp['volume'] = parseFloat(arrDims[2]);
             result = await this.execCommand('DC,?', 300);
             arrDims = result.split(',');
             disp.maxRate = parseFloat(arrDims[1]);
             disp.mode = this.transformDispenseMode(disp.dispensing ? this.device.values.mode : 'off');
+            disp.totalVolume = await this.getVolumeDispensed();
             this.device.values = disp;
+            
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             if (disp.dispensing) {
-                this._timerRead = setTimeout(async () => { await this.getDispenseStatus(); }, 1000);
+                this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000);
             }
             return Promise.resolve(disp);
         }
@@ -579,6 +581,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values.reverse = typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') !== -1;
             this.device.values.mode = this.transformDispenseMode(this.device.values.dispensing ? 'continuous' : 'off');
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.getDispenseStatus();
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }

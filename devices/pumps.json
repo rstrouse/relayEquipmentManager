@@ -189,7 +189,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Volume",
-                    "binding": "options.totalVolume.total",
+                    "binding": "values.totalVolume.total",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",
@@ -209,7 +209,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Absolute",
-                    "binding": "options.totalVolume.absolute",
+                    "binding": "values.totalVolume.absolute",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",
