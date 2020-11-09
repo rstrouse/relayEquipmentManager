@@ -13,9 +13,7 @@ import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
 import { spi0, spi1 } from "../spi-adc/SpiAdcBus";
 import { i2c } from "../i2c-bus/I2cBus";
-import { config } from "../config/Config";
 import { AnalogDevices } from "../devices/AnalogDevices";
-import { lavender } from "color-name";
 interface IConfigItemCollection {
     set(data);
     clear();
@@ -234,7 +232,7 @@ export class Controller extends ConfigItem {
             this._timerDirty = null;
         }
         if (this._isDirty) {
-            this._timerDirty = setTimeout(() => cont.persist(), 3000);
+            this._timerDirty = setTimeout(function () { cont.persist(); }, 3000);
         }
     }
     public persist() {

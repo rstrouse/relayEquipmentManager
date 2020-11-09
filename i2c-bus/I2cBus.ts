@@ -93,7 +93,7 @@ export class i2cController {
                     logger.info(`Detecting i2c Buses /sys/class/i2c-dev/${dir}`);
                     if (fs.existsSync(`/sys/class/i2c-dev/${dir}/name`)) {
                         // Read out the name for the device.
-                        bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/name`, { flag: 'r' });
+                        bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/name`, { flag: 'r' }).toString();
                         bus.path = `/sys/class/i2c-dev/${dir}`;
                         bus.name = dir;
                         bus.busNumber = parseInt(dir.replace('i2c-', ''), 10);
@@ -101,7 +101,7 @@ export class i2cController {
                     }
                     else if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device/name`)) {
                         // Read out the name for the device.
-                        bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/name`, { flag: 'r' });
+                        bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/name`, { flag: 'r' }).toString();
                         bus.path = `/sys/class/i2c-dev/${dir}`;
                         bus.name = dir;
                         bus.busNumber = parseInt(dir.replace('i2c-', ''), 10);
@@ -115,7 +115,7 @@ export class i2cController {
                             logger.info(`Detecting i2c Buses /sys/class/i2c-dev/${dir}/device/${ddir}`);
                             if (!ddir.toLowerCase().startsWith('i2c-')) continue;
                             if (fs.existsSync(`/sys/class/i2c-dev/${dir}/device/${ddir}/name`)) {
-                                bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/device/${ddir}/name`);
+                                bus.driver = fs.readFileSync(`/sys/class/i2c-dev/${dir}/device/${ddir}/name`).toString();
                                 bus.path = `/sys/class/i2c-dev/${dir}/device/${ddir}`;
                                 bus.name = ddir;
                                 bus.busNumber = parseInt(ddir.replace(/i2c-/gi, ''), 10);
@@ -241,10 +241,11 @@ export class i2cBus {
         }
         catch (err) { logger.error(err); }
     }
-    public async resetAsync(bus) {
+    public async resetAsync(bus): Promise<void> {
         try {
             await this.closeAsync();
             await this.initAsync(bus);
+            return Promise.resolve();
         } catch (err) { logger.error(err); }
     }
     public async closeAsync(): Promise<void> {
