@@ -474,7 +474,7 @@ export class Controller extends ConfigItem {
         for (let i = 0; i < this.connections.length; i++) {
             c.connections.push(this.connections.getItemByIndex(i).getExtended());
         }
-        return cont;
+        return c;
     }
     public set(data) {
         super.set(data);
