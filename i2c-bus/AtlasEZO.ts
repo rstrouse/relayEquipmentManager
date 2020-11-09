@@ -902,13 +902,14 @@ export class AtlasEZOrtd extends AtlasEZO {
         try {
             let result = await this.execCommand('Name,?', 300);
             let arrDims = result.split(',');
+            logger.info(`Got RTD Name ${JSON.stringify(arrDims)}`);
             return Promise.resolve(arrDims[1] || '');
         }
         catch (err) { logger.error(err); }
     }
     public async setName(name: string): Promise<boolean> {
         try {
-            await this.execCommand(`Name,${this.escapeName(name)}`, 300);
+//            await this.execCommand(`Name,${this.escapeName(name)}`, 300);
             this.device.options.name = this.device.name = this.escapeName(name);
             return Promise.resolve(true);
         }
