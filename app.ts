@@ -33,7 +33,7 @@ export function stopAsync(): Promise<void> {
 }
 if (process.platform === 'win32') {
     let rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    rl.on('SIGINT', function () { stopAsync(); });
+    rl.on('SIGINT', async () => { await stopAsync(); });
 }
 else {
     process.on('SIGINT', function () { return stopAsync(); });
