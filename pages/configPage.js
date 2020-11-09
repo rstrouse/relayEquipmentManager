@@ -6,6 +6,8 @@
             self._buildControls();
             el[0].boardType = function (val) { return typeof val === 'undefined' ? o.boardType : o.boardType = val; };
             el[0].interfaces = function (val) { return typeof val === 'undefined' ? o.interfaces : o.interfaces = val; };
+            el[0].removeTab = function (tabId) { el.find(`div.picTabPanel[id$=tabsMain]`).each(function () { this.removeTab(tabId); }); };
+            el[0].addTab = function (tab) { self._addConfigTab(tab); };
             console.log({ msg: 'Building', opts: o });
         },
         _onTabChanged: function (evt) {

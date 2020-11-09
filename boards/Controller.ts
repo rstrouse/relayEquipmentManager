@@ -12,7 +12,7 @@ import { SpiAdcChips } from "../spi-adc/SpiAdcChips";
 import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
 import { spi0, spi1 } from "../spi-adc/SpiAdcBus";
-import { i2c } from "../i2c-bus/I2cBus";
+import { i2c, i2cBus } from "../i2c-bus/I2cBus";
 import { AnalogDevices } from "../devices/AnalogDevices";
 interface IConfigItemCollection {
     set(data);
@@ -617,6 +617,16 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async deleteBus(bus): Promise<I2cBus> {
+        try {
+            let b = (typeof bus.Id !== 'undefined') ? this.buses.getItemById(bus.id) : typeof bus.busNumber !== 'undefined' ? this.buses.getItemByBusNumber(bus.busNumber) : undefined;
+            if (typeof b === 'undefined') return Promise.reject(`Could not find bus by bus #${bus.busNumber} or id ${bus.busId}`);
+            await b.closeAsync();
+            this.buses.removeItemById(b.id);
+            return Promise.resolve(bus);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
 }
 export class I2cBusCollection extends ConfigItemCollection<I2cBus> {
     constructor(data: any, name?: string) { super(data, name) }
@@ -655,6 +665,16 @@ export class I2cBus extends ConfigItem {
             c.devices.push(this.devices.getItemByIndex(i).getExtended());
         }
         return c;
+    }
+    public async closeAsync(): Promise<void> {
+        try {
+            let dbus = i2c.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus !== 'undefined') {
+                await dbus.closeAsync();
+            }
+            return Promise.resolve();
+        }
+        catch (err) { return Promise.reject(err); }
     }
     public async setDevice(dev): Promise<I2cDevice> {
         try {

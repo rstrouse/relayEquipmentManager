@@ -1489,6 +1489,7 @@ $.ui.position.fieldTip = {
             el[0].selectedTabId = function (tabId) { return self.selectedTabId(tabId); };
             el[0].showTab = function (tabId, show) { return self.showTab(tabId, show); }
             el[0].addTab = function (tabObj) { return self.addTab(tabObj); };
+            el[0].removeTab = function (tabId) { return self.removeTab(tabId); }
             var evt = $.Event('initTabs');
             evt.contents = function () { return self.contents(); };
             el.trigger(evt);
@@ -1504,6 +1505,11 @@ $.ui.position.fieldTip = {
                 if (show) self.contents().find('div.picTabContent[data-tabid=' + tabId + ']').show();
                 else self.contents().find('div.picTabContent[data-tabid=' + tabId + ']').hide();
             }
+        },
+        removeTab: function (tabId) {
+            var self = this, o = self.options, el = self.element;
+            var tab = el.find('div.picTabs:first').children('div.picTab[data-tabid="' + tabId + '"]').remove();
+            self.contents().find('div.picTabContent[data-tabid=' + tabId + ']').remove();
         },
         selectTabById: function (tabId) {
             var self = this, o = self.options, el = self.element;

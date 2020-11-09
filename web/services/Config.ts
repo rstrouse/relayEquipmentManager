@@ -88,6 +88,13 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+        app.delete('/config/i2c/bus', async (req, res, next) => {
+            try {
+                await cont.i2c.deleteBus(req.body);
+                return res.status(200).send({ buses: cont.i2c.buses.toExtendedArray() });
+            }
+            catch (err) { next(err); }
+        });
         app.delete('/config/i2c/device', async (req, res, next) => {
             try {
                 let dev = await cont.i2c.deleteDevice(req.body);

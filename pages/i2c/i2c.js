@@ -422,7 +422,6 @@
             var bus = dataBinder.fromElement(el);
             console.log(bus);
             $.putLocalService('/config/i2c/bus', bus, function (data, status, xhr) {
-                console.log(data);
                 var evt = $.Event('busadded');
                 evt.bus = data;
                 el.trigger(evt);

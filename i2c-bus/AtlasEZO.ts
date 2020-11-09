@@ -25,13 +25,13 @@ export class AtlasEZO extends i2cDeviceBase {
         let err: Error;
         switch (byte) {
             case 255:
-                err = new Error(`${this.device.address} ${ command }. No I2c data to send`);
+                err = new Error(`${this.device.address} ${command}. No I2c data to send`);
                 break;
             case 254:
-                err = new Error(`${this.device.address} ${ command }. Still processing not ready`);
+                err = new Error(`${this.device.address} ${command}. Still processing not ready`);
                 break;
             case 2:
-                err = new Error(`${this.device.address} ${command }. Syntax error`);
+                err = new Error(`${this.device.address} ${command}. Syntax error`);
                 break;
         }
         return err;
@@ -916,7 +916,7 @@ export class AtlasEZOrtd extends AtlasEZO {
     }
     public async readProbe(): Promise<number> {
         try {
-            let result = await this.execCommand('R', 900);
+            let result = await this.execCommand('R', 600);
             let val = parseFloat(result);
             this.device.values.temperature = val;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });

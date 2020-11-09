@@ -326,26 +326,33 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            $('<div></div>').appendTo(el).crudList({
+            var i2cCrud = $('<div></div>').appendTo(el).crudList({
                 id: 'crudI2cBuses',
                 key: 'busNumber', actions: { canCreate: true, canEdit: false, canRemove: true },
                 caption: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Buses', itemName: 'Bus',
                 columns: [{ binding: 'busNumber', text: '#', style: { width: '2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' } }, { binding: 'detected.path', text: 'Path', style: { width: '177px' } }]
             }).css({ display: 'inline-block' }).on('additem', function (evt) {
-                $('<div id="dlgAddI2cBus" style="display:block;position:relative;padding:4px;"></div>').dlgI2cBus();
+                $('<div id="dlgAddI2cBus" style="display:block;position:relative;padding:4px;"></div>').dlgI2cBus()
+                    .on('busadded', function (e) {
+                        i2cCrud[0].addRow(e.bus);
+                        el.parents('div.dashContainer:first')[0].addTab({ id: 'tabI2c' + e.bus.id, text: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + e.bus.busNumber })
+                    });
             }).on('removeitem', function (evt) {
-                $.getLocalService('/config/options/i2cBus/' + evt.dataKey, null, function (bus, status, xhr) {
+                $.getLocalService('/config/options/i2c/' + evt.dataKey, null, function (opts, status, xhr) {
+                    var bus = opts.bus;
+                    console.log(bus);
                     $.pic.modalDialog.createConfirm('dlgConfirmI2cBus', {
                         message: '<div>Are you sure you want to delete I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + bus.busNumber + '?</div><hr></hr><div><span style="color:red;font-weight:bold;">WARNING:</span> If you delete this bus it will remove all <span style="font-weight:bold;">devices</span> configured on the bus.</div>',
                         width: '377px',
                         height: 'auto',
-                        title: 'Confirm Delete I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Bus',
+                        title: 'Confirm Delete I2c Bus',
                         buttons: [{
                             text: 'Yes', icon: '<i class="fas fa-trash"></i>',
                             click: function () {
                                 $.pic.modalDialog.closeDialog(this);
-                                $.deleteLocalService('/config/options/connections/' + evt.dataKey, {}, 'Deleting Connection...', function (c, status, xhr) {
+                                $.deleteLocalService('/config/i2c/bus/', bus, 'Deleting I2C Bus...', function (c, status, xhr) {
                                     evt.dataRow.remove();
+                                    el.parents('div.dashContainer:first')[0].removeTab('tabI2c' + bus.id);
                                 });
                             }
                         },
