@@ -467,11 +467,12 @@ export class Controller extends ConfigItem {
         });
     }
     public getExtended() {
-        let cont = this.get(true);
-        cont.connections = [];
-        cont.gpio = this.gpio.getExtended();
+        let c = this.get(true);
+        c.connections = [];
+        c.gpio = this.gpio.getExtended();
+        c.i2c = this.i2c.getExtended();
         for (let i = 0; i < this.connections.length; i++) {
-            cont.connections.push(this.connections.getItemByIndex(i).getExtended());
+            c.connections.push(this.connections.getItemByIndex(i).getExtended());
         }
         return cont;
     }
