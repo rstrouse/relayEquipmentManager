@@ -58,7 +58,7 @@ export class AtlasEZO extends i2cDeviceBase {
             logger.info(`Executed command ${command} bytes written:${w} result:${data}`);
             return Promise.resolve(data);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { return Promise.reject(err); }
     }
     public async setAddress(val: number): Promise<boolean> {
         try {
@@ -537,7 +537,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             if (disp.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000);
             return Promise.resolve(disp);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(err); this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000); }
     }
     public async getVolumeDispensed(): Promise<{ total: number, absolute: number }> {
         try {
@@ -550,7 +550,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             vol.absolute = parseFloat(arrDims[1]);
             return Promise.resolve(vol);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(err); return Promise.reject(err); }
     }
     public async stopDispense(): Promise<boolean> {
         try {
@@ -597,7 +597,6 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async dispenseVolume(volume: number, minutes?:number): Promise<boolean> {
         try {
             let result = typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)}, ${Math.round(minutes)}`, 300);
-            let arrDims = result.split(',');
             this.device.values.volume = volume;
             this.device.values.dispensing = true;
             this.device.values.reverse = volume < 0;
