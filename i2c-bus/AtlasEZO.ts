@@ -513,16 +513,19 @@ export class AtlasEZOpmp extends AtlasEZO {
             let arrDims = result.split(',');
             let disp = {
                 dispensing: utils.makeBool(arrDims[2]),
-                continuous: typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('*') !== -1,
+                continuous: utils.makeBool(arrDims[2]) && typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('*') !== -1,
                 reverse: typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') === 0,
                 maxRate: 0, mode: { name: 'off', desc: 'Off' },
                 totalVolume: {}
             };
             if (!disp.continuous) disp['volume'] = parseFloat(arrDims[2]);
+            let mode = 'off';
+            if (disp.continuous) mode = 'continuous';
+            else if (disp.dispensing) mode = this.device.values.mode;
             result = await this.execCommand('DC,?', 300);
             arrDims = result.split(',');
             disp.maxRate = parseFloat(arrDims[1]);
-            disp.mode = this.transformDispenseMode(disp.dispensing ? this.device.values.mode : 'off');
+            disp.mode = this.transformDispenseMode(mode);
             disp.totalVolume = await this.getVolumeDispensed();
             this.device.values = disp;
             
