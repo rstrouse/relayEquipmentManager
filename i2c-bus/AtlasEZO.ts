@@ -858,7 +858,7 @@ export class AtlasEZOrtd extends AtlasEZO {
     }
     public async getCalibrated(): Promise<boolean> {
         try {
-            let result = await this.execCommand('cal,?', 300);
+            let result = await this.execCommand('Cal,?', 300);
             let arrDims = result.split(',');
             return Promise.resolve(utils.makeBool(arrDims[1]));
         }
@@ -866,11 +866,9 @@ export class AtlasEZOrtd extends AtlasEZO {
     }
     public async getScale(): Promise<string> {
         try {
-            logger.warn(`Getting Scale`);
             let result = await this.execCommand('S,?', 300);
             let arrDims = result.split(',');
-            logger.warn(`Getting Scale`);
-            return Promise.resolve(arrDims[1]);
+            return Promise.resolve(arrDims[1].toLowerCase());
         }
         catch (err) { logger.error(err); }
     }
@@ -884,7 +882,7 @@ export class AtlasEZOrtd extends AtlasEZO {
     }
     public async setCalibrationPoint(value: number): Promise<boolean> {
         try {
-            await this.execCommand(`Cal,${Math.floor(value)}`, 900);
+            await this.execCommand(`Cal,${value.toFixed(2)}`, 600);
             this.device.options.calPoint = Math.floor(value);
             return Promise.resolve(true);
         }
