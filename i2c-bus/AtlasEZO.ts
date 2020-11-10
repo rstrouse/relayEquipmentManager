@@ -108,7 +108,7 @@ export class AtlasEZO extends i2cDeviceBase {
             this.device.options.deviceInfo.lastRestart = this.transformRestart((arrDims[1] || 'U').toUpperCase());
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(`Error getting device status: ${err.message}`); return Promise.reject(err); }
+        catch (err) { this.logError(err, `Error getting device status:`); return Promise.reject(err); }
     }
     public async getLedEnabled(): Promise<boolean> {
         try {
@@ -207,8 +207,8 @@ export class AtlasEZOorp extends AtlasEZO {
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.orp.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.device.options.name;
-            this.getDeviceInformation();
-            this.readContinuous();
+            setTimeout(() => { this.getDeviceInformation(); }, 500);
+            setTimeout(() => { this.readContinuous(); }, 1000);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -315,8 +315,8 @@ export class AtlasEZOpH extends AtlasEZO {
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.pH.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.device.options.name);
-            this.readContinuous();
-            this.getDeviceInformation();
+            setTimeout(() => { this.getDeviceInformation(); }, 500);
+            setTimeout(() => { this.readContinuous(); }, 1000);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -483,8 +483,8 @@ export class AtlasEZOpmp extends AtlasEZO {
             //this.device.options.pumpVoltage = await this.getPumpVoltage();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.device.options.name);
-            this.getDispenseStatus();
-            this.getDeviceInformation();
+            setTimeout(() => { this.getDeviceInformation(); }, 500);
+            setTimeout(() => { this.getDispenseStatus(); }, 1000);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -769,8 +769,8 @@ export class AtlasEZOprs extends AtlasEZO {
             this.device.options.alarm = this.getAlarm();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.device.options.name;
-            this.getDeviceInformation();
-            this.readContinuous();
+            setTimeout(() => { this.getDeviceInformation(); }, 500);
+            setTimeout(() => { this.readContinuous(); }, 1000);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -921,8 +921,8 @@ export class AtlasEZOrtd extends AtlasEZO {
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.temperature.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.device.options.name;
-            this.getDeviceInformation();
-            this.readContinuous();
+            setTimeout(() => { this.getDeviceInformation(); }, 500);
+            setTimeout(() => { this.readContinuous(); }, 1000);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
