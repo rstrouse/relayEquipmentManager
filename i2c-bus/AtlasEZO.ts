@@ -23,7 +23,7 @@ export class AtlasEZO extends i2cDeviceBase {
     protected _timerRead: NodeJS.Timeout;
     protected _infoRead: NodeJS.Timeout;
     protected _suspendPolling: number = 0;
-    protected _pollInformationInterval = 5000;
+    protected _pollInformationInterval = 30000;
     protected logError(err, msg?:string) { logger.error(`${this.device.name} ${typeof msg !== 'undefined' ? msg + ' ': ''}${typeof err !== 'undefined' ? err.message : ''}`); }
     protected createError(byte, command): Error {
         let err: Error;
@@ -93,7 +93,7 @@ export class AtlasEZO extends i2cDeviceBase {
             }
         }
         catch (err) { this.logError(err, 'Error Polling Device Values'); }
-        finally { this._timerRead = setTimeout(() => { this.pollReadings }, this.device.options.readInterval) }
+        finally { this._timerRead = setTimeout(() => { this.pollReadings(); }, this.device.options.readInterval) }
     }
     public async takeReadings(): Promise<boolean> {
         try { return Promise.resolve(true); }
