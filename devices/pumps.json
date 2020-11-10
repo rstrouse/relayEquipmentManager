@@ -83,7 +83,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Firmware",
-                    "binding": "options.deviceInfo.firmware",
+                    "binding": "info.firmware",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",
@@ -104,7 +104,7 @@
                       "field": {
                         "type": "staticField",
                         "labelText": "Last Restart",
-                        "binding": "options.status.lastRestart.name",
+                        "binding": "info.lastRestart.name",
                         "style": {
                           "fontSize": ".8rem",
                           "lineHeight": "1.2"
@@ -118,7 +118,7 @@
                       "field": {
                         "type": "staticField",
                         "labelText": "-",
-                        "binding": "options.status.lastRestart.desc",
+                        "binding": "info.lastRestart.desc",
                         "style": {
                           "fontSize": ".8rem",
                           "lineHeight": "1.2"
@@ -132,7 +132,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Vcc Voltage",
-                    "binding": "options.status.vcc",
+                    "binding": "info.vcc",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",
@@ -156,7 +156,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Pump Voltage",
-                    "binding": "options.pumpVoltage",
+                    "binding": "info.pumpVoltage",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",

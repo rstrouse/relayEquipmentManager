@@ -198,7 +198,7 @@ export class Controller extends ConfigItem {
         let cfgDefault = this.loadConfigFile(path.posix.join(process.cwd(), '/defaultController.json'), {});
         cfg = extend(true, {}, cfgDefault, cfg);
         let cfgVer = 1;
-        this.data = this.onchange(cfg, function() { cont.dirty = true; });
+        this.data = this.onchange(cfg, () => { this.dirty = true; });
         this.gpio = new Gpio(this.data, 'gpio');
         if (typeof this.data.configVersion === 'undefined') {
             this.gpio.upgrade(this.data.ver);
@@ -209,13 +209,18 @@ export class Controller extends ConfigItem {
         this.data.configVersion = cfgVer;
         this.connections = new ConnectionSourceCollection(this.data, 'connections');
     }
-    public async stopAsync() {
-        if (this._timerChanges) clearTimeout(this._timerChanges);
-        if (this._timerDirty) clearTimeout(this._timerDirty);
-        return this; // Allow chaining.
+    public async stopAsync(): Promise<Controller> {
+        try {
+            if (this._timerChanges) clearTimeout(this._timerChanges);
+            if (this._timerDirty) clearTimeout(this._timerDirty);
+            if (this._isDirty) await this.persist();
+            return Promise.resolve(this); // Allow chaining.
+        }
+        catch (err) { logger.error(`Error stopping Controller object: ${err.message}`); }
     }
     public cfgPath: string;
     protected _lastUpdated: Date;
+    protected _lastPersisted: Date = new Date();
     protected _isDirty: boolean;
     protected _timerDirty: NodeJS.Timeout = null;
     protected _timerChanges: NodeJS.Timeout;
@@ -232,14 +237,20 @@ export class Controller extends ConfigItem {
             this._timerDirty = null;
         }
         if (this._isDirty) {
-            this._timerDirty = setTimeout(function () { cont.persist(); }, 3000);
+            logger.verbose(`Setting Dirty... ${val} ${new Date().getTime() - this._lastPersisted.getTime()}`);
+            if (new Date().getTime() - this._lastPersisted.getTime() > 10000) //TODO: Set this higher as we don't need to write it every 10 seconds.
+                this.persist();
+            else
+                this._timerDirty = setTimeout(function () { cont.persist(); }, 3000);
         }
     }
     public persist() {
         this._isDirty = false;
+        logger.verbose('Persisting Configuration data...');
         // Don't overwrite the configuration if we failed during the initialization.
         Promise.resolve()
             .then(() => { fs.writeFileSync(this.cfgPath, JSON.stringify(this.data, undefined, 2)); })
+            .then(() => { this._lastPersisted = new Date() })
             .catch(function (err) { if (err) logger.error('Error writing controller config %s %s', err, this.cfgPath); });
     }
     public get controllerType() { return this.getMapVal(this.data.controllerType || 'raspi', vMaps.controllerTypes); }
@@ -780,6 +791,11 @@ export class I2cDeviceCollection extends ConfigItemCollection<I2cDevice> {
 }
 export class I2cDevice extends ConfigItem {
     constructor(data) { super(data); }
+    public initData(data?: any) {
+        if (typeof this.data.values === 'undefined') this.values = {};
+        if (typeof this.data.options === 'undefined') this.options = {};
+        if (typeof this.data.info === 'undefined') this.info = {};
+    }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get name(): string { return this.data.name; }
@@ -792,9 +808,11 @@ export class I2cDevice extends ConfigItem {
     public set address(val: number) { this.setDataVal('address', val); }
     public get feeds(): I2cDeviceFeedCollection { return new I2cDeviceFeedCollection(this.data, 'feeds'); }
     public get options(): any { return typeof this.data.options === 'undefined' ? this.data.options = {} : this.data.options; }
-    public set options(val: any) { this.data.options = val; }
+    public set options(val: any) { this.setDataVal('options', val || {}); }
+    public get info(): any { return typeof this.data.info === 'undefined' ? this.data.info = {} : this.data.info; }
+    public set info(val: any) { this.setDataVal('info', val || {}); }
     public get values(): any { return typeof this.data.values === 'undefined' ? this.data.values = {} : this.data.values; }
-    public set values(val: any) { this.data.values = val; }
+    public set values(val: any) { this.setDataVal('values', val || {}); }
     public get sampling(): number { return this.data.sampling; }
     public set sampling(val: number) { this.setDataVal('sampling', val); }
     public getExtended() {

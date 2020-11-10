@@ -93,7 +93,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Firmware",
-                    "binding": "options.deviceInfo.firmware",
+                    "binding": "info.firmware",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",
@@ -114,7 +114,7 @@
                       "field": {
                         "type": "staticField",
                         "labelText": "Last Restart",
-                        "binding": "options.status.lastRestart.name",
+                        "binding": "info.lastRestart.name",
                         "style": {
                           "fontSize": ".8rem",
                           "lineHeight": "1.2"
@@ -128,7 +128,7 @@
                       "field": {
                         "type": "staticField",
                         "labelText": "-",
-                        "binding": "options.status.lastRestart.desc",
+                        "binding": "info.lastRestart.desc",
                         "style": {
                           "fontSize": ".8rem",
                           "lineHeight": "1.2"
@@ -142,7 +142,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Vcc Voltage",
-                    "binding": "options.status.vcc",
+                    "binding": "info.vcc",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",
@@ -164,92 +164,101 @@
                 },
                 {
                   "field": {
-                    "type": "staticField",
-                    "labelText": "Calibration Curve",
-                    "style": {
-                      "display": "block",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
+                    "type": "div",
+                    "attrs": { "data-bindingcontext": "calibration" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Calibration Curve",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Ideal Acid",
+                        "binding": "options.slope.acid",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "4.5rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "%"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Ideal Base",
+                        "binding": "options.slope.base",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "4.5rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "%"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Vcc Offset",
+                        "binding": "options.slope.mV",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "4.5rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "mV"
+                      }
                     }
-                  }
-                },
-                {
-                  "field": {
-                    "type": "staticField",
-                    "labelText": "Ideal Acid",
-                    "binding": "options.slope.acid",
-                    "dataType": "number",
-                    "fmtMask": "#,##0.####",
-                    "emptyMask": "---",
-                    "style": {
-                      "display": "block",
-                      "marginLeft": "1rem",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    },
-                    "labelAttrs": {
-                      "style": { "width": "4.5rem" }
-                    },
-                    "inputAttrs": {
-                      "style": {
-                        "width": "2.5rem",
-                        "textAlign": "right"
-                      }
-                    },
-                    "units": "%"
-                  }
-                },
-                {
-                  "field": {
-                    "type": "staticField",
-                    "labelText": "Ideal Base",
-                    "binding": "options.slope.base",
-                    "dataType": "number",
-                    "fmtMask": "#,##0.####",
-                    "emptyMask": "---",
-                    "style": {
-                      "display": "block",
-                      "marginLeft": "1rem",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    },
-                    "labelAttrs": {
-                      "style": { "width": "4.5rem" }
-                    },
-                    "inputAttrs": {
-                      "style": {
-                        "width": "2.5rem",
-                        "textAlign": "right"
-                      }
-                    },
-                    "units": "%"
-                  }
-                },
-                {
-                  "field": {
-                    "type": "staticField",
-                    "labelText": "Vcc Offset",
-                    "binding": "options.slope.mV",
-                    "dataType": "number",
-                    "fmtMask": "#,##0.####",
-                    "emptyMask": "---",
-                    "style": {
-                      "display": "block",
-                      "marginLeft": "1rem",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    },
-                    "labelAttrs": {
-                      "style": { "width": "4.5rem" }
-                    },
-                    "inputAttrs": {
-                      "style": {
-                        "width": "2.5rem",
-                        "textAlign": "right"
-                      }
-                    },
-                    "units": "mV"
-                  }
+
+                  ]
                 }
               ]
             },
