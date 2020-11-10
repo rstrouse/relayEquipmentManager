@@ -727,7 +727,7 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async dispenseVolume(volume: number, minutes?:number): Promise<boolean> {
         try {
-            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)}, ${Math.round(minutes)}`, 300);
+            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)}, ${minutes.toFixed(2)}`, 300);
             this.device.values.dispensing = true;
             this.device.values.reverse = volume < 0;
             this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
@@ -744,7 +744,7 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async dispenseFlowRate(rate: number, minutes?: number): Promise<boolean> {
         try {
-            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)},*`, 300) : await this.execCommand(`DC,${rate.toFixed(2)}, ${Math.round(minutes)}`, 300);
+            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)},*`, 300) : await this.execCommand(`DC,${rate.toFixed(2)}, ${minutes.toFixed(2)}`, 300);
             this.device.values.flowRate = rate;
             this.device.values.dispensing = true;
             this.device.values.continuous = false;
