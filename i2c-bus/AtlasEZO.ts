@@ -477,8 +477,10 @@ export class AtlasEZOpmp extends AtlasEZO {
             await this.getInfo();
             this.device.options.isProtoLocked = await this.isProtocolLocked();
             await this.getLedEnabled();
-
-            this.device.options.parameters = await this.getParameterInfo();
+            await this.getParameterInfo();
+            if (!this.device.options.parameters.pumpVolume) await this.enableParameter('V', true);
+            if (!this.device.options.parameters.pumpTotal) await this.enableParameter('TV', true);
+            if (!this.device.options.parameters.pumpAbsolute) await this.enableParameter('ATV', true);
             this.device.options.calibration = await this.getCalibrated();
             //this.device.options.pumpVoltage = await this.getPumpVoltage();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
@@ -548,13 +550,35 @@ export class AtlasEZOpmp extends AtlasEZO {
         }
         catch (err) { return Promise.reject(err); }
     }
-    public async getParameterInfo(): Promise<{ pumpVolume: boolean, pumpTotal: boolean, pumpAbsolute: boolean }> {
+    public async getParameterInfo(): Promise<boolean> {
         try {
             let result = await this.execCommand('O,?', 300);
-            let arrDims = result.split(',');
-            return Promise.resolve({ pumpVolume: utils.makeBool(arrDims[1]), pumpTotal: utils.makeBool(arrDims[2]), pumpAbsolute: utils.makeBool(arrDims[3]) });
+            let params = result.toUpperCase();
+            if (typeof this.device.options.parameters === 'undefined') this.device.options.parameters = {};
+            this.device.options.parameters.pumpVolume = params.indexOf(',V') !== -1;
+            this.device.options.parameters.pumpTotal = params.indexOf(',TV') != -1;
+            this.device.options.parameters.pumpAbsolute = params.indexOf(',ATV') !== -1;
+            return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
+    }
+    public async enableParameter(param: string, enable:boolean = true): Promise<boolean> {
+        try {
+            await this.execCommand(`O,${param},${enable ? '1' : '0'}`, 300);
+            switch (param) {
+                case 'V':
+                    this.device.options.parameters.pumpVolume = enable;
+                    break;
+                case 'TV':
+                    this.device.options.parameters.pumpTotal = enable;
+                    break;
+                case 'ATV':
+                    this.device.options.parameters.pumpAbsolute = enable;
+                    break;
+            }
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
     public async getDispenseStatus(): Promise<{ dispensing: boolean, volume?: number, continuous: boolean, reverse: boolean, maxRate: number, mode: { name: string, desc: string } }> {
         try {
