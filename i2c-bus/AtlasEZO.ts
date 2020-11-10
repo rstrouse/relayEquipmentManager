@@ -568,6 +568,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values.reverse = run < 0;
             this.device.values.continuous = disp.dispensing && arrDims[1].indexOf('*') !== -1;
             this.device.values.paused = utils.makeBool(this.device.values.paused);
+            if (typeof this.device.values.mode === 'undefined') this.device.values.mode = { name: 'off', desc: 'Off' };
             let mode = 'off';
             if (this.device.values.continuous) mode = 'continuous';
             else if (this.device.values.dispensing || this.device.values.paused) mode = this.device.values.mode.name;
