@@ -1093,12 +1093,12 @@ export class AtlasEZOrtd extends AtlasEZO {
         }
         catch (err) { this.logError(err); }
     }
-    public async exportCalibration(): Promise<{ len: number, total: number, data: string[] }> {
+    public async exportCalibration(): Promise<{ len: number, total: number, data: string[], units: string }> {
         try {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [] };
+            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [], units: this.device.options.scale };
             for (let i = 0; i < dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
