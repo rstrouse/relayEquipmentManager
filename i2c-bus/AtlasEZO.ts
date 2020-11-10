@@ -46,8 +46,8 @@ export class AtlasEZO extends i2cDeviceBase {
     protected async execCommand(command: string, timeout: number, length: number = 31): Promise<string> {
         try {
             while (this.processing > 0) {
-                if (this.processing++ > 5) {
-                    return Promise.reject(new Error(`${this.device.name}: Node busy could not send command ${command}`))
+                if (this.processing++ > 10) {
+                    return Promise.reject(new Error(`${this.device.name}: Device busy could not send command ${command}`))
                 }
                 logger.info(`${this.device.name}: Node busy waiting to send command ${command}`);
                 await new Promise((resolve, reject) => { setTimeout(() => resolve(), 150); });
@@ -337,7 +337,7 @@ export class AtlasEZOorp extends AtlasEZO {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };
+            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [] };
             for (let i = 0; i < dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
@@ -507,7 +507,7 @@ export class AtlasEZOpH extends AtlasEZO {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };
+            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [] };
             for (let i = 0; i < dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
@@ -1098,8 +1098,8 @@ export class AtlasEZOrtd extends AtlasEZO {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };
-            for (let i = 0; i <= dims.len; i++) {
+            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [] };
+            for (let i = 0; i < dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
             }
