@@ -22,6 +22,7 @@ import { I2cDevice } from "../boards/Controller";
 export class AtlasEZO extends i2cDeviceBase {
     protected _timerRead: NodeJS.Timeout;
     protected _infoRead: NodeJS.Timeout;
+    protected _waitCount = 0;
     protected _pollInformationInterval = 10000;
     protected logError(err, msg?:string) { logger.error(`${this.device.name}${typeof msg !== 'undefined' ? msg + ' ': ''}${typeof err !== 'undefined' ? err.message : ''}`); }
     protected createError(byte, command): Error {
@@ -41,6 +42,8 @@ export class AtlasEZO extends i2cDeviceBase {
     }
     protected escapeName(name: string): string { return name.substring(0, 15).replace(/\s+/g, '_'); }
     protected get version(): number { return typeof this.device !== 'undefined' && this.device.options !== 'undefined' && typeof this.device.options.deviceInfo !== 'undefined' ? parseFloat(this.device.options.deviceInfo.firmware) : 0 }
+    protected beginCommands() { this._waitCount++; }
+    protected endCommands() { this._waitCount--; }
     protected async execCommand(command: string, timeout: number, length: number = 31): Promise<string> {
         try {
             let w = await this.i2c.writeCommand(this.device.address, command);
@@ -62,6 +65,7 @@ export class AtlasEZO extends i2cDeviceBase {
         }
         catch (err) { return Promise.reject(err); }
     }
+
     public async setAddress(val: number): Promise<boolean> {
         try {
             if (val < 1 || val > 127) return Promise.reject(new Error(`Address must be between 1-127`));
@@ -141,6 +145,10 @@ export class AtlasEZO extends i2cDeviceBase {
     public async getDeviceInformation(): Promise<boolean> {
         try {
             if (this._infoRead) clearTimeout(this._infoRead);
+            if (this._waitCount > 0) {
+                this._infoRead = setTimeout(() => { this.getDeviceInformation(); }, this._pollInformationInterval);
+                return Promise.resolve(true);
+            }
             await this.getStatus();
             webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, options: { deviceInfo: this.device.options.deviceInfo } });
             this._infoRead = setTimeout(() => { this.getDeviceInformation(); }, this._pollInformationInterval);
@@ -222,12 +230,16 @@ export class AtlasEZOorp extends AtlasEZO {
         }
         catch (err) { this.logError(err); Promise.reject(err); }
     }
-    public async readContinuous(): Promise<number> {
+    public async readContinuous(): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
-            let orp = await this.readProbe();
+            if (this._waitCount > 0) {
+                this._timerRead = setTimeout(() => { this.getDeviceInformation(); }, this.device.options.readInterval);
+                return Promise.resolve(true);
+            }
+            await this.readProbe();
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
-            return Promise.resolve(orp);
+            return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
     }
@@ -335,13 +347,16 @@ export class AtlasEZOpH extends AtlasEZO {
         }
         catch (err) { this.logError(err); Promise.reject(err); }
     }
-    public async readContinuous(): Promise<number> {
+    public async readContinuous(): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
-            //let temp = this.device.options.tempCompensation;
-            let pH = await this.readProbe();
+            if (this._waitCount > 0) {
+                this._timerRead = setTimeout(() => { this.getDeviceInformation(); }, this._pollInformationInterval);
+                return Promise.resolve(true);
+            }
+            await this.readProbe();
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
-            return Promise.resolve(pH);
+            return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
     }
@@ -485,6 +500,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             //this.device.options.pumpVoltage = await this.getPumpVoltage();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.device.options.name);
+            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.dispensed.interval.default;
             setTimeout(() => { this.getDeviceInformation(); }, 500);
             setTimeout(() => { this.getDispenseStatus(); }, 1000);
             return Promise.resolve(true);
@@ -545,6 +561,7 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async getDeviceInformation(): Promise<boolean> {
         try {
+            if (this._infoRead) clearTimeout(this._infoRead);
             await this.getPumpVoltage();
             await super.getDeviceInformation();
         }
@@ -555,9 +572,10 @@ export class AtlasEZOpmp extends AtlasEZO {
             let result = await this.execCommand('O,?', 300);
             let params = result.toUpperCase();
             if (typeof this.device.options.parameters === 'undefined') this.device.options.parameters = {};
-            this.device.options.parameters.pumpVolume = params.indexOf(',V') !== -1;
-            this.device.options.parameters.pumpTotal = params.indexOf(',TV') != -1;
-            this.device.options.parameters.pumpAbsolute = params.indexOf(',ATV') !== -1;
+            console.log(params);
+            this.device.options.parameters.pumpVolume = params.indexOf(',V') >= 0;
+            this.device.options.parameters.pumpTotal = params.indexOf(',TV') >= 0;
+            this.device.options.parameters.pumpAbsolute = params.indexOf(',ATV') >= 0;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -582,7 +600,10 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async getDispenseStatus(): Promise<{ dispensing: boolean, volume?: number, continuous: boolean, reverse: boolean, maxRate: number, mode: { name: string, desc: string } }> {
         try {
-            this.stopReadContinuous();
+            if (this._waitCount > 0) {
+                this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, this.device.options.readInterval);
+                return Promise.resolve(this.device.values);
+            }
             let result = await this.execCommand('D,?', 300);
             let arrDims = result.split(',');
             let disp:any = {};
@@ -610,10 +631,10 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values.totalVolume = await this.getVolumeDispensed();
             this.device.values = disp;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
-            if (disp.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000);
-            return Promise.resolve(disp);
+            if (this.device.values.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, this.device.options.readInterval);
+            return Promise.resolve(this.device.values);
         }
-        catch (err) { logger.error(new Error(`Could not get dispense status: ${err.message}`)); this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000); }
+        catch (err) { logger.error(new Error(`Could not get dispense status: ${err.message}`)); this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, this.device.options.readInterval); }
     }
     public async getVolumeDispensed(): Promise<{ total: number, absolute: number }> {
         try {
