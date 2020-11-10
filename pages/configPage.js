@@ -123,6 +123,14 @@
                     dataBinder.bind($(this), data);
                 });
             });
+            o.socket.on('i2cDeviceInformation', function (data) {
+                //console.log({ evt: 'i2cDeviceInformation', data: data });
+                el.find(`.pnl-i2c-device[data-address="${data.address}"][data-busnumber="${data.bus}"] .i2cDeviceInformation`).each(function () {
+                    console.log({ evt: 'i2cDeviceInformation', data: data, control: this });
+                    dataBinder.bind($(this), data);
+                });
+
+            });
             o.socket.on('connect_error', function (data) {
                 console.log('connection error:' + data);
                 o.isConnected = false;

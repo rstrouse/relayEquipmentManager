@@ -41,14 +41,30 @@
               }
             },
             {
-              "dataType": "boolean",
-              "default": false,
               "field": {
-                "type": "checkbox",
-                "bind": "options.isProtocolLocked",
-                "labelText": "Lock Protocol",
-                "style": { "display": "block" }
-              }
+                "type": "div"
+              },
+              "options": [
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.isProtocolLocked",
+                    "labelText": "Lock Protocol"
+                  }
+                },
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.ledEnabled",
+                    "labelText": "LED Enabled",
+                    "style": { "marginLeft": "1rem" }
+                  }
+                }
+              ]
             },
             {
               "bind": "options.extendedScale",
@@ -69,7 +85,8 @@
                 "style": {
                   "display": "block",
                   "verticalAlign": "top"
-                }
+                },
+                "cssClass": "i2cDeviceInformation"
               },
               "options": [
                 {

@@ -50,15 +50,30 @@
               }
             },
             {
-              "bind": "options.isProtocolLocked",
-              "dataType": "boolean",
-              "default": false,
               "field": {
-                "type": "checkbox",
-                "bind": "options.isProtocolLocked",
-                "labelText": "Lock Protocol",
-                "style": { "display": "block" }
-              }
+                "type": "div"
+              },
+              "options": [
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.isProtocolLocked",
+                    "labelText": "Lock Protocol"
+                  }
+                },
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.ledEnabled",
+                    "labelText": "LED Enabled",
+                    "style": { "marginLeft": "1rem" }
+                  }
+                }
+              ]
             },
             {
               "dataType": "panel",
@@ -83,7 +98,8 @@
                     },
                     "labelAttrs": {
                       "style": { "width": "5.5rem" }
-                    }
+                    },
+                    "cssClass": "i2cDeviceInformation"
                   }
                 },
                 {
@@ -171,6 +187,7 @@
                       "fontSize": ".8rem",
                       "lineHeight": "1.2"
                     },
+                    "unitsBinding": "values.units.name",
                     "labelAttrs": {
                       "style": { "width": "5rem" }
                     }
@@ -309,7 +326,8 @@
                     "labelAttrs": {
                       "style": { "width": "5rem" }
                     },
-                    "inputAttrs": { "style": { "width": "5rem" } }
+                    "inputAttrs": { "style": { "width": "5rem" } },
+                    "unitsBinding":  "options.alarm.units.name"
                   }
                 },
                 {
@@ -324,7 +342,8 @@
                     "labelAttrs": {
                       "style": { "width": "5rem" }
                     },
-                    "inputAttrs": { "style": { "width": "5rem" } }
+                    "inputAttrs": { "style": { "width": "5rem" } },
+                    "unitsBinding": "options.alarm.units.name"
                   }
                 }
               ]

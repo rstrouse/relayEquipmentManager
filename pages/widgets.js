@@ -1124,7 +1124,7 @@ $.ui.position.fieldTip = {
                 $('<div></div>').addClass('picSpinner-value').addClass('fld-value-center').appendTo(el);
             }
             $('<div></div>').addClass('picSpinner-up').addClass('fld-btn-right').appendTo(el).append($('<i class="fas fa-plus"></i>'));
-            $('<span></span>').addClass('picSpinner-units').addClass('picUnits').appendTo(el);
+            $('<span></span>').addClass('picSpinner-units').addClass('picUnits').attr('data-bind', o.unitsBinding).appendTo(el);
             //$('<label class="picSpinner-label"></label><div class="picSpinner-down fld-btn-left"><i class="fas fa-minus"></i></div><div class="picSpinner-value fld-value-center"></div><div class="picSpinner-up fld-btn-right"><i class="fas fa-plus"></i></div><span class="picSpinner-units picUnits"></span>').appendTo(el);
             if (typeof o.min === 'undefined' || o.min === null) o.min = 0;
             if (typeof o.val === 'undefined' || o.val === null) o.val = o.min;
@@ -1281,7 +1281,7 @@ $.ui.position.fieldTip = {
             if (typeof o.val === 'undefined') o.val = o.min;
             // format our time based upon minutes from midnight.
             el.find('input.picSpinner-value').val(o.val.formatTime(o.fmtMask, o.fmtEmpty));
-            el.find('span.picSpinner-units').text(o.units);
+            el.find('span.picSpinner-units').attr('data-bind', o.unitsBinding).text(o.units);
             self._applyStyles();
             if (typeof o.value !== 'undefined') self.val(o.value);
             if (typeof o.binding !== 'undefined') el.attr('data-bind', o.binding);
@@ -1783,7 +1783,7 @@ $.ui.position.fieldTip = {
             el.on('change', 'input.picPickList-value', function (evt) {
                 self.val(el.find('input.picPickList-value:first').val());
             });
-            $('<span></span>').addClass('picSpinner-units').addClass('picUnits').appendTo(el).html(o.units);
+            $('<span></span>').addClass('picSpinner-units').addClass('picUnits').attr('data-bind', o.unitsBinding).appendTo(el).html(o.units);
 
         },
         _applyStyles: function () {
@@ -2187,7 +2187,7 @@ $.ui.position.fieldTip = {
             el.attr('data-datatype', o.dataType);
             el.attr('data-fmtMask', o.fmtMask);
             el.attr('data-emptyMask', o.emptyMask);
-            $('<span class="picStatic-units picUnits"></span>').appendTo(el);
+            $('<span class="picStatic-units picUnits"></span>').attr('data-bind', o.unitsBinding).appendTo(el);
             if(typeof o.units !== 'undefined') el.find('span.picStatic-units').html(o.units);
 
             self._applyStyles();

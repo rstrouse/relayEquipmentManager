@@ -21,6 +21,9 @@ import { I2cDevice } from "../boards/Controller";
 
 export class AtlasEZO extends i2cDeviceBase {
     protected _timerRead: NodeJS.Timeout;
+    protected _infoRead: NodeJS.Timeout;
+    protected _pollInformationInterval = 10000;
+    protected logError(err, msg?:string) { logger.error(`${this.device.name}${typeof msg !== 'undefined' ? msg + ' ': ''}${typeof err !== 'undefined' ? err.message : ''}`); }
     protected createError(byte, command): Error {
         let err: Error;
         switch (byte) {
@@ -40,7 +43,6 @@ export class AtlasEZO extends i2cDeviceBase {
     protected get version(): number { return typeof this.device !== 'undefined' && this.device.options !== 'undefined' && typeof this.device.options.deviceInfo !== 'undefined' ? parseFloat(this.device.options.deviceInfo.firmware) : 0 }
     protected async execCommand(command: string, timeout: number, length: number = 31): Promise<string> {
         try {
-            //logger.info(`Writing Command ${command} Timeout ${timeout}...`);
             let w = await this.i2c.writeCommand(this.device.address, command);
             await new Promise((resolve, reject) => { setTimeout(() => resolve(), timeout); });
             let value = await this.i2c.read(this.device.address, length);
@@ -55,7 +57,7 @@ export class AtlasEZO extends i2cDeviceBase {
                     return Promise.reject(err);
             }
             let data = value.buffer.toString('utf8', 1).replace(/^[\s\uFEFF\xA0\0]+|[\s\uFEFF\xA0\0]+$/g, '');
-            logger.info(`Executed command ${command} bytes written:${w} result:${data}`);
+            logger.info(`${this.device.name} command ${command} bytes written:${w} result:${data}`);
             return Promise.resolve(data);
         }
         catch (err) { return Promise.reject(err); }
@@ -66,7 +68,7 @@ export class AtlasEZO extends i2cDeviceBase {
             await this.execCommand('I2C,' + (Math.floor(val)), 300);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async lockProtocol(val: boolean): Promise<boolean> {
         try {
@@ -74,20 +76,20 @@ export class AtlasEZO extends i2cDeviceBase {
             this.device.options.isProtocolLocked = val;
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async getName(): Promise<string> {
         try {
             return Promise.resolve(this.device.name);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setName(name: string): Promise<boolean> {
         try {
             this.device.name = this.device.options.name = name;
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async isProtocolLocked() {
         try {
@@ -95,39 +97,69 @@ export class AtlasEZO extends i2cDeviceBase {
             let arrDims = result.split(',');
             return Promise.resolve(utils.makeBool(arrDims[1]));
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
-    public async getStatus(): Promise<{ vcc: number, lastRestart: { name: string, desc: string } }> {
+    public async getStatus(): Promise<boolean> {
         try {
             let result = await this.execCommand('Status', 300);
+            if (this.i2c.isMock) return Promise.resolve(true);
             let arrDims = result.split(',');
-            let status = { vcc: parseFloat(arrDims[2] || '0'), lastRestart: (this.transformRestart(arrDims[1] || 'U')) };
-            this.device.options.status = status;
-            return Promise.resolve(status);
+            this.device.options.deviceInfo.vcc = parseFloat(arrDims[2] || '0');
+            this.device.options.deviceInfo.lastRestart = this.transformRestart((arrDims[1] || 'U').toUpperCase());
+            return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`Error getting device status: ${err.message}`); return Promise.reject(err); }
     }
-    public async getDeviceInformation(): Promise<{ device: string, firmware: string }> {
+    public async getLedEnabled(): Promise<boolean> {
+        try {
+            let result = await this.execCommand('L,?', 300);
+            let arrDims = result.split(',');
+            this.device.options.ledEnabled = utils.makeBool(arrDims[1]);
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.reject(err); }
+    }
+    public async enableLed(enable: boolean): Promise<boolean> {
+        try {
+            let result = await this.execCommand(`L,${enable ? '1' : '0'}`, 300);
+            this.device.options.ledEnabled = enable;
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.reject(err); }
+    }
+    public async getInfo(): Promise<{ device: string, firmware: string }> {
         try {
             let result = await this.execCommand('i', 300);
             let arrDims = result.split(',');
+            if (typeof this.device.options.deviceInfo === 'undefined') this.device.options.deviceInfo = {};
+            this.device.options.deviceInfo.device = arrDims[1] || '';
+            this.device.options.deviceInfo.firmware = arrDims[2] || '';
             return Promise.resolve({ device: arrDims[1] || '', firmware: arrDims[2] || '' });
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`Error getting info ${err.message}`); return Promise.reject(err); }
+    }
+    public async getDeviceInformation(): Promise<boolean> {
+        try {
+            if (this._infoRead) clearTimeout(this._infoRead);
+            await this.getStatus();
+            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, options: { deviceInfo: this.device.options.deviceInfo } });
+            this._infoRead = setTimeout(() => { this.getDeviceInformation(); }, this._pollInformationInterval);
+        }
+        catch (err) { logger.error(`Error retrieving device status: ${err.message}`); this._infoRead = setTimeout(() => { this.getDeviceInformation(); }, this._pollInformationInterval); return Promise.reject(err); }
     }
     public async clearCalibration(): Promise<boolean> {
         try {
             await this.execCommand(`Cal,clear`, 300);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async sleep(): Promise<boolean> {
         try {
             await this.i2c.writeCommand(this.device.address, 'Sleep');
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async stopReadContinuous(): Promise<void> { if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead); return Promise.resolve(); }
     public async closeAsync(): Promise<void> {
@@ -136,7 +168,7 @@ export class AtlasEZO extends i2cDeviceBase {
             await super.closeAsync();
             return Promise.resolve();
         }
-        catch (err) { return logger.error(err); }
+        catch (err) { return this.logError(err); }
     }
     protected transformRestart(code: string): { name: string, desc: string } {
         let status = { name: code, desc: 'Unknown' };
@@ -163,29 +195,33 @@ export class AtlasEZO extends i2cDeviceBase {
 export class AtlasEZOorp extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
+            if (this._timerRead) clearTimeout(this._timerRead);
+            if (this._infoRead) clearTimeout(this._infoRead);
             this.device.options.name = await this.getName();
-            this.device.options.deviceInfo = await this.getDeviceInformation();
+            await this.getInfo();
+            await this.getLedEnabled();
             this.device.options.isProtocolLocked = await this.isProtocolLocked();
-            this.device.options.calibrationMode = await this.getCalibrated();
-            this.device.options.status = await this.getStatus();
+            await this.getCalibrated();
+            //this.device.options.status = await this.getStatus();
             this.device.options.calibration = await this.exportCalibration();
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.orp.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.device.options.name;
+            this.getDeviceInformation();
             this.readContinuous();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); return Promise.resolve(false); }
+        catch (err) { this.logError(err); return Promise.resolve(false); }
     }
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
             if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
         }
-        catch (err) { logger.error(err); Promise.reject(err); }
+        catch (err) { this.logError(err); Promise.reject(err); }
     }
-
     public async readContinuous(): Promise<number> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
@@ -193,15 +229,16 @@ export class AtlasEZOorp extends AtlasEZO {
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
             return Promise.resolve(orp);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async getCalibrated(): Promise<boolean> {
         try {
             let result = await this.execCommand('cal,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve(utils.makeBool(arrDims[1]));
+            this.device.options.calibrationMode = utils.makeBool(arrDims[1]);
+            return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setCalibrationPoint(value: number): Promise<boolean> {
         try {
@@ -209,7 +246,7 @@ export class AtlasEZOorp extends AtlasEZO {
             this.device.options.calPoint = Math.floor(value);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async calibrate(data): Promise<I2cDevice> {
         try {
@@ -219,7 +256,7 @@ export class AtlasEZOorp extends AtlasEZO {
             this.device.options.calibrationMode = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
-        catch (err) { logger.error(err); return Promise.reject(err); }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
 
     public async getName(): Promise<string> {
@@ -228,7 +265,7 @@ export class AtlasEZOorp extends AtlasEZO {
             let arrDims = result.split(',');
             return Promise.resolve(arrDims[1] || '');
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setName(name: string): Promise<boolean> {
         try {
@@ -236,7 +273,7 @@ export class AtlasEZOorp extends AtlasEZO {
             this.device.options.name = this.device.name = this.escapeName(name);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async readProbe(): Promise<number> {
         try {
@@ -246,7 +283,7 @@ export class AtlasEZOorp extends AtlasEZO {
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(val);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async exportCalibration(): Promise<{ len: number, total: number, data: string[] }> {
         try {
@@ -259,7 +296,7 @@ export class AtlasEZOorp extends AtlasEZO {
             }
             return Promise.resolve(dims);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
 }
 export class AtlasEZOpH extends AtlasEZO {
@@ -267,21 +304,22 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             this.device.options.name = await this.getName();
-            this.device.options.deviceInfo = await this.getDeviceInformation();
+            await this.getInfo();
             this.device.options.isProtocolLocked = await this.isProtocolLocked();
-            this.device.options.extendedScale = await this.getExtendedScale();
-            this.device.options.calibrationMode = await this.getCalibrated();
-            this.device.options.slope = await this.getSlope();
-            this.device.options.status = await this.getStatus();
-            this.device.options.tempCompensation = await this.getTempCompensation();
+            await this.getLedEnabled();
+            await this.getExtendedScale();
+            await this.getCalibrated();
+            await this.getSlope();
+            await this.getTempCompensation();
             this.device.options.calibration = await this.exportCalibration();
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.pH.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.device.options.name);
             this.readContinuous();
+            this.getDeviceInformation();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); return Promise.resolve(false); }
+        catch (err) { this.logError(err); return Promise.resolve(false); }
     }
     public async setOptions(opts): Promise<any> {
         try {
@@ -290,11 +328,12 @@ export class AtlasEZOpH extends AtlasEZO {
             if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.extendedScale !== 'undefined' && this.device.options.extendedScale !== opts.extendedScale) await this.setExtendedScale(utils.makeBool(opts.extendedScale));
             if (typeof opts.tempCompensation === 'number' && this.device.options.tempCompensation !== opts.tempCompensation) await this.setTempCompensation(opts.tempCompensation);
+            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
             this.readContinuous();
             return Promise.resolve(this.device.options);
         }
-        catch (err) { logger.error(err); Promise.reject(err); }
+        catch (err) { this.logError(err); Promise.reject(err); }
     }
     public async readContinuous(): Promise<number> {
         try {
@@ -304,7 +343,7 @@ export class AtlasEZOpH extends AtlasEZO {
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
             return Promise.resolve(pH);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async calibrate(data): Promise<I2cDevice> {
         try {
@@ -316,7 +355,7 @@ export class AtlasEZOpH extends AtlasEZO {
             this.device.options.calibrationMode = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
-        catch (err) { logger.error(err); return Promise.reject(err); }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
     public async readProbe(tempCompensation?: number): Promise<number> {
         try {
@@ -331,23 +370,25 @@ export class AtlasEZOpH extends AtlasEZO {
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(val);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async getExtendedScale(): Promise<boolean> {
         try {
             let result = await this.execCommand('pHext,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve(utils.makeBool(arrDims[1]));
+            this.device.options.extendedScale = utils.makeBool(arrDims[1]);
+            return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
-    public async getCalibrated(): Promise<number> {
+    public async getCalibrated(): Promise<boolean> {
         try {
             let result = await this.execCommand('cal,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve(parseInt(arrDims[1] || '0', 10));
+            this.device.options.calibrationMode = parseInt(arrDims[1] || '0', 10);
+            return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setCalibrationPoint(point: string, value: number): Promise<boolean> {
         try {
@@ -356,7 +397,7 @@ export class AtlasEZOpH extends AtlasEZO {
             this.device.options[ptName] = value;
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async getName(): Promise<string> {
         try {
@@ -364,7 +405,7 @@ export class AtlasEZOpH extends AtlasEZO {
             let arrDims = result.split(',');
             return Promise.resolve(arrDims[1] || '');
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setName(name: string): Promise<boolean> {
         try {
@@ -372,34 +413,36 @@ export class AtlasEZOpH extends AtlasEZO {
             this.device.name = this.device.options.name = this.escapeName(name);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
-    public async getSlope(): Promise<{ acid: number, base: number, mV: number }> {
+    public async getSlope(): Promise<boolean> {
         try {
             let result = await this.execCommand('Slope,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve({ acid: parseFloat(arrDims[1] || '0'), base: parseFloat(arrDims[2] || '0'), mV: parseFloat(arrDims[3] || '0') });
+            this.device.options.slope = { acid: parseFloat(arrDims[1] || '0'), base: parseFloat(arrDims[2] || '0'), mV: parseFloat(arrDims[3] || '0') }
+            return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
-    public async getTempCompensation(): Promise<number> {
+    public async getTempCompensation(): Promise<boolean> {
         try {
             let result = await this.execCommand('T,?', 300);
             let arrDims = result.split(',');
-            this.device.values.temperature = parseFloat(arrDims[1] || '25')
+            this.device.values.temperature = parseFloat(arrDims[1] || '25');
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
-            return Promise.resolve(this.device.values.temperature);
+            return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
 
     }
     public async setTempCompensation(value: number): Promise<boolean> {
         try {
             await this.execCommand(`T,${value.toFixed(1)}`, 300);
             this.device.values.temperature = value;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setExtendedScale(val: boolean): Promise<boolean> {
         try {
@@ -407,7 +450,7 @@ export class AtlasEZOpH extends AtlasEZO {
             this.device.options.extendedScale = val;
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async exportCalibration(): Promise<{ len: number, total: number, data: string[] }> {
         try {
@@ -420,27 +463,31 @@ export class AtlasEZOpH extends AtlasEZO {
             }
             return Promise.resolve(dims);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
 }
 export class AtlasEZOpmp extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
+            if (this._infoRead) clearTimeout(this._infoRead);
+            this._pollInformationInterval = 1000;
             this.device.options.name = await this.getName();
-            this.device.options.values = await this.getDispenseStatus();
-            this.device.options.deviceInfo = await this.getDeviceInformation();
+            //this.device.options.values = await this.getDispenseStatus();
+            await this.getInfo();
             this.device.options.isProtoLocked = await this.isProtocolLocked();
+            await this.getLedEnabled();
+
             this.device.options.parameters = await this.getParameterInfo();
             this.device.options.calibration = await this.getCalibrated();
-            this.device.options.pumpVoltage = await this.getPumpVoltage();
-            this.device.options.status = await this.getStatus();
+            //this.device.options.pumpVoltage = await this.getPumpVoltage();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.device.options.name);
-            await this.getDispenseStatus();
+            this.getDispenseStatus();
+            this.getDeviceInformation();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); return Promise.resolve(false); }
+        catch (err) { this.logError(err); return Promise.resolve(false); }
     }
     public async getName(): Promise<string> {
         try {
@@ -448,7 +495,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             let arrDims = result.split(',');
             return Promise.resolve(arrDims[1] || '');
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setName(name: string): Promise<boolean> {
         try {
@@ -456,7 +503,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.name = this.device.options.name = this.escapeName(name);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     private transformDispenseMode(code: string, paused: boolean): { name: string, desc: string } {
         let mode = { name: code, desc: 'Unknown' };
@@ -492,15 +539,14 @@ export class AtlasEZOpmp extends AtlasEZO {
             let arrDims = result.split(',');
             return Promise.resolve(parseFloat(arrDims[1] || '0'));
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err, `Error getting pump voltage: `); return Promise.reject(err); }
     }
-    public async getDeviceInformation(): Promise<{ device: string, firmware: string }> {
+    public async getDeviceInformation(): Promise<boolean> {
         try {
-            let result = await this.execCommand('i', 300);
-            let arrDims = result.split(',');
-            return Promise.resolve({ device: arrDims[1] || '', firmware: arrDims[2] || '' });
+            await this.getPumpVoltage();
+            await super.getDeviceInformation();
         }
-        catch (err) { logger.error(err); }
+        catch (err) { return Promise.reject(err); }
     }
     public async getParameterInfo(): Promise<{ pumpVolume: boolean, pumpTotal: boolean, pumpAbsolute: boolean }> {
         try {
@@ -508,43 +554,36 @@ export class AtlasEZOpmp extends AtlasEZO {
             let arrDims = result.split(',');
             return Promise.resolve({ pumpVolume: utils.makeBool(arrDims[1]), pumpTotal: utils.makeBool(arrDims[2]), pumpAbsolute: utils.makeBool(arrDims[3]) });
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async getDispenseStatus(): Promise<{ dispensing: boolean, volume?: number, continuous: boolean, reverse: boolean, maxRate: number, mode: { name: string, desc: string } }> {
         try {
             this.stopReadContinuous();
             let result = await this.execCommand('D,?', 300);
             let arrDims = result.split(',');
-            let disp = {
-                dispensing: utils.makeBool(arrDims[2]),
-                continuous: utils.makeBool(arrDims[2]) && typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('*') !== -1,
-                reverse: typeof arrDims[1] !== 'undefined' && arrDims[1].indexOf('-') === 0,
-                maxRate: 0, mode: { name: 'off', desc: 'Off' },
-                paused: utils.makeBool(this.device.values.paused),
-                dispenseTime: this.device.values.dispenseTime,
-                flowRate: this.device.values.flowRate,
-                volume: this.device.values.volume,
-                totalVolume: {}
-            };
+            let disp:any = {};
+            let run = parseInt(arrDims[2] || '0', 10);
+            if (isNaN(run)) run = 0;
+            this.device.values.dispensing = run !== 0;
+            this.device.values.reverse = run < 0;
+            this.device.values.continuous = disp.dispensing && arrDims[1].indexOf('*') !== -1;
+            this.device.values.paused = utils.makeBool(this.device.values.paused);
             let mode = 'off';
-            if (disp.continuous) mode = 'continuous';
-            else if (disp.dispensing || disp.paused) mode = this.device.values.mode.name;
-            if (mode.startsWith('vol')) disp['volume'] = parseFloat(arrDims[2]);
-            else disp.volume = null;
-
+            if (this.device.values.continuous) mode = 'continuous';
+            else if (this.device.values.dispensing || this.device.values.paused) mode = this.device.values.mode.name;
+            if (mode.startsWith('vol')) this.device.values.volume = parseFloat(arrDims[2]);
+            else this.device.values.volume = null;
+            if (mode === 'off') {
+                this.device.values.volume = null;
+                this.device.values.flowRate = null;
+                this.device.values.dispenseTime = null;
+            }
+            this.device.values.mode = this.transformDispenseMode(mode, this.device.values.paused);
             result = await this.execCommand('DC,?', 300);
             arrDims = result.split(',');
-            disp.maxRate = parseFloat(arrDims[1]);
-            disp.mode = this.transformDispenseMode(mode, this.device.values.paused);
-            disp.totalVolume = await this.getVolumeDispensed();
-            if (mode === 'off') {
-                disp.volume = null;
-                disp.flowRate = null;
-                disp.dispenseTime = null;
-            }
-            
+            this.device.values.maxRate = parseFloat(arrDims[1]);
+            this.device.values.totalVolume = await this.getVolumeDispensed();
             this.device.values = disp;
-            
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             if (disp.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000);
             return Promise.resolve(disp);
@@ -562,7 +601,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             vol.absolute = parseFloat(arrDims[1]);
             return Promise.resolve(vol);
         }
-        catch (err) { logger.error(err); return Promise.reject(err); }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
     public async stopDispense(): Promise<boolean> {
         try {
@@ -576,7 +615,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async pauseDispense(): Promise<boolean> {
         try {
@@ -590,7 +629,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async dispenseContinuous(reverse: boolean = false): Promise<boolean> {
         try {
@@ -607,7 +646,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.getDispenseStatus();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async dispenseVolume(volume: number, minutes?:number): Promise<boolean> {
         try {
@@ -624,7 +663,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.getDispenseStatus();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async dispenseFlowRate(rate: number, minutes?: number): Promise<boolean> {
         try {
@@ -641,7 +680,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.getDispenseStatus();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async dispense(opts:any): Promise<boolean> {
         try {
@@ -673,7 +712,7 @@ export class AtlasEZOpmp extends AtlasEZO {
                     break;
             }
             return Promise.resolve(true);
-        } catch (err) { logger.error(err); }
+        } catch (err) { this.logError(err); }
     }
     public async getCalibrated(): Promise<{ volume: boolean, time: boolean }> {
         try {
@@ -685,14 +724,14 @@ export class AtlasEZOpmp extends AtlasEZO {
             opts.time = (val & 0x0002) > 0;
             return Promise.resolve(opts);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setCalibration(point: number): Promise<boolean> {
         try {
             await this.execCommand(`Cal,${point.toFixed(2)}`, 300);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async calibrate(data): Promise<I2cDevice> {
         try {
@@ -702,40 +741,45 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.options.calibration = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
-        catch (err) { logger.error(err); return Promise.reject(err); }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
             if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
         }
-        catch (err) { logger.error(err); Promise.reject(err); }
+        catch (err) { this.logError(err); Promise.reject(err); }
     }
 }
 export class AtlasEZOprs extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
+            if (this._infoRead) clearTimeout(this._infoRead);
             this.device.options.name = await this.getName();
-            this.device.options.deviceInfo = await this.getDeviceInformation();
+            await this.getInfo();
             this.device.options.isProtoLocked = await this.isProtocolLocked();
-            this.device.options.status = await this.getStatus();
+            await this.getLedEnabled();
+            //this.device.options.status = await this.getStatus();
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.pressure.interval.default;
-            this.device.options.units = await this.getUnits(),
+            await this.getUnits(),
             this.device.options.decPlaces = await this.getDecPlaces()
             this.device.options.alarm = this.getAlarm();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.device.options.name;
+            this.getDeviceInformation();
             this.readContinuous();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); return Promise.resolve(false); }
+        catch (err) { this.logError(err); return Promise.resolve(false); }
     }
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
             if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.alarm !== 'undefined' &&
                 (this.device.options.alarm.enable !== opts.alarm.enable || this.device.options.alarm.pressure !== opts.alarm.pressure || this.device.options.alarm.tolerance !== opts.alarm.tolerance)) {
                 await this.setAlarm(utils.makeBool(opts.alarm.enable), opts.alarm.pressure, opts.alarm.tolerance);
@@ -744,7 +788,7 @@ export class AtlasEZOprs extends AtlasEZO {
             if (typeof opts.units !== 'undefined' && typeof opts.units.name !== 'undefined' && this.device.options.units.name !== opts.units.name) await this.setUnits(opts.units.name);
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
         }
-        catch (err) { logger.error(err); Promise.reject(err); }
+        catch (err) { this.logError(err); Promise.reject(err); }
     }
     public async readContinuous(): Promise<number> {
         try {
@@ -753,7 +797,7 @@ export class AtlasEZOprs extends AtlasEZO {
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
             return Promise.resolve(pressure);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async stopReadContinuous() { clearTimeout(this._timerRead); }
     public async readProbe(): Promise<number> {
@@ -765,7 +809,7 @@ export class AtlasEZOprs extends AtlasEZO {
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(val);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setDecPlaces(decPlaces: number): Promise<boolean> {
         try {
@@ -773,7 +817,7 @@ export class AtlasEZOprs extends AtlasEZO {
             this.device.options.decPlaces = decPlaces;
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async getDecPlaces(): Promise<number> {
         try {
@@ -781,15 +825,27 @@ export class AtlasEZOprs extends AtlasEZO {
             let arrDims = result.split(',');
             return Promise.resolve(parseInt(arrDims[1] || '0', 10));
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
+    }
+    public async getUnits(): Promise<boolean> {
+        try {
+            let result = await this.execCommand('U,?', 300);
+            let arrDims = result.split(',');
+            let units = this.transformUnits((arrDims[1] || 'psi').toLowerCase());
+            this.device.values.units = units;
+            if (typeof this.device.options.alarm === 'undefined') this.device.options.alarm = {};
+            this.device.options.alarm.units = units;
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
     public async setUnits(units: string): Promise<boolean> {
         try {
             await this.execCommand(`U,${units}`, 300);
-            this.device.options.units = this.transformUnits(units);
+            this.device.options.alarm.units = this.device.values.units = this.device.options.units = this.transformUnits(units);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     private transformUnits(code: string): { name: string, desc: string } { 
         let units = { name: code, desc: 'Unknown' };
@@ -815,22 +871,14 @@ export class AtlasEZOprs extends AtlasEZO {
         }
         return units;
     }
-    public async getUnits(): Promise<{ name: string, desc: string }> {
-        try {
-            let result = await this.execCommand('U,?', 300);
-            let arrDims = result.split(',');
-            return Promise.resolve(this.transformUnits(arrDims[1]));
-        }
-        catch (err) { logger.error(err); }
-    }
     public async setAlarm(enable: boolean, pressure?: number, tolerance?: number): Promise<boolean> {
         try {
+            if (typeof this.device.options.alarm === 'undefined') this.device.options.alarm = {};
             if (enable) {
                 if (typeof pressure === 'undefined' || typeof tolerance === 'undefined') return Promise.reject(new Error('Alarm must include a pressure setting and tolerance.'));
                 await this.execCommand(`Alarm,en,1`, 300);
                 await this.execCommand(`Alarm,${pressure}`, 300);
                 await this.execCommand(`Alarm,tol,${tolerance}`, 300);
-                this.device.options.alarm = {};
                 this.device.options.alarm.enable = enable;
                 this.device.options.alarm.pressure = pressure;
                 this.device.options.alarm.tolerance = tolerance;
@@ -841,47 +889,55 @@ export class AtlasEZOprs extends AtlasEZO {
             }
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
-    public async getAlarm(): Promise<{ enable: boolean, pressure: number, tolerance: number }> {
+    public async getAlarm(): Promise<boolean> {
         try {
+            if (typeof this.device.options.alarm === 'undefined') this.device.options.alarm = {};
             let result = await this.execCommand('Alarm,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve({ enable: arrDims.length > 2, pressure: parseInt(arrDims[1], 10), tolerance: parseInt(arrDims[2], 10) });
+            this.device.options.alarm.enable = arrDims.length > 2;
+            this.device.options.alarm.pressure = parseInt(arrDims[1], 10);
+            this.device.options.alarm.tolerance = parseInt(arrDims[2], 10);
+            return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
 
 }
 export class AtlasEZOrtd extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
+            if (this._timerRead) clearTimeout(this._timerRead);
+            if (this._infoRead) clearTimeout(this._infoRead);
             this.device.options.name = await this.getName();
-            this.device.options.deviceInfo = await this.getDeviceInformation();
+            await this.getInfo();
             this.device.options.isProtocolLocked = await this.isProtocolLocked();
+            await this.getLedEnabled();
             this.device.options.calibrationMode = await this.getCalibrated();
-            this.device.options.status = await this.getStatus();
+            //this.device.options.status = await this.getStatus();
             this.device.options.scale = await this.getScale();
             this.device.options.calibration = await this.exportCalibration();
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.temperature.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.device.options.name;
+            this.getDeviceInformation();
             this.readContinuous();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); return Promise.resolve(false); }
+        catch (err) { this.logError(err); return Promise.resolve(false); }
     }
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
             if (typeof opts.isProtocolLocked !== 'undefined' && utils.makeBool(this.device.options.isProtocolLocked) !== utils.makeBool(opts.isProcolLocked)) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
             if (typeof this.device.options.scale === 'undefined') this.device.options.scale = await this.getScale();
             if (typeof opts.scale === 'string' && opts.scale.length > 0 && opts.scale.toLowerCase() !== this.device.options.scale.toLowerCase()) await this.setScale(opts.scale);
         }
-        catch (err) { logger.error(err); Promise.reject(err); }
+        catch (err) { this.logError(err); Promise.reject(err); }
     }
-
     public async readContinuous(): Promise<number> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
@@ -889,7 +945,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval);
             return Promise.resolve(temperature);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async getCalibrated(): Promise<boolean> {
         try {
@@ -897,23 +953,24 @@ export class AtlasEZOrtd extends AtlasEZO {
             let arrDims = result.split(',');
             return Promise.resolve(utils.makeBool(arrDims[1]));
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async getScale(): Promise<string> {
         try {
             let result = await this.execCommand('S,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve(arrDims[1].toLowerCase());
+            this.device.options.calibration.units = this.device.values.units = this.device.options.scale = (arrDims[1] || 'c').toUpperCase();
+            return Promise.resolve(this.device.options.scale);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
     public async setScale(value: string): Promise<boolean> {
         try {
-            await this.execCommand(`S,${value}`, 300);
-            this.device.options.scale = value;
+            await this.execCommand(`S,${value.toLowerCase()}`, 300);
+            this.device.options.calibration.units = this.device.values.units = this.device.options.scale = value.toUpperCase();
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setCalibrationPoint(value: number): Promise<boolean> {
         try {
@@ -921,7 +978,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             this.device.options.calPoint = value;
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async calibrate(data): Promise<I2cDevice> {
         try {
@@ -931,9 +988,8 @@ export class AtlasEZOrtd extends AtlasEZO {
             this.device.options.calibrationMode = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
-        catch (err) { logger.error(err); return Promise.reject(err); }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
-
     public async getName(): Promise<string> {
         try {
             let result = await this.execCommand('Name,?', 300);
@@ -941,7 +997,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             logger.info(`Got RTD Name ${JSON.stringify(arrDims)}`);
             return Promise.resolve(arrDims[1] || '');
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async setName(name: string): Promise<boolean> {
         try {
@@ -949,7 +1005,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             this.device.options.name = this.device.name = this.escapeName(name);
             return Promise.resolve(true);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async readProbe(): Promise<number> {
         try {
@@ -959,7 +1015,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(val);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
     public async exportCalibration(): Promise<{ len: number, total: number, data: string[] }> {
         try {
@@ -972,7 +1028,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             }
             return Promise.resolve(dims);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { this.logError(err); }
     }
 }
 

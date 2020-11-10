@@ -367,6 +367,7 @@ class mockI2c {
 }
 class mockI2cBus {
     public busNumber: number;
+    public isMock = true;
     public options;
     private isOpen: boolean;
     private funcs = new mockI2cFuncs(3);

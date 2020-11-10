@@ -91,6 +91,8 @@
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-i2c-device');
+            el.attr('data-busnumber', o.busNumber);
+            el.attr('data-address', o.address);
             el.attr('data-bindingcontext', 'device');
             $('<input type="hidden"></input>').appendTo(el).attr('data-bind', "busNumber").attr('data-datatype', 'int').text(o.busNumber);
             $('<input type="hidden"></input>').appendTo(el).attr('data-bind', "busId").attr('data-datatype', 'int').text(o.busId);
@@ -190,6 +192,7 @@
         dataBind: function (data) {
             var self = this, o = self.options, el = self.element;
             var tabs = el.find('div.picTabBar:first');
+            el.attr('data-address', o.address);
             var dt = o.deviceTypes.find(elem => elem.id === data.typeId);
             if (typeof data.typeId !== 'number' || typeof dt === 'undefined') {
                 tabs.hide();
