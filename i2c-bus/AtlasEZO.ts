@@ -337,7 +337,7 @@ export class AtlasEZOorp extends AtlasEZO {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [] };
+            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };
             for (let i = 0; i < dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
@@ -507,7 +507,7 @@ export class AtlasEZOpH extends AtlasEZO {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [] };
+            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };
             for (let i = 0; i < dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
@@ -993,7 +993,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             this.device.options.calibrationMode = await this.getCalibrated();
             //this.device.options.status = await this.getStatus();
             await this.getScale();
-            await this.exportCalibration();
+            this.device.options.calibration = await this.exportCalibration();
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.temperature.interval.default;
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.device.options.name;
@@ -1097,8 +1097,9 @@ export class AtlasEZOrtd extends AtlasEZO {
         try {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
+            //info: Atlas_EZO-RTD command Export,? bytes written:8 result:?EXPORT,2,20
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[0], 10), total: parseInt(arrDims[1], 10), data: [], units: this.device.options.scale };
+            let dims = { len: parseInt((arrDims[1] || '0'), 10), total: parseInt((arrDims[2] || '0'), 10), data: [], units: this.device.options.scale };
             for (let i = 0; i < dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
@@ -1109,4 +1110,3 @@ export class AtlasEZOrtd extends AtlasEZO {
         finally { this.suspendPolling = false; }
     }
 }
-
