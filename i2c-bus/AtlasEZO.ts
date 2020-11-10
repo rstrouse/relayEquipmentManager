@@ -101,7 +101,7 @@ export class AtlasEZO extends i2cDeviceBase {
     }
     public get suspendPolling(): boolean { if (this._suspendPolling > 0) logger.warn(`${this.device.name} Suspend Polling ${this._suspendPolling}`); return this._suspendPolling > 0; }
     public set suspendPolling(val: boolean) {
-        if(!val) logger.warn(`${this.device.name} Cancel Suspend Start ${this._suspendPolling} - End ${Math.max(0, this._suspendPolling + (val ? 1 : -1))}`);
+        //if(!val) logger.warn(`${this.device.name} Cancel Suspend Start ${this._suspendPolling} - End ${Math.max(0, this._suspendPolling + (val ? 1 : -1))}`);
         this._suspendPolling = Math.max(0, this._suspendPolling + (val ? 1 : -1));
     }
     public stopPolling() {
@@ -649,7 +649,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             let mode = 'off';
             if (this.device.values.continuous) mode = 'continuous';
             else if (this.device.values.dispensing || this.device.values.paused) mode = this.device.values.mode.name;
-            if (mode.startsWith('vol')) this.device.values.volume = parseFloat(arrDims[2]);
+            if (mode.startsWith('vol')) this.device.values.volume = parseFloat(arrDims[1]);
             else this.device.values.volume = null;
             if (mode === 'off') {
                 this.device.values.volume = null;
