@@ -1097,10 +1097,11 @@ export class AtlasEZOrtd extends AtlasEZO {
         try {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
+
             //info: Atlas_EZO-RTD command Export,? bytes written:8 result:?EXPORT,2,20
             let arrDims = result.split(',');
             let dims = { len: parseInt((arrDims[1] || '0'), 10), total: parseInt((arrDims[2] || '0'), 10), data: [], units: this.device.options.scale };
-            for (let i = 0; i < dims.len; i++) {
+            for (let i = 0; i <= dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
             }
