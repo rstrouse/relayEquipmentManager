@@ -2,6 +2,7 @@
 import { I2cController, cont, I2cBus, I2cDevice, I2cDeviceFeed } from "../boards/Controller";
 import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices } from "../devices/AnalogDevices";
+import { utils } from "../boards/Constants";
 import { webApp } from "../web/Server";
 import { PromisifiedBus } from "i2c-bus";
 import { i2cDeviceFactory } from "./i2cFactory";
@@ -135,6 +136,7 @@ export class i2cBus {
     public devices: i2cDeviceBase[] = [];
     public busNumber: number;
     constructor() { }
+    public get isMock(): boolean { return utils.makeBool(this._i2cBus.isMock); }
     public async scanBus(start: number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);

@@ -1347,16 +1347,17 @@ export class AtlasEZOec extends AtlasEZO {
             }
             let result = typeof tempCompensation !== 'undefined' && this.version >= 2.13 ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 600);
             let arrDims = result.split(',');
-            this.device.values.conductivity = this.device.options.parameters.conductivity ? parseFloat(arrDims[0]) : 6724;
+            this.device.values.conductivity = this.device.options.parameters.conductivity ? parseFloat(arrDims[0]) : null;
             this.device.values.dissolvedSolids = this.device.options.parameters.dissolvedSolids ? parseFloat(arrDims[1]) : null;
             this.device.values.salinity = this.device.options.parameters.salinity ? parseFloat(arrDims[2]) : null;
             this.device.values.specificGravity = this.device.options.parameters.conductivity ? parseFloat(arrDims[3]) : null;
             if (typeof tempCompensation !== 'undefined') this.device.values.temperature = tempCompensation;
+            if (!this.device.options.parameters.conductivity && this.device.options.parameters.dissolvedSolids) this.device.values.conductivity = this.device.options.tdsFactor !== 0 ? Math.round(this.device.values.dissolvedSolids / this.device.options.tdsFactor) : null;
             if (!this.device.options.parameters.dissolvedSolids) {
-                this.device.values.dissolvedSolids = this.device.values.conductivity * this.device.options.tdsFactor;
+                this.device.values.dissolvedSolids = isNaN(this.device.values.conductivity) ? null : this.device.values.conductivity * this.device.options.tdsFactor;
             }
             if (!this.device.options.parameters.salinity) {
-                this.device.values.salinity = this.toSalinity(this.device.values.conductivity, this.device.values.temperature);
+                this.device.values.salinity = isNaN(this.device.values.conductivity) ? null : this.toSalinity(this.device.values.conductivity, this.device.values.temperature);
             }
             this.device.values.saltLevel = this.device.values.salinity * 1000;
             if (!this.device.options.parameters.specificGravity) {
