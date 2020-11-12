@@ -123,6 +123,13 @@
                     dataBinder.bind($(this), data);
                 });
             });
+            o.socket.on('i2cDeviceStatus', function (data) {
+                el.find(`.pnl-i2c-device[data-address="${data.address}"][data-busnumber="${data.bus}"] .i2cReadingValues`).each(function () {
+                    console.log({ evt: 'i2cDeviceStatus', data: data, control: this });
+                    this.setStatus(data);
+                });
+
+            });
             o.socket.on('i2cDeviceInformation', function (data) {
                 //console.log({ evt: 'i2cDeviceInformation', data: data });
                 el.find(`.pnl-i2c-device[data-address="${data.address}"][data-busnumber="${data.bus}"] .i2cDeviceInformation`).each(function () {
@@ -140,7 +147,9 @@
                 el.find('div.picControlPanel').each(function () {
                     $(this).addClass('picDisconnected');
                 });
-
+                el.find(`.pnl-i2c-device`).each(function () {
+                    this.setConnected(false);
+                });
             });
             o.socket.on('connect_timeout', function (data) {
                 console.log('connection timeout:' + data);
@@ -164,6 +173,10 @@
                 el.find('div.picControlPanel').each(function () {
                     $(this).removeClass('picDisconnected');
                 });
+                el.find(`.pnl-i2c-device`).each(function () {
+                    this.setConnected(true);
+                });
+
             });
             o.socket.on('close', function (sock) {
                 console.log({ msg: 'socket closed:', sock: sock });

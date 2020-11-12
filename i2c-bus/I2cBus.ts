@@ -396,8 +396,12 @@ export class i2cDeviceBase {
             if (typeof dt === 'undefined') return Promise.reject(new Error(`Cannot initialize I2c device id${dev.id} on Bus ${i2c.busNumber}: Device type not found ${dev.typeId}`));
             let d = await i2cDeviceFactory.createDevice(dt.module, dt.deviceClass, i2c, dev);
             if (typeof d !== 'undefined') {
+                d.initialized = false;
+                webApp.emitToClients('i2cDeviceStatus', { busNumber: i2c.busNumber, id: dev.id, address: dev.address, status: d.status, intialized: d.initialized, device: dev.getExtended()});
                 if (await d.initAsync(dt)) {
+                    d.initialized = true;
                     logger.info(`Device ${dt.name} initialized for i2c bus #${i2c.busNumber} address ${dev.address}`);
+                    webApp.emitToClients('i2cDeviceStatus', { busNumber: i2c.busNumber, id: dev.id, address: dev.address, status: d.status, intialized: d.initialized, device: dev.getExtended()});
                 }
             }
             return Promise.resolve(d);
@@ -410,6 +414,8 @@ export class i2cDeviceBase {
     }
     public readable: boolean = false;
     public writable: boolean = false;
+    public status: string;
+    public initialized: boolean = false;
     public i2c;
     public device: I2cDevice;
     public async closeAsync(): Promise<void> {

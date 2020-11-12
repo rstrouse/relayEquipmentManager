@@ -1008,3 +1008,13 @@ div.relay-module-name > span {
 
 .ui-widget input {
   font-size: 1rem; }
+
+div.pnl-i2c-device {
+  position: relative; }
+
+div.i2c-status-overlay {
+  background: lavender;
+  opacity: .5;
+  position: absolute;
+  width: 100%;
+  height: 100%; }

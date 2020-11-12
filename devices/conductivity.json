@@ -1,0 +1,761 @@
+﻿{
+  "category": "Chemistry Sensors",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 175,
+      "name": "Atlas EZO-EC",
+      "deviceClass": "AtlasEZOec",
+      "module": "./AtlasEZO",
+      "readings": {
+        "conductivity": {
+          "label": "conductivity",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "field": {
+                "type": "div"
+              },
+              "options": [
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.isProtocolLocked",
+                    "labelText": "Lock Protocol"
+                  }
+                },
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.ledEnabled",
+                    "labelText": "LED Enabled",
+                    "style": { "marginLeft": "1rem" }
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Device Info",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                },
+                "cssClass": "i2cDeviceInformation"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Firmware",
+                    "binding": "info.firmware",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "lineHeight": ".8" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Last Restart",
+                        "binding": "info.lastRestart.name",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "-",
+                        "binding": "info.lastRestart.desc",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    }
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Vcc Voltage",
+                    "binding": "info.vcc",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.2em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    },
+                    "units": "volts"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "attrs": { "data-bindingcontext": "calibration" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Calibration Points",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Dry",
+                        "binding": "options.calibration.points.dry",
+                        "dataType": "boolean",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "3rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Single",
+                        "binding": "options.calibration.points.single",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "3rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "μS"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Low",
+                        "binding": "options.calibration.points.low",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "3rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "μS"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "High",
+                        "binding": "options.calibration.points.high",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "3rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "μS"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "lineHeight": "1.2",
+                      "fontSize": ".8rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Conductivity",
+                        "binding": "values.conductivity",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---.-",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "6.4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "µS"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "lineHeight": "1.2",
+                      "fontSize": ".8rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Dissolved Solids",
+                        "binding": "values.dissolvedSolids",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---.-",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "6.4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "ppm"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "lineHeight": "1.2",
+                      "fontSize": ".8rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Salt Level",
+                        "binding": "values.saltLevel",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---.-",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "6.4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "ppm"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {"lineHeight": "1.2", "fontSize": ".8rem"}
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Specific Gravity",
+                        "binding": "values.specificGravity",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0###",
+                        "emptyMask": "---.-",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "6.4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "sp"
+                      }
+                    }
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Temperature",
+                    "binding": "values.temperature",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "6.4rem" }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "3.5rem",
+                        "textAlign": "right"
+                      }
+                    },
+                    "units": "&deg;C"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            }
+          },
+          "options": [
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Parameters",
+                "style": {
+                  "display": "block"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "inline-block",
+                      "verticalAlign": "top",
+                      "marginRight": ".25rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "bind": "options.probeType",
+                      "dataType": "number",
+                      "default": 1,
+                      "field": {
+                        "type": "valueSpinner",
+                        "bind": "options.probeType",
+                        "labelText": "Probe Type",
+                        "fmtMask": "#,##0.###",
+                        "canEdit": true,
+                        "min": 0.1,
+                        "max": 1000,
+                        "step": 0.1,
+                        "style": { "display": "block" },
+                        "labelAttrs": { "style": { "width": "5.27rem" } },
+                        "inputAttrs": { "style": { "width": "3.2rem" } }
+                      }
+                    },
+                    {
+                      "bind": "options.tdsFactor",
+                      "dataType": "number",
+                      "default": 0.54,
+                      "field": {
+                        "type": "valueSpinner",
+                        "bind": "options.tdsFactor",
+                        "labelText": "TDS Factor",
+                        "fmtMask": "0.##",
+                        "canEdit": true,
+                        "min": 0.1,
+                        "max": 1,
+                        "step": 0.01,
+                        "style": { "display": "block" },
+                        "labelAttrs": { "style": { "width": "5.27rem" } },
+                        "inputAttrs": { "style": { "width": "3.2rem" } }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "inline-block",
+                      "verticalAlign": "top"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div",
+                        "html": "Output Values",
+                        "style": { "fontSize": ".8rem" }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "hr",
+                        "style": { "margin": "2px" }
+                      }
+                    },
+                    {
+                      "default": true,
+                      "field": {
+                        "type": "checkbox",
+                        "bind": "options.parameters.conductivity",
+                        "labelText": "Conductivity",
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "default": true,
+                      "field": {
+                        "type": "checkbox",
+                        "bind": "options.parameters.dissolvedSolids",
+                        "labelText": "Dissolved Solids",
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "default": true,
+                      "field": {
+                        "type": "checkbox",
+                        "bind": "options.parameters.salinity",
+                        "labelText": "Salt Level",
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "default": true,
+                      "field": {
+                        "type": "checkbox",
+                        "bind": "options.parameters.specificGravity",
+                        "labelText": "Specific Gravity",
+                        "style": { "display": "block" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Calibration",
+                "style": {
+                  "display": "block"
+                },
+                "attrs": { "data-bindingcontext": "calibration" }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "21rem" },
+                    "html": "Calibration must start with the dry setpoint.  For single point calibration select the single point type with the reading stabilized.  For two point calibration calibrate the low point then the high point.<hr style=\"margin:2px\"></hr>Select the point type from the dropdown, enter the reference calibration value, then press the calibrate button.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "verticalAlign": "top"
+                    }
+                  },
+                  "options": [
+                    {
+                      "dataType": "panel",
+                      "field": {
+                        "type": "div",
+                        "attrs": { "data-bindingcontext": "calibrate" }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "div"
+                          },
+                          "options": [
+                            {
+                              "default": "psi",
+                              "field": {
+                                "type": "pickList",
+                                "labelText": "Setpoint",
+                                "binding": "options.calPointType",
+                                "bindColumn": 0,
+                                "displayColumn": 1,
+                                "style": { "display": "inline-block" },
+                                "labelAttrs": {
+                                  "style": { "width": "4rem" }
+                                },
+                                "columns": [
+                                  {
+                                    "hidden": true,
+                                    "binding": "val",
+                                    "text": "Setpoint",
+                                    "style": { "whiteSpace": "nowrap" }
+                                  },
+                                  {
+                                    "hidden": false,
+                                    "binding": "name",
+                                    "text": "Setpoint",
+                                    "style": { "whiteSpace": "nowrap" }
+                                  },
+                                  {
+                                    "hidden": false,
+                                    "binding": "desc",
+                                    "text": "Description",
+                                    "style": { "whiteSpace": "nowrap" }
+                                  }
+                                ],
+                                "items": [
+                                  {
+                                    "val": "dry",
+                                    "name": "Dry",
+                                    "desc": "Dry Setpoint.  This will clear all other calibration point values"
+                                  },
+                                  {
+                                    "val": "single",
+                                    "name": "Single",
+                                    "desc": "Single Setpoint. Used for single setpoint calibration mode."
+                                  },
+                                  {
+                                    "val": "low",
+                                    "name": "Low",
+                                    "desc": "Low Setpoint. First setpoint for dual setpoint calibration mode."
+                                  },
+                                  {
+                                    "val": "high",
+                                    "name": "High",
+                                    "desc": "High Setpoint. Second setpoint for dual setpoint calibration mode."
+                                  }
+                                ],
+                                "inputAttrs": { "style": { "width": "4rem" } }
+                              }
+                            },
+                            {
+                              "field": {
+                                "type": "staticField",
+                                "binding": "options.calibrationMode",
+                                "labelText": "Calibrated Points",
+                                "style": {
+                                  "whiteSpace": "nowrap",
+                                  "float": "right"
+                                }
+                              }
+                            }
+
+                          ]
+                        },
+                        {
+                          "field": {
+                            "type": "div"
+                          },
+                          "options": [
+                            {
+                              "field": {
+                                "type": "actionButton",
+                                "text": "Calibrate",
+                                "icon": "<i class=\"fas fa-cogs\"></i>",
+                                "style": { "width": "7rem" }
+                              },
+                              "fieldEvents": {
+                                "click": {
+                                  "type": "putservice",
+                                  "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/calibrate`",
+                                  "message": "Calibrating Point...",
+                                  "callContext": "calibrate",
+                                  "resultContext": "calibration"
+                                }
+                              }
+                            },
+                            {
+                              "field": {
+                                "binding": "options.calPoint",
+                                "type": "valueSpinner",
+                                "labelText": "Point",
+                                "dataType": "number",
+                                "fmtMask": "#,##0",
+                                "emptyMask": "-,---",
+                                "min": 0,
+                                "max": 100000,
+                                "canEdit": true,
+                                "labelAttrs": {
+                                  "style": {
+                                    "display": "none"
+                                  }
+                                },
+                                "inputAttrs": {
+                                  "style": {
+                                    "width": "5rem"
+                                  }
+                                },
+                                "style": {
+                                  "marginLeft": ".25rem",
+                                  "display": "inline-block"
+                                },
+                                "units": "µS"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [ "i2c" ]
+    }
+  ]
+}

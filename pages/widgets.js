@@ -2482,13 +2482,15 @@ $.ui.position.fieldTip = {
             var self = this, o = self.options, el = self.element;
             var cb = el.find('input.picCheckbox-value:first');
             if (typeof val !== 'undefined') {
-                if (makeBool(val) !== o.isChecked)
-                cb.prop('checked', makeBool(val));
-                evt = $.Event('changed');
-                evt.oldVal = o.isChecked;
-                o.isChecked = makeBool(val);
-                evt.newVal = o.isChecked;
-                el.trigger(evt);
+                o.isChecked = cb.is(':checked');
+                if (makeBool(val) !== o.isChecked) {
+                    cb.prop('checked', makeBool(val));
+                    evt = $.Event('changed');
+                    evt.oldVal = o.isChecked;
+                    o.isChecked = makeBool(val);
+                    evt.newVal = o.isChecked;
+                    el.trigger(evt);
+                }
             }
             else return cb.is(':checked');
         }

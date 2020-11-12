@@ -87,6 +87,38 @@
             var self = this, o = self.options, el = self.element;
             self._buildControls();
             el[0].dataBind = function (data) { return self.dataBind(data); };
+            el[0].setChildren = function (selector, data) { return self.setChildren(selector, data); };
+            el[0].setConnected = function (val) { return self.setConnected(val); }
+            el[0].setStatus = function (data) { return self.setStatus(data); };
+        },
+        setConnected: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (val) el.find('div.i2c-status-overlay').remove();
+            else {
+                var overlay = el.find('div.i2c-status-overlay');
+                if (overlay.length === 0) {
+                    $('<div></div>').addClass('i2c-status-overlay').appendTo(el);
+                }
+            }
+        },
+        setStatus: function (val) {
+            var self = this, o = self.options, el = self.element;
+        },
+        setChildren: function (selector, data) {
+            var self = this, o = self.options, el = self.element;
+            console.log({ name: 'Set Children', selector: selector, data: data });
+            el.find(selector).each(function() {
+                $this = $(this);
+                if (typeof data.show !== 'undefined') {
+                    data.show ? $this.show() : $this.hide();
+                }
+                if (typeof data.hide !== 'undefined') {
+                    data.hide ? $this.hide() : $this.show();
+                }
+                if (typeof data.val !== 'undefined') {
+                    this.val(data.val);
+                }
+            });
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
@@ -332,8 +364,10 @@
                 if (opt.field.fieldEvents !== 'undefined') {
                     for (var eventName in opt.fieldEvents) {
                         var fevent = opt.fieldEvents[eventName];
-                        if (typeof fevent === 'string')
-                            fld.on(eventName, new Function('evt', opt.fieldEvents[eventName]));
+                        if (typeof fevent === 'string') {
+                            console.log('Adding field event:' + fevent);
+                            fld.on(eventName, new Function('evt', fevent));
+                        }
                         else if (typeof fevent === 'object') {
                             fld.on(eventName, (evt) => { self._callServiceEvent(evt, fevent); });
                         }
