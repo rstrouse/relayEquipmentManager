@@ -1,7 +1,7 @@
 ﻿//*EZO-pH
 //*EZO-ORP
 //EZO-DO(Dissolved Oxygen)
-//EZO-EC(Conductivity)
+//*EZO-EC(Conductivity)
 //*EZO-RTD(Temperature)
 //EZO-CO2 sensor
 //EZO-O2 sensor
@@ -1220,7 +1220,7 @@ export class AtlasEZOec extends AtlasEZO {
     public async setProbeType(value: number): Promise<boolean> {
         try {
             await this.execCommand(`K,${value.toFixed(1)}`, 300);
-            this.device.values.probeType = value;
+            this.device.options.probeType = this.device.values.probeType = value;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1229,7 +1229,7 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             let result = await this.execCommand('K,?', 300);
             let arrDims = result.split(',');
-            this.device.options.probeType = parseFloat(arrDims[1] || '1');
+            this.device.options.probeType = this.device.values.probeType = parseFloat(arrDims[1] || '1');
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1240,7 +1240,7 @@ export class AtlasEZOec extends AtlasEZO {
             let arrDims = result.toUpperCase().split(',');
             if (typeof this.device.options.parameters === 'undefined') this.device.options.parameters = {};
             
-            this.device.options.parameters.conductivity = arrDims.indexOf('ED') >= 0;
+            this.device.options.parameters.conductivity = arrDims.indexOf('EC') >= 0;
             this.device.options.parameters.dissolvedSolids = arrDims.indexOf('TDS') >= 0;
             this.device.options.parameters.salinity = arrDims.indexOf('S') > 0;
             this.device.options.parameters.specificGravity = arrDims.indexOf('SG') > 0;
@@ -1299,7 +1299,7 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             let result = await this.execCommand('TDS,?', 300);
             let arrDims = result.split(',');
-            this.device.options.tdsFactor = parseFloat(arrDims[1] || '.54');
+            this.device.values.tdsFactor = this.device.options.tdsFactor = parseFloat(arrDims[1] || '.54');
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
         }
@@ -1308,7 +1308,7 @@ export class AtlasEZOec extends AtlasEZO {
     public async setTDSFactor(value: number): Promise<boolean> {
         try {
             await this.execCommand(`T,${value.toFixed(1)}`, 300);
-            this.device.values.tdsFactor = value;
+            this.device.values.tdsFactor = this.device.options.tdsFactor = value;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
         }
@@ -1346,11 +1346,19 @@ export class AtlasEZOec extends AtlasEZO {
                 //return Promise.resolve(0);
             }
             let result = typeof tempCompensation !== 'undefined' && this.version >= 2.13 ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 600);
-            let arrDims = result.split(',');
-            this.device.values.conductivity = this.device.options.parameters.conductivity ? parseFloat(arrDims[0]) : null;
-            this.device.values.dissolvedSolids = this.device.options.parameters.dissolvedSolids ? parseFloat(arrDims[1]) : null;
-            this.device.values.salinity = this.device.options.parameters.salinity ? parseFloat(arrDims[2]) : null;
-            this.device.values.specificGravity = this.device.options.parameters.conductivity ? parseFloat(arrDims[3]) : null;
+            if (!this.i2c.isMock) {
+                let arrDims = result.split(',');
+                this.device.values.conductivity = this.device.options.parameters.conductivity ? parseFloat(arrDims[0]) : null;
+                this.device.values.dissolvedSolids = this.device.options.parameters.dissolvedSolids ? parseFloat(arrDims[1]) : null;
+                this.device.values.salinity = this.device.options.parameters.salinity ? parseFloat(arrDims[2]) : null;
+                this.device.values.specificGravity = this.device.options.parameters.specificGravity ? parseFloat(arrDims[3]) : null;
+            }
+            else {
+                this.device.values.conductivity = 6724;
+                this.device.values.dissolvedSolids = 3630.96;
+                this.device.values.salinity = 3.676;
+                this.device.values.specificGravity = 1.04
+            }
             if (typeof tempCompensation !== 'undefined') this.device.values.temperature = tempCompensation;
             if (!this.device.options.parameters.conductivity && this.device.options.parameters.dissolvedSolids) this.device.values.conductivity = this.device.options.tdsFactor !== 0 ? Math.round(this.device.values.dissolvedSolids / this.device.options.tdsFactor) : null;
             if (!this.device.options.parameters.dissolvedSolids) {
