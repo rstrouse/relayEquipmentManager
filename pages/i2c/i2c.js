@@ -422,7 +422,13 @@
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('i2cdevice-feeds');
+            self._buildControls();
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-i2cdevice-feeds');
+            $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Feeds send values from the device via a connection to other software.  The defined connection determines the format, protocol, and potential data that is sent.');
+
         }
     });
     $.widget('pic.dlgI2cBus', $.pic.modalDialog, {

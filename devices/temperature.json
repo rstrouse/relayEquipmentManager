@@ -670,7 +670,17 @@
                       "fontSize": "1.4rem",
                       "textAlign": "center"
                     }
+                  },
+                  "fieldEvents": {
+                    "click": {
+                      "type": "putservice",
+                      "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/clearCalibration`",
+                      "message": "Calibrating Probe...",
+                      "callContext": "calibrate",
+                      "resultContext": "calibration"
+                    }
                   }
+
                 }
               ]
             }

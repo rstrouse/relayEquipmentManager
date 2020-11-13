@@ -399,6 +399,14 @@
                   "options": [
                     {
                       "field": {
+                        "type": "div",
+                        "style": { "maxWidth": "9.5rem" },
+                        "html": "Click on the tank to set the capacity and current level.",
+                        "cssClass": "script-advanced-instructions"
+                      }
+                    },
+                    {
+                      "field": {
                         "type": "div"
                       },
                       "options": [
@@ -432,7 +440,6 @@
                             }
                           }
                         }
-
                       ]
                     },
                     {

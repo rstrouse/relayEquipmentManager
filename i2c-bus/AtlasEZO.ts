@@ -915,6 +915,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             case 'cl':
                 converted = val * 100;
                 break;
+            
         }
         return converted;
     }

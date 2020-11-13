@@ -1222,3 +1222,6 @@ label.chemTank-label {
 
 div.picChemTank[data-setattributes=true] {
   cursor: pointer; }
+
+pnl-i2cdevice-feeds {
+  max-width: 35rem; }
