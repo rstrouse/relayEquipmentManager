@@ -555,6 +555,7 @@ export class AtlasEZOpmp extends AtlasEZO {
         try {
             this.stopPolling();
             this._pollInformationInterval = 10000;
+            if (typeof this.device.values.tank === 'undefined') this.device.values.tank = { level: 4, capacity: 4, units: 'gal', offset: 0 };
             this.device.options.name = await this.getName();
             await this.getInfo();
             this.device.options.isProtoLocked = await this.isProtocolLocked();
@@ -851,6 +852,111 @@ export class AtlasEZOpmp extends AtlasEZO {
             return Promise.resolve(this.device);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
+    }
+    public async clearDispensed(): Promise<boolean> {
+        try {
+            await this.execCommand('Clear', 300);
+            if (typeof this.device.values.totalVolume === 'undefined') this.device.values.totalVolume = { total: 0, absolute: 0 }
+            this.device.values.totalVolume.total = 0;
+            this.device.values.totalVolume.absolute = 0;
+            this.device.values.tank.totalOffset = this.device.values.tank.capacity - this.device.values.level;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+    }
+    public async setTankAttributes(tank): Promise<any> {
+        // The tank level is determined by how much volume is pumped from full.  The totalVolume values are used to determine this so we need to snapshot the
+        // offset at the time the level is set.  The tank offset is what a full tank would be.
+        // tankOffset = absVolume + capacity - tankLevel;
+        try {
+            if (typeof this.device.values.tank === 'undefined') this.device.values.tank = { level: 0, capacity: 0, units: '', offset: 0 };
+            if (typeof tank.units === 'string') this.device.values.tank.units = tank.units;
+            if (typeof tank.capacity === 'number') this.device.values.tank.capacity = tank.capacity;
+            if (typeof tank.level === 'number') {
+                //await this.clearDispensed();
+                // absVolume = 0
+                // capacity = 4
+                // level = 3.8
+                // offset = -0.2
+                this.device.values.tank.level = tank.level;
+                let units = this.device.values.tank.units;
+                let capacity = this.toML(units, this.device.values.tank.capacity);
+                let level = this.toML(units, tank.level);
+                this.device.values.tank.offset = (this.device.values.totalVolume.absolute || 0) - capacity + level;
+            }
+            this.calcTankLevel();
+            return Promise.resolve(this.device.values);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+    }
+    private toML(units: string, val: number): number {
+        let converted = val;
+        switch (units.toLowerCase()) {
+            case 'gal':
+                converted = Math.round((val * 3785.41) * 10000) / 10000;
+                break;
+            case 'ounces':
+            case 'oz':
+                converted = Math.round((val * 29.5735) * 10000) / 10000;
+                break;
+            case 'quarts':
+            case 'quart':
+                converted = Math.round((val * 947.353) * 10000) / 10000;
+                break;
+            case 'pint':
+            case 'pints':
+                converted = Math.round((val * 473.176) * 10000) / 10000;
+                break;
+            case 'l':
+                converted = val * 1000;
+                break;
+            case 'cl':
+                converted = val * 100;
+                break;
+        }
+        return converted;
+    }
+    private fromML(units: string, val: number): number {
+        let converted = 0;
+        switch (units.toLowerCase()) {
+            case 'gal':
+                converted = Math.round((val * 0.000264172) * 10000) / 10000;
+                break;
+            case 'ounces':
+            case 'oz':
+                converted = Math.round((val * 0.033814) * 10000) / 10000;
+                break;
+            case 'quarts':
+            case 'quart':
+                converted = Math.round((val * 0.00105669) * 10000) / 10000;
+                break;
+            case 'pint':
+            case 'pints':
+                converted = Math.round((val * 0.00211338) * 10000) / 10000;
+                break;
+            case 'l':
+                converted = Math.round((val * 0.001) * 10000) / 10000;
+                break;
+            case 'cl':
+                converted = Math.round((val * .01) * 10000) / 10000;
+                break;
+        }
+        return converted;
+    }
+    private calcTankLevel() {
+        // The tank level equals capacity(mL) - pumped - offset;
+        // capacity = 200
+        // offset = 100
+        // pumped = 120
+        // so 20 has pumped from the capacity of the tank. So the tank level = capacity - (pumped - offset).
+        if (typeof this.device.values.tank === 'undefined') this.device.values.tank = { level: 0, capacity: 4, units: 'gal', offset: 0 };
+        let tankLevel = 0;
+        let offset = this.device.values.tank.offset || 0;
+        let pumped = this.device.values.totalVolume.absolute || 0;
+        tankLevel = pumped - offset;
+        this.device.values.tank.level = this.device.values.tank.capacity - this.fromML(this.device.values.tank.units, tankLevel);
+        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
     }
     public async setOptions(opts): Promise<any> {
         try {

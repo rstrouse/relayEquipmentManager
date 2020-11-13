@@ -1164,6 +1164,7 @@ $.ui.position.fieldTip = {
             if (typeof opts !== 'undefined') {
                 $.extend(o, opts);
                 if (typeof opts.val !== 'undefined') self.val(opts.val);
+                else self.val(self.val());
             }
             else
                 return o;
@@ -3438,6 +3439,173 @@ $.ui.position.fieldTip = {
                 }
             }
             else return o.relays;
+        }
+    });
+    $.widget("pic.chemTank", {
+        options: { labelText: '', binding: '', min: 0, max: 6 },
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._initChemTank();
+        },
+        _initChemTank: function () {
+            var self = this, o = self.options, el = self.element;
+            el.attr('data-datatype', 'int');
+            el[0].val = function (val) { return self.val(val); };
+            el[0].isEmpty = function (val) { return self.isEmpty(); };
+            var liquid = $('<div></div>').addClass('chemTank-liquid').appendTo(el);
+            $('<div></div>').addClass('chemTank-level-top').appendTo(liquid);
+            $('<div></div>').addClass('chemTank-level').appendTo(liquid);
+            $('<div></div>').addClass('chemTank-scale').appendTo(liquid);
+
+            // Create all the ticks for the scale by starting at the top and drawing down.
+            var tickpos = 100 / 7;
+            el.attr('data-chemtype', o.chemType);
+            for (var i = 1; i <= 6; i++) {
+                $('<div></div>').addClass('chemTank-scale-tick').css({ top: 'calc(' + (tickpos * i) + '% + 10.5px)' }).appendTo(liquid);
+            }
+            $('<label></label>').addClass('chemTank-label').text(o.labelText).appendTo(el);
+            if (typeof o.style !== 'undefined') el.css(o.style);
+
+            if (o.required === true) self.required(true);
+            if (o.binding) el.attr('data-bind', o.binding);
+            if (o.canSetAttributes) el.attr('data-setattributes', true);
+            self.val(o.value);
+            self._applyStyles();
+            el.on('click', function (evt) {
+                console.log('Tank Clicked');
+                if (makeBool(el.attr('data-setattributes'))) {
+                    // Open up the tank attributes dialog.
+                    self._createAttributesDialog();
+                }
+            });
+        },
+        _createAttributesDialog() {
+            var self = this, o = self.options, el = self.element;
+            var dlg = $.pic.modalDialog.createDialog('dlgChemTankAttributes', {
+                width: '447px',
+                height: 'auto',
+                title: `${o.labelText || 'Supply'} Tank Attributes`,
+                position: { my: "center bottom", at: "center top", of: el },
+                buttons: [
+                    {
+                        text: 'Save', icon: '<i class="fas fa-save"></i>',
+                        click: function (evt) {
+                            var tank = dataBinder.fromElement(dlg);
+                            console.log(tank);
+                            if (dataBinder.checkRequired(dlg, true)) {
+                                var evt = $.Event('setattributes');
+                                evt.tankAttributes = tank;
+                                el.trigger(evt);
+                                if (!evt.isDefaultPrevented()) {
+                                    // Set the tank attributes.
+                                    o.max = tank.capacity;
+                                    o.units = tank.units;
+                                    self.val(tank.level);
+                                    $.pic.modalDialog.closeDialog(dlg);
+                                }
+
+                                //$.putLocalService('/config/pin/trigger/' + trig.pin.headerId + '/' + trig.pin.id, trigger, 'Saving Trigger...', function (t, status, xhr) {
+                                //    dataBinder.bind(dlg, t);
+                                //    self.reloadTriggers();
+                                //});
+                            }
+                            //console.log(trigger);
+                        }
+                    },
+                    {
+                        text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                        click: function () { $.pic.modalDialog.closeDialog(this); }
+                    }
+                ]
+            });
+            $('<div></div>').appendTo(dlg).html(`Set the capacity, units, and current level for the tank.  As ${o.chemType} is pumped to and from the tank the level will rise and fall.`);
+            $('<hr></hr>').appendTo(dlg).css({ margin: '2px' });
+            var divPnl = $('<div></div>').appendTo(dlg).css({ display: 'inline-block' });
+            var line = $('<div></div>').appendTo(divPnl);
+            var capacity = $('<div></div>').appendTo(line).valueSpinner({
+                canEdit: true,
+                labelText: 'Capacity', binding: 'capacity', min: 0, max: 1000000,
+                labelAttrs: { style: { width: '4rem' } },
+                inputAttrs: { style: { width: '7rem' } }
+            }).on('change', function (e) {
+                // Set the max for the qtyLevel
+                qty[0].options({ max: capacity[0].val() });
+                console.log({ qty: qty[0].val(), cap: capacity[0].val() });
+                pct.text(`${capacity[0].val() !== 0 ? Math.round((qty[0].val() / capacity[0].val()) * 100) : 0}%`);
+            });
+            $('<div></div>').appendTo(line).pickList({
+                bindColumn: 0, displayColumn: 0, labelText: 'Capacity Units', binding: 'units',
+                columns: [{ binding: 'name', text: 'Units', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { minWidth: '12rem' } }],
+                items: [{ name: '', desc: 'No units' }, { name: 'gal', desc: 'US Gallons' }, { name: 'L', desc: 'Litres' }, { name: 'cL', desc: 'Centilitres' }, { name: 'mL', desc: 'Millilitres' }, { name: 'oz', desc: 'Fluid Ounces' }, { name: 'qts', desc: 'Quarts' }, { name: 'pints', desc: 'Pints' }],
+                inputAttrs: { style: { textAlign: 'center', width: '3rem' } }, labelAttrs: { style: { paddingLeft: '.1rem', display: 'none' } }
+
+            }).on('selchanged', function (e) {
+                var opts = {};
+                switch (e.newItem.name) {
+                    case 'L':
+                    case 'gal':
+                        opts = { step: .1, fmtMask: '#,##0.##', emptyMask: '' };
+                        break;
+                    case 'cL':
+                    case 'quarts':
+                    case 'pints':
+                        opts = { step: .1, fmtMask: '#,##0.#', emptyMask: '' };
+                        break;
+                    case 'oz':
+                    case 'mL':
+                        opts = { step: 1, fmtMask: '#,##0', emptyMask: '' };
+                        break;
+                    default:
+                        opts = { step: 1, fmtMask: '#,##0', emptyMask: '' };
+                        break;
+                }
+                qty[0].options(opts);
+                capacity[0].options(opts);
+            });
+            line = $('<div></div>').appendTo(divPnl);
+            var qty = $('<div></div>').appendTo(line).valueSpinner({
+                canEdit: true, labelText: 'Level', binding: 'level', min: 0, max: 1000000,
+                labelAttrs: { style: { width: '4rem' } },
+                inputAttrs: { style: { width: '7rem' } }
+            }).on('change', function (e) {
+                pct.text(`${capacity[0].val() !== 0 ? Math.round((qty[0].val() / capacity[0].val()) * 100) : 0}%`);
+            });
+            divPnl = $('<div></div>').appendTo(dlg).css({ display: 'inline-block' });
+            let pct = $('<div></div>').appendTo(divPnl).addClass('tank-attr-percent').css({ fontSize: '2em', textAlign: 'center', padding: '.5em' });
+            dataBinder.bind(dlg, { capacity: o.max, units: o.units || '', level: o.value || 0 });
+            pct.text(`${capacity[0].val() !== 0 ? Math.round((qty[0].val() / capacity[0].val()) * 100) : 0}%`);
+            dlg.css({ overflow: 'visible' });
+        },
+        _applyStyles: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('picChemTank');
+        },
+        isEmpty: function () {
+            var self = this, o = self.options, el = self.element;
+            return self.val() === 'undefined';
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val !== 'undefined') {
+                var lvl;
+                if (typeof val === 'number') lvl = val;
+                else if (typeof val === 'object') {
+                    lvl = typeof val.level !== 'undefined' ? val.level : o.value;
+                    o.max = (typeof val.capacity !== 'undefined') ? val.capacity : o.max;
+                    o.units = (typeof val.units !== 'undefined') ? val.units : o.units;
+                }
+                var tot = o.max - o.min;
+                // Calculate the left value.
+                var pct = Math.max(0, Math.min(100, ((lvl - o.min) / (tot)) * 100));
+                var liquid = el.find('div.chemTank-liquid');
+                //console.log(liquid);
+                liquid.find('div.chemTank-level-top').css({ top: 'calc(' + (100 - pct) + '% - 12.5px)' });
+                liquid.find('div.chemTank-level').css({ top: 'calc(' + (100 - pct) + '% - 12.5px)', height: 'calc(' + pct + '% + 25px)' });
+                o.value = lvl;
+            }
+            else {
+                return o.value;
+            }
         }
     });
 })(jQuery);

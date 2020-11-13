@@ -328,8 +328,13 @@
                     fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).colorPicker(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
+                case 'chemTank':
+                    fld = $('<div></div>').appendTo(pnl).chemTank(opt.field);
+                    if (binding) fld.attr('data-bind', binding + prop);
+                    break;
                 case 'fieldset':
                     fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                    if (typeof opt.field.legend !== 'undefined') $('<legend></legend>').appendTo(fld).html(opt.field.legend);
                     if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
                     if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
                     if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
@@ -337,7 +342,6 @@
                         for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
                     }
                     if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
-                    if (typeof opt.field.legend !== 'undefined') $('<legend></legend>').appendTo(fld).html(opt.field.legend);
                     break;
                 case 'panel':
                     fld = $('<div></div>').appendTo(pnl)[`${opt.field.class}`](opt.field);
@@ -380,7 +384,9 @@
         _callServiceEvent: function(evt, fevent) {
             var self = this, o = self.options, el = self.element;
             var device = dataBinder.fromElement($(evt.currentTarget).parents(`*[data-bindingcontext="device"]:first`));
-            var callObj = typeof fevent.callContext !== 'undefined' ? dataBinder.fromElement($(evt.currentTarget).parents(`*[data-bindingcontext="${fevent.callContext}"]`)) : undefined;
+            var callObj;
+            if (typeof fevent.callContext !== 'undefined') callObj = dataBinder.fromElement($(evt.currentTarget).parents(`*[data-bindingcontext="${fevent.callContext}"]`));
+            if (typeof fevent.eventObject === 'string') callObj = $.extend(true, {}, callObj, evt[fevent.eventObject]);
             if (typeof fevent.callObj !== 'undefined') callObj = $.extend(true, callObj, fevent.callObj);
             var servicePath = eval(fevent.path);
             switch (fevent.type) {

@@ -1018,3 +1018,207 @@ div.i2c-status-overlay {
   position: absolute;
   width: 100%;
   height: 100%; }
+
+div.picChemTank {
+  position: relative;
+  display: inline-block;
+  height: 100%;
+  padding-top: 50px;
+  margin: 0 auto;
+  box-shadow: 3px 3px 3px rgba(127, 127, 127, 0.5);
+  -webkit-box-shadow: 3px 3px 3px rgba(127, 127, 127, 0.5);
+  -moz-box-shadow: 3px 3px 3px rgba(127, 127, 127, 0.5);
+  border-radius: 100%/25px;
+  border: solid 1px gray;
+  text-align: center;
+  z-index: 1;
+  border-top: none;
+  border-top-left-radius: 100%/15px;
+  border-top-right-radius: 100%/15px;
+  margin-left: 24px;
+  background: #dbdbdb;
+  background: -moz-linear-gradient(left, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  background: -webkit-gradient(left top, right top, color-stop(0%, #dbdbdb), color-stop(1%, #dbdbdb), color-stop(30%, #fefefe), color-stop(79%, #e2e2e2), color-stop(97%, #d1d1d1), color-stop(100%, #d1d1d1));
+  background: -webkit-linear-gradient(left, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  background: -o-linear-gradient(left, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  background: -ms-linear-gradient(left, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  background: linear-gradient(to right, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#dbdbdb', endColorstr='#d1d1d1', GradientType=1 ); }
+
+div.chemTank-liquid {
+  height: calc(100% - 25px);
+  position: absolute;
+  top: 12.5px;
+  display: block;
+  width: 100%;
+  z-index: -1;
+  background: #dbdbdb;
+  background: -moz-linear-gradient(left, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  background: -webkit-gradient(left top, right top, color-stop(0%, #dbdbdb), color-stop(1%, #dbdbdb), color-stop(30%, #fefefe), color-stop(79%, #e2e2e2), color-stop(97%, #d1d1d1), color-stop(100%, #d1d1d1));
+  background: -webkit-linear-gradient(left, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  background: -o-linear-gradient(left, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  background: -ms-linear-gradient(left, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  background: linear-gradient(to right, #dbdbdb 0%, #dbdbdb 1%, #fefefe 30%, #e2e2e2 79%, #d1d1d1 97%, #d1d1d1 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#dbdbdb', endColorstr='#d1d1d1', GradientType=1 ); }
+
+.chemTank-level1 {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20%;
+  border: solid 1px gray; }
+
+.chemTank-level {
+  position: absolute;
+  width: 100%;
+  z-index: -1;
+  background: #fefdf5;
+  background: -webkit-linear-gradient(-90deg, #fefdf5 0%, #F1DA36 65%);
+  background: linear-gradient(180deg, #fefdf5 0%, #F1DA36 65%);
+  filter: progid:DXImageTransform.Microsoft.Shadow(direction=135,color='silver',strength=3);
+  height: calc(50% + 25px);
+  top: calc(50% - 12.5px);
+  border: solid 1px gray;
+  border-radius: 100%/25px;
+  border-top: none; }
+
+.chemTank-level-top {
+  content: '';
+  position: absolute;
+  top: calc(50% - 12.5px);
+  left: 0px;
+  width: 100%;
+  height: 25px;
+  border: solid 1px gray;
+  border-radius: 100%;
+  /*makes circle on level*/
+  background: #fefdf5;
+  background: -webkit-linear-gradient(-90deg, #fefdf5 0%, #F1DA36 65%);
+  background: linear-gradient(180deg, #fefdf5 0%, #F1DA36 65%);
+  filter: progid:DXImageTransform.Microsoft.Shadow(direction=135,color='silver',strength=3); }
+
+.chemTank-level1:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 100%;
+  height: 15px;
+  z-index: -1;
+  height: 20%;
+  border: solid 1px gray;
+  border-radius: 100%;
+  /*makes circle on level*/
+  background: #fefdf5;
+  background: -webkit-linear-gradient(-90deg, #fefdf5 0%, #F1DA36 65%);
+  background: linear-gradient(180deg, #fefdf5 0%, #F1DA36 65%);
+  filter: progid:DXImageTransform.Microsoft.Shadow(direction=135,color='silver',strength=3); }
+
+div.picChemTank:before {
+  content: '';
+  width: 100%;
+  height: 25px;
+  border: solid 1px gray;
+  border-radius: 100%;
+  /*makes circle at top*/
+  position: absolute;
+  top: 0;
+  left: -1px; }
+
+.chemTank-scale {
+  border: solid 1px gray;
+  width: 2px;
+  position: absolute;
+  margin: 0px auto;
+  top: 16.5px;
+  left: calc(20% - 1px);
+  height: calc(100% - 12.5px);
+  box-shadow: lightsteelblue .5px 0px inset; }
+
+.chemTank-scale-tick {
+  border: solid 1px gray;
+  width: 4px;
+  position: absolute;
+  left: calc(12% + 2px);
+  height: 2px;
+  transform: rotate(30deg); }
+
+div.picChemTank[data-chemtype=acid] div.chemTank-level {
+  background: #f8ffe8;
+  /* Old browsers */
+  background: -moz-linear-gradient(top, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* FF3.6-15 */
+  background: -webkit-linear-gradient(top, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(to bottom, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f8ffe8', endColorstr='#b7df2d',GradientType=0 );
+  /* IE6-9 */ }
+
+div.picChemTank[data-chemtype=acid] div.chemTank-level-top {
+  background: #f8ffe8;
+  /* Old browsers */
+  background: -moz-radial-gradient(center, ellipse cover, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* FF3.6-15 */
+  background: -webkit-radial-gradient(center, ellipse cover, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* Chrome10-25,Safari5.1-6 */
+  background: radial-gradient(ellipse at center, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f8ffe8', endColorstr='#b7df2d',GradientType=1 );
+  /* IE6-9 fallback on horizontal gradient */ }
+
+div.picChemTank[data-chemtype=fluid] div.chemTank-level {
+  background: #f8ffe8;
+  /* Old browsers */
+  background: -moz-linear-gradient(top, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* FF3.6-15 */
+  background: -webkit-linear-gradient(top, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* Chrome10-25,Safari5.1-6 */
+  background: linear-gradient(to bottom, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f8ffe8', endColorstr='#b7df2d',GradientType=0 );
+  /* IE6-9 */ }
+
+div.picChemTank[data-chemtype=fluid] div.chemTank-level-top {
+  background: #f8ffe8;
+  /* Old browsers */
+  background: -moz-radial-gradient(center, ellipse cover, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* FF3.6-15 */
+  background: -webkit-radial-gradient(center, ellipse cover, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* Chrome10-25,Safari5.1-6 */
+  background: radial-gradient(ellipse at center, #f8ffe8 0%, #e3f5ab 33%, #b7df2d 100%);
+  /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f8ffe8', endColorstr='#b7df2d',GradientType=1 );
+  /* IE6-9 fallback on horizontal gradient */ }
+
+div.picChemTank[data-chemtype=orp] div.chemTank-level {
+  background: #f85032;
+  background: -moz-linear-gradient(left, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  background: -webkit-gradient(left top, right top, color-stop(0%, #f85032), color-stop(53%, #f16f5c), color-stop(100%, #e73827));
+  background: -webkit-linear-gradient(left, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  background: -o-linear-gradient(left, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  background: -ms-linear-gradient(left, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  background: linear-gradient(to right, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f85032', endColorstr='#e73827', GradientType=1 ); }
+
+div.picChemTank[data-chemtype=orp] div.chemTank-level-top {
+  background: #f85032;
+  background: -moz-radial-gradient(center, ellipse cover, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  background: -webkit-gradient(radial, center center, 0px, center center, 100%, color-stop(0%, #f85032), color-stop(53%, #f16f5c), color-stop(100%, #e73827));
+  background: -webkit-radial-gradient(center, ellipse cover, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  background: -o-radial-gradient(center, ellipse cover, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  background: -ms-radial-gradient(center, ellipse cover, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  background: radial-gradient(ellipse at center, #f85032 0%, #f16f5c 53%, #e73827 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f85032', endColorstr='#e73827', GradientType=1 ); }
+
+label.chemTank-label {
+  transform: rotate(-90deg);
+  position: absolute;
+  width: 100%;
+  display: block;
+  left: -60%; }
+
+div.picChemTank[data-setattributes=true] {
+  cursor: pointer; }

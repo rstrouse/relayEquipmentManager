@@ -347,6 +347,131 @@
                 }
 
               ]
+            },
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Supply Tank",
+                "bindingContext": "tankAttributes",
+                "cssClass": "i2cReadingValues"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "display": "inline-block" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "chemTank",
+                        "chemType": "fluid",
+                        "canSetAttributes": true,
+                        "binding": "values.tank",
+                        "style": {
+                          "width": "77px",
+                          "height": "97px"
+                        }
+                      },
+                      "fieldEvents": {
+                        "setattributes": {
+                          "type": "putservice",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setTankAttributes`",
+                          "message": "Setting Tank Attributes...",
+                          "eventObject": "tankAttributes",
+                          "resultContext": "tankAttributes"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "inline-block",
+                      "verticalAlign": "top",
+                      "fontSize": ".8rem",
+                      "paddingLeft": "1rem",
+                      "lineHeight": "1.2"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "staticField",
+                            "labelText": "Capacity",
+                            "binding": "values.tank.capacity",
+                            "labelAttrs": { "style": { "width": "3.5rem" } },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "2.5rem",
+                                "textAlign": "right"
+                              }
+                            },
+                            "style": {
+                              "lineHeight": "1.2"
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "type": "span",
+                            "binding": "values.tank.units",
+                            "cssClass": "picSpinner-units picUnits",
+                            "style": {
+                              "verticalAlign": "text-bottom",
+                              "marginLeft": "-.15rem"
+                            }
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "staticField",
+                            "labelText": "Level",
+                            "binding": "values.tank.level",
+                            "labelAttrs": { "style": { "width": "3.5rem" } },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "2.5rem",
+                                "textAlign": "right"
+                              }
+                            },
+                            "style": {
+                              "lineHeight": "1.2"
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "type": "span",
+                            "binding": "values.tank.units",
+                            "cssClass": "picSpinner-units picUnits",
+                            "style": {
+                              "verticalAlign": "text-bottom",
+                              "marginLeft": "-.15rem"
+                            }
+                          }
+                        }
+
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
