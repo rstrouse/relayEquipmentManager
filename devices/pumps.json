@@ -408,6 +408,8 @@
                             "labelText": "Capacity",
                             "binding": "values.tank.capacity",
                             "labelAttrs": { "style": { "width": "3.5rem" } },
+                            "dataType": "number",
+                            "fmtMask": "#,##0.###",
                             "inputAttrs": {
                               "style": {
                                 "width": "2.5rem",
@@ -443,6 +445,8 @@
                             "type": "staticField",
                             "labelText": "Level",
                             "binding": "values.tank.level",
+                            "dataType": "number",
+                            "fmtMask": "#,##0.###",
                             "labelAttrs": { "style": { "width": "3.5rem" } },
                             "inputAttrs": {
                               "style": {

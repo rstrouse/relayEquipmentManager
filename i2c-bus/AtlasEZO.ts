@@ -956,7 +956,7 @@ export class AtlasEZOpmp extends AtlasEZO {
         let offset = this.device.values.tank.offset || 0;
         let pumped = this.device.values.totalVolume.absolute || 0;
         tankLevel = pumped - offset;
-        this.device.values.tank.level = this.device.values.tank.capacity - this.fromML(this.device.values.tank.units, tankLevel);
+        this.device.values.tank.level = Math.min(Math.max(this.device.values.tank.capacity - this.fromML(this.device.values.tank.units, tankLevel), 0), this.device.values.tank.capacity);
         webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
     }
     public async setOptions(opts): Promise<any> {
