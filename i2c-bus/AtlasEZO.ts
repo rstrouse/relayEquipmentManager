@@ -694,7 +694,8 @@ export class AtlasEZOpmp extends AtlasEZO {
             arrDims = result.split(',');
             this.device.values.maxRate = parseFloat(arrDims[1]);
             this.device.values.totalVolume = await this.getVolumeDispensed();
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.calcTankLevel();
+            //webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(this.device.values);
         }
         catch (err) { logger.error(new Error(`Could not get dispense status: ${err.message}`)); }
