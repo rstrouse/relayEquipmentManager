@@ -919,7 +919,7 @@ export class AtlasEZOpmp extends AtlasEZO {
         return converted;
     }
     private fromML(units: string, val: number): number {
-        let converted = 0;
+        let converted = val;
         switch (units.toLowerCase()) {
             case 'gal':
                 converted = Math.round((val * 0.000264172) * 10000) / 10000;

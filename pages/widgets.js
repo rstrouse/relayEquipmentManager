@@ -3491,7 +3491,6 @@ $.ui.position.fieldTip = {
                         text: 'Save', icon: '<i class="fas fa-save"></i>',
                         click: function (evt) {
                             var tank = dataBinder.fromElement(dlg);
-                            console.log(tank);
                             if (dataBinder.checkRequired(dlg, true)) {
                                 var evt = $.Event('setattributes');
                                 evt.tankAttributes = tank;
@@ -3503,13 +3502,7 @@ $.ui.position.fieldTip = {
                                     self.val(tank.level);
                                     $.pic.modalDialog.closeDialog(dlg);
                                 }
-
-                                //$.putLocalService('/config/pin/trigger/' + trig.pin.headerId + '/' + trig.pin.id, trigger, 'Saving Trigger...', function (t, status, xhr) {
-                                //    dataBinder.bind(dlg, t);
-                                //    self.reloadTriggers();
-                                //});
                             }
-                            //console.log(trigger);
                         }
                     },
                     {
@@ -3564,7 +3557,7 @@ $.ui.position.fieldTip = {
             });
             line = $('<div></div>').appendTo(divPnl);
             var qty = $('<div></div>').appendTo(line).valueSpinner({
-                canEdit: true, labelText: 'Level', binding: 'level', min: 0, max: 1000000,
+                canEdit: true, labelText: 'Level', binding: 'level', min: 0, max: o.max,
                 labelAttrs: { style: { width: '4rem' } },
                 inputAttrs: { style: { width: '7rem' } }
             }).on('change', function (e) {
