@@ -1319,7 +1319,7 @@ export class AtlasEZOec extends AtlasEZO {
             }
             else if (this.device.options.calibrationMode === 1) {
                 this.device.options.calibration.points.dry = true;
-                this.device.options.calibration.points.low = this.device.options.calibration.points.high = null;
+                this.device.options.calibration.points.high = null;
             }
             if (this.device.options.calibrationMode === 0) {
                 this.device.options.calibration.points.single = this.device.options.calibration.points.low = this.device.options.calibration.points.high = null;
