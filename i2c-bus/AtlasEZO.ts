@@ -1379,11 +1379,31 @@ export class AtlasEZOec extends AtlasEZO {
     }
     public async setCalibrationPoint(point: string, value?: number): Promise<boolean> {
         try {
-            await this.execCommand(`Cal,${point},${value.toFixed(2)}`, 900);
+            await this.execCommand(`Cal,${point}${typeof value !== 'undefined' ? ',' + value.toFixed(2) : ''}`, 900);
             if (typeof this.device.options.calibration === 'undefined') this.device.options.calibration = {};
             if (typeof this.device.options.calibration.points === 'undefined') this.device.options.calibration.points = {};
-            if (point === 'dry') this.device.options.calibration.points.dry = true;
-            else this.device.options.calibration.points[point] = value;
+            if (point === 'dry') {
+                this.device.options.calibration.points.dry = true;
+                this.device.options.calibration.points.low = null;
+                this.device.options.calibration.points.high = null;
+                this.device.options.calibration.points.single = null;
+            }
+            else if (point === 'single') {
+                this.device.options.calibration.points.dry = true;
+                this.device.options.calibration.points.low = null;
+                this.device.options.calibration.points.high = null;
+                this.device.options.calibration.points.single = value;
+            }
+            else if (point === 'low') {
+                this.device.options.calibration.points.dry = true;
+                this.device.options.calibration.points.high = null;
+                this.device.options.calibration.points.single = null;
+                this.device.options.calibration.points.low = value;
+            }
+            else {
+                this.device.options.calibration.points.dry = true;
+                this.device.options.calibration.points.high = value;
+            }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
