@@ -852,7 +852,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-PMP invalid data format. ${JSON.stringify(data)}`);
             if (typeof data.options.calPoint !== 'undefined') await this.setCalibration(parseFloat(data.options.calPoint));
             else { return Promise.reject(`Could not calibrate EZO-PMP no setpoint was provided. ${JSON.stringify(data)}`) }
-            this.device.options.calibration = await this.getCalibrated();
+            await this.getCalibrated();
             return Promise.resolve(this.device);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
