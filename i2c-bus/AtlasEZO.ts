@@ -1413,6 +1413,7 @@ export class AtlasEZOec extends AtlasEZO {
             let result = await this.execCommand('T,?', 300);
             let arrDims = result.split(',');
             this.device.values.temperature = parseFloat(arrDims[1] || '25');
+            if (this.device.values.temperature < 0) await this.setTempCompensation(25);
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
         }
