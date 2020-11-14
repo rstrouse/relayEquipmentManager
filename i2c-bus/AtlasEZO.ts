@@ -833,7 +833,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             let result = await this.execCommand('Cal,?', 300);
             let arrDims = result.split(',');
             let val = parseInt(arrDims[1] || '0');
-            if (typeof this.device.options.calibration === 'undefined') this.device.options.calibration = { volume: false, time: false };
+            if (typeof this.device.options.calibration !== 'object') this.device.options.calibration = { volume: false, time: false };
             this.device.options.calibration.volume = (val & 0x0001) > 0;
             this.device.options.calibration.time = (val & 0x0002) > 0;
             return Promise.resolve(true);
