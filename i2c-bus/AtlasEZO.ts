@@ -1439,7 +1439,7 @@ export class AtlasEZOec extends AtlasEZO {
     }
     public async setTDSFactor(value: number): Promise<boolean> {
         try {
-            await this.execCommand(`T,${value.toFixed(1)}`, 300);
+            await this.execCommand(`TDS,${value.toFixed(2)}`, 300);
             this.device.values.tdsFactor = this.device.options.tdsFactor = value;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(true);
