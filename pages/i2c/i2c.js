@@ -373,7 +373,16 @@
                             fld.on(eventName, new Function('evt', fevent));
                         }
                         else if (typeof fevent === 'object') {
-                            fld.on(eventName, (evt) => { self._callServiceEvent(evt, fevent); });
+                            fld.on(eventName, (evt) => {
+                                if (typeof fevent.confirm === 'object') {
+                                    var confirm = $.pic.modalDialog.createConfirm("dlgConfirmEvent", $.extend(true, {}, {
+                                        title: 'Confirm Action',
+                                        message: 'Are you sure you want to do this?'
+                                    }, fevent.confirm)).on('confirmed', function (e) { self._callServiceEvent(evt, fevent); });
+                                }
+                                else
+                                    self._callServiceEvent(evt, fevent);
+                            });
                         }
                     }
 

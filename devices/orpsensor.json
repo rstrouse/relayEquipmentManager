@@ -262,6 +262,27 @@
                       }
                     }
                   ]
+                },
+                {
+                  "field": {
+                    "type": "actionButton",
+                    "text": "Clear",
+                    "icon": "<i class=\"fas fa-broom\"></i>",
+                    "style": { "width": "7rem" }
+                  },
+                  "fieldEvents": {
+                    "click": {
+                      "type": "putservice",
+                      "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/clearCalibration`",
+                      "message": "Clearing Calibration...",
+                      "callContext": "calibrate",
+                      "resultContext": "calibration",
+                      "confirm": {
+                        "title": "Confirm Clear Calibration",
+                        "message": "Are you sure you want to clear the calibration"
+                      }
+                    }
+                  }
                 }
               ]
             },

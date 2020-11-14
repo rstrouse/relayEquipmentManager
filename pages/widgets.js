@@ -3624,16 +3624,27 @@ $.pic.modalDialog.createDialog = function (id, options) {
     return dlg;
 };
 $.pic.modalDialog.createConfirm = function (id, options) {
-    var opt = typeof options !== 'undefined' && options !== null ? options : {
+    var opt = {
         autoOpen: false,
-        height: 300,
         width: 350,
         modal: true,
         message: '',
-        buttons: {
-            Cancel: function () { dlg.modalDialog("close"); }
-        }
+        buttons: [
+            {
+                text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                click: function () { $.pic.modalDialog.closeDialog(this); }
+            },
+            {
+                text: 'Ok', icon: '<i class="far fa-thumbs-up"></i>',
+                click: function () {
+                    var evt = $.Event('confirmed');
+                    dlg.trigger(evt);
+                    if (!evt.isDefaultPrevented()) $.pic.modalDialog.closeDialog(this); 
+                }
+            }
+        ]
     };
+    opt = $.extend(true, {}, opt, options);
     opt.modal = true;
     if (typeof opt.autoOpen === 'undefined') opt.autoOpen = false;
     var dlg = $('div#' + id);

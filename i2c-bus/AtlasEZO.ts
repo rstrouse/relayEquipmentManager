@@ -224,13 +224,15 @@ export class AtlasEZO extends i2cDeviceBase {
         }
         catch (err) { logger.error(`Error retrieving device status: ${err.message}`); return Promise.reject(err); }
     }
-    public async clearCalibration(): Promise<boolean> {
+    public async clearCalibration(): Promise<I2cDevice> {
         try {
             await this.execCommand(`Cal,clear`, 300);
-            return Promise.resolve(true);
+            await this.getCalibrated();
+            return Promise.resolve(this.device);
         }
-        catch (err) { this.logError(err); }
+        catch (err) { this.logError(err); Promise.reject(err); }
     }
+    public async getCalibrated(): Promise<boolean> { return Promise.resolve(true); }
     public async sleep(): Promise<boolean> {
         try {
             await this.i2c.writeCommand(this.device.address, 'Sleep');
@@ -564,7 +566,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             if (!this.device.options.parameters.pumpVolume) await this.enableParameter('V', true);
             if (!this.device.options.parameters.pumpTotal) await this.enableParameter('TV', true);
             if (!this.device.options.parameters.pumpAbsolute) await this.enableParameter('ATV', true);
-            this.device.options.calibration = await this.getCalibrated();
+            await this.getCalibrated();
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.device.options.name);
             this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.dispensed.interval.default;
@@ -825,15 +827,16 @@ export class AtlasEZOpmp extends AtlasEZO {
             return Promise.resolve(true);
         } catch (err) { this.logError(err); }
     }
-    public async getCalibrated(): Promise<{ volume: boolean, time: boolean }> {
+    public async getCalibrated(): Promise<boolean> {
         try {
             let opts = { volume: false, time: false };
             let result = await this.execCommand('Cal,?', 300);
             let arrDims = result.split(',');
             let val = parseInt(arrDims[1] || '0');
-            opts.volume = (val & 0x0001) > 0;
-            opts.time = (val & 0x0002) > 0;
-            return Promise.resolve(opts);
+            if (typeof this.device.options.calibration === 'undefined') this.device.options.calibration = { volume: false, time: false };
+            this.device.options.calibration.volume = (val & 0x0001) > 0;
+            this.device.options.calibration.time = (val & 0x0002) > 0;
+            return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
     }
@@ -1165,7 +1168,8 @@ export class AtlasEZOrtd extends AtlasEZO {
         try {
             let result = await this.execCommand('Cal,?', 300);
             let arrDims = result.split(',');
-            return Promise.resolve(utils.makeBool(arrDims[1]));
+            this.device.options.calibrationMode = utils.makeBool(arrDims[1]);
+            return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
     }
