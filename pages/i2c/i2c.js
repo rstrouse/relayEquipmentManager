@@ -704,7 +704,6 @@
                 });
             }
         }
-
     });
     $.widget('pic.dlgI2cBus', $.pic.modalDialog, {
         options: {},

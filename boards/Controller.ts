@@ -515,7 +515,7 @@ export class Controller extends ConfigItem {
         }
     }
     public getInternalConnection() {
-        return new ConnectionSource({ id: -1, name: 'Internal Devices', type: this.getMapVal(-1, vMaps.connectionTypes) });
+        return new ConnectionSource({ id: -1, name: 'Internal Devices', type: 'internal' });
     }
 }
 //export class Interfaces extends ConfigItem {
@@ -1050,7 +1050,7 @@ export class I2cDeviceFeed extends ConfigItem {
     public set payloadExpression(val: string) { this.setDataVal('payloadExpression', val); }
     public getExtended() {
         let feed = this.get(true);
-        feed.connection = this.connectionId === -1 ? cont.getInternalConnection() : cont.connections.getItemById(this.connectionId).getExtended();
+        feed.connection = this.connectionId === -1 ? cont.getInternalConnection().getExtended() : cont.connections.getItemById(this.connectionId).getExtended();
         switch (feed.connection.type.name) {
             case 'internal':
                 let dev = cont.getDeviceByBinding(this.deviceBinding);
@@ -1063,7 +1063,6 @@ export class I2cDeviceFeed extends ConfigItem {
             case 'webservice':
                 feed.propertyDesc = `[${this.eventName}].${this.property}`;
                 break;
-
         }
         return feed;
     }
