@@ -246,6 +246,58 @@
           "type": "number"
         }
       ]
+    },
+    {
+      "name": "chemController",
+      "frequency": "2",
+      "bindings": [
+        {
+          "binding": "acidPump",
+          "type": "object"
+        },
+        {
+          "binding": "orpPump",
+          "type": "object"
+        },
+        {
+          "binding": "acidTank",
+          "type": "object"
+        },
+        {
+          "binding": "orpTank",
+          "type": "object"
+        },
+        {
+          "binding": "pHLevel",
+          "type": "number"
+        },
+        {
+          "binding": "ORPLevel",
+          "type": "number"
+        },
+        {
+          "binding": "acidDosing",
+          "type": "object"
+        },
+        {
+          "binding": "orpDosing",
+          "type": "object"
+        },
+        {
+          "binding": "saltLevel",
+          "type": "number"
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "inputField",
+            "binding": "address",
+            "labelText": "Address",
+            "inputAttrs": { "maxLength": 2 }
+          }
+        }
+      ]
     }
   ]
 }

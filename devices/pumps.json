@@ -48,7 +48,11 @@
         },
         {
           "name": "tank",
-          "desc": "Entire Tank Object"
+          "desc": "Tank Object"
+        },
+        {
+          "name": "dispense",
+          "desc": "Dispense Object"
         },
         {
           "name": "all",
@@ -243,7 +247,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Volume",
-                    "binding": "values.totalVolume.total",
+                    "binding": "values.dispense.totalVolume.total",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",
@@ -263,7 +267,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Absolute",
-                    "binding": "values.totalVolume.absolute",
+                    "binding": "values.dispense.totalVolume.absolute",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",
@@ -294,7 +298,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Mode",
-                    "binding": "values.mode.desc",
+                    "binding": "values.dispense.mode.desc",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",
@@ -311,7 +315,7 @@
                     "type": "staticField",
                     "labelText": "Reverse",
                     "dataType": "boolean",
-                    "binding": "values.reverse",
+                    "binding": "values.dispense.reverse",
                     "style": {
                       "display": "block",
                       "fontSize": ".8rem",
@@ -327,7 +331,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Volume",
-                    "binding": "values.volume",
+                    "binding": "values.dispense.volume",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",
@@ -347,7 +351,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Flow Rate",
-                    "binding": "values.flowRate",
+                    "binding": "values.dispense.flowRate",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",
@@ -367,7 +371,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Max Flow",
-                    "binding": "values.maxRate",
+                    "binding": "values.dispense.maxRate",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",
@@ -559,7 +563,7 @@
                           "fieldEvents": {
                             "click": {
                               "type": "putservice",
-                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/startDispense`",
                               "message": "Dispensing Pump...",
                               "callContext": "dispense",
                               "callObj": { "dispense": { "method": "continuous" } }
@@ -575,7 +579,7 @@
                           "fieldEvents": {
                             "click": {
                               "type": "putservice",
-                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/startDispense`",
                               "message": "Dispensing Pump...",
                               "callContext": "dispense",
                               "callObj": { "dispense": { "method": "volume" } }
@@ -591,7 +595,7 @@
                           "fieldEvents": {
                             "click": {
                               "type": "putservice",
-                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/startDispense`",
                               "message": "Dispensing Pump...",
                               "callContext": "dispense",
                               "callObj": { "dispense": { "method": "volumeOverTime" } }
@@ -624,7 +628,7 @@
                       "fieldEvents": {
                         "click": {
                           "type": "putservice",
-                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/startDispense`",
                           "message": "Dispensing Pump...",
                           "callContext": "dispense",
                           "callObj": { "dispense": { "method": "flowRate" } }
@@ -640,7 +644,7 @@
                       "fieldEvents": {
                         "click": {
                           "type": "putservice",
-                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/dispense`",
+                          "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/startDispense`",
                           "message": "Dispensing Pump...",
                           "callContext": "dispense",
                           "callObj": { "dispense": { "method": "flowOverTime" } }

@@ -901,6 +901,7 @@ export class I2cBus extends ConfigItem {
             let dev = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
             if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
             await dev.setDeviceFeed(data);
+            i2c.resetDeviceFeeds(this.id, dev.id);
             return Promise.resolve(dev.feeds);
         }
         catch (err) { return Promise.reject(err); }
@@ -913,6 +914,7 @@ export class I2cBus extends ConfigItem {
             let dev = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
             if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
             await dev.deleteDeviceFeed(data);
+            i2c.resetDeviceFeeds(this.id, dev.id);
             return Promise.resolve(dev.feeds);
         }
         catch (err) { return Promise.reject(err); }

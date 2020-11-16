@@ -134,6 +134,10 @@ export class i2cController {
         if (typeof bus !== 'undefined') bus.setDeviceValue(deviceId, prop, value);
 
     }
+    public resetDeviceFeeds(busId: number, deviceId: number) {
+        let bus = this.buses.find(elem => elem.busId === busId);
+        if (typeof bus !== 'undefined') bus.resetDeviceFeeds(deviceId);
+    }
 }
 export class i2cBus {
     //private _opts;
@@ -273,6 +277,10 @@ export class i2cBus {
         let device = this.devices.find(elem => elem.device.id === deviceId);
         if (typeof device !== 'undefined') device.setValue(prop, value);
     }
+    public resetDeviceFeeds(deviceId: number) {
+        let device = this.devices.find(elem => elem.device.id === deviceId);
+        if (typeof device !== 'undefined') device.initFeeds();
+    }
 }
 class i2cFeed {
     public server: ServerConnection;
@@ -299,6 +307,7 @@ class i2cFeed {
     }
     public send(dev: i2cDeviceBase) {
         let value = dev.getValue(this.feed.sendValue) || '';
+        if (!this.feed.isActive) return;
         if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
             this.server.send({
                 eventName: this.feed.eventName,
@@ -407,11 +416,11 @@ export class i2cDeviceBase {
             let d = await i2cDeviceFactory.createDevice(dt.module, dt.deviceClass, i2c, dev);
             if (typeof d !== 'undefined') {
                 d.initialized = false;
-                webApp.emitToClients('i2cDeviceStatus', { busNumber: i2c.busNumber, id: dev.id, address: dev.address, status: d.status, intialized: d.initialized, device: dev.getExtended()});
+                webApp.emitToClients('i2cDeviceStatus', { busNumber: i2c.busNumber, id: dev.id, address: dev.address, status: d.status, intialized: d.initialized, device: dev.getExtended() });
                 if (await d.initAsync(dt)) {
                     d.initialized = true;
                     logger.info(`Device ${dt.name} initialized for i2c bus #${i2c.busNumber} address ${dev.address}`);
-                    webApp.emitToClients('i2cDeviceStatus', { busNumber: i2c.busNumber, id: dev.id, address: dev.address, status: d.status, intialized: d.initialized, device: dev.getExtended()});
+                    webApp.emitToClients('i2cDeviceStatus', { busNumber: i2c.busNumber, id: dev.id, address: dev.address, status: d.status, intialized: d.initialized, device: dev.getExtended() });
                 }
             }
             return Promise.resolve(d);
@@ -468,5 +477,7 @@ export class i2cDeviceBase {
             this.feeds[i].send(this);
         }
     }
+    public get values() { return this.device.values; }
+    public get options() { return this.device.options; }
 }
 export let i2c = new i2cController();

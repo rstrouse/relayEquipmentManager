@@ -539,7 +539,7 @@
             $('<div></div>').appendTo(line).pickList({
                 required: true,
                 bindColumn: 0, displayColumn: 1, labelText: 'Send Value', binding: 'sendValue',
-                columns: [{ binding: 'name', text: 'Name', style: { minWidth: '197px' } }, { binding: 'desc', text: 'Type', style: { minWidth: '147px' } }],
+                columns: [{ binding: 'name', text: 'Name', style: { maxWidth: '197px' } }, { binding: 'desc', text: 'Type', style: { minWidth: '347px' } }],
                 items: f.device.deviceType.outputs, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
                 
             });
@@ -641,7 +641,7 @@
                                 required: true,
                                 bindColumn: 0, displayColumn: 0, labelText: lbl, binding: 'eventName',
                                 columns: [{ binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }],
-                                items: bindings.feeds, inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '7rem' } }
+                                items: bindings.feeds, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
                             })
                                 .on('selchanged', function (evt) {
                                     var itm = o.bindings.feeds.find(elem => elem.name === evt.newItem.name);

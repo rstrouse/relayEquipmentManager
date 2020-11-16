@@ -41,7 +41,7 @@ export class AtlasEZO extends i2cDeviceBase {
         return err;
     }
     protected escapeName(name: string): string { return name.substring(0, 15).replace(/\s+/g, '_'); }
-    protected get version(): number { return typeof this.device !== 'undefined' && this.device.options !== 'undefined' && typeof this.device.info !== 'undefined' ? parseFloat(this.device.info.firmware) : 0 }
+    protected get version(): number { return typeof this.device !== 'undefined' && this.options !== 'undefined' && typeof this.device.info !== 'undefined' ? parseFloat(this.device.info.firmware) : 0 }
     protected processing = 0;
     protected _tries = 0;
     protected async tryCommand(command: string, timeout: number, length: number = 31): Promise<{ response: number, data?: string, error?: Error }> {
@@ -122,7 +122,7 @@ export class AtlasEZO extends i2cDeviceBase {
             }
         }
         catch (err) { this.logError(err, 'Error Polling Device Values'); }
-        finally { this._timerRead = setTimeout(() => { this.pollReadings(); }, this.device.options.readInterval) }
+        finally { this._timerRead = setTimeout(() => { this.pollReadings(); }, this.options.readInterval) }
     }
     public async takeReadings(): Promise<boolean> {
         try { return Promise.resolve(true); }
@@ -151,7 +151,7 @@ export class AtlasEZO extends i2cDeviceBase {
     public async lockProtocol(val: boolean): Promise<boolean> {
         try {
             await this.execCommand('Plock,' + (val ? '1' : '0'), 300);
-            this.device.options.isProtocolLocked = val;
+            this.options.isProtocolLocked = val;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -164,7 +164,7 @@ export class AtlasEZO extends i2cDeviceBase {
     }
     public async setName(name: string): Promise<boolean> {
         try {
-            this.device.name = this.device.options.name = name;
+            this.device.name = this.options.name = name;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -192,7 +192,7 @@ export class AtlasEZO extends i2cDeviceBase {
         try {
             let result = await this.execCommand('L,?', 300);
             let arrDims = result.split(',');
-            this.device.options.ledEnabled = utils.makeBool(arrDims[1]);
+            this.options.ledEnabled = utils.makeBool(arrDims[1]);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -200,7 +200,7 @@ export class AtlasEZO extends i2cDeviceBase {
     public async enableLed(enable: boolean): Promise<boolean> {
         try {
             let result = await this.execCommand(`L,${enable ? '1' : '0'}`, 300);
-            this.device.options.ledEnabled = enable;
+            this.options.ledEnabled = enable;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -276,16 +276,16 @@ export class AtlasEZOorp extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            this.device.options.name = await this.getName();
+            this.options.name = await this.getName();
             await this.getInfo();
             await this.getLedEnabled();
-            this.device.options.isProtocolLocked = await this.isProtocolLocked();
+            this.options.isProtocolLocked = await this.isProtocolLocked();
             await this.getCalibrated();
-            //this.device.options.status = await this.getStatus();
-            this.device.options.calibration = await this.exportCalibration();
-            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.orp.interval.default;
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.device.options.name;
+            //this.options.status = await this.getStatus();
+            this.options.calibration = await this.exportCalibration();
+            this.options.readInterval = this.options.readInterval || deviceType.readings.orp.interval.default;
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.options.name;
             this.pollDeviceInformation();
             this.pollReadings();
             return Promise.resolve(true);
@@ -296,9 +296,9 @@ export class AtlasEZOorp extends AtlasEZO {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
-            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
-            if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
         }
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false };
@@ -316,7 +316,7 @@ export class AtlasEZOorp extends AtlasEZO {
         try {
             let result = await this.execCommand('cal,?', 300);
             let arrDims = result.split(',');
-            this.device.options.calibrationMode = utils.makeBool(arrDims[1]);
+            this.options.calibrationMode = utils.makeBool(arrDims[1]);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -324,7 +324,7 @@ export class AtlasEZOorp extends AtlasEZO {
     public async setCalibrationPoint(value: number): Promise<boolean> {
         try {
             await this.execCommand(`Cal,${Math.floor(value)}`, 900);
-            this.device.options.calPoint = Math.floor(value);
+            this.options.calPoint = Math.floor(value);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -334,7 +334,7 @@ export class AtlasEZOorp extends AtlasEZO {
             if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-ORP invalid data format. ${JSON.stringify(data)}`);
             if (typeof data.options.calPoint !== 'undefined') await this.setCalibrationPoint(parseFloat(data.options.calPoint));
             else { return Promise.reject(`Could not calibrate EZO-ORP no setpoint was provided. ${JSON.stringify(data)}`) }
-            this.device.options.calibrationMode = await this.getCalibrated();
+            this.options.calibrationMode = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -351,7 +351,7 @@ export class AtlasEZOorp extends AtlasEZO {
     public async setName(name: string): Promise<boolean> {
         try {
             await this.execCommand(`Name,${this.escapeName(name)}`, 300);
-            this.device.options.name = this.device.name = this.escapeName(name);
+            this.options.name = this.device.name = this.escapeName(name);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -360,8 +360,8 @@ export class AtlasEZOorp extends AtlasEZO {
         try {
             let result = await this.execCommand('R', 900);
             let val = parseFloat(result);
-            this.device.values.orp = val;
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.orp = val;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(val);
         }
         catch (err) { this.logError(err); }
@@ -385,8 +385,8 @@ export class AtlasEZOorp extends AtlasEZO {
     }
     public getValue(prop: string) {
         switch (prop) {
-            case 'orp': { return this.device.values.orp; }
-            case 'all': { return this.device.values; }
+            case 'orp': { return this.values.orp; }
+            case 'all': { return this.values; }
         }
     }
 }
@@ -394,18 +394,18 @@ export class AtlasEZOpH extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            this.device.options.name = await this.getName();
+            this.options.name = await this.getName();
             await this.getInfo();
-            this.device.options.isProtocolLocked = await this.isProtocolLocked();
+            this.options.isProtocolLocked = await this.isProtocolLocked();
             await this.getLedEnabled();
             await this.getExtendedScale();
             await this.getCalibrated();
             await this.getSlope();
             await this.getTempCompensation();
-            this.device.options.calibration = await this.exportCalibration();
-            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.pH.interval.default;
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.escapeName(this.device.options.name);
+            this.options.calibration = await this.exportCalibration();
+            this.options.readInterval = this.options.readInterval || deviceType.readings.pH.interval.default;
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.escapeName(this.options.name);
             this.pollDeviceInformation();
             this.pollReadings();
             return Promise.resolve(true);
@@ -416,12 +416,12 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
-            if (typeof opts.extendedScale !== 'undefined' && this.device.options.extendedScale !== opts.extendedScale) await this.setExtendedScale(utils.makeBool(opts.extendedScale));
-            if (typeof opts.tempCompensation === 'number' && this.device.options.tempCompensation !== opts.tempCompensation) await this.setTempCompensation(opts.tempCompensation);
-            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
-            if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
-            return Promise.resolve(this.device.options);
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.extendedScale !== 'undefined' && this.options.extendedScale !== opts.extendedScale) await this.setExtendedScale(utils.makeBool(opts.extendedScale));
+            if (typeof opts.tempCompensation === 'number' && this.options.tempCompensation !== opts.tempCompensation) await this.setTempCompensation(opts.tempCompensation);
+            if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
+            return Promise.resolve(this.options);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }
@@ -453,15 +453,14 @@ export class AtlasEZOpH extends AtlasEZO {
     public async readProbe(tempCompensation?: number): Promise<number> {
         try {
             if (typeof tempCompensation !== 'undefined' && this.version < 2.12) {
-                if (tempCompensation !== this.device.values.temperature) await this.setTempCompensation(tempCompensation);
+                if (tempCompensation !== this.values.temperature) await this.setTempCompensation(tempCompensation);
             }
             let result = typeof tempCompensation !== 'undefined' && this.version >= 2.12 ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 900);
             let val = parseFloat(result);
-            if (typeof this.device.values === 'undefined') this.device.values = {};
-            this.device.values.pH = val;
-            if (typeof tempCompensation !== 'undefined') this.device.values.temperature = tempCompensation;
+            this.values.pH = val;
+            if (typeof tempCompensation !== 'undefined') this.values.temperature = tempCompensation;
             else await this.getTempCompensation();
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(val);
         }
         catch (err) { this.logError(err); }
@@ -470,7 +469,7 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             let result = await this.execCommand('pHext,?', 300);
             let arrDims = result.split(',');
-            this.device.options.extendedScale = utils.makeBool(arrDims[1]);
+            this.options.extendedScale = utils.makeBool(arrDims[1]);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -479,7 +478,7 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             let result = await this.execCommand('cal,?', 300);
             let arrDims = result.split(',');
-            this.device.options.calibrationMode = parseInt(arrDims[1] || '0', 10);
+            this.options.calibrationMode = parseInt(arrDims[1] || '0', 10);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -488,7 +487,7 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             await this.execCommand(`Cal,${point},${value.toFixed(2)}`, 900);
             let ptName = `cal${point.substring(0, 1).toUpperCase()}${point.substring(1).toLowerCase()}Point`;
-            this.device.options[ptName] = value;
+            this.options[ptName] = value;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -504,7 +503,7 @@ export class AtlasEZOpH extends AtlasEZO {
     public async setName(name: string): Promise<boolean> {
         try {
             await this.execCommand(`Name,${this.escapeName(name)}`, 300);
-            this.device.name = this.device.options.name = this.escapeName(name);
+            this.device.name = this.options.name = this.escapeName(name);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -513,7 +512,7 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             let result = await this.execCommand('Slope,?', 300);
             let arrDims = result.split(',');
-            this.device.options.slope = { acid: parseFloat(arrDims[1] || '0'), base: parseFloat(arrDims[2] || '0'), mV: parseFloat(arrDims[3] || '0') }
+            this.options.slope = { acid: parseFloat(arrDims[1] || '0'), base: parseFloat(arrDims[2] || '0'), mV: parseFloat(arrDims[3] || '0') }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -522,8 +521,8 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             let result = await this.execCommand('T,?', 300);
             let arrDims = result.split(',');
-            this.device.values.temperature = parseFloat(arrDims[1] || '25');
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.temperature = parseFloat(arrDims[1] || '25');
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -531,8 +530,8 @@ export class AtlasEZOpH extends AtlasEZO {
     public async setTempCompensation(value: number): Promise<boolean> {
         try {
             await this.execCommand(`T,${value.toFixed(2)}`, 300);
-            this.device.values.temperature = value;
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.temperature = value;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -540,7 +539,7 @@ export class AtlasEZOpH extends AtlasEZO {
     public async setExtendedScale(val: boolean): Promise<boolean> {
         try {
             await this.execCommand('pHext,' + (val ? '1' : '0'), 300);
-            this.device.options.extendedScale = val;
+            this.options.extendedScale = val;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -564,8 +563,8 @@ export class AtlasEZOpH extends AtlasEZO {
     }
     public getValue(prop: string) {
         switch (prop) {
-            case 'ph': { return this.device.values.pH; }
-            case 'all': { return this.device.values; }
+            case 'ph': { return this.values.pH; }
+            case 'all': { return this.values; }
         }
     }
     public setValue(prop: string, value) {
@@ -583,22 +582,22 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
+            this.dispense.units = 'mL';
             this._pollInformationInterval = 10000;
-            if (typeof this.device.values.tank === 'undefined') this.device.values.tank = { level: 4, capacity: 4, units: 'gal', offset: 0 };
-            this.device.options.name = await this.getName();
+            this.options.name = await this.getName();
             await this.getInfo();
-            this.device.options.isProtoLocked = await this.isProtocolLocked();
+            this.options.isProtoLocked = await this.isProtocolLocked();
             await this.getLedEnabled();
             await this.getParameterInfo();
-            if (!this.device.options.parameters.pumpVolume) await this.enableParameter('V', true);
-            if (!this.device.options.parameters.pumpTotal) await this.enableParameter('TV', true);
-            if (!this.device.options.parameters.pumpAbsolute) await this.enableParameter('ATV', true);
+            if (!this.options.parameters.pumpVolume) await this.enableParameter('V', true);
+            if (!this.options.parameters.pumpTotal) await this.enableParameter('TV', true);
+            if (!this.options.parameters.pumpAbsolute) await this.enableParameter('ATV', true);
             await this.getCalibrated();
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.escapeName(this.device.options.name);
-            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.dispensed.interval.default;
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.escapeName(this.options.name);
+            this.options.readInterval = this.options.readInterval || deviceType.readings.dispensed.interval.default;
             // Initialize the tank level before moving on.
-            this.setTankAttributes({ level: this.device.values.tank.level || 0 });
+            this.setTankAttributes({ level: this.tank.level || 0 });
             this.pollDeviceInformation();
             // This device does not have readings to poll if the pump is not running so we will set a timeout to get the device
             // pumping information.  If it is running it will ask for it again.
@@ -607,17 +606,20 @@ export class AtlasEZOpmp extends AtlasEZO {
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
     }
+    public get dispense() { return typeof this.values.dispense === 'undefined' ? this.values.dispense = { units:'mL' } : this.values.dispense; }
+    public get tank() { return typeof this.values.tank === 'undefined' ? this.values.tank = { level: 4, capacity: 4, units: 'gal', offset: 0 } : this.values.tank; }
     public getValue(prop: string) {
         switch (prop) {
-            case 'tank': { return this.device.values.tank; }
-            case 'dispensing': { return this.device.values.dispensing; }
-            case 'mode': { return this.device.values.mode; }
-            case 'maxRate': { return this.device.values.maxRate; }
-            case 'totalVolume': { return this.device.values.totalVolume; }
-            case 'flowRate': { return this.device.values.flowRate; }
-            case 'dispenseTime': { return this.device.values.dispenseTime; }
-            case 'paused': { return this.device.values.paused; }
-            case 'all': { return this.device.values; }
+            case 'tank': { return this.tank; }
+            case 'dispense': { return this.dispense; }
+            case 'dispensing': { return this.dispense.dispensing; }
+            case 'mode': { return this.dispense.mode; }
+            case 'maxRate': { return this.dispense.maxRate; }
+            case 'totalVolume': { return this.dispense.totalVolume; }
+            case 'flowRate': { return this.dispense.flowRate; }
+            case 'dispenseTime': { return this.dispense.dispenseTime; }
+            case 'paused': { return this.dispense.paused; }
+            case 'all': { return this.values; }
             default:
                 console.log(`EZO-PMP Asked for values ${prop}`);
                 break;
@@ -627,7 +629,6 @@ export class AtlasEZOpmp extends AtlasEZO {
         switch (prop) {
         }
     }
-
     public async getName(): Promise<string> {
         try {
             let result = await this.execCommand('Name,?', 300);
@@ -639,7 +640,7 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async setName(name: string): Promise<boolean> {
         try {
             await this.execCommand(`Name,${this.escapeName(name)}`, 300);
-            this.device.name = this.device.options.name = this.escapeName(name);
+            this.device.name = this.options.name = this.escapeName(name);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -692,10 +693,10 @@ export class AtlasEZOpmp extends AtlasEZO {
         try {
             let result = await this.execCommand('O,?', 300);
             let params = result.toUpperCase();
-            if (typeof this.device.options.parameters === 'undefined') this.device.options.parameters = {};
-            this.device.options.parameters.pumpVolume = params.indexOf(',V') >= 0;
-            this.device.options.parameters.pumpTotal = params.indexOf(',TV') >= 0;
-            this.device.options.parameters.pumpAbsolute = params.indexOf(',ATV') >= 0;
+            if (typeof this.options.parameters === 'undefined') this.options.parameters = {};
+            this.options.parameters.pumpVolume = params.indexOf(',V') >= 0;
+            this.options.parameters.pumpTotal = params.indexOf(',TV') >= 0;
+            this.options.parameters.pumpAbsolute = params.indexOf(',ATV') >= 0;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -705,13 +706,13 @@ export class AtlasEZOpmp extends AtlasEZO {
             await this.execCommand(`O,${param},${enable ? '1' : '0'}`, 300);
             switch (param) {
                 case 'V':
-                    this.device.options.parameters.pumpVolume = enable;
+                    this.options.parameters.pumpVolume = enable;
                     break;
                 case 'TV':
-                    this.device.options.parameters.pumpTotal = enable;
+                    this.options.parameters.pumpTotal = enable;
                     break;
                 case 'ATV':
-                    this.device.options.parameters.pumpAbsolute = enable;
+                    this.options.parameters.pumpAbsolute = enable;
                     break;
             }
             return Promise.resolve(true);
@@ -719,51 +720,50 @@ export class AtlasEZOpmp extends AtlasEZO {
         catch (err) { this.logError(err); return Promise.reject(err); }
     }
     public async getDispenseStatus(): Promise<{ dispensing: boolean, volume?: number, continuous: boolean, reverse: boolean, maxRate: number, mode: { name: string, desc: string } }> {
-        if (this.suspendPolling) return Promise.resolve(this.device.values);
+        if (this.suspendPolling) return Promise.resolve(this.dispense);
         try {
             this.suspendPolling = true;
             let result = await this.execCommand('D,?', 300);
             let arrDims = result.split(',');
             let run = parseInt(arrDims[2] || '0', 10);
             if (isNaN(run)) run = 0;
-            this.device.values.dispensing = run !== 0;
-            this.device.values.reverse = run < 0;
-            this.device.values.continuous = this.device.values.dispensing && arrDims[1].indexOf('*') !== -1;
-            this.device.values.paused = utils.makeBool(this.device.values.paused);
-            if (typeof this.device.values.mode === 'undefined') this.device.values.mode = { name: 'off', desc: 'Off' };
+            this.dispense.dispensing = run !== 0;
+            this.dispense.reverse = run < 0;
+            this.dispense.continuous = this.dispense.dispensing && arrDims[1].indexOf('*') !== -1;
+            this.dispense.paused = utils.makeBool(this.dispense.paused);
+            if (typeof this.dispense.mode === 'undefined') this.dispense.mode = { name: 'off', desc: 'Off' };
             let mode = 'off';
-            if (this.device.values.continuous) mode = 'continuous';
-            else if (this.device.values.dispensing || this.device.values.paused) mode = this.device.values.mode.name;
-            if (mode.startsWith('vol')) this.device.values.volume = parseFloat(arrDims[1]);
-            else this.device.values.volume = null;
+            if (this.dispense.continuous) mode = 'continuous';
+            else if (this.dispense.dispensing || this.dispense.paused) mode = this.dispense.mode.name;
+            if (mode.startsWith('vol')) this.dispense.volume = parseFloat(arrDims[1]);
+            else this.dispense.volume = null;
             if (mode === 'off') {
-                this.device.values.volume = null;
-                this.device.values.flowRate = null;
-                this.device.values.dispenseTime = null;
+                this.dispense.volume = null;
+                this.dispense.flowRate = null;
+                this.dispense.dispenseTime = null;
             }
-            this.device.values.mode = this.transformDispenseMode(mode, this.device.values.paused);
+            this.dispense.mode = this.transformDispenseMode(mode, this.dispense.paused);
             result = await this.execCommand('DC,?', 300);
             arrDims = result.split(',');
-            this.device.values.maxRate = parseFloat(arrDims[1]);
+            this.dispense.maxRate = parseFloat(arrDims[1]);
             await this.getVolumeDispensed();
             this.calcTankLevel();
             this.emitFeeds();
-            //webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
-            return Promise.resolve(this.device.values);
+            return Promise.resolve(this.dispense);
         }
         catch (err) { logger.error(new Error(`Could not get dispense status: ${err.message}`)); }
-        finally { if (this.device.values.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, this.device.options.readInterval); this.suspendPolling = false; }
+        finally { if (this.dispense.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, this.options.readInterval); this.suspendPolling = false; }
     }
     public async getVolumeDispensed(): Promise<boolean> {
         try {
-            if (typeof this.device.values.totalVolume === 'undefined') this.device.values.totalVolume = { total: 0, absolute: 0 };
+            if (typeof this.dispense.totalVolume === 'undefined') this.dispense.totalVolume = { total: 0, absolute: 0 };
             let vol = { total: 0, absolute: 0 };
             let result = await this.execCommand('TV,?', 300);
             let arrDims = result.split(',');
-            this.device.values.total = parseFloat(arrDims[1]);
+            this.dispense.totalVolume.total = parseFloat(arrDims[1]);
             result = await this.execCommand('ATV,?', 300);
             arrDims = result.split(',');
-            this.device.values.absolute = parseFloat(arrDims[1]);
+            this.dispense.totalVolume.absolute = parseFloat(arrDims[1]);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -771,13 +771,13 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async stopDispense(): Promise<boolean> {
         try {
             await this.execCommand('X', 300);
-            this.device.values.mode = this.transformDispenseMode('off', false);
-            this.device.values.paused = false;
-            this.device.values.volume = null;
-            this.device.values.flowRate = null;
-            this.device.values.dispenseTime = null;
-            this.device.values.dispensing = false;
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.mode = this.transformDispenseMode('off', false);
+            this.values.paused = false;
+            this.values.volume = null;
+            this.values.flowRate = null;
+            this.values.dispenseTime = null;
+            this.values.dispensing = false;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -788,10 +788,10 @@ export class AtlasEZOpmp extends AtlasEZO {
             let result = await this.execCommand('P,?', 300);
             let arrDims = result.split(',');
             let paused = utils.makeBool(arrDims[1]);
-            this.device.values.paused = paused;
-            this.device.values.mode = this.transformDispenseMode(this.device.values.mode.name, paused);
+            this.values.paused = paused;
+            this.values.mode = this.transformDispenseMode(this.values.mode.name, paused);
             await this.getDispenseStatus();
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -799,15 +799,15 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async dispenseContinuous(reverse: boolean = false): Promise<boolean> {
         try {
             await this.execCommand(`D,${utils.makeBool(reverse) ? '-*' : '*'}`, 300);
-            this.device.values.continuous = true;
-            this.device.values.dispensing = true;
-            this.device.values.reverse = reverse;
-            this.device.values.paused = false;
-            this.device.values.volume = null;
-            this.device.values.dispenseTime = null;
-            this.device.values.flowRate = null;
-            this.device.values.mode = this.transformDispenseMode('continuous', false);
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.dispense.continuous = true;
+            this.dispense.dispensing = true;
+            this.dispense.reverse = reverse;
+            this.dispense.paused = false;
+            this.dispense.volume = null;
+            this.dispense.dispenseTime = null;
+            this.dispense.flowRate = null;
+            this.dispense.mode = this.transformDispenseMode('continuous', false);
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             this.getDispenseStatus();
             return Promise.resolve(true);
         }
@@ -816,15 +816,15 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async dispenseVolume(volume: number, minutes?:number): Promise<boolean> {
         try {
             typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)},${minutes.toFixed(2)}`, 300);
-            this.device.values.dispensing = true;
-            this.device.values.reverse = volume < 0;
-            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
-            this.device.values.paused = false;
-            this.device.values.continuous = false;
-            this.device.values.volume = volume;
-            this.device.values.flowRate = null;
-            this.device.values.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'volOverTime' : 'vol', false);
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.dispense.dispensing = true;
+            this.dispense.reverse = volume < 0;
+            this.dispense.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
+            this.dispense.paused = false;
+            this.dispense.continuous = false;
+            this.dispense.volume = volume;
+            this.dispense.flowRate = null;
+            this.dispense.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'volOverTime' : 'vol', false);
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             this.getDispenseStatus();
             return Promise.resolve(true);
         }
@@ -833,21 +833,21 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async dispenseFlowRate(rate: number, minutes?: number): Promise<boolean> {
         try {
             typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)},*`, 300) : await this.execCommand(`DC,${rate.toFixed(2)},${minutes.toFixed(2)}`, 300);
-            this.device.values.flowRate = rate;
-            this.device.values.dispensing = true;
-            this.device.values.continuous = false;
-            this.device.values.reverse = rate < 0;
-            this.device.values.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
-            this.device.values.volume = null;
-            this.device.values.paused = false;
-            this.device.values.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'flowOverTime' : 'flowRate', false);
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.dispense.flowRate = rate;
+            this.dispense.dispensing = true;
+            this.dispense.continuous = false;
+            this.dispense.reverse = rate < 0;
+            this.dispense.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
+            this.dispense.volume = null;
+            this.dispense.paused = false;
+            this.dispense.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'flowOverTime' : 'flowRate', false);
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             this.getDispenseStatus();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
     }
-    public async dispense(opts:any): Promise<boolean> {
+    public async startDispense(opts:any): Promise<boolean> {
         try {
             if (typeof opts === 'undefined' || typeof opts.dispense === 'undefined') return Promise.reject(new Error('Cannot dispense EZO-PMP. Dispense options not provided'));
             let reverse = utils.makeBool(opts.dispense.reverse);
@@ -885,9 +885,9 @@ export class AtlasEZOpmp extends AtlasEZO {
             let result = await this.execCommand('Cal,?', 300);
             let arrDims = result.split(',');
             let val = parseInt(arrDims[1] || '0');
-            if (typeof this.device.options.calibration !== 'object') this.device.options.calibration = { volume: false, time: false };
-            this.device.options.calibration.volume = (val & 0x0001) > 0;
-            this.device.options.calibration.time = (val & 0x0002) > 0;
+            if (typeof this.options.calibration !== 'object') this.options.calibration = { volume: false, time: false };
+            this.options.calibration.volume = (val & 0x0001) > 0;
+            this.options.calibration.time = (val & 0x0002) > 0;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -912,11 +912,11 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async clearDispensed(): Promise<boolean> {
         try {
             await this.execCommand('Clear', 300);
-            if (typeof this.device.values.totalVolume === 'undefined') this.device.values.totalVolume = { total: 0, absolute: 0 }
-            this.device.values.totalVolume.total = 0;
-            this.device.values.totalVolume.absolute = 0;
-            this.device.values.tank.totalOffset = this.device.values.tank.capacity - this.device.values.level;
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            if (typeof this.values.totalVolume === 'undefined') this.values.totalVolume = { total: 0, absolute: 0 }
+            this.values.totalVolume.total = 0;
+            this.values.totalVolume.absolute = 0;
+            this.tank.totalOffset = this.tank.capacity - this.values.level;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -925,10 +925,10 @@ export class AtlasEZOpmp extends AtlasEZO {
         // The tank level is determined by how much volume is pumped from full.  The totalVolume values are used to determine this so we need to snapshot the
         // offset at the time the level is set.  The tank offset is what a full tank would be.
         // tankOffset = absVolume + capacity - tankLevel;
+        
         try {
-            if (typeof this.device.values.tank === 'undefined') this.device.values.tank = { level: 0, capacity: 0, units: '', offset: 0 };
-            if (typeof tank.units === 'string') this.device.values.tank.units = tank.units;
-            if (typeof tank.capacity === 'number') this.device.values.tank.capacity = tank.capacity;
+            if (typeof tank.units === 'string') this.tank.units = tank.units;
+            if (typeof tank.capacity === 'number') this.tank.capacity = tank.capacity;
             if (typeof tank.level === 'number') {
                 await this.getVolumeDispensed();
                 //await this.clearDispensed();
@@ -936,14 +936,14 @@ export class AtlasEZOpmp extends AtlasEZO {
                 // capacity = 4
                 // level = 3.8
                 // offset = -0.2
-                this.device.values.tank.level = tank.level;
-                let units = this.device.values.tank.units;
-                let capacity = this.toML(units, this.device.values.tank.capacity);
+                this.tank.level = tank.level;
+                let units = this.tank.units;
+                let capacity = this.toML(units, this.tank.capacity);
                 let level = this.toML(units, tank.level);
-                this.device.values.tank.offset = (this.device.values.totalVolume.total || 0) - capacity + level;
+                this.tank.offset = (this.dispense.totalVolume.total || 0) - capacity + level;
             }
             this.calcTankLevel();
-            return Promise.resolve(this.device.values);
+            return Promise.resolve(this.values);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
     }
@@ -1008,20 +1008,20 @@ export class AtlasEZOpmp extends AtlasEZO {
         // offset = 100
         // pumped = 120
         // so 20 has pumped from the capacity of the tank. So the tank level = capacity - (pumped - offset).
-        if (typeof this.device.values.tank === 'undefined') this.device.values.tank = { level: 0, capacity: 4, units: 'gal', offset: 0 };
+        if (typeof this.dispense.totalVolume === 'undefined') this.dispense.totalVolume = {};
         let tankLevel = 0;
-        let offset = this.device.values.tank.offset || 0;
-        let pumped = this.device.values.totalVolume.total || 0;
+        let offset = this.tank.offset || 0;
+        let pumped = this.dispense.totalVolume.total || 0;
         tankLevel = pumped - offset;
-        this.device.values.tank.level = Math.min(Math.max(this.device.values.tank.capacity - this.fromML(this.device.values.tank.units, tankLevel), 0), this.device.values.tank.capacity);
-        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+        this.tank.level = Math.min(Math.max(this.tank.capacity - this.fromML(this.tank.units, tankLevel), 0), this.tank.capacity);
+        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
     }
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
-            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
-            if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
         }
         catch (err) { this.logError(err); Promise.reject(err); }
     }
@@ -1030,17 +1030,17 @@ export class AtlasEZOprs extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            this.device.options.name = await this.getName();
+            this.options.name = await this.getName();
             await this.getInfo();
-            this.device.options.isProtoLocked = await this.isProtocolLocked();
+            this.options.isProtoLocked = await this.isProtocolLocked();
             await this.getLedEnabled();
-            //this.device.options.status = await this.getStatus();
-            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.pressure.interval.default;
+            //this.options.status = await this.getStatus();
+            this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
             await this.getUnits(),
             await this.getDecPlaces()
             await this.getAlarm();
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.device.options.name;
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.options.name;
             setTimeout(() => { this.pollDeviceInformation() }, 500);
             setTimeout(() => { this.pollReadings(); }, 1000);
             return Promise.resolve(true);
@@ -1049,22 +1049,22 @@ export class AtlasEZOprs extends AtlasEZO {
     }
     public getValue(prop: string) {
         switch (prop) {
-            case 'pressure': { return this.device.values.pressure; }
-            case 'all': { return this.device.values; }
+            case 'pressure': { return this.values.pressure; }
+            case 'all': { return this.values; }
         }
     }
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
-            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.alarm !== 'undefined' &&
-                (this.device.options.alarm.enable !== opts.alarm.enable || this.device.options.alarm.pressure !== opts.alarm.pressure || this.device.options.alarm.tolerance !== opts.alarm.tolerance)) {
+                (this.options.alarm.enable !== opts.alarm.enable || this.options.alarm.pressure !== opts.alarm.pressure || this.options.alarm.tolerance !== opts.alarm.tolerance)) {
                 await this.setAlarm(utils.makeBool(opts.alarm.enable), opts.alarm.pressure, opts.alarm.tolerance);
             }
-            if (typeof opts.decPlaces !== 'undefined' && this.device.options.decPlaces !== opts.decPlaces) await this.setDecPlaces(opts.decPlaces);
-            if (typeof opts.units !== 'undefined' && typeof opts.units.name !== 'undefined' && this.device.options.units.name !== opts.units.name) await this.setUnits(opts.units.name);
-            if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
+            if (typeof opts.decPlaces !== 'undefined' && this.options.decPlaces !== opts.decPlaces) await this.setDecPlaces(opts.decPlaces);
+            if (typeof opts.units !== 'undefined' && typeof opts.units.name !== 'undefined' && this.options.units.name !== opts.units.name) await this.setUnits(opts.units.name);
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
         }
         catch (err) { this.logError(err); Promise.reject(err); }
     }
@@ -1080,9 +1080,8 @@ export class AtlasEZOprs extends AtlasEZO {
         try {
             let result = await this.execCommand('R', 900);
             let val = parseFloat(result);
-            if (typeof this.device.values === 'undefined') this.device.values = {};
-            this.device.values.pressure = val;
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.pressure = val;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(val);
         }
         catch (err) { this.logError(err); }
@@ -1090,7 +1089,7 @@ export class AtlasEZOprs extends AtlasEZO {
     public async setDecPlaces(decPlaces: number): Promise<boolean> {
         try {
             await this.execCommand(`Dec,${decPlaces}`, 900);
-            this.device.options.decPlaces = decPlaces;
+            this.options.decPlaces = decPlaces;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1099,7 +1098,7 @@ export class AtlasEZOprs extends AtlasEZO {
         try {
             let result = await this.execCommand('Dec,?', 900);
             let arrDims = result.split(',');
-            this.device.options.decPlaces = parseInt(arrDims[1] || '0', 10);
+            this.options.decPlaces = parseInt(arrDims[1] || '0', 10);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1109,10 +1108,10 @@ export class AtlasEZOprs extends AtlasEZO {
             let result = await this.execCommand('U,?', 300);
             let arrDims = result.split(',');
             let units = this.transformUnits((arrDims[1] || 'psi').toLowerCase());
-            this.device.values.units = units;
-            if (typeof this.device.options.alarm === 'undefined') this.device.options.alarm = {};
-            this.device.options.alarm.units = units;
-            this.device.options.units = units;
+            this.values.units = units;
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = {};
+            this.options.alarm.units = units;
+            this.options.units = units;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -1120,8 +1119,8 @@ export class AtlasEZOprs extends AtlasEZO {
     public async setUnits(units: string): Promise<boolean> {
         try {
             await this.execCommand(`U,${units}`, 300);
-            if (typeof this.device.options.alarm === 'undefined') this.device.options.alarm = {};
-            this.device.options.alarm.units = this.device.values.units = this.device.options.units = this.transformUnits(units);
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = {};
+            this.options.alarm.units = this.values.units = this.options.units = this.transformUnits(units);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1153,19 +1152,19 @@ export class AtlasEZOprs extends AtlasEZO {
     public async setAlarm(enable: boolean, pressure?: number, tolerance?: number): Promise<boolean> {
         try {
             this.suspendPolling = true;
-            if (typeof this.device.options.alarm === 'undefined') this.device.options.alarm = {enable: false, pressure:0, tolerance: 0};
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = {enable: false, pressure:0, tolerance: 0};
             if (enable) {
                 if (typeof pressure === 'undefined' || typeof tolerance === 'undefined') return Promise.reject(new Error('Alarm must include a pressure setting and tolerance.'));
                 await this.execCommand(`Alarm,en,1`, 300);
                 await this.execCommand(`Alarm,${pressure}`, 300);
                 await this.execCommand(`Alarm,tol,${tolerance}`, 300);
-                this.device.options.alarm.enable = enable;
-                this.device.options.alarm.pressure = pressure;
-                this.device.options.alarm.tolerance = tolerance;
+                this.options.alarm.enable = enable;
+                this.options.alarm.pressure = pressure;
+                this.options.alarm.tolerance = tolerance;
             }
             else {
                 await this.execCommand(`Alarm,en,0`, 300);
-                this.device.options.alarm.enable = enable;
+                this.options.alarm.enable = enable;
             }
             return Promise.resolve(true);
         }
@@ -1174,12 +1173,12 @@ export class AtlasEZOprs extends AtlasEZO {
     }
     public async getAlarm(): Promise<boolean> {
         try {
-            if (typeof this.device.options.alarm === 'undefined') this.device.options.alarm = {enable:false, pressure: 0, tolerance: 0};
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = {enable:false, pressure: 0, tolerance: 0};
             let result = await this.execCommand('Alarm,?', 300);
             let arrDims = result.split(',');
-            this.device.options.alarm.enable = arrDims.length > 2;
-            this.device.options.alarm.pressure = parseInt(arrDims[1], 10);
-            this.device.options.alarm.tolerance = parseInt(arrDims[2], 10);
+            this.options.alarm.enable = arrDims.length > 2;
+            this.options.alarm.pressure = parseInt(arrDims[1], 10);
+            this.options.alarm.tolerance = parseInt(arrDims[2], 10);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -1189,30 +1188,30 @@ export class AtlasEZOrtd extends AtlasEZO {
     public getValue(prop: string) {
         switch (prop) {
             case 'tempK':
-                return utils.convert.temperature.convertUnits(this.device.values.temperature, this.device.values.units, 'k');
+                return utils.convert.temperature.convertUnits(this.values.temperature, this.values.units, 'k');
             case 'tempC':
-                return utils.convert.temperature.convertUnits(this.device.values.temperature, this.device.values.units, 'c');
+                return utils.convert.temperature.convertUnits(this.values.temperature, this.values.units, 'c');
             case 'tempF':
-                return utils.convert.temperature.convertUnits(this.device.values.temperature, this.device.values.units, 'f');
+                return utils.convert.temperature.convertUnits(this.values.temperature, this.values.units, 'f');
             case 'all':
-                return this.device.values;
+                return this.values;
         }
     }
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
             // NAME,? always returns an empty string.  This doesn't work on RTD.
-            //this.device.name = this.device.options.name = (typeof this.device.options.name === 'undefined' || this.device.options.name === '') ? deviceType.name : this.device.options.name;
+            //this.device.name = this.options.name = (typeof this.options.name === 'undefined' || this.options.name === '') ? deviceType.name : this.options.name;
             await this.getInfo();
-            this.device.options.isProtocolLocked = await this.isProtocolLocked();
+            this.options.isProtocolLocked = await this.isProtocolLocked();
             await this.getLedEnabled();
             await this.getCalibrated();
-            //this.device.options.status = await this.getStatus();
+            //this.options.status = await this.getStatus();
             await this.getScale();
-            this.device.options.calibration = await this.exportCalibration();
-            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.temperature.interval.default;
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.device.options.name;
+            this.options.calibration = await this.exportCalibration();
+            this.options.readInterval = this.options.readInterval || deviceType.readings.temperature.interval.default;
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.options.name;
             setTimeout(() => { this.pollDeviceInformation(); }, 500);
             setTimeout(() => { this.pollReadings(); }, 1000);
             return Promise.resolve(true);
@@ -1222,11 +1221,11 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && utils.makeBool(this.device.options.isProtocolLocked) !== utils.makeBool(opts.isProcolLocked)) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
-            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
-            if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
-            if (typeof this.device.options.scale === 'undefined') await this.getScale();
-            if (typeof opts.scale === 'string' && opts.scale.length > 0 && opts.scale.toLowerCase() !== this.device.options.scale.toLowerCase()) await this.setScale(opts.scale);
+            if (typeof opts.isProtocolLocked !== 'undefined' && utils.makeBool(this.options.isProtocolLocked) !== utils.makeBool(opts.isProcolLocked)) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
+            if (typeof this.options.scale === 'undefined') await this.getScale();
+            if (typeof opts.scale === 'string' && opts.scale.length > 0 && opts.scale.toLowerCase() !== this.options.scale.toLowerCase()) await this.setScale(opts.scale);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
     }
@@ -1242,7 +1241,7 @@ export class AtlasEZOrtd extends AtlasEZO {
         try {
             let result = await this.execCommand('Cal,?', 300);
             let arrDims = result.split(',');
-            this.device.options.calibrationMode = utils.makeBool(arrDims[1]);
+            this.options.calibrationMode = utils.makeBool(arrDims[1]);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1251,8 +1250,8 @@ export class AtlasEZOrtd extends AtlasEZO {
         try {
             let result = await this.execCommand('S,?', 300);
             let arrDims = result.split(',');
-            if (typeof this.device.options.calibration === 'undefined') this.device.options.calibration = {};
-            this.device.options.calibration.units = this.device.values.units = this.device.options.scale = (arrDims[1] || 'c').toUpperCase();
+            if (typeof this.options.calibration === 'undefined') this.options.calibration = {};
+            this.options.calibration.units = this.values.units = this.options.scale = (arrDims[1] || 'c').toUpperCase();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -1260,8 +1259,8 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async setScale(value: string): Promise<boolean> {
         try {
             await this.execCommand(`S,${value.toLowerCase()}`, 300);
-            if (typeof this.device.options.calibration === 'undefined') this.device.options.calibration = {};
-            this.device.options.calibration.units = this.device.values.units = this.device.options.scale = value.toUpperCase();
+            if (typeof this.options.calibration === 'undefined') this.options.calibration = {};
+            this.options.calibration.units = this.values.units = this.options.scale = value.toUpperCase();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1269,7 +1268,7 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async setCalibrationPoint(value: number): Promise<boolean> {
         try {
             await this.execCommand(`Cal,${value.toFixed(2)}`, 600);
-            this.device.options.calPoint = value;
+            this.options.calPoint = value;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1280,7 +1279,7 @@ export class AtlasEZOrtd extends AtlasEZO {
             if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-RTD invalid data format. ${JSON.stringify(data)}`);
             if (typeof data.options.calPoint !== 'undefined') await this.setCalibrationPoint(parseFloat(data.options.calPoint));
             else { return Promise.reject(`Could not calibrate EZO-RTD no setpoint was provided. ${JSON.stringify(data)}`) }
-            this.device.options.calibrationMode = await this.getCalibrated();
+            this.options.calibrationMode = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -1296,7 +1295,7 @@ export class AtlasEZOrtd extends AtlasEZO {
     }
     public async setName(name: string): Promise<boolean> {
         try {
-            this.device.options.name = this.device.name = this.escapeName(name);
+            this.options.name = this.device.name = this.escapeName(name);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1305,8 +1304,8 @@ export class AtlasEZOrtd extends AtlasEZO {
         try {
             let result = await this.execCommand('R', 600);
             let val = parseFloat(result);
-            this.device.values.temperature = val;
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.temperature = val;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(val);
         }
         catch (err) { this.logError(err); }
@@ -1318,7 +1317,7 @@ export class AtlasEZOrtd extends AtlasEZO {
 
             //info: Atlas_EZO-RTD command Export,? bytes written:8 result:?EXPORT,2,20
             let arrDims = result.split(',');
-            let dims = { len: parseInt((arrDims[1] || '0'), 10), total: parseInt((arrDims[2] || '0'), 10), data: [], units: this.device.options.scale };
+            let dims = { len: parseInt((arrDims[1] || '0'), 10), total: parseInt((arrDims[2] || '0'), 10), data: [], units: this.options.scale };
             for (let i = 0; i <= dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
@@ -1334,20 +1333,20 @@ export class AtlasEZOec extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            this.device.options.name = await this.getName();
+            this.options.name = await this.getName();
             await this.getInfo();
             await this.getLedEnabled();
-            this.device.options.isProtocolLocked = await this.isProtocolLocked();
+            this.options.isProtocolLocked = await this.isProtocolLocked();
             await this.getCalibrated();
             await this.getProbeType();
             await this.getParameterInfo();
             await this.getTDSFactor();
             await this.getTempCompensation();
-            //this.device.options.status = await this.getStatus();
-            this.device.options.calibration = await this.exportCalibration();
-            this.device.options.readInterval = this.device.options.readInterval || deviceType.readings.conductivity.interval.default;
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.device.options.name;
+            //this.options.status = await this.getStatus();
+            this.options.calibration = await this.exportCalibration();
+            this.options.readInterval = this.options.readInterval || deviceType.readings.conductivity.interval.default;
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.options.name;
             this.pollDeviceInformation();
             this.pollReadings();
             return Promise.resolve(true);
@@ -1356,15 +1355,15 @@ export class AtlasEZOec extends AtlasEZO {
     }
     public getValue(prop: string) {
         switch (prop) {
-            case 'tdsFactor': { return this.device.values.tdsFactor; }
-            case 'conductivity': { return this.device.values.conductivity; }
-            case 'dissolvedSolids': { return this.device.values.dissolvedSolids; }
-            case 'salinity': { return this.device.values.salinity; }
-            case 'saltLevel': { return this.device.values.saltLevel; }
-            case 'specificGravity': { return this.device.values.specificGravity; }
-            case 'temperature': { return this.device.values.temperature; }
-            case 'probeType': { return this.device.values.probeType; }
-            case 'all': { return this.device.values; }
+            case 'tdsFactor': { return this.values.tdsFactor; }
+            case 'conductivity': { return this.values.conductivity; }
+            case 'dissolvedSolids': { return this.values.dissolvedSolids; }
+            case 'salinity': { return this.values.salinity; }
+            case 'saltLevel': { return this.values.saltLevel; }
+            case 'specificGravity': { return this.values.specificGravity; }
+            case 'temperature': { return this.values.temperature; }
+            case 'probeType': { return this.values.probeType; }
+            case 'all': { return this.values; }
         }
     }
     public setValue(prop: string, value) {
@@ -1382,15 +1381,15 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && this.device.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
-            if (typeof opts.tempCompensation === 'number' && this.device.options.tempCompensation !== opts.tempCompensation) await this.setTempCompensation(opts.tempCompensation);
-            if (typeof opts.ledEnabled !== 'undefined' && this.device.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
-            if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.tempCompensation === 'number' && this.options.tempCompensation !== opts.tempCompensation) await this.setTempCompensation(opts.tempCompensation);
+            if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
             if (typeof opts.tdsFactor === 'number' && !isNaN(parseFloat(opts.tdsFactor))) {
-                if (parseFloat(opts.tdsFactor) !== this.device.options.tdsFactor) await this.setTDSFactor(parseFloat(opts.tdsFactor));
+                if (parseFloat(opts.tdsFactor) !== this.options.tdsFactor) await this.setTDSFactor(parseFloat(opts.tdsFactor));
             }
             if (typeof opts.probeType === 'number' && !isNaN(parseFloat(opts.probeType))) {
-                if (parseFloat(opts.probeType) !== this.device.options.probeType) await this.setProbeType(parseFloat(opts.probeType));
+                if (parseFloat(opts.probeType) !== this.options.probeType) await this.setProbeType(parseFloat(opts.probeType));
             }
         }
         catch (err) { this.logError(err); Promise.reject(err); }
@@ -1409,20 +1408,20 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             let result = await this.execCommand('Cal,?', 300);
             let arrDims = result.split(',');
-            this.device.options.calibrationMode = parseInt(arrDims[1] || '0', 10);
-            if (typeof this.device.options.calibration === 'undefined') this.device.options.calibration = {};
-            if (typeof this.device.options.calibration.points === 'undefined') this.device.options.calibration.points = { dry: false, single: null, low: null, high: null };
-            if (this.device.options.calibrationMode === 2) {
-                this.device.options.calibration.points.single = null;
-                this.device.options.calibration.points.dry = true;
+            this.options.calibrationMode = parseInt(arrDims[1] || '0', 10);
+            if (typeof this.options.calibration === 'undefined') this.options.calibration = {};
+            if (typeof this.options.calibration.points === 'undefined') this.options.calibration.points = { dry: false, single: null, low: null, high: null };
+            if (this.options.calibrationMode === 2) {
+                this.options.calibration.points.single = null;
+                this.options.calibration.points.dry = true;
             }
-            else if (this.device.options.calibrationMode === 1) {
-                this.device.options.calibration.points.dry = true;
-                this.device.options.calibration.points.high = null;
+            else if (this.options.calibrationMode === 1) {
+                this.options.calibration.points.dry = true;
+                this.options.calibration.points.high = null;
             }
-            if (this.device.options.calibrationMode === 0) {
-                this.device.options.calibration.points.single = this.device.options.calibration.points.low = this.device.options.calibration.points.high = null;
-                if (typeof this.device.options.calibration.points.dry === 'undefined') this.device.options.calibration.points.dry = false;
+            if (this.options.calibrationMode === 0) {
+                this.options.calibration.points.single = this.options.calibration.points.low = this.options.calibration.points.high = null;
+                if (typeof this.options.calibration.points.dry === 'undefined') this.options.calibration.points.dry = false;
             }
             return Promise.resolve(true);
         }
@@ -1431,7 +1430,7 @@ export class AtlasEZOec extends AtlasEZO {
     public async setProbeType(value: number): Promise<boolean> {
         try {
             await this.execCommand(`K,${value.toFixed(1)}`, 300);
-            this.device.options.probeType = this.device.values.probeType = value;
+            this.options.probeType = this.values.probeType = value;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1440,7 +1439,7 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             let result = await this.execCommand('K,?', 300);
             let arrDims = result.split(',');
-            this.device.options.probeType = this.device.values.probeType = parseFloat(arrDims[1] || '1');
+            this.options.probeType = this.values.probeType = parseFloat(arrDims[1] || '1');
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1449,12 +1448,12 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             let result = await this.execCommand('O,?', 300);
             let arrDims = result.toUpperCase().split(',');
-            if (typeof this.device.options.parameters === 'undefined') this.device.options.parameters = {};
+            if (typeof this.options.parameters === 'undefined') this.options.parameters = {};
             
-            this.device.options.parameters.conductivity = arrDims.indexOf('EC') >= 0;
-            this.device.options.parameters.dissolvedSolids = arrDims.indexOf('TDS') >= 0;
-            this.device.options.parameters.salinity = arrDims.indexOf('S') > 0;
-            this.device.options.parameters.specificGravity = arrDims.indexOf('SG') > 0;
+            this.options.parameters.conductivity = arrDims.indexOf('EC') >= 0;
+            this.options.parameters.dissolvedSolids = arrDims.indexOf('TDS') >= 0;
+            this.options.parameters.salinity = arrDims.indexOf('S') > 0;
+            this.options.parameters.specificGravity = arrDims.indexOf('SG') > 0;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1479,29 +1478,29 @@ export class AtlasEZOec extends AtlasEZO {
     public async setCalibrationPoint(point: string, value?: number): Promise<boolean> {
         try {
             await this.execCommand(`Cal,${point}${typeof value !== 'undefined' ? ',' + value.toFixed(2) : ''}`, 900);
-            if (typeof this.device.options.calibration === 'undefined') this.device.options.calibration = {};
-            if (typeof this.device.options.calibration.points === 'undefined') this.device.options.calibration.points = {};
+            if (typeof this.options.calibration === 'undefined') this.options.calibration = {};
+            if (typeof this.options.calibration.points === 'undefined') this.options.calibration.points = {};
             if (point === 'dry') {
-                this.device.options.calibration.points.dry = true;
-                this.device.options.calibration.points.low = null;
-                this.device.options.calibration.points.high = null;
-                this.device.options.calibration.points.single = null;
+                this.options.calibration.points.dry = true;
+                this.options.calibration.points.low = null;
+                this.options.calibration.points.high = null;
+                this.options.calibration.points.single = null;
             }
             else if (point === 'single') {
-                this.device.options.calibration.points.dry = true;
-                this.device.options.calibration.points.low = null;
-                this.device.options.calibration.points.high = null;
-                this.device.options.calibration.points.single = value;
+                this.options.calibration.points.dry = true;
+                this.options.calibration.points.low = null;
+                this.options.calibration.points.high = null;
+                this.options.calibration.points.single = value;
             }
             else if (point === 'low') {
-                this.device.options.calibration.points.dry = true;
-                this.device.options.calibration.points.high = null;
-                this.device.options.calibration.points.single = null;
-                this.device.options.calibration.points.low = value;
+                this.options.calibration.points.dry = true;
+                this.options.calibration.points.high = null;
+                this.options.calibration.points.single = null;
+                this.options.calibration.points.low = value;
             }
             else {
-                this.device.options.calibration.points.dry = true;
-                this.device.options.calibration.points.high = value;
+                this.options.calibration.points.dry = true;
+                this.options.calibration.points.high = value;
             }
             return Promise.resolve(true);
         }
@@ -1511,9 +1510,9 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             let result = await this.execCommand('T,?', 300);
             let arrDims = result.split(',');
-            this.device.values.temperature = parseFloat(arrDims[1] || '25');
-            if (this.device.values.temperature < 0) await this.setTempCompensation(25);
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.temperature = parseFloat(arrDims[1] || '25');
+            if (this.values.temperature < 0) await this.setTempCompensation(25);
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1521,8 +1520,8 @@ export class AtlasEZOec extends AtlasEZO {
     public async setTempCompensation(value: number): Promise<boolean> {
         try {
             await this.execCommand(`T,${value.toFixed(1)}`, 300);
-            this.device.values.temperature = value;
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.temperature = value;
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1531,8 +1530,8 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             let result = await this.execCommand('TDS,?', 300);
             let arrDims = result.split(',');
-            this.device.values.tdsFactor = this.device.options.tdsFactor = parseFloat(arrDims[1] || '.54');
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.tdsFactor = this.options.tdsFactor = parseFloat(arrDims[1] || '.54');
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1540,8 +1539,8 @@ export class AtlasEZOec extends AtlasEZO {
     public async setTDSFactor(value: number): Promise<boolean> {
         try {
             await this.execCommand(`TDS,${value.toFixed(2)}`, 300);
-            this.device.values.tdsFactor = this.device.options.tdsFactor = value;
-            //webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
+            this.values.tdsFactor = this.options.tdsFactor = value;
+            //webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1557,56 +1556,55 @@ export class AtlasEZOec extends AtlasEZO {
     public async setName(name: string): Promise<boolean> {
         try {
             await this.execCommand(`Name,${this.escapeName(name)}`, 300);
-            this.device.options.name = this.device.name = this.escapeName(name);
+            this.options.name = this.device.name = this.escapeName(name);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
     }
     public async readProbe(tempCompensation?: number): Promise<number> {
         try {
-            if (typeof this.device.values === 'undefined') this.device.values = {};
             if (typeof tempCompensation !== 'undefined' && this.version < 2.13) {
-                if (tempCompensation !== this.device.values.temperature) await this.setTempCompensation(tempCompensation);
+                if (tempCompensation !== this.values.temperature) await this.setTempCompensation(tempCompensation);
             }
             // This is the expected order of data coming from the probe.
             //EC,TDS,S,SG
-            if (!this.device.options.parameters.conductivity && !this.device.options.parameters.dissolvedSolids
-                && !this.device.options.parameters.salinity && !this.device.options.parameters.specificGravity) {
+            if (!this.options.parameters.conductivity && !this.options.parameters.dissolvedSolids
+                && !this.options.parameters.salinity && !this.options.parameters.specificGravity) {
                 if (!this.i2c.isMock) return Promise.resolve(0);
                 // Return here otherwise we get a bs error.
-                //this.device.values.conductivity = this.device.values.dissolvedSolids = this.device.values.salinity = this.device.values.specificGravity = null;
+                //this.values.conductivity = this.values.dissolvedSolids = this.values.salinity = this.values.specificGravity = null;
                 //return Promise.resolve(0);
             }
             let result = typeof tempCompensation !== 'undefined' && this.version >= 2.13 ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 600);
             
             if (!this.i2c.isMock) {
                 let arrDims = result.split(',');
-                this.device.values.conductivity = this.device.options.parameters.conductivity ? parseFloat(arrDims[0]) : null;
-                this.device.values.dissolvedSolids = this.device.options.parameters.dissolvedSolids ? parseFloat(arrDims[1]) : null;
-                this.device.values.salinity = this.device.options.parameters.salinity ? parseFloat(arrDims[2]) : null;
-                this.device.values.specificGravity = this.device.options.parameters.specificGravity ? parseFloat(arrDims[3]) : null;
+                this.values.conductivity = this.options.parameters.conductivity ? parseFloat(arrDims[0]) : null;
+                this.values.dissolvedSolids = this.options.parameters.dissolvedSolids ? parseFloat(arrDims[1]) : null;
+                this.values.salinity = this.options.parameters.salinity ? parseFloat(arrDims[2]) : null;
+                this.values.specificGravity = this.options.parameters.specificGravity ? parseFloat(arrDims[3]) : null;
             }
             else {
-                this.device.values.conductivity = 6724;
-                this.device.values.dissolvedSolids = 3630.96;
-                this.device.values.salinity = 3.676;
-                this.device.values.specificGravity = 1.04
+                this.values.conductivity = 6724;
+                this.values.dissolvedSolids = 3630.96;
+                this.values.salinity = 3.676;
+                this.values.specificGravity = 1.04
             }
-            if (typeof tempCompensation !== 'undefined') this.device.values.temperature = tempCompensation;
-            if (!this.device.options.parameters.conductivity && this.device.options.parameters.dissolvedSolids) this.device.values.conductivity = this.device.options.tdsFactor !== 0 ? Math.round(this.device.values.dissolvedSolids / this.device.options.tdsFactor) : null;
-            if (!this.device.options.parameters.dissolvedSolids) {
-                this.device.values.dissolvedSolids = isNaN(this.device.values.conductivity) ? null : this.device.values.conductivity * this.device.options.tdsFactor;
+            if (typeof tempCompensation !== 'undefined') this.values.temperature = tempCompensation;
+            if (!this.options.parameters.conductivity && this.options.parameters.dissolvedSolids) this.values.conductivity = this.options.tdsFactor !== 0 ? Math.round(this.values.dissolvedSolids / this.options.tdsFactor) : null;
+            if (!this.options.parameters.dissolvedSolids) {
+                this.values.dissolvedSolids = isNaN(this.values.conductivity) ? null : this.values.conductivity * this.options.tdsFactor;
             }
-            if (!this.device.options.parameters.salinity) {
-                this.device.values.salinity = isNaN(this.device.values.conductivity) ? null : this.toSalinity(this.device.values.conductivity, this.device.values.temperature);
+            if (!this.options.parameters.salinity) {
+                this.values.salinity = isNaN(this.values.conductivity) ? null : this.toSalinity(this.values.conductivity, this.values.temperature);
             }
-            this.device.values.saltLevel = this.device.values.salinity * 1000;
-            if (!this.device.options.parameters.specificGravity) {
-                this.device.values.specificGravity = Math.round(this.toDensity(this.device.values.salinity, this.device.values.temperature) / 1000);
+            this.values.saltLevel = this.values.salinity * 1000;
+            if (!this.options.parameters.specificGravity) {
+                this.values.specificGravity = Math.round(this.toDensity(this.values.salinity, this.values.temperature) / 1000);
             }
             await this.getTempCompensation();
-            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
-            return Promise.resolve(this.device.values.conductivity);
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
+            return Promise.resolve(this.values.conductivity);
         }
         catch (err) { this.logError(err); }
     }
@@ -1615,7 +1613,7 @@ export class AtlasEZOec extends AtlasEZO {
             this.suspendPolling = true;
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
-            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [], points: this.device.options.calibration.points || {} };
+            let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [], points: this.options.calibration.points || {} };
             for (let i = 0; i <= dims.len; i++) {
                 let val = await this.execCommand('Export', 300);
                 dims.data.push(val);
