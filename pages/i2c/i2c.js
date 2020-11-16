@@ -456,7 +456,7 @@
                         self._createFeedDialog('dlgEditI2cFeed', 'Edit I2C Device Feed', feeds);
                     });
                 }).on('removeitem', function (evt) {
-                    $.pic.modalDialog.createConfirm('dlgConfirmDeleteI2cFeed', {
+                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteI2cFeed', {
                         message: 'Are you sure you want to delete Feed?',
                         width: '350px',
                         height: 'auto',
@@ -471,7 +471,7 @@
                                 feed.address = o.address;
                                 feed.id = evt.dataKey;
                                 $.deleteLocalService('/config/i2c/device/feed', feed, function (feeds, status, xhr) {
-                                    $.pic.modalDialog.closeDialog(this);
+                                    $.pic.modalDialog.closeDialog(dlg);
                                     self.dataBind(feeds)
                                 });
                                 //o.feeds.splice(evt.dataKey - 1, 1);
@@ -488,6 +488,8 @@
         },
         _createFeedDialog: function (id, title, f) {
             var self = this, o = self.options, el = self.element;
+            if ($(`div#${id}`).length > 0) return;
+
             var dlg = $.pic.modalDialog.createDialog(id, {
                 width: '547px',
                 height: 'auto',
