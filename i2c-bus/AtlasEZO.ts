@@ -307,6 +307,7 @@ export class AtlasEZOorp extends AtlasEZO {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             await this.readProbe();
+            this.emitFeeds();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -382,7 +383,7 @@ export class AtlasEZOorp extends AtlasEZO {
         catch (err) { this.logError(err); }
         finally { this.suspendPolling = false; }
     }
-    public async getValue(prop: string) {
+    public getValue(prop: string) {
         switch (prop) {
             case 'orp': { return this.device.values.orp; }
             case 'all': { return this.device.values; }
@@ -429,6 +430,7 @@ export class AtlasEZOpH extends AtlasEZO {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             await this.readProbe();
+            this.emitFeeds();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -560,13 +562,13 @@ export class AtlasEZOpH extends AtlasEZO {
         catch (err) { this.logError(err); }
         finally { this.suspendPolling = false; }
     }
-    public async getValue(prop: string) {
+    public getValue(prop: string) {
         switch (prop) {
             case 'ph': { return this.device.values.pH; }
             case 'all': { return this.device.values; }
         }
     }
-    public async setValue(prop: string, value) {
+    public setValue(prop: string, value) {
         switch (prop) {
             case 'tempC':
             case 'tempF':
@@ -605,7 +607,7 @@ export class AtlasEZOpmp extends AtlasEZO {
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
     }
-    public async getValue(prop: string) {
+    public getValue(prop: string) {
         switch (prop) {
             case 'tank': { return this.device.values.tank; }
             case 'dispensing': { return this.device.values.dispensing; }
@@ -616,9 +618,12 @@ export class AtlasEZOpmp extends AtlasEZO {
             case 'dispenseTime': { return this.device.values.dispenseTime; }
             case 'paused': { return this.device.values.paused; }
             case 'all': { return this.device.values; }
+            default:
+                console.log(`EZO-PMP Asked for values ${prop}`);
+                break;
         }
     }
-    public async setValue(prop: string, value) {
+    public setValue(prop: string, value) {
         switch (prop) {
         }
     }
@@ -742,6 +747,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.device.values.maxRate = parseFloat(arrDims[1]);
             await this.getVolumeDispensed();
             this.calcTankLevel();
+            this.emitFeeds();
             //webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             return Promise.resolve(this.device.values);
         }
@@ -754,10 +760,10 @@ export class AtlasEZOpmp extends AtlasEZO {
             let vol = { total: 0, absolute: 0 };
             let result = await this.execCommand('TV,?', 300);
             let arrDims = result.split(',');
-            vol.total = parseFloat(arrDims[1]);
+            this.device.values.total = parseFloat(arrDims[1]);
             result = await this.execCommand('ATV,?', 300);
             arrDims = result.split(',');
-            vol.absolute = parseFloat(arrDims[1]);
+            this.device.values.absolute = parseFloat(arrDims[1]);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -1041,7 +1047,7 @@ export class AtlasEZOprs extends AtlasEZO {
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
     }
-    public async getValue(prop: string) {
+    public getValue(prop: string) {
         switch (prop) {
             case 'pressure': { return this.device.values.pressure; }
             case 'all': { return this.device.values; }
@@ -1065,6 +1071,7 @@ export class AtlasEZOprs extends AtlasEZO {
     public async takeReadings(): Promise<boolean> {
         try {
             await this.readProbe();
+            this.emitFeeds();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1347,7 +1354,7 @@ export class AtlasEZOec extends AtlasEZO {
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
     }
-    public async getValue(prop: string) {
+    public getValue(prop: string) {
         switch (prop) {
             case 'tdsFactor': { return this.device.values.tdsFactor; }
             case 'conductivity': { return this.device.values.conductivity; }
@@ -1360,7 +1367,7 @@ export class AtlasEZOec extends AtlasEZO {
             case 'all': { return this.device.values; }
         }
     }
-    public async setValue(prop: string, value) {
+    public setValue(prop: string, value) {
         switch (prop) {
             case 'tempC':
             case 'tempF':
@@ -1393,6 +1400,7 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             await this.readProbe();
+            this.emitFeeds();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
