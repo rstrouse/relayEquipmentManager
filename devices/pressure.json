@@ -25,6 +25,16 @@
           }
         }
       },
+      "outputs": [
+        {
+          "name": "pressure",
+          "desc": "Presure in the reported units"
+        },
+        {
+          "name": "all",
+          "desc": "All values"
+        }
+      ],
       "options": [
         {
           "dataType": "panel",

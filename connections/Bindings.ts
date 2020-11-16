@@ -5,7 +5,8 @@ import * as fs from "fs";
 import { cont, ConnectionSource } from "../boards/Controller";
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
-const io = require( 'socket.io-client');
+import { i2c } from "../i2c-bus/I2cBus";
+const io = require('socket.io-client');
 //import io from "socket.io-client";
 //import { Server } from "http";
 export class ConnectionBindings {
@@ -16,13 +17,21 @@ export class ConnectionBindings {
     }
     public static loadBindingsByConnectionType(name: string) {
         let conn = typeof name === 'string' ? vMaps.connectionTypes.transformByName(name) : name;
-        let cfgFile = conn.bindings;
         let bindings;
-        if (typeof cfgFile === 'string') {
-            let filePath = path.posix.join(process.cwd(), `/connections/${cfgFile}`);
-            bindings = JSON.parse(fs.readFileSync(filePath, 'utf8').trim());
+        if (conn.val === -1) {
+            bindings = {};
+            bindings.devices = cont.getDeviceInputs();
             bindings.dataTypes = this.dataTypes;
             bindings.operatorTypes = vMaps.operators.toArray();
+        }
+        else {
+            let cfgFile = conn.bindings;
+            if (typeof cfgFile === 'string') {
+                let filePath = path.posix.join(process.cwd(), `/connections/${cfgFile}`);
+                bindings = JSON.parse(fs.readFileSync(filePath, 'utf8').trim());
+                bindings.dataTypes = this.dataTypes;
+                bindings.operatorTypes = vMaps.operators.toArray();
+            }
         }
         return bindings || { events: [], operatorTypes: [], feeds:[] };
     }
@@ -62,6 +71,7 @@ export class ConnectionBroker {
                     break;
             }
         }
+        this.listeners.push(new InternalConnection(cont.getInternalConnection()));
         for (let i = 0; i < this.listeners.length; i++) {
             this.listeners[i].connect();
         }
@@ -86,6 +96,24 @@ export class ServerConnection {
         if (typeof this.server !== 'undefined') this.isOpen = true;
     }
     public send(opts) {}
+}
+class InternalConnection extends ServerConnection {
+    constructor(server: ConnectionSource) { super(server); }
+    public send(opts) {
+        try {
+            // Take the deviceBinding.
+            let arr = opts.deviceBinding.split(':');
+            if (arr[0] === 'i2c') {
+                i2c.setDeviceValue(parseInt(arr[1], 10), parseInt(arr[2], 10), opts.property, opts.value);
+            }
+            else if (arr[0] === 'spi') {
+
+            }
+            else if (arr[0] === 'gpio') {
+
+            }
+        } catch (err) { logger.error(`Error sending on internal connection ${opts.binding}`); }
+    }
 }
 class SocketServerConnection extends ServerConnection {
     private _sock;

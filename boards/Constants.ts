@@ -75,6 +75,7 @@ export class valueMaps {
         //,[2, { name: 'trans', desc: 'Multi Sex'}] // If we need to support individual pin layouts.
     ]);
     public connectionTypes: valueMap = new valueMap([
+        [-1, {name: 'internal', desc: 'Internal', inst: 'Internal connection to defined devices'}],
         [0, { name: 'njspc', desc: 'nodejs-PoolController', inst: 'Socket connection to nodejs-PoolController server.', urn:'urn:schemas-upnp-org:device:PoolController:1', bindings:'njspc.json' }],
         [1, { name: 'webSocket', desc: 'Web Socket', inst: 'Web socket connection.', bindings:'webservice.json' }],
         //[2, { name: 'wsEndpoint', desc: 'Service Endpoint', inst: 'End points that can be called from an external process.' }],
@@ -205,6 +206,29 @@ export class Utils {
             if (!isNaN(parseInt(val, 10))) return parseInt(val, 10) >= 1;
         }
         return false;
+    }
+    public convert = {
+        temperature: {
+            f: {
+                k: (val) => { return (val - 32) * (5 / 9) + 273.15; },
+                c: (val) => { return (val - 32) * (5 / 9); },
+                f: (val) => { return val; }
+            },
+            c: {
+                k: (val) => { return val + 273.15; },
+                c: (val) => { return val; },
+                f: (val) => { return (val * (9 / 5)) + 32; }
+            },
+            k: {
+                k: (val) => { return val; },
+                c: (val) => { return val - 273.15; },
+                f: (val) => { return ((val - 273.15) * (9 / 5)) + 32; }
+            },
+            convertUnits: (val: number, from: string, to: string) => {
+                let fn = this.convert.temperature[from.toLowerCase()];
+                if (typeof fn !== 'undefined' && typeof fn[to.toLowerCase()] === 'function') return fn[to.toLowerCase()](val);
+            }
+        }
     }
 }
 export const vMaps = new valueMaps();

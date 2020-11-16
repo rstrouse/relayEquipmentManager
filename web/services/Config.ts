@@ -54,6 +54,18 @@ export class ConfigRoute {
             }
             return res.status(200).send(opts);
         });
+        app.get('/config/options/i2c/:busNumber/:deviceAddress/feeds', (req, res) => {
+            // Get a listing of all the devices that we can feed internally.  These are destinations
+            // that don't need to go anywhere outside.  This is our internal connection.
+            let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
+            let dev = bus.devices.getItemByAddress(parseInt(req.params.deviceAddress, 10));
+            let opts = {
+                connections: cont.connections.toExtendedArray(),
+                device: dev.getExtended()
+            }
+            opts.connections.unshift(cont.getInternalConnection());
+            return res.status(200).send(opts);
+        });
         app.get('/config/options/i2c/:busNumber/:deviceAddress', (req, res) => {
             let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
             let device = bus.devices.getItemByAddress(parseInt(req.params.deviceAddress, 10));
@@ -88,6 +100,21 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+        app.put('/config/i2c/device/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.i2c.setDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/i2c/device/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.i2c.deleteDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        })
+
         app.delete('/config/i2c/bus', async (req, res, next) => {
             try {
                 await cont.i2c.deleteBus(req.body);
@@ -110,6 +137,8 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+
+
         app.put('/config/spi/:controllerId', async (req, res, next) => {
             try {
                 let spi = await cont.setSpiControllerAsync(parseInt(req.params.controllerId, 10), req.body);

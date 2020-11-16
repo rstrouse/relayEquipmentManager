@@ -16,6 +16,31 @@
           }
         }
       },
+      "inputs": [
+        {
+          "name": "tempC",
+          "desc": "Temperature in C"
+        },
+        {
+          "name": "tempF",
+          "desc": "Temperature in F"
+        },
+        {
+          "name": "tempK",
+          "desc": "Temperature in K"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "pH",
+          "desc": "Probe pH"
+        },
+        {
+          "name": "all",
+          "desc": "All values"
+        }
+
+      ],
       "module": "./AtlasEZO",
       "options": [
         {

@@ -17,6 +17,54 @@
           }
         }
       },
+      "outputs": [
+        {
+          "name": "conductivity",
+          "desc": "Conductivity in μS"
+        },
+        {
+          "name": "dissolvedSolids",
+          "desc": "Dissolved Solids"
+        },
+        {
+          "name": "salinity",
+          "desc": "Salinity"
+        },
+        {
+          "name": "saltLevel",
+          "desc": "Salt Level"
+        },
+        {
+          "name": "specificGravity",
+          "desc": "Specific Gravity"
+        },
+        {
+          "name": "tdsFactor",
+          "desc": "TDS Conversion Factor"
+        },
+        {
+          "name": "temperature",
+          "desc": "Temp Compensation in C"
+        },
+        {
+          "name": "all",
+          "desc": "All values"
+        }
+      ],
+      "inputs": [
+        {
+          "name": "tempC",
+          "desc": "Temperature in C"
+        },
+        {
+          "name": "tempF",
+          "desc": "Temperature in F"
+        },
+        {
+          "name": "tempK",
+          "desc": "Temperature in K"
+        }
+      ],
       "options": [
         {
           "dataType": "panel",
@@ -393,7 +441,10 @@
                 {
                   "field": {
                     "type": "div",
-                    "style": {"lineHeight": "1.2", "fontSize": ".8rem"}
+                    "style": {
+                      "lineHeight": "1.2",
+                      "fontSize": ".8rem"
+                    }
                   },
                   "options": [
                     {

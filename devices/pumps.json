@@ -17,6 +17,44 @@
           }
         }
       },
+      "outputs": [
+        {
+          "name": "dispensing",
+          "desc": "Indicates whether the pump is dispensing"
+        },
+        {
+          "name": "mode",
+          "desc": "Current dispense mode"
+        },
+        {
+          "name": "maxRate",
+          "desc": "Max calibrated dispense rate"
+        },
+        {
+          "name": "totalVolume",
+          "desc": "Total volume dispensed"
+        },
+        {
+          "name": "flowRate",
+          "desc": "Current flow rate being dispensed"
+        },
+        {
+          "name": "dispenseTime",
+          "desc": "Current dispense time"
+        },
+        {
+          "name": "paused",
+          "desc": "Indicates whether the dispense is current paused"
+        },
+        {
+          "name": "tank",
+          "desc": "Entire Tank Object"
+        },
+        {
+          "name": "all",
+          "desc": "All values related to the pump"
+        }
+      ],
       "options": [
         {
           "dataType": "panel",

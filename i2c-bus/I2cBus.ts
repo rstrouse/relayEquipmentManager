@@ -129,12 +129,18 @@ export class i2cController {
             return Promise.resolve(buses);
         } catch (err) { logger.error(err); Promise.reject(err); }
     }
+    public setDeviceValue(busId: number, deviceId: number, prop: string, value) {
+        let bus = this.buses.find(elem => elem.busId === busId);
+        if (typeof bus !== 'undefined') bus.setDeviceValue(deviceId, prop, value);
+
+    }
 }
 export class i2cBus {
     //private _opts;
     private _i2cBus: PromisifiedBus | mockI2cBus;
     public devices: i2cDeviceBase[] = [];
     public busNumber: number;
+    public busId: number;
     constructor() { }
     public get isMock(): boolean { return utils.makeBool(this._i2cBus.isMock); }
     public async scanBus(start: number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
@@ -172,6 +178,7 @@ export class i2cBus {
     }
     public async initAsync(bus: I2cBus) {
         try {
+            this.busId = bus.id;
             this.busNumber = bus.busNumber;
             logger.info(`Initializing i2c Bus #${bus.busNumber}`);
             this._i2cBus = await i2c.i2cBus.openPromisified(bus.busNumber, {});
@@ -262,45 +269,46 @@ export class i2cBus {
             return Promise.resolve();
         } catch (err) { logger.error(err); }
     }
+    public setDeviceValue(deviceId: number, prop: string, value) {
+        let device = this.devices.find(elem => elem.device.id === deviceId);
+        if (typeof device !== 'undefined') device.setValue(prop, value);
+    }
 }
 class i2cFeed {
     public server: ServerConnection;
-    public frequency: number;
-    public eventName: string;
-    public property: string;
-    public lastSent: number;
-    public value: number;
-    public changesOnly: boolean;
-    private _timerSend: NodeJS.Timeout;
+    //public frequency: number;
+    //public eventName: string;
+    //public property: string;
+    //public lastSent: number;
+    //public value: number;
+    //public changesOnly: boolean;
+    //private _timerSend: NodeJS.Timeout;
+    public lastSent;
     public translatePayload: Function;
+    public feed: I2cDeviceFeed;
     constructor(feed: I2cDeviceFeed) {
         this.server = connBroker.findServer(feed.connectionId);
-        this.frequency = feed.frequency * 1000;
-        this.eventName = feed.eventName;
-        this.property = feed.property;
-        this.changesOnly = feed.changesOnly;
-        this._timerSend = setTimeout(() => this.send(), this.frequency);
+        //this.frequency = feed.frequency * 1000;
+        //this.eventName = feed.eventName;
+        //this.property = feed.property;
+        //this.changesOnly = feed.changesOnly;
+        this.feed = feed;
+        //this._timerSend = setTimeout(() => this.send(), this.frequency);
         if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0)
             this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
     }
-    public send() {
-        if (this._timerSend) clearTimeout(this._timerSend);
-        if (typeof this.value !== 'undefined') {
-            if (!this.changesOnly || this.lastSent !== this.value) {
-                this.server.send({
-                    eventName: this.eventName,
-                    property: this.property,
-                    value: typeof this.translatePayload === 'function' ? this.translatePayload(this, this.value) : this.value
-                });
-                this.lastSent = this.value;
-            }
+    public send(dev: i2cDeviceBase) {
+        let value = dev.getValue(this.feed.sendValue) || '';
+        if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
+            this.server.send({
+                eventName: this.feed.eventName,
+                property: this.feed.property,
+                value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
+                deviceBinding: this.feed.deviceBinding
+            });
         }
-        this._timerSend = setTimeout(() => this.send(), this.frequency);
     }
-    public closeAsync() {
-        if (typeof this._timerSend !== 'undefined') clearTimeout(this._timerSend);
-        this._timerSend = null;
-    }
+    public closeAsync() { }
 }
 const i2cBits = {
     I2C_FUNC_I2C: 0x00000001,
@@ -413,7 +421,9 @@ export class i2cDeviceBase {
     constructor(i2c, dev: I2cDevice) {
         this.i2c = i2c;
         this.device = dev;
+        this.initFeeds();
     }
+    public feeds: i2cFeed[] = [];
     public readable: boolean = false;
     public writable: boolean = false;
     public status: string;
@@ -444,6 +454,19 @@ export class i2cDeviceBase {
         }
         catch (err) { logger.error(err); }
     }
+    public initFeeds() {
+        this.feeds = [];
+        for (let i = 0; i < this.device.feeds.length; i++) {
+            let f = this.device.feeds.getItemByIndex(i);
+            this.feeds.push(new i2cFeed(f));
+        }
+    }
+    public getValue(prop) { return this.device.values[prop]; }
+    public setValue(prop, value) { this.device.values[prop] = value; }
+    public emitFeeds() {
+        for (let i = 0; i < this.feeds.length; i++) {
+            this.feeds[i].send(this);
+        }
+    }
 }
-
 export let i2c = new i2cController();

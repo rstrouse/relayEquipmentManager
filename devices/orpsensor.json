@@ -17,6 +17,17 @@
           }
         }
       },
+      "outputs": [
+        {
+          "name": "orp",
+          "desc": "ORP value in mV"
+        },
+        {
+          "name": "all",
+          "desc": "All values"
+        }
+
+      ],
       "options": [
         {
           "dataType": "panel",

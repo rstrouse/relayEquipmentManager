@@ -59,7 +59,7 @@
           }
         }
       },
-      "interfaces": [ "spi", "i2c" ]
+      "interfaces": [ "spi", "i2cAdc" ]
     },
     {
       "id": 2,
@@ -304,7 +304,7 @@
           }
         }
       },
-      "interfaces": [ "spi", "i2c" ]
+      "interfaces": [ "spi", "i2cAdc" ]
     },
     {
       "id": 3,
@@ -321,6 +321,24 @@
           }
         }
       },
+      "outputs": [
+        {
+          "name": "tempF",
+          "desc": "Degrees Fahrenheit"
+        },
+        {
+          "name": "tempC",
+          "desc": "Degrees Celcius"
+        },
+        {
+          "name": "tempK",
+          "desc": "Degrees Kelvin"
+        },
+        {
+          "name": "all",
+          "desc": "All values"
+        }
+      ],
       "options": [
         {
           "dataType": "panel",

@@ -846,6 +846,10 @@ table.slist-table > tbody > tr > td:nth-child(n+2),
 table.crud-table > tbody > tr > td:nth-child(n+2) {
   border-left: solid 1px silver; }
 
+div.crud-header {
+  width: inherit;
+  font-size: .8rem; }
+
 span.crud-row-btn {
   width: 1.4rem;
   display: inline-block;
@@ -855,11 +859,13 @@ span.crud-row-btn {
 .slist-header table,
 .crud-header table {
   border-collapse: collapse;
-  border-bottom: solid 2px black; }
+  border-bottom: solid 2px black;
+  width: inherit; }
 
 .slist-table,
 .crud-table {
-  border-collapse: collapse; }
+  border-collapse: collapse;
+  width: inherit; }
 
 td.crud-buttons {
   width: 47px; }
@@ -1223,5 +1229,5 @@ label.chemTank-label {
 div.picChemTank[data-setattributes=true] {
   cursor: pointer; }
 
-pnl-i2cdevice-feeds {
-  max-width: 35rem; }
+.pnl-i2cdevice-feeds {
+  max-width: 37rem; }
