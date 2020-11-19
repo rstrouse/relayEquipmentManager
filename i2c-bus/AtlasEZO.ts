@@ -8,7 +8,7 @@
 //EZO-RGB Color Sensor
 //*EZO-PMP(Peristaltic Pump)
 //*EZO-PRS(Pressure Sensor)
-//EZO-HUM sensor(Humidity Sensor)
+//*EZO-HUM sensor(Humidity Sensor)
 
 import { logger } from "../logger/Logger";
 import { vMaps, valueMap, utils } from "../boards/Constants";
@@ -1672,4 +1672,163 @@ export class AtlasEZOec extends AtlasEZO {
         // Return it in 4 decimal places.
         return Math.round((rho + factA * salinity + factB * Math.pow(salinity, (3 / 2)) + 0.00048314 * Math.pow(salinity, 2)) * 1000) / 1000;
     }
+}
+export class AtlasEZOhum extends AtlasEZO {
+    public async initAsync(deviceType): Promise<boolean> {
+        try {
+            this.stopPolling();
+            this.options.name = await this.getName();
+            await this.getInfo();
+            await this.getLedEnabled();
+            this.options.isProtocolLocked = await this.isProtocolLocked();
+            await this.getParameterInfo();
+            await this.getAlarm();
+            this.options.readInterval = this.options.readInterval || deviceType.readings.humidity.interval.default;
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.options.name;
+            this.pollDeviceInformation();
+            this.pollReadings();
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.resolve(false); }
+    }
+    public getValue(prop: string) {
+        switch (prop) {
+            case 'temperature': { return this.values.temperature; }
+            case 'humidity': { return this.values.humidity; }
+            case 'dewpoint': { return this.values.dewpoint; }
+            case 'units': { return this.values.units; }
+            case 'all': { return this.values; }
+        }
+    }
+    public setValue(prop: string, value) {
+        switch (prop) {
+        }
+    }
+    public async setOptions(opts): Promise<any> {
+        try {
+            this.suspendPolling = true;
+            if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
+            if (typeof opts.units === 'string' && ['C', 'F'].includes(opts.units.toUpperCase())) { await this.setUnits(opts.units); }
+            if (typeof opts.alarm !== 'undefined' &&
+                (this.options.alarm.enable !== opts.alarm.enable || this.options.alarm.humidity !== opts.alarm.humidity || this.options.alarm.tolerance !== opts.alarm.tolerance)) {
+                await this.setAlarm(utils.makeBool(opts.alarm.enable), opts.alarm.humidity, opts.alarm.tolerance);
+            }
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false };
+    }
+    public async takeReadings(): Promise<boolean> {
+        try {
+            if (this._timerRead) clearTimeout(this._timerRead);
+            await this.readProbe();
+            this.emitFeeds();
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+    }
+    public async setUnits(value: string): Promise<boolean> {
+        try {
+            if (!['C', 'F'].includes(value.toUpperCase())) return Promise.reject(new Error(`Cannot set units to ${value}`));
+            let units = this.values.units || 'C';
+            this.values.units = value.toUpperCase();
+            this.values.temperature = utils.convert.temperature.convertUnits(this.values.temperature, units, value);
+            this.values.dewpoint = utils.convert.temperature.convertUnits(this.values.dewpoint, units, value);
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+    }
+    public async getParameterInfo(): Promise<boolean> {
+        try {
+            let result = await this.execCommand('O,?', 300);
+            let arrDims = result.toUpperCase().split(',');
+            if (typeof this.options.parameters === 'undefined') this.options.parameters = {};
+
+            this.options.parameters.humidity = arrDims.indexOf('HUM') >= 0;
+            this.options.parameters.temperature = arrDims.indexOf('T') >= 0;
+            this.options.parameters.dewpoint = arrDims.indexOf('DEW') > 0;
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+    }
+    public async getName(): Promise<string> {
+        try {
+            let result = await this.execCommand('Name,?', 300);
+            let arrDims = result.split(',');
+            return Promise.resolve(arrDims[1] || '');
+        }
+        catch (err) { this.logError(err); }
+    }
+    public async setName(name: string): Promise<boolean> {
+        try {
+            await this.execCommand(`Name,${this.escapeName(name)}`, 300);
+            this.options.name = this.device.name = this.escapeName(name);
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+    }
+    public async readProbe(): Promise<number> {
+        try {
+            // This is the expected order of data coming from the probe.
+            //HUM,T,Dew
+            if (!this.options.parameters.humidity && !this.options.parameters.temperature && !this.options.parameters.dewpoint) {
+                if (!this.i2c.isMock) return Promise.resolve(0);
+            }
+            let result = await this.execCommand('R', 300);
+            let units = typeof this.values.units !== 'undefined' ? this.values.units : this.values.units = 'C';
+            if (!this.i2c.isMock) {
+                let arrDims = result.split(',');
+                this.values.conductivity = this.options.parameters.humidity ? parseFloat(arrDims[0]) : null;
+                this.values.temperature = this.options.parameters.temperature ? utils.convert.temperature.convertUnits(parseFloat(arrDims[1]), 'C', units) : null;
+                this.values.dewpoint = this.options.parameters.dewpoint ? utils.convert.temperature.convertUnits(parseFloat(arrDims[2]), 'C', units) : null;
+            }
+            else {
+                this.values.humidity = 30;
+                this.values.temperature = 50;
+                this.values.dewpoint = 37;
+            }
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
+            return Promise.resolve(this.values.conductivity);
+        }
+        catch (err) { this.logError(err); }
+    }
+    public async setAlarm(enable: boolean, humidity?: number, tolerance?: number): Promise<boolean> {
+        try {
+            this.suspendPolling = true;
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, pressure: 0, tolerance: 0 };
+            if (enable) {
+                if (typeof humidity === 'undefined' || typeof tolerance === 'undefined') return Promise.reject(new Error('Alarm must include a humidity setting and tolerance.'));
+                await this.execCommand(`Auto,en,1`, 300);
+                await this.execCommand(`Alarm,${humidity}`, 300);
+                await this.execCommand(`Alarm,tol,${tolerance}`, 300);
+                this.options.alarm.enable = enable;
+                this.options.alarm.humidity = humidity;
+                this.options.alarm.tolerance = tolerance;
+            }
+            else {
+                await this.execCommand(`Auto,en,0`, 300);
+                this.options.alarm.enable = enable;
+            }
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+        finally { this.suspendPolling = false; }
+    }
+    public async getAlarm(): Promise<boolean> {
+        try {
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, humidity: 0, tolerance: 0 };
+            let result = await this.execCommand('Auto,?', 300);
+            let arrDims = result.split(',');
+            this.options.alarm.enable = arrDims.length > 2;
+            this.options.alarm.humidity = parseFloat(arrDims[1]);
+            this.options.alarm.tolerance = parseFloat(arrDims[2]);
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.reject(err); }
+    }
+
 }

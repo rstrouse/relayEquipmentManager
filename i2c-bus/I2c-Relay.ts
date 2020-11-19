@@ -14,6 +14,8 @@ export class i2cRelay extends i2cDeviceBase {
         pcf8574: [],
         seeed: [0x06]
     };
+    public get relays() { return typeof this.values.relays === 'undefined' ? this.values.relays = [] : this.values.relays; }
+    public set relays(val) { this.values.relays = val; }
     protected getCommandByte(ord: number): number {
         let arr = i2cRelay.commandBytes[this.device.options.controllerType];
         if (typeof arr !== 'undefined') return arr.length > ord ? arr[ord] : undefined;
@@ -29,15 +31,6 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { logger.error(err); }
     }
-    protected async readWordCommand(command: number): Promise<number> {
-        try {
-            let r = await this.i2c.readWord(this.device.address, command);
-            //logger.info(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
-            return Promise.resolve(r);
-        }
-        catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
-    }
-
     protected async readCommand(command: number): Promise<number> {
         try {
             let r = await this.i2c.readByte(this.device.address, command);
@@ -47,13 +40,17 @@ export class i2cRelay extends i2cDeviceBase {
         catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
     }
 
-    public async stopReadContinuous() { if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead); return Promise.resolve(); }
+    public async stopReadContinuous() {
+        if (typeof this._timerRead !== 'undefined')
+            clearTimeout(this._timerRead);
+        return Promise.resolve();
+    }
     public async readContinuous(): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
-            let orp = await this.readAllRelayStates();
+            await this.readAllRelayStates();
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval || 500);
-            return Promise.resolve(orp);
+            return Promise.resolve(true);
         }
         catch (err) { logger.error(err); }
     }
@@ -62,7 +59,12 @@ export class i2cRelay extends i2cDeviceBase {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             if (typeof this.device.options === 'undefined') this.device.options = {};
-            if (typeof this.device.options.relays === 'undefined') this.device.options.relays = [];
+            // Temporary for now so we can move all the relays from the options object to values.
+            if (typeof this.device.options.relays !== 'undefined' &&
+                (typeof this.device.values.relays === 'undefined' || this.device.values.relays.length === 0)) {
+                this.relays = this.device.options.relays;
+                this.device.options.relays = undefined;
+            }
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
             if (typeof this.device.options.idType === 'undefined' || this.device.options.idType.length === 0) this.device.options.idType = 'bit';
@@ -82,9 +84,9 @@ export class i2cRelay extends i2cDeviceBase {
                             await this.sendCommand([0x01, 0x00]);
                         }
                         byte = await this.readCommand(0x00) >> 4;
-                        this.device.options.relays.sort((a, b) => { return a.id - b.id; });
-                        for (let i = 0; i < this.device.options.relays.length; i++) {
-                            let relay = this.device.options.relays[i];
+                        this.relays.sort((a, b) => { return a.id - b.id; });
+                        for (let i = 0; i < this.relays.length; i++) {
+                            let relay = this.relays[i];
                             let state = utils.makeBool(byte & (1 << (relay.id - 1)));
                             if (state !== relay.state) {
                                 relay.state = state;
@@ -101,9 +103,9 @@ export class i2cRelay extends i2cDeviceBase {
                             await this.sendCommand([0x01, 0x00]);
                         }
                         byte = await this.readCommand(0x00);
-                        this.device.options.relays.sort((a, b) => { return a.id - b.id; });
-                        for (let i = 0; i < this.device.options.relays.length; i++) {
-                            let relay = this.device.options.relays[i];
+                        this.relays.sort((a, b) => { return a.id - b.id; });
+                        for (let i = 0; i < this.relays.length; i++) {
+                            let relay = this.relays[i];
                             let state = utils.makeBool(byte & (1 << (relay.id - 1)));
                             if (state !== relay.state) {
                                 relay.state = state;
@@ -115,9 +117,9 @@ export class i2cRelay extends i2cDeviceBase {
                 case 'bit':
                     let bmVals = [];
                     // Force a sort so that it gets the correct address.
-                    this.device.options.relays.sort((a, b) => { return a.id - b.id; });
-                    for (let i = 0; i < this.device.options.relays.length; i++) {
-                        let relay = this.device.options.relays[i];
+                    this.relays.sort((a, b) => { return a.id - b.id; });
+                    for (let i = 0; i < this.relays.length; i++) {
+                        let relay = this.relays[i];
                         // Get the byte map data from the controller.
                         let bmOrd = Math.floor(relay.id / 8);
                         let cmdByte = this.getCommandByte(bmOrd);
@@ -131,8 +133,8 @@ export class i2cRelay extends i2cDeviceBase {
                     }
                     break;
                 default:
-                    for (let i = 0; i < this.device.options.relays.length; i++) {
-                        await this.readRelayState(this.device.options.relays[i]);
+                    for (let i = 0; i < this.relays.length; i++) {
+                        await this.readRelayState(this.relays[i]);
                     }
                     break;
             }
@@ -196,7 +198,7 @@ export class i2cRelay extends i2cDeviceBase {
             await this.stopReadContinuous();
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.device.options.name = this.device.name = opts.name;
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
-            if (typeof opts.relays !== 'undefined') this.device.options.relays = opts.relays;
+            if (typeof opts.relays !== 'undefined') this.relays = opts.relays;
             if (typeof opts.controllerType !== 'undefined') this.device.options.controllerType = opts.controllerType;
             if (typeof opts.idType !== 'undefined') this.device.options.idType = opts.idType;
             this.readContinuous();
@@ -204,6 +206,16 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { logger.error(err); Promise.reject(err); }
     }
+    public async setValues(vals): Promise<any> {
+        try {
+            await this.stopReadContinuous();
+            if (typeof vals.relays !== 'undefined') this.relays = vals.relays;
+            this.readContinuous();
+            Promise.resolve(this.device.values);
+        }
+        catch (err) { logger.error(err); Promise.reject(err); }
+    }
+
     public async closeAsync(): Promise<void> {
         try {
             await this.stopReadContinuous();
@@ -212,23 +224,11 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { return Promise.reject(err); }
     }
-    //protected transformId(id:number): string {
-    //    let tid = id.toString();
-    //    switch (this.device.options.idType) {
-    //        case 'bit':
-    //            tid = (0x01 << (id - 1)).toString();
-    //            break;
-    //        case 'default':
-    //            break;
-    //    }
-    //    return tid;
-    //}
     public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
         try {
-            let relay = this.device.options.relays.find(elem => { return elem.id === opts.id });
+            let relay = this.relays.find(elem => { return elem.id === opts.id });
             let command: number[] = [];
             if (typeof relay === 'undefined') {
-                console.log(this.device.options.relays);
                 return Promise.reject(`${this.device.name} - Invalid Relay id: ${opts.id}`);
             }
             // Make the relay command.
@@ -238,8 +238,8 @@ export class i2cRelay extends i2cDeviceBase {
                         await this.readAllRelayStates();
                         let byte = 0x00;
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
-                        for (let i = 0; i < this.device.options.relays.length; i++) {
-                            let r = this.device.options.relays[i];
+                        for (let i = 0; i < this.relays.length; i++) {
+                            let r = this.relays[i];
                             if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
                                 byte |= (1 << (r.id - 1));
                             }
@@ -252,8 +252,8 @@ export class i2cRelay extends i2cDeviceBase {
                         await this.readAllRelayStates();
                         let byte = 0x00;
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
-                        for (let i = 0; i < this.device.options.relays.length; i++) {
-                            let r = this.device.options.relays[i];
+                        for (let i = 0; i < this.relays.length; i++) {
+                            let r = this.relays[i];
                             if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
                                 byte |= (1 << (r.id - 1));
                             }
@@ -269,8 +269,8 @@ export class i2cRelay extends i2cDeviceBase {
                         let bmOrd = Math.floor((relay.id - 1) / 8);
                         let cmdByte = this.getCommandByte(bmOrd);
                         let byte = 0x00;
-                        for (let i = bmOrd * 8; i < this.device.options.relays.length && i < (bmOrd * 8) + 8; i++) {
-                            let r = this.device.options.relays[i];
+                        for (let i = bmOrd * 8; i < this.relays.length && i < (bmOrd * 8) + 8; i++) {
+                            let r = this.relays[i];
                             if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
                                 byte |= (1 << (r.id - (bmOrd * 8) - 1));
                             }

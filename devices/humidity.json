@@ -1,0 +1,505 @@
+﻿{
+  "category": "Chemistry Sensors",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 225,
+      "name": "Atlas EZO-HUM",
+      "deviceClass": "AtlasEZOhum",
+      "module": "./AtlasEZO",
+      "readings": {
+        "humidity": {
+          "label": "Humidity",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "outputs": [
+        {
+          "name": "humidity",
+          "desc": "Humidity %"
+        },
+        {
+          "name": "temperature",
+          "desc": "Air Temp"
+        },
+        {
+          "name": "dewpiont",
+          "desc": "Dewpoint"
+        },
+        {
+          "name": "units",
+          "desc": "Units"
+        },
+        {
+          "name": "all",
+          "desc": "All values"
+        }
+      ],
+      "inputs": [],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
+              }
+            },
+            {
+              "field": {
+                "type": "div"
+              },
+              "options": [
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.isProtocolLocked",
+                    "labelText": "Lock Protocol"
+                  }
+                },
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.ledEnabled",
+                    "labelText": "LED Enabled",
+                    "style": { "marginLeft": "1rem" }
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Device Info",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                },
+                "cssClass": "i2cDeviceInformation"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Firmware",
+                    "binding": "info.firmware",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "lineHeight": ".8" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Last Restart",
+                        "binding": "info.lastRestart.name",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "-",
+                        "binding": "info.lastRestart.desc",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        }
+                      }
+                    }
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Vcc Voltage",
+                    "binding": "info.vcc",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.2em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5.5rem" }
+                    },
+                    "units": "volts"
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "lineHeight": "1.2",
+                      "fontSize": ".8rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Humidity",
+                        "binding": "values.humidity",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---.-",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "6.4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "%"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "lineHeight": "1.2",
+                      "fontSize": ".8rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Dewpoint",
+                        "binding": "values.dewpoint",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---.-",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "6.4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "&deg;"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "span",
+                        "binding": "values.units"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "lineHeight": "1.2",
+                      "fontSize": ".8rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Temperature",
+                        "binding": "values.temperature",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---.-",
+                        "style": {
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "6.4rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "&deg;"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "span",
+                        "binding": "values.units"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            }
+          },
+          "options": [
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Parameters",
+                "style": {
+                  "display": "block"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "inline-block",
+                      "verticalAlign": "top",
+                      "marginRight": ".25rem"
+                    }
+                  },
+                  "options": [
+                    {
+                      "bind": "options.units",
+                      "default": "C",
+                      "field": {
+                        "type": "pickList",
+                        "bind": "options.units",
+                        "bindColumn": 0,
+                        "displayColumn": 1,
+                        "labelText": "Units",
+                        "columns": [
+                          {
+                            "binding": "val",
+                            "text": "units",
+                            "hidden": true
+                          },
+                          {
+                            "binding": "desc",
+                            "text": "Units"
+                          }
+                        ],
+                        "items": [
+                          {
+                            "val": "F",
+                            "desc": "Fahrenheit"
+                          },
+                          {
+                            "val": "C",
+                            "desc": "Celsius"
+                          }
+                        ],
+                        "style": { "display": "block" },
+                        "labelAttrs": { "style": { "width": "2.7rem" } },
+                        "inputAttrs": { "style": { "width": "5.5rem" } }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "inline-block",
+                      "verticalAlign": "top"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div",
+                        "html": "Output Values",
+                        "style": { "fontSize": ".8rem" }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "hr",
+                        "style": { "margin": "2px" }
+                      }
+                    },
+                    {
+                      "default": true,
+                      "field": {
+                        "type": "checkbox",
+                        "bind": "options.parameters.humidity",
+                        "labelText": "Humidity",
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "default": true,
+                      "field": {
+                        "type": "checkbox",
+                        "bind": "options.parameters.dewpoint",
+                        "labelText": "Dewpoint",
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "default": true,
+                      "field": {
+                        "type": "checkbox",
+                        "bind": "options.parameters.temperature",
+                        "labelText": "Temperature",
+                        "style": { "display": "block" }
+                      }
+                    }
+                  ]
+                }
+
+              ]
+            },
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Monitor Alarm"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "17rem" },
+                    "html": "These settings will trigger the alarm pin when the humidity is exceeded.  This trigger will not be identified in the REM although it could be wired to a GPIO pin to reflect the alarm state.<hr style=\"margin:2px\"></hr>Provide the humidity trigger as well as the tolerance for when the alarm will reset.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.enable",
+                    "type": "checkbox",
+                    "labelText": "Enable",
+                    "style": { "display": "block" }
+                  }
+                },
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.humidity",
+                    "type": "valueSpinner",
+                    "labelText": "Humidity",
+                    "canEdit": true,
+                    "min": 0,
+                    "max": 100,
+                    "dataType": "number",
+                    "fmtMask": "#,##0.##",
+                    "style": { "display": "block" },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "inputAttrs": { "style": { "width": "5rem" } },
+                    "units": "%"
+                  }
+                },
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.tolerance",
+                    "type": "valueSpinner",
+                    "labelText": "Tolerance",
+                    "canEdit": true,
+                    "min": 0,
+                    "max": 100,
+                    "dataType": "number",
+                    "fmtMask": "#,##0.##",
+                    "style": { "display": "block" },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "inputAttrs": { "style": { "width": "5rem" } },
+                    "units": "%"
+                  }
+                }
+              ]
+            }
+
+          ]
+        }
+      ],
+      "interfaces": [ "i2c" ]
+    }
+  ]
+}

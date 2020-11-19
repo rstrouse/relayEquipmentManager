@@ -784,7 +784,7 @@
             line = $('<div></div>').appendTo(line);
             $('<hr></hr>').appendTo(line);
             line = $('<div></div>').appendTo(line);
-            $('<div></div>').appendTo(el).css({ width: '21rem' }).relayBoard({ binding: 'options.relays' })
+            $('<div></div>').appendTo(el).css({ width: '21rem' }).relayBoard({ binding: 'values.relays' })
                 .on('saveRelay', function (evt) {
                 })
                 .on('clickRelay', function (evt) {

@@ -849,6 +849,7 @@ export class I2cBus extends ConfigItem {
                 }
                 else {
                     if (typeof dev.options !== 'undefined') await ddev.setOptions(dev.options);
+                    if (typeof dev.values !== 'undefined') await ddev.setValues(dev.values);
                 }
             }
             let addr = this.addresses.find(elem => elem.address === device.address);

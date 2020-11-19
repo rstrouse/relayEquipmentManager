@@ -463,6 +463,7 @@ export class i2cDeviceBase {
         }
         catch (err) { logger.error(err); }
     }
+    public async setValues(vals: any): Promise<any> { return Promise.resolve(this); }
     public initFeeds() {
         this.feeds = [];
         for (let i = 0; i < this.device.feeds.length; i++) {
