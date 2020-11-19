@@ -153,8 +153,9 @@
                 }).on('selchanged', function (evt) {
                     self.createDeviceOptions(evt.newItem);
                 });
-                $('<div></div>').appendTo(line).valueSpinner({ required: true, binding: binding + 'sampling', labelText: 'Sampling', min: 1, max: 100, labelAttrs: { style: { width: '5rem' } } });
-                var dt = o.deviceTypes.find(elem => elem.id === i2cDevice.device.typeId);
+                var samp = $('<div></div>').appendTo(line).valueSpinner({ required: true, binding: binding + 'sampling', labelText: 'Sampling', min: 1, max: 100, labelAttrs: { style: { width: '5rem' } } }).hide();
+                var dt = o.deviceTypes.find(elem => elem.id === i2cDevice.device.typeId) || { id: i2cDevice.device.typeId, takeSamples: false };
+                if (dt.takeSamples) samp.show();
                 var tabBar = $('<div></div>').appendTo(pnl).tabBar().on('tabchange', function (evt) {
                     evt.stopPropagation();
                 }).hide();

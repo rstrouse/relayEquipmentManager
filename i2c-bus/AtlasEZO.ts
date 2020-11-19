@@ -1033,19 +1033,22 @@ export class AtlasEZOprs extends AtlasEZO {
             this.options.name = await this.getName();
             await this.getInfo();
             this.options.isProtoLocked = await this.isProtocolLocked();
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+            else this.device.name = this.options.name;
+
             await this.getLedEnabled();
             //this.options.status = await this.getStatus();
             this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
             await this.getUnits(),
             await this.getDecPlaces()
             await this.getAlarm();
-            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.options.name;
-            setTimeout(() => { this.pollDeviceInformation() }, 500);
-            setTimeout(() => { this.pollReadings(); }, 1000);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
+        finally {
+            setTimeout(() => { this.pollDeviceInformation() }, 3000);
+            setTimeout(() => { this.pollReadings(); }, 5000);
+        }
     }
     public getValue(prop: string) {
         switch (prop) {
