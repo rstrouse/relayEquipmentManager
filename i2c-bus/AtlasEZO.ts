@@ -214,7 +214,7 @@ export class AtlasEZO extends i2cDeviceBase {
             this.device.info.firmware = arrDims[2] || '';
             return Promise.resolve({ device: arrDims[1] || '', firmware: arrDims[2] || '' });
         }
-        catch (err) { logger.error(`Error getting info ${err.message}`); return Promise.reject(err); }
+        catch (err) { logger.error(`Error getting info ${typeof err !== 'undefined' ? err.message : ''}`); return Promise.reject(err); }
     }
     public async getDeviceInformation(): Promise<boolean> {
         try {
@@ -222,7 +222,7 @@ export class AtlasEZO extends i2cDeviceBase {
             await this.getStatus();
             webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, options: { deviceInfo: this.device.info } });
         }
-        catch (err) { logger.error(`Error retrieving device status: ${err.message}`); return Promise.reject(err); }
+        catch (err) { logger.error(`Error retrieving device status: ${typeof err !== 'undefined' ? err.message : ''}`); return Promise.reject(err); }
     }
     public async clearCalibration(): Promise<I2cDevice> {
         try {
@@ -291,6 +291,11 @@ export class AtlasEZOorp extends AtlasEZO {
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
+        finally {
+            setTimeout(() => { this.pollDeviceInformation(); }, 2000);
+            setTimeout(() => { this.pollReadings(); }, 5000);
+        }
+
     }
     public async setOptions(opts): Promise<any> {
         try {
@@ -311,6 +316,7 @@ export class AtlasEZOorp extends AtlasEZO {
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
+
     }
     public async getCalibrated(): Promise<boolean> {
         try {
@@ -406,11 +412,13 @@ export class AtlasEZOpH extends AtlasEZO {
             this.options.readInterval = this.options.readInterval || deviceType.readings.pH.interval.default;
             if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.escapeName(this.options.name);
-            this.pollDeviceInformation();
-            this.pollReadings();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
+        finally {
+            setTimeout(() => { this.pollDeviceInformation(); }, 2000);
+            setTimeout(() => { this.pollReadings(); }, 5000);
+        }
     }
     public async setOptions(opts): Promise<any> {
         try {
@@ -751,7 +759,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             this.emitFeeds();
             return Promise.resolve(this.dispense);
         }
-        catch (err) { logger.error(new Error(`Could not get dispense status: ${err.message}`)); }
+        catch (err) { logger.error(new Error(`Could not get dispense status: ${typeof err !== 'undefined' ? err.message : ''}`)); }
         finally { if (this.dispense.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, this.options.readInterval); this.suspendPolling = false; }
     }
     public async getVolumeDispensed(): Promise<boolean> {
@@ -1061,6 +1069,7 @@ export class AtlasEZOprs extends AtlasEZO {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
             if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, pressure: null, tolerance: null };
             if (typeof opts.alarm !== 'undefined' &&
                 (this.options.alarm.enable !== opts.alarm.enable || this.options.alarm.pressure !== opts.alarm.pressure || this.options.alarm.tolerance !== opts.alarm.tolerance)) {
                 await this.setAlarm(utils.makeBool(opts.alarm.enable), opts.alarm.pressure, opts.alarm.tolerance);
@@ -1215,11 +1224,13 @@ export class AtlasEZOrtd extends AtlasEZO {
             this.options.readInterval = this.options.readInterval || deviceType.readings.temperature.interval.default;
             if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.options.name;
-            setTimeout(() => { this.pollDeviceInformation(); }, 500);
-            setTimeout(() => { this.pollReadings(); }, 1000);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
+        finally {
+            setTimeout(() => { this.pollDeviceInformation(); }, 2000);
+            setTimeout(() => { this.pollReadings(); }, 5000);
+        }
     }
     public async setOptions(opts): Promise<any> {
         try {
@@ -1350,11 +1361,13 @@ export class AtlasEZOec extends AtlasEZO {
             this.options.readInterval = this.options.readInterval || deviceType.readings.conductivity.interval.default;
             if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.options.name;
-            this.pollDeviceInformation();
-            this.pollReadings();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
+        finally {
+            setTimeout(() => { this.pollDeviceInformation(); }, 2000);
+            setTimeout(() => { this.pollReadings(); }, 5000);
+        }
     }
     public getValue(prop: string) {
         switch (prop) {
@@ -1689,11 +1702,13 @@ export class AtlasEZOhum extends AtlasEZO {
             this.options.readInterval = this.options.readInterval || deviceType.readings.humidity.interval.default;
             if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.options.name;
-            this.pollDeviceInformation();
-            this.pollReadings();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
+        finally {
+            setTimeout(() => { this.pollDeviceInformation(); }, 2000);
+            setTimeout(() => { this.pollReadings(); }, 5000);
+        }
     }
     public getValue(prop: string) {
         switch (prop) {
@@ -1716,6 +1731,7 @@ export class AtlasEZOhum extends AtlasEZO {
             if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
             if (typeof opts.units === 'string' && ['C', 'F'].includes(opts.units.toUpperCase())) { await this.setUnits(opts.units); }
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, humidity: null, tolerance: null };
             if (typeof opts.alarm !== 'undefined' &&
                 (this.options.alarm.enable !== opts.alarm.enable || this.options.alarm.humidity !== opts.alarm.humidity || this.options.alarm.tolerance !== opts.alarm.tolerance)) {
                 await this.setAlarm(utils.makeBool(opts.alarm.enable), opts.alarm.humidity, opts.alarm.tolerance);
@@ -1806,8 +1822,8 @@ export class AtlasEZOhum extends AtlasEZO {
             if (enable) {
                 if (typeof humidity === 'undefined' || typeof tolerance === 'undefined') return Promise.reject(new Error('Alarm must include a humidity setting and tolerance.'));
                 await this.execCommand(`Auto,en,1`, 300);
-                await this.execCommand(`Alarm,${humidity}`, 300);
-                await this.execCommand(`Alarm,tol,${tolerance}`, 300);
+                await this.execCommand(`Auto,${humidity}`, 300);
+                await this.execCommand(`Auto,tol,${tolerance}`, 300);
                 this.options.alarm.enable = enable;
                 this.options.alarm.humidity = humidity;
                 this.options.alarm.tolerance = tolerance;
