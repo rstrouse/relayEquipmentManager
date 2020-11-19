@@ -1782,7 +1782,7 @@ export class AtlasEZOhum extends AtlasEZO {
             let units = typeof this.values.units !== 'undefined' ? this.values.units : this.values.units = 'C';
             if (!this.i2c.isMock) {
                 let arrDims = result.split(',');
-                this.values.conductivity = this.options.parameters.humidity ? parseFloat(arrDims[0]) : null;
+                this.values.humidity = this.options.parameters.humidity ? parseFloat(arrDims[0]) : null;
                 this.values.temperature = this.options.parameters.temperature ? utils.convert.temperature.convertUnits(parseFloat(arrDims[1]), 'C', units) : null;
                 this.values.dewpoint = this.options.parameters.dewpoint ? utils.convert.temperature.convertUnits(parseFloat(arrDims[2]), 'C', units) : null;
             }
