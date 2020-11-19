@@ -35,7 +35,7 @@ export class i2cRelay extends i2cDeviceBase {
             //logger.info(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
             return Promise.resolve(r);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
     }
 
     public async stopReadContinuous() { if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead); return Promise.resolve(); }
@@ -65,6 +65,25 @@ export class i2cRelay extends i2cDeviceBase {
     public async readAllRelayStates(): Promise<boolean> {
         try {
             switch (this.device.options.idType) {
+                case 'sequent4':
+                    {
+                        let byte = await this.readCommand(0x03);
+                        if (byte !== 0) {
+                            await this.sendCommand([0x03, 0x00]);
+                            await this.sendCommand([0x01, 0x00]);
+                        }
+                        byte = await this.readCommand(0x00) >> 4;
+                        this.device.options.relays.sort((a, b) => { return a.id - b.id; });
+                        for (let i = 0; i < this.device.options.relays.length; i++) {
+                            let relay = this.device.options.relays[i];
+                            let state = utils.makeBool(byte & (1 << (relay.id - 1)));
+                            if (state !== relay.state) {
+                                relay.state = state;
+                                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+                            }
+                        }
+                    }
+                    break;
                 case 'bit':
                     let bmVals = [];
                     // Force a sort so that it gets the correct address.
@@ -98,6 +117,16 @@ export class i2cRelay extends i2cDeviceBase {
         let cmdByte = relay.id;
         try {
             switch (this.device.options.idType) {
+                case 'sequent4':
+                    let byte = await this.readCommand(0x03);
+                    if (byte !== 0) {
+                        await this.sendCommand([0x03, 0x00]);
+                        await this.sendCommand([0x01, 0x00]);
+                    }
+                    // These come in the high nibble. Shift them to the low nibble.
+                    byte = await this.readCommand(0x00) >> 4;
+                    byte = byte & (1 << (relay.id - 1));
+                    break;
                 case 'bit':
                     let bmOrd = Math.floor(relay.id / 8);
                     cmdByte = this.getCommandByte(bmOrd);
@@ -161,6 +190,18 @@ export class i2cRelay extends i2cDeviceBase {
             }
             // Make the relay command.
             switch (this.device.options.idType) {
+                case 'sequent4':
+                    await this.readAllRelayStates();
+                    let byte = 0x00;
+                    // Byte is the current data from the relay board and the relays are in the lower 4 bits.
+                    for (let i = 0; i < this.device.options.relays.length; i++) {
+                        let r = this.device.options.relays[i];
+                        if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
+                            byte |= (1 << (r.id - 1));
+                        }
+                    }
+                    await this.sendCommand([0x01, byte << 4]);
+                    break;
                 case 'bit':
                     // Make sure we have all the relay states up to date.
                     // MCP23017 uses 0x12 for port A (bmOrd 0) and 0x13 for port B (bmOrd 1).

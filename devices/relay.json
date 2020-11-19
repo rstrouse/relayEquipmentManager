@@ -105,6 +105,14 @@
                       "idType": "ordinal",
                       "maxRelays": 4
                     }
+                  },
+                  {
+                    "name": "sequent4",
+                    "desc": "Sequent 4 Relay",
+                    "options": {
+                      "idType": "sequent4",
+                      "maxRelays":  4
+                    }
                   }
                 ]
               }

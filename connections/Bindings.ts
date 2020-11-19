@@ -182,7 +182,7 @@ class SocketServerConnection extends ServerConnection {
                             evt = { name: trigger.eventName, triggers: [] };
                             this.events.push(evt);
                             logger.info(`Binding ${evt.name} from ${this.server.name}`);
-                            this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data) });
+                            this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
                         }
                         try {
                             let fnFilter = trigger.makeTriggerFunction();
@@ -194,7 +194,6 @@ class SocketServerConnection extends ServerConnection {
                 }
             }
         });
-
     }
     public send(opts) {
         let obj = {};

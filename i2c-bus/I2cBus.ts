@@ -394,7 +394,7 @@ class mockI2cBus {
     public bus() { return {}; }
     public close(): Promise<void> { return Promise.resolve(); }
     public i2cFuncs(): Promise<mockI2cFuncs> { return Promise.resolve(this.funcs); }
-    public scan(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([15 + this.busNumber, 97 + this.busNumber, 98 + this.busNumber, 102 + this.busNumber, 105 + this.busNumber]); }
+    public scan(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([15 + this.busNumber, 19 + this.busNumber, 97 + this.busNumber, 98 + this.busNumber, 99 + this.busNumber, 100 + this.busNumber, 101 + this.busNumber, 102 + this.busNumber, 105 + this.busNumber]); }
     public deviceId(addr: number): Promise<{ manufacturer: number, product: number, name: string }> { return Promise.resolve({ manufacturer: 0, product: 0, name: 'Mock product' }); }
     public i2cRead(addr: number, length: number, buffer: Buffer): Promise<{ bytesRead: number, buffer: Buffer }> { return Promise.resolve({ bytesRead: length, buffer: buffer }); }
     public i2cWrite(addr: number, length: number, buffer: Buffer): Promise<{ bytesWritten: number, buffer: Buffer }> { return Promise.resolve({ bytesWritten: length, buffer: buffer }); }

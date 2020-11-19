@@ -3527,9 +3527,9 @@ $.ui.position.fieldTip = {
                 pct.text(`${capacity[0].val() !== 0 ? Math.round((qty[0].val() / capacity[0].val()) * 100) : 0}%`);
             });
             $('<div></div>').appendTo(line).pickList({
-                bindColumn: 0, displayColumn: 0, labelText: 'Capacity Units', binding: 'units',
+                bindColumn: 0, displayColumn: 0, labelText: 'Capacity Units', binding: 'units', value:'gal',
                 columns: [{ binding: 'name', text: 'Units', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { minWidth: '12rem' } }],
-                items: [{ name: '', desc: 'No units' }, { name: 'gal', desc: 'US Gallons' }, { name: 'L', desc: 'Litres' }, { name: 'cL', desc: 'Centilitres' }, { name: 'mL', desc: 'Millilitres' }, { name: 'oz', desc: 'Fluid Ounces' }, { name: 'qts', desc: 'Quarts' }, { name: 'pints', desc: 'Pints' }],
+                items: [{ name: 'gal', desc: 'US Gallons' }, { name: 'L', desc: 'Litres' }, { name: 'cL', desc: 'Centilitres' }, { name: 'mL', desc: 'Millilitres' }, { name: 'oz', desc: 'Fluid Ounces' }, { name: 'qts', desc: 'Quarts' }, { name: 'pints', desc: 'Pints' }],
                 inputAttrs: { style: { textAlign: 'center', width: '3rem' } }, labelAttrs: { style: { paddingLeft: '.1rem', display: 'none' } }
 
             }).on('selchanged', function (e) {

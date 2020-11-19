@@ -15,6 +15,7 @@ import { URL } from "url";
 import { Timestamp } from '../boards/Constants';
 import extend = require("extend");
 import { ConfigRoute } from "./services/Config";
+import { StateRoute } from "./services/State";
 
 // This class serves data and pages for
 // external interfaces as well as an internal dashboard.
@@ -239,6 +240,8 @@ export class HttpServer extends ProtoServer {
                 return res.status(200).send(config.getSection(req.params.section));
             });
             ConfigRoute.initRoutes(this.app);
+            StateRoute.initRoutes(this.app);
+        
             this.isRunning = true;
             this.app.use((error, req, res, next) => {
                 logger.error(error);
@@ -288,20 +291,20 @@ export class SsdpServer extends ProtoServer {
     public deviceXML() {
         let ver = '1.0';
         let XML = `<?xml version="1.0"?>
-                        <root xmlns="urn:schemas-upnp-org:PoolController-1-0">
+                        <root xmlns="urn:schemas-upnp-org:RelayEqiupmentManager-1-0">
                             <specVersion>
                                 <major>${ver.split('.')[0]}</major>
                                 <minor>${ver.split('.')[1]}</minor>
                                 <patch>${ver.split('.')[2]}</patch>
                             </specVersion>
                             <device>
-                                <deviceType>urn:echo:device:PoolController:1</deviceType>
-                                <friendlyName>NodeJS Pool Controller</friendlyName> 
-                                <manufacturer>tagyoureit</manufacturer>
+                                <deviceType>urn:echo:device:relayEquipmentManager:1</deviceType>
+                                <friendlyName>Relay Equipment Manager</friendlyName> 
+                                <manufacturer>rstouse</manufacturer>
                                 <manufacturerURL>https://github.com/rstrouse/relayEquipmentManager</manufacturerURL>
                                 <modelDescription>An application to expose GPIO to poolController.</modelDescription>
                                 <serialNumber>0</serialNumber>
-                    			<UDN>uuid:E03FDC79-4B65-4A10-B5EA-${webApp.mac()}</UDN>
+                    			<UDN>7BEA57DD-1600-45B1-B379-C907C18F5994-${webApp.mac()}</UDN>
                                 <serviceList></serviceList>
                             </device>
                         </root>`;

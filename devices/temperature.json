@@ -53,7 +53,7 @@
               {
                 "val": "C",
                 "name": "C",
-                "desc": "Celcius"
+                "desc": "Celsius"
               }
             ]
           }
@@ -157,7 +157,7 @@
               {
                 "val": "C",
                 "name": "C",
-                "desc": "Celcius"
+                "desc": "Celsius"
               }
             ]
           }
@@ -328,7 +328,7 @@
         },
         {
           "name": "tempC",
-          "desc": "Degrees Celcius"
+          "desc": "Degrees Celsius"
         },
         {
           "name": "tempK",
@@ -422,7 +422,7 @@
                   },
                   {
                     "name": "C",
-                    "desc": "Celcius"
+                    "desc": "Celsius"
                   },
                   {
                     "name": "K",
