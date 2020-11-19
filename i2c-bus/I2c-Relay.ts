@@ -29,6 +29,15 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { logger.error(err); }
     }
+    protected async readWordCommand(command: number): Promise<number> {
+        try {
+            let r = await this.i2c.readWord(this.device.address, command);
+            //logger.info(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
+            return Promise.resolve(r);
+        }
+        catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
+    }
+
     protected async readCommand(command: number): Promise<number> {
         try {
             let r = await this.i2c.readByte(this.device.address, command);
@@ -84,6 +93,25 @@ export class i2cRelay extends i2cDeviceBase {
                         }
                     }
                     break;
+                case 'sequent8':
+                    {
+                        let byte = await this.readCommand(0x03);
+                        if (byte !== 0) {
+                            await this.sendCommand([0x03, 0x00]);
+                            await this.sendCommand([0x01, 0x00]);
+                        }
+                        byte = await this.readCommand(0x00);
+                        this.device.options.relays.sort((a, b) => { return a.id - b.id; });
+                        for (let i = 0; i < this.device.options.relays.length; i++) {
+                            let relay = this.device.options.relays[i];
+                            let state = utils.makeBool(byte & (1 << (relay.id - 1)));
+                            if (state !== relay.state) {
+                                relay.state = state;
+                                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+                            }
+                        }
+                    }
+                    break;
                 case 'bit':
                     let bmVals = [];
                     // Force a sort so that it gets the correct address.
@@ -118,15 +146,30 @@ export class i2cRelay extends i2cDeviceBase {
         try {
             switch (this.device.options.idType) {
                 case 'sequent4':
-                    let byte = await this.readCommand(0x03);
-                    if (byte !== 0) {
-                        await this.sendCommand([0x03, 0x00]);
-                        await this.sendCommand([0x01, 0x00]);
+                    {
+                        let byte = await this.readCommand(0x03);
+                        if (byte !== 0) {
+                            await this.sendCommand([0x03, 0x00]);
+                            await this.sendCommand([0x01, 0x00]);
+                        }
+                        // These come in the high nibble. Shift them to the low nibble.
+                        byte = await this.readCommand(0x00) >> 4;
+                        byte = byte & (1 << (relay.id - 1));
                     }
-                    // These come in the high nibble. Shift them to the low nibble.
-                    byte = await this.readCommand(0x00) >> 4;
-                    byte = byte & (1 << (relay.id - 1));
                     break;
+                case 'sequent8':
+                    {
+                        let byte = await this.readCommand(0x03);
+                        if (byte !== 0) {
+                            await this.sendCommand([0x03, 0x00]);
+                            await this.sendCommand([0x01, 0x00]);
+                        }
+                        // These come in the high nibble. Shift them to the low nibble.
+                        byte = await this.readCommand(0x00);
+                        byte = byte & (1 << (relay.id - 1));
+                    }
+                    break;
+
                 case 'bit':
                     let bmOrd = Math.floor(relay.id / 8);
                     cmdByte = this.getCommandByte(bmOrd);
@@ -190,17 +233,33 @@ export class i2cRelay extends i2cDeviceBase {
             }
             // Make the relay command.
             switch (this.device.options.idType) {
-                case 'sequent4':
-                    await this.readAllRelayStates();
-                    let byte = 0x00;
-                    // Byte is the current data from the relay board and the relays are in the lower 4 bits.
-                    for (let i = 0; i < this.device.options.relays.length; i++) {
-                        let r = this.device.options.relays[i];
-                        if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
-                            byte |= (1 << (r.id - 1));
+                case 'sequent8':
+                    {
+                        await this.readAllRelayStates();
+                        let byte = 0x00;
+                        // Byte is the current data from the relay board and the relays are in the lower 4 bits.
+                        for (let i = 0; i < this.device.options.relays.length; i++) {
+                            let r = this.device.options.relays[i];
+                            if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
+                                byte |= (1 << (r.id - 1));
+                            }
                         }
+                        await this.sendCommand([0x01, byte]);
                     }
-                    await this.sendCommand([0x01, byte << 4]);
+                    break;
+                case 'sequent4':
+                    {
+                        await this.readAllRelayStates();
+                        let byte = 0x00;
+                        // Byte is the current data from the relay board and the relays are in the lower 4 bits.
+                        for (let i = 0; i < this.device.options.relays.length; i++) {
+                            let r = this.device.options.relays[i];
+                            if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
+                                byte |= (1 << (r.id - 1));
+                            }
+                        }
+                        await this.sendCommand([0x01, byte << 4]);
+                    }
                     break;
                 case 'bit':
                     // Make sure we have all the relay states up to date.

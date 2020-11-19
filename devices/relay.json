@@ -111,9 +111,18 @@
                     "desc": "Sequent 4 Relay",
                     "options": {
                       "idType": "sequent4",
-                      "maxRelays":  4
+                      "maxRelays": 4
+                    }
+                  },
+                  {
+                    "name": "sequent8",
+                    "desc": "Sequent 8 Relay",
+                    "options": {
+                      "idType": "sequent8",
+                      "maxRelays": 8
                     }
                   }
+
                 ]
               }
             }
