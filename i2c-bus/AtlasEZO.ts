@@ -791,8 +791,8 @@ export class AtlasEZOpmp extends AtlasEZO {
         catch (err) { this.logError(err); return Promise.reject(err); }
     }
     public async getDispenseStatus(): Promise<{ dispensing: boolean, volume?: number, continuous: boolean, reverse: boolean, maxRate: number, mode: { name: string, desc: string } }> {
-        if (this.suspendPolling) return Promise.resolve(this.dispense);
         try {
+            if (this.suspendPolling) { return Promise.resolve(this.dispense); }
             this.suspendPolling = true;
             let result = await this.execCommand('D,?', 300);
             let arrDims = result.split(',');
