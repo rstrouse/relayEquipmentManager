@@ -1829,7 +1829,10 @@ export class AtlasEZOhum extends AtlasEZO {
                 let arrDims = result.split(',');
                 this.values.humidity = this.options.parameters.humidity ? parseFloat(arrDims[0]) : null;
                 this.values.temperature = this.options.parameters.temperature ? utils.convert.temperature.convertUnits(parseFloat(arrDims[1]), 'C', units) : null;
-                this.values.dewpoint = this.options.parameters.dewpoint ? utils.convert.temperature.convertUnits(parseFloat(arrDims[2]), 'C', units) : null;
+                if (this.options.parameters.dewpoint) {
+                    let ndx = (typeof arrDims[2] === 'string' && arrDims[2].toLowerCase() === 'dew') ? 3 : 2;
+                    this.values.dewpoint = this.options.parameters.dewpoint ? utils.convert.temperature.convertUnits(parseFloat(arrDims[ndx]), 'C', units) : null;
+                }
             }
             else {
                 this.values.humidity = 30;
