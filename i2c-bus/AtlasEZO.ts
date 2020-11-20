@@ -633,7 +633,7 @@ export class AtlasEZOpH extends AtlasEZO {
     }
     public getValue(prop: string) {
         switch (prop.toLowerCase()) {
-            case 'phlevel'
+            case 'phlevel':
             case 'ph': { return this.values.pH; }
             case 'all': { return this.values; }
         }
