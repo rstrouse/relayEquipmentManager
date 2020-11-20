@@ -292,8 +292,8 @@
         {
           "field": {
             "type": "valueSpinner",
-            "binding": "options.address",
-            "labelText": "Controller Addr",
+            "binding": "options.id",
+            "labelText": "Controller Id",
             "min": 0,
             "max": 100,
             "step": 1,
