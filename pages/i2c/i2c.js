@@ -39,6 +39,7 @@
                 $('<div></div>').appendTo(divList).selectList({
                     id: 'i2cAddresses',
                     key: 'address',
+                    canCreate: false,
                     caption: 'Devices', itemName: 'Device',
                     columns: [{ binding: 'addressName', text: 'Address', style: { width: '87px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' } },
                     { binding: 'name', text: 'Name', style: { width: '197px' } }]
@@ -611,7 +612,6 @@
                 }
             });
         },
-
         setConnection: function (conn, callback) {
             var self = this, o = self.options, el = self.element;
             let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' && conn.id !== 0 ? conn.type.name : '';
@@ -681,11 +681,20 @@
                     columns: [{ binding: 'binding', text: 'Variable', style: { whiteSpace: 'nowrap' } }],
                     items: typeof feed !== 'undefined' ? feed.bindings : [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
                 });
+                $('<div></div>').addClass('pnl-feed-params').appendTo(line);
             }
             else {
                 pnl.find('div.picPickList:first').each(function () {
                     this.items(typeof feed !== 'undefined' ? feed.bindings : []);
                 });
+                let pnlParams = pnl.find('div.pnl-feed-params');
+                if (typeof feed === 'undefined' || typeof feed.options === 'undefined' || pnlParams.attr('data-feedname') !== feed.name) pnlParams.empty();
+                if (typeof feed !== 'undefined' && typeof feed.options !== 'undefined' && pnlParams.attr('data-feedname') !== feed.name) {
+                    // Bind up these params.
+                    templateBuilder.createObjectOptions(pnlParams, feed);
+                }
+                if (typeof feed !== 'undefined') dataBinder.bind(pnlParams, feed);
+                pnlParams.attr('data-feedname', typeof feed !== 'undefined' ? feed.pnlParams || '' : '');
             }
         },
         _build_deviceBindings: function (feed) {

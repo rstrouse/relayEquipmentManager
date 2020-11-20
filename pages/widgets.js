@@ -856,6 +856,153 @@ var dataBinder = {
     }
 
 };
+var templateBuilder = {
+    createControlOptions: function (pnl, opt, binding) {
+        var self = this;
+        var fld = null;
+        var prop = '';
+        switch (opt.field.type) {
+            case 'hidden':
+                fld = $('<input type="hidden"></input>');
+                if (binding) fld.attr('data-bind', binding + prop);
+                fld.attr('data-datatype', opt.dataType).appendTo(pnl);
+                if (typeof opt.default !== 'undefined') fld.val(opt.default);
+                break;
+            case 'pickList':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).pickList(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'valueSpinner':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).valueSpinner(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'timeSpinner':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).timeSpinner(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'inputField':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).inputField(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'dateField':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).dateField(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'optionButton':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).optionButton(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'staticField':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).staticField(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'checkbox':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).checkbox(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'actionButton':
+                fld = $('<div></div>').appendTo(pnl);
+                if (binding) fld.attr('data-bind', binding + prop);
+                fld.actionButton(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'toggleButton':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).toggleButton(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'colorPicker':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).colorPicker(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
+            case 'chemTank':
+                fld = $('<div></div>').appendTo(pnl).chemTank(opt.field);
+                if (binding) fld.attr('data-bind', binding + prop);
+                break;
+            case 'fieldset':
+                fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                if (typeof opt.field.legend !== 'undefined') $('<legend></legend>').appendTo(fld).html(opt.field.legend);
+                if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
+                if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
+                if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
+                if (typeof opt.field.attrs !== 'undefined') {
+                    for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
+                }
+                if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
+                break;
+            case 'panel':
+                fld = $('<div></div>').appendTo(pnl)[`${opt.field.class}`](opt.field);
+                if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
+                if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
+                if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
+                if (typeof opt.field.attrs !== 'undefined') {
+                    for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
+                }
+                break;
+            default:
+                fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
+                if (typeof opt.field.html !== 'undefined') fld.html(opt.field.html);
+                if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
+                if (typeof opt.field.binding !== 'undefined') fld.attr('data-bind', opt.field.binding);
+                if (typeof opt.field.attrs !== 'undefined') {
+                    for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
+                }
+                if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
+                break;
+        }
+        if (typeof fld !== 'undefined' && typeof opt.field !== 'undefined') {
+            if (opt.field.fieldEvents !== 'undefined') {
+                for (var eventName in opt.fieldEvents) {
+                    var fevent = opt.fieldEvents[eventName];
+                    if (typeof fevent === 'string') {
+                        console.log('Adding field event:' + fevent);
+                        fld.on(eventName, new Function('evt', fevent));
+                    }
+                    else if (typeof fevent === 'object') {
+                        fld.on(eventName, (evt) => {
+                            if (typeof fevent.confirm === 'object') {
+                                var confirm = $.pic.modalDialog.createConfirm("dlgConfirmEvent", $.extend(true, {}, {
+                                    title: 'Confirm Action',
+                                    message: 'Are you sure you want to do this?'
+                                }, fevent.confirm)).on('confirmed', function (e) { self._callServiceEvent(evt, fevent); });
+                            }
+                            else
+                                self._callServiceEvent(evt, fevent);
+                        });
+                    }
+                }
+
+            }
+        }
+        return fld;
+    },
+    createObjectOptions: function (pnl, opts) {
+        var self = this;
+        for (var i = 0; i < opts.options.length; i++) {
+            var opt = opts.options[i];
+            self.createControlOptions(pnl, opt, opt.bind);
+        }
+    },
+    callServiceEvent: function (evt, fevent) {
+        var self = this, o = self.options, el = self.element;
+        var device = dataBinder.fromElement($(evt.currentTarget).parents(`*[data-bindingcontext="device"]:first`));
+        var callObj;
+        if (typeof fevent.callContext !== 'undefined') callObj = dataBinder.fromElement($(evt.currentTarget).parents(`*[data-bindingcontext="${fevent.callContext}"]`));
+        if (typeof fevent.eventObject === 'string') callObj = $.extend(true, {}, callObj, evt[fevent.eventObject]);
+        if (typeof fevent.callObj !== 'undefined') callObj = $.extend(true, callObj, fevent.callObj);
+        var servicePath = eval(fevent.path);
+        switch (fevent.type) {
+            case 'putservice':
+                $.putLocalService(servicePath, callObj, fevent.message, function (result, status, xhr) {
+                    if (typeof fevent.resultContext !== 'undefined') {
+                        $(evt.currentTarget).parents(`*[data-bindingcontext="${fevent.resultContext}"]`);
+                        dataBinder.bind($(evt.currentTarget).parents(`*[data-bindingcontext="${fevent.resultContext}"]`), result);
+                    }
+                });
+                break;
+        }
+    }
+};
 $.ui.position.fieldTip = {
     left: function (position, data) {
         //console.log({ fn: 'left', position: position, data: data });
@@ -2871,7 +3018,8 @@ $.ui.position.fieldTip = {
         options: {
             caption: '',
             itemName: 'Item',
-            columns: []
+            columns: [],
+            actions: { canCreate: false, canEdit: false, canRemove: false, canClear: false }
         },
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -2879,6 +3027,7 @@ $.ui.position.fieldTip = {
             el[0].addRow = function (data) { return self.addRow(data); };
             el[0].saveRow = function (data) { return self.saveRow(data); };
             el[0].clear = function () { self.clear(); }
+            el[0].actions = function (val) { return self.actions(val); };
         },
         _getColumn: function (nCol) { return this.options.columns[nCol]; },
         _createCaption: function () {
@@ -2975,6 +3124,40 @@ $.ui.position.fieldTip = {
             else
                 self.addRow(data);
         },
+        actions: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val === 'undefined') {
+                return o.actions = {
+                    canCreate: makeBool(el.attr('data-cancreate')),
+                    canEdit: makeBool(el.attr('data-canedit')),
+                    canRemove: makeBool(el.attr('data-canremove')),
+                    canClear: makeBool(el.attr('data-canclear'))
+                }
+            }
+            else {
+                var acts = typeof o.actions !== 'undefined' ? o.actions : o.actions = {}
+                for (var prop in val) {
+                    var name = prop.toLowerCase();
+                    switch (name) {
+                        case 'cancreate':
+                            acts.canCreate = makeBool(val[prop]);
+                            el.attr(`data-${name}`, makeBool(val[prop]));
+                            break;
+                        case 'canedit':
+                            acts.canUpdate = makeBool(val[prop]);
+                            el.attr(`data-${name}`, makeBool(val[prop]));
+                            break;
+                        case 'canremove':
+                            acts.canRemove = makeBool(val[prop]);
+                            el.attr(`data-${name}`, makeBool(val[prop]));
+                            break;
+                        case 'canclear':
+                            acts.canClear = makeBool(val[prop]);
+                            el.attr(`data-${name}`, makeBool(val[prop]));
+                    }
+                }
+            }
+        },
         clear: function () {
             var self = this, o = self.options, el = self.element;
             el.find('table.slist-table:first > tbody > tr').remove();
@@ -2994,6 +3177,7 @@ $.ui.position.fieldTip = {
             el.on('click', 'table.slist-table > tbody > tr', function (evt) {
                 self.selectRow($(evt.currentTarget));
             });
+            self.actions(o.actions);
         },
         selectRow: function (row) {
             var self = this, o = self.options, el = self.element;

@@ -6,6 +6,7 @@ import { cont, ConnectionSource } from "../boards/Controller";
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { i2c } from "../i2c-bus/I2cBus";
+import * as extend from "extend";
 const io = require('socket.io-client');
 //import io from "socket.io-client";
 //import { Server } from "http";
@@ -198,7 +199,8 @@ class SocketServerConnection extends ServerConnection {
     public send(opts) {
         let obj = {};
         obj[opts.property] = opts.value;
-        //console.log(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
+        if (typeof opts.options === 'object') obj = extend(true, obj, opts.options);
+        console.log(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
         this._sock.emit('/' + opts.eventName, JSON.stringify(obj));
     }
 }

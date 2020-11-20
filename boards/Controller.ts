@@ -1051,6 +1051,8 @@ export class I2cDeviceFeed extends ConfigItem {
     public set changesOnly(val: boolean) { this.setDataVal('changesOnly', val); }
     public get payloadExpression(): string { return this.data.payloadExpression; }
     public set payloadExpression(val: string) { this.setDataVal('payloadExpression', val); }
+    public get options() { return this.data.options; }
+    public set options(val) { this.setDataVal('options', val); }
     public getExtended() {
         let feed = this.get(true);
         feed.connection = this.connectionId === -1 ? cont.getInternalConnection().getExtended() : cont.connections.getItemById(this.connectionId).getExtended();
@@ -1069,8 +1071,6 @@ export class I2cDeviceFeed extends ConfigItem {
         }
         return feed;
     }
-    public get options() { return this.data.options; }
-    public set options(val) { this.setDataVal('options', val); }
 }
 
 export class SpiChannelCollection extends ConfigItemCollection<SpiChannel> {
@@ -1180,7 +1180,8 @@ export class GpioPin extends ConfigItem {
     public get isInverted(): boolean { return utils.makeBool(this.data.isInverted); }
     public set isInverted(val: boolean) { this.setDataVal('isInverted', val); }
     public get state() { return this.getMapVal(this.data.state || 'unknown', vMaps.pinStates); }
-    public get name(): string { return `Pin #${this.headerId}-${this.id}`; }
+    public get name(): string { return this.data.name = `Pin #${this.headerId}-${this.id}`; }
+    public set name(val:string) { this.data.name = `Pin #${this.headerId}-${this.id}`; }
     public set state(val) {
         let mv = this.getMapVal(val, vMaps.pinStates);
         if (typeof mv !== 'undefined') {

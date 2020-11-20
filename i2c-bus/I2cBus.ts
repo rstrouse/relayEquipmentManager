@@ -309,11 +309,13 @@ class i2cFeed {
         let value = dev.getValue(this.feed.sendValue) || '';
         if (!this.feed.isActive) return;
         if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
+
             this.server.send({
                 eventName: this.feed.eventName,
                 property: this.feed.property,
                 value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
-                deviceBinding: this.feed.deviceBinding
+                deviceBinding: this.feed.deviceBinding,
+                options: this.feed.options
             });
         }
     }

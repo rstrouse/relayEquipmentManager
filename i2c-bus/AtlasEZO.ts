@@ -507,6 +507,11 @@ export class AtlasEZOpH extends AtlasEZO {
     public async getExtendedScale(): Promise<boolean> {
         try {
             this.suspendPolling = true;
+            if (this.version < 2.14) {
+                // Prior to 2.14 this command did not exist.
+                this.options.extendedScale = false;
+                return Promise.resolve(true);
+            }
             let result = await this.execCommand('pHext,?', 300);
             let arrDims = result.split(',');
             this.options.extendedScale = utils.makeBool(arrDims[1]);
@@ -594,6 +599,10 @@ export class AtlasEZOpH extends AtlasEZO {
     public async setExtendedScale(val: boolean): Promise<boolean> {
         try {
             this.suspendPolling = true;
+            if (this.version < 2.14) {
+                this.options.extendedScale = false;
+                return Promise.resolve(true);
+            }
             await this.execCommand('pHext,' + (val ? '1' : '0'), 300);
             this.options.extendedScale = val;
             return Promise.resolve(true);
@@ -604,6 +613,10 @@ export class AtlasEZOpH extends AtlasEZO {
     public async exportCalibration(): Promise<{ len: number, total: number, data: string[] }> {
         try {
             this.suspendPolling = true;
+            if (this.version < 2.1) {
+                // Could not export calibration prior to this version.
+                return Promise.resolve({ len: 0, total: 0, data: [] });
+            }
             let result = await this.execCommand('Export,?', 300);
             let arrDims = result.split(',');
             let dims = { len: parseInt(arrDims[1], 10), total: parseInt(arrDims[2], 10), data: [] };

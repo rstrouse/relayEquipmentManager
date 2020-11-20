@@ -272,7 +272,7 @@
           "type": "number"
         },
         {
-          "binding": "ORPLevel",
+          "binding": "orpLevel",
           "type": "number"
         },
         {
@@ -291,10 +291,130 @@
       "options": [
         {
           "field": {
-            "type": "inputField",
-            "binding": "address",
-            "labelText": "Address",
-            "inputAttrs": { "maxLength": 2 }
+            "type": "valueSpinner",
+            "binding": "options.address",
+            "labelText": "Controller Addr",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "canEdit": true,
+            "dataType": "number",
+            "fmtMask": "#,##0",
+            "emptyMask": "0",
+            "inputAttrs": { "style": { "width": "3rem" } },
+            "labelAttrs": { "style": { "width": "7rem" } }
+          }
+        }
+      ]
+    },
+    {
+      "name": "circuit",
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "valueSpinner",
+            "binding": "options.id",
+            "labelText": "Circuit Id",
+            "min": 0,
+            "max": 1000,
+            "step": 1,
+            "canEdit": true,
+            "dataType": "number",
+            "fmtMask": "#,##0",
+            "emptyMask": "0",
+            "inputAttrs": { "style": { "width": "5rem" } },
+            "labelAttrs": { "style": { "width": "7rem" } }
+          }
+        }
+      ]
+    },
+    {
+      "name": "feature",
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "valueSpinner",
+            "binding": "options.id",
+            "labelText": "Feature Id",
+            "min": 0,
+            "max": 1000,
+            "step": 1,
+            "canEdit": true,
+            "dataType": "number",
+            "fmtMask": "#,##0",
+            "emptyMask": "0",
+            "inputAttrs": { "style": { "width": "5rem" } },
+            "labelAttrs": { "style": { "width": "7rem" } }
+          }
+        }
+      ]
+    },
+    {
+      "name": "circuitGroup",
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "valueSpinner",
+            "binding": "options.id",
+            "labelText": "Group Id",
+            "min": 0,
+            "max": 1000,
+            "step": 1,
+            "canEdit": true,
+            "dataType": "number",
+            "fmtMask": "#,##0",
+            "emptyMask": "0",
+            "inputAttrs": { "style": { "width": "5rem" } },
+            "labelAttrs": { "style": { "width": "7rem" } }
+          }
+        }
+      ]
+    },
+    {
+      "name": "lightGroup",
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        },
+        {
+          "binding": "theme",
+          "type": "string"
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "valueSpinner",
+            "binding": "options.id",
+            "labelText": "Group Id",
+            "min": 0,
+            "max": 1000,
+            "step": 1,
+            "canEdit": true,
+            "dataType": "number",
+            "fmtMask": "#,##0",
+            "emptyMask": "0",
+            "inputAttrs": { "style": { "width": "5rem" } },
+            "labelAttrs": { "style": { "width": "7rem" } }
           }
         }
       ]
