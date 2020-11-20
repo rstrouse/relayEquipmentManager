@@ -225,6 +225,7 @@ export class Utils {
                 f: (val) => { return ((val - 273.15) * (9 / 5)) + 32; }
             },
             convertUnits: (val: number, from: string, to: string) => {
+                if (typeof val !== 'number') return null;
                 let fn = this.convert.temperature[from.toLowerCase()];
                 if (typeof fn !== 'undefined' && typeof fn[to.toLowerCase()] === 'function') return fn[to.toLowerCase()](val);
             }

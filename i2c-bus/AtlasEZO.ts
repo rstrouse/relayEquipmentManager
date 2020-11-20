@@ -1407,6 +1407,8 @@ export class AtlasEZOec extends AtlasEZO {
             if (typeof opts.probeType === 'number' && !isNaN(parseFloat(opts.probeType))) {
                 if (parseFloat(opts.probeType) !== this.options.probeType) await this.setProbeType(parseFloat(opts.probeType));
             }
+            if (typeof this.device.options.parameters === 'undefined') this.device.options.parameters = { conductivity: false, dissolvedSolids: false, salinity: false, specificGravity: false };
+            if (typeof opts.parameters !== 'undefined') await this.setParameterInfo(opts.parameters);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false };
@@ -1474,6 +1476,18 @@ export class AtlasEZOec extends AtlasEZO {
         }
         catch (err) { this.logError(err); }
     }
+    public async setParameterInfo(opts): Promise<boolean> {
+        try {
+            if (typeof opts.conductivity !== 'undefined' && utils.makeBool(opts.conductivity) !== this.options.parameters.conductivity) await this.execCommand(`O,EC,${utils.makeBool(opts.conductivity) ? '1' : '0'}`, 300);
+            if (typeof opts.dissolvedSolids !== 'undefined' && utils.makeBool(opts.dissolvedSolids) !== this.options.parameters.dissolvedSolids) await this.execCommand(`O,TDS,${utils.makeBool(opts.dissolvedSolids) ? '1' : '0'}`, 300);
+            if (typeof opts.salinity !== 'undefined' && utils.makeBool(opts.salinity) !== this.options.parameters.salinity) await this.execCommand(`O,S,${utils.makeBool(opts.salinity) ? '1' : '0'}`, 300);
+            if (typeof opts.specificGravity !== 'undefined' && utils.makeBool(opts.specificGravity) !== this.options.parameters.specificGravity) await this.execCommand(`O,SG,${utils.makeBool(opts.specificGravity) ? '1' : '0'}`, 300);
+            await this.getParameterInfo();
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+    }
+
     public async calibrate(data): Promise<I2cDevice> {
         try {
             this.suspendPolling = true;
@@ -1732,6 +1746,8 @@ export class AtlasEZOhum extends AtlasEZO {
             if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
             if (typeof opts.units === 'string' && ['C', 'F'].includes(opts.units.toUpperCase())) { await this.setUnits(opts.units); }
             if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, humidity: null, tolerance: null };
+            if (typeof this.options.parameters === 'undefined') this.options.parameters = { humidity: false, temperature: false, dewpoint: false };
+            if (typeof opts.parameters !== 'undefined') await this.setParameterInfo(opts.parameters);
             if (typeof opts.alarm !== 'undefined' &&
                 (this.options.alarm.enable !== opts.alarm.enable || this.options.alarm.humidity !== opts.alarm.humidity || this.options.alarm.tolerance !== opts.alarm.tolerance)) {
                 await this.setAlarm(utils.makeBool(opts.alarm.enable), opts.alarm.humidity, opts.alarm.tolerance);
@@ -1754,8 +1770,8 @@ export class AtlasEZOhum extends AtlasEZO {
             if (!['C', 'F'].includes(value.toUpperCase())) return Promise.reject(new Error(`Cannot set units to ${value}`));
             let units = this.values.units || 'C';
             this.values.units = value.toUpperCase();
-            this.values.temperature = utils.convert.temperature.convertUnits(this.values.temperature, units, value);
-            this.values.dewpoint = utils.convert.temperature.convertUnits(this.values.dewpoint, units, value);
+            this.values.temperature = typeof this.values.temperature === 'number' ? utils.convert.temperature.convertUnits(this.values.temperature, units, value) : null;
+            this.values.dewpoint = typeof this.values.dewpoint === 'number' ? utils.convert.temperature.convertUnits(this.values.dewpoint, units, value) : null;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
@@ -1770,6 +1786,16 @@ export class AtlasEZOhum extends AtlasEZO {
             this.options.parameters.humidity = arrDims.indexOf('HUM') >= 0;
             this.options.parameters.temperature = arrDims.indexOf('T') >= 0;
             this.options.parameters.dewpoint = arrDims.indexOf('DEW') > 0;
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+    }
+    public async setParameterInfo(opts): Promise<boolean> {
+        try {
+            if (typeof opts.humidity !== 'undefined' && utils.makeBool(opts.humidity) !== this.options.parameters.humidity) await this.execCommand(`O,HUM,${utils.makeBool(opts.humidity) ? '1' : '0'}`, 300);
+            if (typeof opts.temperature !== 'undefined' && utils.makeBool(opts.temperature) !== this.options.parameters.temperature) await this.execCommand(`O,T,${utils.makeBool(opts.temperature) ? '1' : '0'}`, 300);
+            if (typeof opts.dewpoint !== 'undefined' && utils.makeBool(opts.dewpoint) !== this.options.parameters.dewpoint) await this.execCommand(`O,Dew,${utils.makeBool(opts.dewpoint) ? '1' : '0'}`, 300);
+            await this.getParameterInfo();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
