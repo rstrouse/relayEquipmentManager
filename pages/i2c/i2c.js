@@ -189,6 +189,10 @@
                     el.parents('div.pnl-i2c-bus:first')[0].loadDevices(dev.address);
                 });
             }
+            {
+                var pnl = $(evt.currentTarget).parents('.pnl-alarm:first'); if(evt.newVal) { pnl.find('div[data-bind=\"options.alarm.enableHumidity\"]').each(function() { this.val(false); }); pnl.find('*[data-bind=\"options.alarm.humidity\"]').hide(); pnl.find('*[data-bind=\"options.alarm.dewpoint\"]').show(); pnl.find('*[data-bind=\"options.alarm.tolerance\"]').show(); } else { pnl.find('*[data-bind=\"options.alarm.dewpoint\"]').hide(); pnl.find('*[data-bind=\"options.alarm.tolerance\"]').hide(); }
+
+            }
         },
         deleteDevice: function () {
             var self = this, o = self.options, el = self.element;

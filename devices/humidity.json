@@ -434,7 +434,8 @@
             {
               "field": {
                 "type": "fieldset",
-                "legend": "Monitor Alarm"
+                "legend": "Monitor Alarm",
+                "cssClass": "pnl-alarm"
               },
               "options": [
                 {
@@ -445,53 +446,110 @@
                     "cssClass": "script-advanced-instructions"
                   }
                 },
-
                 {
-                  "default": 0,
                   "field": {
-                    "binding": "options.alarm.enable",
-                    "type": "checkbox",
-                    "labelText": "Enable",
-                    "style": { "display": "block" }
-                  }
+                    "type": "div",
+                    "cssClass": "pnlAlarmOptions"
+                  },
+                  "options": [
+                    {
+                      "default": 0,
+                      "field": {
+                        "binding": "options.alarm.enableHumidity",
+                        "type": "checkbox",
+                        "labelText": "Enable Humidity"
+                      },
+                      "fieldEvents": {
+                        "changed": "var pnl = $(evt.currentTarget).parents('.pnl-alarm:first'); if(evt.newVal) { pnl.find('div[data-bind=\"options.alarm.enableDewpoint\"]').each(function() { this.val(false); }); pnl.find('*[data-bind=\"options.alarm.dewpoint\"]').hide(); pnl.find('*[data-bind=\"options.alarm.humidity\"]').show(); pnl.find('*[data-bind=\"options.alarm.tolerance\"]').show(); } else { pnl.find('*[data-bind=\"options.alarm.humidity\"]').hide(); pnl.find('*[data-bind=\"options.alarm.tolerance\"]').hide(); }"
+                      }
+                    },
+                    {
+                      "default": 0,
+                      "field": {
+                        "binding": "options.alarm.enableDewpoint",
+                        "type": "checkbox",
+                        "labelText": "Enable Dewpoint"
+                      },
+                      "fieldEvents": {
+                        "changed": "var pnl = $(evt.currentTarget).parents('.pnl-alarm:first'); if(evt.newVal) { pnl.find('div[data-bind=\"options.alarm.enableHumidity\"]').each(function() { this.val(false); }); pnl.find('*[data-bind=\"options.alarm.humidity\"]').hide(); pnl.find('*[data-bind=\"options.alarm.dewpoint\"]').show(); pnl.find('*[data-bind=\"options.alarm.tolerance\"]').show(); } else { pnl.find('*[data-bind=\"options.alarm.dewpoint\"]').hide(); pnl.find('*[data-bind=\"options.alarm.tolerance\"]').hide(); }"
+                      }
+                    }
+                  ]
                 },
                 {
-                  "default": 0,
                   "field": {
-                    "binding": "options.alarm.humidity",
-                    "type": "valueSpinner",
-                    "labelText": "Humidity",
-                    "canEdit": true,
-                    "min": 0,
-                    "max": 100,
-                    "dataType": "number",
-                    "fmtMask": "#,##0.##",
-                    "style": { "display": "block" },
-                    "labelAttrs": {
-                      "style": { "width": "5rem" }
-                    },
-                    "inputAttrs": { "style": { "width": "5rem" } },
-                    "units": "%"
-                  }
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "default": 0,
+                      "field": {
+                        "binding": "options.alarm.humidity",
+                        "type": "valueSpinner",
+                        "labelText": "Humidity",
+                        "canEdit": true,
+                        "min": 0,
+                        "max": 100,
+                        "dataType": "number",
+                        "fmtMask": "#,##0.##",
+                        "style": { "display": "none" },
+                        "labelAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "inputAttrs": { "style": { "width": "5rem" } },
+                        "units": "%"
+                      }
+                    }
+                  ]
                 },
                 {
-                  "default": 0,
+                  "field": { "type": "div" },
+                  "options": [
+                    {
+                      "default": 0,
+                      "field": {
+                        "binding": "options.alarm.dewpoint",
+                        "type": "valueSpinner",
+                        "labelText": "Dewpoint",
+                        "canEdit": true,
+                        "min": -40,
+                        "max": 200,
+                        "dataType": "number",
+                        "fmtMask": "#,##0.##",
+                        "style": { "display": "none" },
+                        "labelAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "inputAttrs": { "style": { "width": "5rem" } },
+                        "units": "&deg;C"
+                      }
+                    }
+                  ]
+                },
+                {
                   "field": {
-                    "binding": "options.alarm.tolerance",
-                    "type": "valueSpinner",
-                    "labelText": "Tolerance",
-                    "canEdit": true,
-                    "min": 0,
-                    "max": 100,
-                    "dataType": "number",
-                    "fmtMask": "#,##0.##",
-                    "style": { "display": "block" },
-                    "labelAttrs": {
-                      "style": { "width": "5rem" }
-                    },
-                    "inputAttrs": { "style": { "width": "5rem" } },
-                    "units": "%"
-                  }
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "default": 0,
+                      "field": {
+                        "binding": "options.alarm.tolerance",
+                        "type": "valueSpinner",
+                        "labelText": "Tolerance",
+                        "canEdit": true,
+                        "min": 0,
+                        "max": 100,
+                        "dataType": "number",
+                        "fmtMask": "#,##0.##",
+                        "style": { "display": "none" },
+                        "labelAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "inputAttrs": { "style": { "width": "5rem" } }
+                      }
+                    }
+                  ]
                 }
               ]
             }
