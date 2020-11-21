@@ -792,7 +792,7 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async getDispenseStatus(): Promise<{ dispensing: boolean, volume?: number, continuous: boolean, reverse: boolean, maxRate: number, mode: { name: string, desc: string } }> {
         try {
-            if (this.suspendPolling) { return Promise.resolve(this.dispense); }
+            if (this.suspendPolling) { this.suspendPolling = true; return Promise.resolve(this.dispense); }
             this.suspendPolling = true;
             let result = await this.execCommand('D,?', 300);
             let arrDims = result.split(',');
@@ -1014,6 +1014,7 @@ export class AtlasEZOpmp extends AtlasEZO {
                 this.tank.offset = (this.dispense.totalVolume.total || 0) - capacity + level;
             }
             this.calcTankLevel();
+            this.emitFeeds();
             return Promise.resolve(this.values);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
