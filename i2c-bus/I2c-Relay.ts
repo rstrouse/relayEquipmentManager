@@ -292,6 +292,15 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { return Promise.reject(err) };
     }
+    public getDeviceDescriptions(dev) {
+        let desc = [];
+        let category = typeof dev !== 'undefined' ? dev.category : 'unknown';
+        for (let i = 0; i < this.relays.length; i++) {
+            let relay = this.relays[i];
+            desc.push({ type: 'i2c', isActive: this.device.isActive, name: relay.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:${relay.id}`, category: category });
+        }
+        return desc;
+    }
 }
 export class i2cRelayMulti extends i2cRelay {
 

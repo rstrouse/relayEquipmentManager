@@ -482,5 +482,10 @@ export class i2cDeviceBase {
     }
     public get values() { return this.device.values; }
     public get options() { return this.device.options; }
+    public getDeviceDescriptions(dev) {
+        let desc = [];
+        desc.push({ type: 'i2c', isActive: this.device.isActive, name: this.device.name, binding: `i2c:${this.i2c.busId}:${this.device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown' });
+        return desc;
+    }
 }
 export let i2c = new i2cController();
