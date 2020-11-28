@@ -237,16 +237,6 @@ export class AtlasEZO extends i2cDeviceBase {
         catch (err) { logger.error(`Error retrieving device status: ${typeof err !== 'undefined' ? err.message : ''}`); return Promise.reject(err); }
         finally { this.suspendPolling = false; }
     }
-    public async clearCalibration(): Promise<I2cDevice> {
-        try {
-            this.suspendPolling = true;
-            await this.execCommand(`Cal,clear`, 300);
-            await this.getCalibrated();
-            return Promise.resolve(this.device);
-        }
-        catch (err) { this.logError(err); Promise.reject(err); }
-        finally { this.suspendPolling = false; }
-    }
     public async getCalibrated(): Promise<boolean> { return Promise.resolve(true); }
     public async sleep(): Promise<boolean> {
         try {
@@ -1517,7 +1507,7 @@ export class AtlasEZOec extends AtlasEZO {
                 this.options.calibration.points.high = null;
             }
             if (this.options.calibrationMode === 0) {
-                this.options.calibration.points.single = this.options.calibration.points.low = this.options.calibration.points.high = null;
+                if(!utils.makeBool(this.options.suspendTempFeed)) this.options.calibration.points.single = this.options.calibration.points.low = this.options.calibration.points.high = null;
                 if (typeof this.options.calibration.points.dry === 'undefined') this.options.calibration.points.dry = false;
             }
             return Promise.resolve(true);
@@ -1592,8 +1582,8 @@ export class AtlasEZOec extends AtlasEZO {
             else if (data.options.calPointType === 'single') await this.setCalibrationPoint('single', parseFloat(data.options.calPoint));
             else if (data.options.calPointType === 'low') await this.setCalibrationPoint('low', parseFloat(data.options.calPoint));
             else if (data.options.calPointType === 'high') await this.setCalibrationPoint('high', parseFloat(data.options.calPoint));
-            else { return Promise.reject(`Could not calibrate EZO-EC no setpoint was provided. ${JSON.stringify(data)}`) }
-            await this.getCalibrated();
+            else { await this.getCalibrated(); return Promise.reject(`Could not calibrate EZO-EC no setpoint was provided. ${JSON.stringify(data)}`) }
+            
             return Promise.resolve(this.device);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
@@ -1690,7 +1680,7 @@ export class AtlasEZOec extends AtlasEZO {
     }
     public async readProbe(tempCompensation?: number): Promise<number> {
         try {
-            if (typeof tempCompensation !== 'undefined' && this.version < 2.13) {
+            if (typeof tempCompensation !== 'undefined' && this.version < 2.13 && !utils.makeBool(this.options.suspendTempFeed)) {
                 if (tempCompensation !== this.values.temperature) await this.setTempCompensation(tempCompensation);
             }
             // This is the expected order of data coming from the probe.
@@ -1702,8 +1692,8 @@ export class AtlasEZOec extends AtlasEZO {
                 //this.values.conductivity = this.values.dissolvedSolids = this.values.salinity = this.values.specificGravity = null;
                 //return Promise.resolve(0);
             }
-            let result = typeof tempCompensation !== 'undefined' && this.version >= 2.13 ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 600);
-            
+
+            let result = typeof tempCompensation !== 'undefined' && this.version >= 2.13 && !utils.makeBool(this.options.suspendTempFeed) ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 600);
             if (!this.i2c.isMock) {
                 let arrDims = result.split(',');
                 this.values.conductivity = this.options.parameters.conductivity ? parseFloat(arrDims[0]) : null;
@@ -1729,11 +1719,25 @@ export class AtlasEZOec extends AtlasEZO {
             if (!this.options.parameters.specificGravity) {
                 this.values.specificGravity = Math.round(this.toDensity(this.values.salinity, this.values.temperature) / 1000);
             }
-            await this.getTempCompensation();
+            if(!utils.makeBool(this.options.suspendTempFeed)) await this.getTempCompensation();
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(this.values.conductivity);
         }
         catch (err) { this.logError(err); }
+    }
+    public async clearCalibration(): Promise<I2cDevice> {
+        try {
+            this.suspendPolling = true;
+            await this.execCommand(`Cal,clear`, 300);
+            await this.getCalibrated();
+            this.options.calibration.points.dry = false;
+            this.options.calibration.points.low = null;
+            this.options.calibration.points.high = null;
+            this.options.calibration.points.single = null;
+            return Promise.resolve(this.device);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
     }
     public async exportCalibration(): Promise<{ len: number, total: number, data: string[], points:any }> {
         try {

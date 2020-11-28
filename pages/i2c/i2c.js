@@ -395,7 +395,8 @@
         },
         _callServiceEvent: function (evt, fevent) {
             var self = this, o = self.options, el = self.element;
-            var device = dataBinder.fromElement($(evt.currentTarget).parents(`*[data-bindingcontext="device"]:first`));
+            var elDevice = $(evt.currentTarget).parents(`*[data-bindingcontext="device"]:first`);
+            var device = dataBinder.fromElement(elDevice);
             var callObj;
             if (typeof fevent.callContext !== 'undefined') callObj = dataBinder.fromElement($(evt.currentTarget).parents(`*[data-bindingcontext="${fevent.callContext}"]`));
             if (typeof fevent.eventObject === 'string') callObj = $.extend(true, {}, callObj, evt[fevent.eventObject]);
@@ -406,7 +407,7 @@
                     $.putLocalService(servicePath, callObj, fevent.message, function (result, status, xhr) {
                         if (typeof fevent.resultContext !== 'undefined') {
                             var pnl = $(evt.currentTarget).parents(`*[data-bindingcontext="${fevent.resultContext}"]`);
-                            dataBinder.bind($(evt.currentTarget).parents(`*[data-bindingcontext="${fevent.resultContext}"]`), result);
+                            elDevice.find(`*[data-bindingcontext="${fevent.resultContext}"]`).each(function () { dataBinder.bind($(this), result); })
                         }
                     });
                     break;

@@ -18,7 +18,21 @@ interface IConfigItemCollection {
     set(data);
     clear();
 }
-
+export class DeviceBinding {
+    public type: string;
+    public busId: number;
+    public deviceId: number;
+    public binding: string;
+    public params: string[];
+    constructor(binding: string) {
+        let arr = binding.split(':');
+        this.type = arr[0];
+        this.busId = parseInt(arr[1], 10);
+        this.deviceId = parseInt(arr[2], 10);
+        this.params = arr.length > 2 ? arr.slice(3) : [];
+        this.binding = binding;
+    }
+}
 export class ConfigItem {
     constructor(data: any, name?: string) {
         if (typeof name === 'undefined') {
@@ -517,6 +531,23 @@ export class Controller extends ConfigItem {
     public getInternalConnection() {
         return new ConnectionSource({ id: -1, name: 'Internal Devices', type: 'internal' });
     }
+    public async setDeviceState(binding: string | DeviceBinding, data: any) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (bind.type === 'i2c') {
+                return await this.i2c.setDeviceState(bind, data);
+            }
+            else if (bind.type === 'gpio') {
+                return await this.gpio.setDeviceState(bind, data);
+            }
+            else if (bind.type === 'spi') {
+                if (isNaN(bind.busId) || bind.busId > 2)
+                    return Promise.reject(new Error(`setDeviceState: Invalid spi busId ${bind.busId} - ${bind.binding}`));
+            }
+        }
+        catch (err) { return Promise.reject(err); }
+
+    }
 }
 //export class Interfaces extends ConfigItem {
 //    constructor(data, name?: string) { super(data, name || 'interfaces'); }
@@ -569,6 +600,17 @@ export class Gpio extends ConfigItem {
                 devices.push({ uid: `gpio:0:${pin.id}`, id: pin.id, name: `Gpio Pin #${pin.headerId}-${pin.id}`, type: 'gpio', bindings: [{ name: 'state', desc:'State of the Pin', type: 'boolean' }] });
         }
         return devices;
+    }
+    public async setDeviceState(binding: string | DeviceBinding, data: any) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // Find the pinId.
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`setDeviceState: Invalid pin #${bind.binding}`));
+            let pin = this.pins.find(elem => elem.id === bind.deviceId);
+            if (typeof pin === 'undefined') return Promise.reject(new Error(`setDeviceState: Pin #${bind.deviceId} not found.`));
+            return await pin.setDeviceState(bind, data);
+        }
+        catch (err) { return Promise.reject(new Error(`Could not set gpio state: ${err}`)); }
     }
 }
 export class SpiController extends ConfigItem {
@@ -633,6 +675,19 @@ export class I2cController extends ConfigItem {
         let c = this.get(true);
         c.buses = this.buses.toExtendedArray();
         return c;
+    }
+    public async setDeviceState(binding: string | DeviceBinding, data: any) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // A valid device binding for i2c includes i2c:<busId>:<deviceId>.
+            if (isNaN(bind.busId)) return Promise.reject(new Error(`setDeviceState: Invalid i2c bus id ${bind.busId} - ${bind.binding}`));
+            let bus = this.buses.find(elem => elem.id === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c bus not found ${bind.busId} - ${bind.binding}`));
+            // At this point we know the protocol and we know the bus so forward this to our bus.
+            let ret = await bus.setDeviceState(bind, data);
+            ret;
+        }
+        catch (err) { return Promise.reject(err); }
     }
     public async setDevice(dev): Promise<I2cDevice> {
         try {
@@ -788,6 +843,15 @@ export class I2cBus extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async setDeviceState(binding: string | DeviceBinding, data: any) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(`setDeviceState: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`);
+            let device = this.devices.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(`setDeviceState: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`);
+            return await device.setDeviceState(bind, data);
+        } catch (err) { return Promise.reject(err); }
+    }
     public async setDevice(dev): Promise<I2cDevice> {
         try {
             let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
@@ -891,7 +955,7 @@ export class I2cBus extends ConfigItem {
                 devices.push({ uid: `i2c:${this.busNumber}:${device.id}`, id: device.id, name: device.name, deviceId: ad.id, type: 'i2c', busNumber: this.busNumber, bindings: dev.inputs });
             }
         }
-        console.log(devices);
+        //console.log(devices);
         return devices;
     }
     public async setDeviceFeed(data): Promise<I2cDeviceFeedCollection> {
@@ -1016,8 +1080,16 @@ export class I2cDevice extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
-    
+    public async setDeviceState(binding: string | DeviceBinding, data: any) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (this.isActive === false) return Promise.reject(new Error(`setDeviceState: Device not active ${this.name} - ${bind.binding}`));
+            let bus = i2c.buses.find(elem => elem.busId === bind.busId);
+            //i2c.fin
+            // Now we are down to the nitty gritty.  Set the device state on the active device.
+        }
+        catch (err) { return Promise.reject(new Error(`setDeviceState: Error setting device state ${err}`)) }
+    }
 }
 export class I2cDeviceFeedCollection extends ConfigItemCollection<I2cDeviceFeed> {
     constructor(data: any, name?: string) { super(data, name || 'feeds') }
@@ -1212,7 +1284,12 @@ export class GpioPin extends ConfigItem {
         }
         return pin;
     }
+    public setDeviceState(binding: string | DeviceBinding, data: any) {
+        try {
 
+        }
+        catch (err) { return Promise.reject(`setDeviceState: Error setting pin state: ${err}`); }
+    }
 }
 export class GpioPinTriggerCollection extends ConfigItemCollection<GpioPinTrigger> {
     constructor(data: any, name?: string) { super(data, name || 'triggers') }
