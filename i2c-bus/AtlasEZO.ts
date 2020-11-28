@@ -1475,6 +1475,7 @@ export class AtlasEZOec extends AtlasEZO {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
+            if (typeof opts.suspendTempFeed !== 'undefined' && this.options.suspendTempFeed !== opts.suspendTempFeed) await this.suspendTempFeed(utils.makeBool(opts.suspendTempFeed));
             if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.tempCompensation === 'number' && this.options.tempCompensation !== opts.tempCompensation) await this.setTempCompensation(opts.tempCompensation);
             if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
@@ -1565,6 +1566,21 @@ export class AtlasEZOec extends AtlasEZO {
         }
         catch (err) { this.logError(err); }
     }
+    public async suspendTempFeed(feed:boolean): Promise<boolean> {
+        try {
+            if (feed === true) {
+                this.options.suspendTempFeed = true;
+                await this.execCommand(`T,25`, 300);
+                this.values.temperature = 25;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
+            }
+            else {
+                this.options.suspendTempFeed = false;
+            }
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); }
+    }
 
     public async calibrate(data): Promise<I2cDevice> {
         try {
@@ -1573,7 +1589,7 @@ export class AtlasEZOec extends AtlasEZO {
             if (typeof data.options.calPointType == 'undefined') return Promise.reject(`Could not calibrate EZO-EC point type not provider. ${JSON.stringify(data)}`);
             if (data.options.calPointType === 'dry') await this.setCalibrationPoint('dry');
             else if (isNaN(parseFloat(data.options.calPoint))) return Promise.reject(`Could not calibrate EZO-EC ${data.options.calPointType} invalid value ${data.options.calPoint}. ${JSON.stringify(data)}`);
-            else if (data.options.calPointType === 'single') await this.setCalibrationPoint('low', parseFloat(data.options.calPoint));
+            else if (data.options.calPointType === 'single') await this.setCalibrationPoint('single', parseFloat(data.options.calPoint));
             else if (data.options.calPointType === 'low') await this.setCalibrationPoint('low', parseFloat(data.options.calPoint));
             else if (data.options.calPointType === 'high') await this.setCalibrationPoint('high', parseFloat(data.options.calPoint));
             else { return Promise.reject(`Could not calibrate EZO-EC no setpoint was provided. ${JSON.stringify(data)}`) }
@@ -1585,7 +1601,8 @@ export class AtlasEZOec extends AtlasEZO {
     }
     public async setCalibrationPoint(point: string, value?: number): Promise<boolean> {
         try {
-            await this.execCommand(`Cal,${point}${typeof value !== 'undefined' ? ',' + value.toFixed(2) : ''}`, 900);
+            point === 'single' ? await this.execCommand(`Cal,${typeof value !== 'undefined' ? value.toFixed(0) : ''}`, 900) :
+                await this.execCommand(`Cal,${point}${typeof value !== 'undefined' ? ',' + value.toFixed(0) : ''}`, 900);
             if (typeof this.options.calibration === 'undefined') this.options.calibration = {};
             if (typeof this.options.calibration.points === 'undefined') this.options.calibration.points = {};
             if (point === 'dry') {
@@ -1627,8 +1644,10 @@ export class AtlasEZOec extends AtlasEZO {
     }
     public async setTempCompensation(value: number): Promise<boolean> {
         try {
-            await this.execCommand(`T,${value.toFixed(1)}`, 300);
-            this.values.temperature = value;
+            if (!utils.makeBool(this.options.suspendTempFeed)) {
+                await this.execCommand(`T,${value.toFixed(1)}`, 300);
+                this.values.temperature = value;
+            }
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }

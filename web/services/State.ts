@@ -43,5 +43,9 @@ export class StateRoute {
             }
             return res.status(200).send(devices);
         });
+        app.put('/state/device/:binding', (req, res, next) => {
+
+
+        });
     }
 }

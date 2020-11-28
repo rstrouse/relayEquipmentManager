@@ -3626,7 +3626,7 @@ $.ui.position.fieldTip = {
         }
     });
     $.widget("pic.chemTank", {
-        options: { labelText: '', binding: '', min: 0, max: 6 },
+        options: { labelText: '', binding: '', min: 0, max: 6, bindTank: false },
         _create: function () {
             var self = this, o = self.options, el = self.element;
             self._initChemTank();
@@ -3635,6 +3635,7 @@ $.ui.position.fieldTip = {
             var self = this, o = self.options, el = self.element;
             el.attr('data-datatype', 'int');
             el[0].val = function (val) { return self.val(val); };
+            el[0].tank = function (val) { return self.tank(val); };
             el[0].isEmpty = function (val) { return self.isEmpty(); };
             var liquid = $('<div></div>').addClass('chemTank-liquid').appendTo(el);
             $('<div></div>').addClass('chemTank-level-top').appendTo(liquid);
@@ -3656,7 +3657,6 @@ $.ui.position.fieldTip = {
             self.val(o.value);
             self._applyStyles();
             el.on('click', function (evt) {
-                console.log('Tank Clicked');
                 if (makeBool(el.attr('data-setattributes'))) {
                     // Open up the tank attributes dialog.
                     self._createAttributesDialog();
@@ -3761,7 +3761,7 @@ $.ui.position.fieldTip = {
             var self = this, o = self.options, el = self.element;
             return self.val() === 'undefined';
         },
-        val: function (val) {
+        tank: function (val) {
             var self = this, o = self.options, el = self.element;
             if (typeof val !== 'undefined') {
                 var lvl;
@@ -3769,7 +3769,8 @@ $.ui.position.fieldTip = {
                 else if (typeof val === 'object') {
                     lvl = typeof val.level !== 'undefined' ? val.level : o.value;
                     o.max = (typeof val.capacity !== 'undefined') ? val.capacity : o.max;
-                    o.units = (typeof val.units !== 'undefined') ? val.units : o.units;
+                    if (typeof val.units === 'string') o.units === val.units;
+                    else if (typeof val.units === 'object') o.units = val.units.name;
                 }
                 var tot = o.max - o.min;
                 // Calculate the left value.
@@ -3781,7 +3782,29 @@ $.ui.position.fieldTip = {
                 o.value = lvl;
             }
             else {
-                return o.value;
+                return { capacity: o.max, units: o.units, level: o.value };
+            }
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val !== 'undefined') {
+                var lvl;
+                if (typeof val === 'number') lvl = val;
+                else if (typeof val === 'object') {
+                    self.tank(val);
+                    return;
+                }
+                var tot = o.max - o.min;
+                // Calculate the left value.
+                var pct = Math.max(0, Math.min(100, ((lvl - o.min) / (tot)) * 100));
+                var liquid = el.find('div.chemTank-liquid');
+                //console.log(liquid);
+                liquid.find('div.chemTank-level-top').css({ top: 'calc(' + (100 - pct) + '% - 12.5px)' });
+                liquid.find('div.chemTank-level').css({ top: 'calc(' + (100 - pct) + '% - 12.5px)', height: 'calc(' + pct + '% + 25px)' });
+                o.value = lvl;
+            }
+            else {
+                return o.bindTank ? self.tank() : o.value;
             }
         }
     });

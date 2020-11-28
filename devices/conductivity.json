@@ -817,6 +817,13 @@
                               }
                             }
                           }
+                        },
+                        {
+                          "field": {
+                            "type": "checkbox",
+                            "bind": "options.suspendTempFeed",
+                            "labelText": "Suspend Temperature Feed"
+                          }
                         }
                       ]
                     }
