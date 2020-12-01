@@ -5,7 +5,7 @@ import * as extend from "extend";
 import { Buffer } from "buffer";
 import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";
-import { I2cDevice } from "../boards/Controller";
+import { I2cDevice, DeviceBinding } from "../boards/Controller";
 
 export class i2cRelay extends i2cDeviceBase {
     protected static commandBytes = {
@@ -14,6 +14,7 @@ export class i2cRelay extends i2cDeviceBase {
         pcf8574: [],
         seeed: [0x06]
     };
+    protected _latchTimers = {};
     public get relays() { return typeof this.values.relays === 'undefined' ? this.values.relays = [] : this.values.relays; }
     public set relays(val) { this.values.relays = val; }
     protected getCommandByte(ord: number): number {
@@ -183,6 +184,7 @@ export class i2cRelay extends i2cDeviceBase {
                     break;
             }
             if (typeof byte !== 'undefined') {
+                if (this.i2c.isMock) byte = relay.state;
                 let b = utils.makeBool(byte);
                 if (relay.state !== b) {
                     relay.state = b;
@@ -231,6 +233,7 @@ export class i2cRelay extends i2cDeviceBase {
             if (typeof relay === 'undefined') {
                 return Promise.reject(`${this.device.name} - Invalid Relay id: ${opts.id}`);
             }
+            let newState = utils.makeBool(opts.state);
             // Make the relay command.
             switch (this.device.options.idType) {
                 case 'sequent8':
@@ -240,11 +243,15 @@ export class i2cRelay extends i2cDeviceBase {
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
                         for (let i = 0; i < this.relays.length; i++) {
                             let r = this.relays[i];
-                            if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
+                            if (utils.makeBool(r.state) || (relay.id === r.id && newState)) {
                                 byte |= (1 << (r.id - 1));
                             }
                         }
                         await this.sendCommand([0x01, byte]);
+                        if (relay.state !== newState) {
+                            relay.state = newState;
+                            relay.tripTime = new Date().getTime();
+                        }
                     }
                     break;
                 case 'sequent4':
@@ -254,11 +261,15 @@ export class i2cRelay extends i2cDeviceBase {
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
                         for (let i = 0; i < this.relays.length; i++) {
                             let r = this.relays[i];
-                            if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
+                            if (utils.makeBool(r.state) || (relay.id === r.id && newState)) {
                                 byte |= (1 << (r.id - 1));
                             }
                         }
                         await this.sendCommand([0x01, byte << 4]);
+                        if (relay.state !== newState) {
+                            relay.state = newState;
+                            relay.tripTime = new Date().getTime();
+                        }
                     }
                     break;
                 case 'bit':
@@ -271,7 +282,7 @@ export class i2cRelay extends i2cDeviceBase {
                         let byte = 0x00;
                         for (let i = bmOrd * 8; i < this.relays.length && i < (bmOrd * 8) + 8; i++) {
                             let r = this.relays[i];
-                            if (utils.makeBool(r.state) || (relay.id === r.id && utils.makeBool(opts.state))) {
+                            if (utils.makeBool(r.state) || (relay.id === r.id && newState)) {
                                 byte |= (1 << (r.id - (bmOrd * 8) - 1));
                             }
                         }
@@ -286,7 +297,9 @@ export class i2cRelay extends i2cDeviceBase {
             }
             if (command.length > 0) {
                 await this.sendCommand(command);
-                relay.state = utils.makeBool(opts.state);
+                if (relay.state !== newState)
+                    relay.tripTime = new Date().getTime();
+                relay.state = newState;
             }
             return Promise.resolve(relay);
         }
@@ -301,6 +314,34 @@ export class i2cRelay extends i2cDeviceBase {
         }
         return desc;
     }
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what relay we are referring to.
+            // i2c:1:24:3
+            let relayId = parseInt(bind.params[0], 10);
+            if (isNaN(relayId)) return Promise.reject(new Error(`setDeviceState: Invalid relay Id ${bind.params[0]}`));
+            let relay = this.relays.find(elem => elem.id === relayId);
+            if (typeof relay === 'undefined') return Promise.reject(new Error(`setDeviceState: Could not find relay Id ${bind.params[0]}`));
+            if (!relay.enabled) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] is not enabled.`));
+            let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
+            if (isNaN(latch)) return Promise.reject(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`)
+            let ordId = `r${relayId}`;
+            let _lt = this._latchTimers[ordId];
+            if (typeof _lt !== 'undefined') {
+                clearTimeout(_lt);
+                this._latchTimers[ordId] = undefined;
+            }
+            await this.readRelayState(relay);
+            // Now that the relay has been read lets set its state.
+            let newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
+            let oldState = relay.state;
+            if (newState !== oldState) await this.setRelayState({ id: relayId, state: newState });
+            if (latch > 0) this._latchTimers[ordId] = setTimeout(() => this.setRelayState({ id: relayId, state: oldState }), latch);
+            return extend(true, {}, relay, { oldState: oldState, latchDuration: new Date().getTime() - relay.tripTime });
+        } catch (err) { return Promise.reject(err); }
+    }
+
 }
 export class i2cRelayMulti extends i2cRelay {
 

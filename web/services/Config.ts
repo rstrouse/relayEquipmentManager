@@ -324,5 +324,12 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+        app.get('/config/device/:binding', async (req, res, next) => {
+            try {
+                let dev = await cont.getDevice(req.params.binding);
+                return res.status(200).send(dev.get(true));
+            }
+            catch (err) { next(err); }
+        });
     }
 }

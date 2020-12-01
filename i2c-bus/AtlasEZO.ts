@@ -1606,6 +1606,7 @@ export class AtlasEZOec extends AtlasEZO {
                 this.options.calibration.points.low = null;
                 this.options.calibration.points.high = null;
                 this.options.calibration.points.single = value;
+                await this.getCalibrated();
             }
             else if (point === 'low') {
                 this.options.calibration.points.dry = true;
@@ -1616,6 +1617,7 @@ export class AtlasEZOec extends AtlasEZO {
             else {
                 this.options.calibration.points.dry = true;
                 this.options.calibration.points.high = value;
+                await this.getCalibrated();
             }
             return Promise.resolve(true);
         }

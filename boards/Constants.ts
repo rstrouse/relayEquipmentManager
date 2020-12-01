@@ -65,8 +65,8 @@ export class valueMaps {
         [4, { name: 'gpio', desc: 'General Purpose I/O'}]
     ]);
     public pinStates: valueMap = new valueMap([
-        [0, { name: 'off', desc: 'Off', inst: 'The pin is currently off.', gpio:0 }],
-        [1, { name: 'on', desc: 'On', inst: 'The pin is currently on.', gpio:1 }],
+        [0, { name: 'off', desc: 'Off', inst: 'The pin is currently off.', gpio:0, boolean: false }],
+        [1, { name: 'on', desc: 'On', inst: 'The pin is currently on.', gpio:1, boolean: true }],
         [2, { name: 'unknown', desc: 'Unknown', inst: 'The state of the pin is currently unknown.' }]
     ]);
     public headerSex: valueMap = new valueMap([

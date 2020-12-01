@@ -1,5 +1,5 @@
 ﻿import { logger } from "../logger/Logger";
-import { I2cController, cont, I2cBus, I2cDevice, I2cDeviceFeed } from "../boards/Controller";
+import { I2cController, cont, I2cBus, I2cDevice, I2cDeviceFeed, DeviceBinding } from "../boards/Controller";
 import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices } from "../devices/AnalogDevices";
 import { utils } from "../boards/Constants";
@@ -486,6 +486,12 @@ export class i2cDeviceBase {
         let desc = [];
         desc.push({ type: 'i2c', isActive: this.device.isActive, name: this.device.name, binding: `i2c:${this.i2c.busId}:${this.device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown' });
         return desc;
+    }
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            return this.values;
+        } catch (err) { return Promise.reject(err); }
     }
 }
 export let i2c = new i2cController();

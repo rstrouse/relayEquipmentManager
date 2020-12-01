@@ -7,7 +7,7 @@ import { setTimeout } from "timers";
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { vMaps, valueMap, utils } from "./Constants";
-import { cont } from "../boards/Controller";
+import { cont, DeviceBinding } from "../boards/Controller";
 
 import { PinDefinitions } from "../pinouts/Pinouts";
 import { connBroker } from "../connections/Bindings";
@@ -72,6 +72,7 @@ export class GpioController  {
                             pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
                         }
                         cont.gpio.setExported(pinout.gpioId);
+
                         exported.push(pinout.gpioId);
                         pin.gpio.read().then((value) => {
                             pin.state = value;
@@ -104,7 +105,7 @@ export class GpioController  {
     }
     public readPinAsync(headerId: number, pinId: number): Promise<number> {
         let pin = this.pins.find(elem => elem.headerId === headerId && elem.pinId === pinId);
-        if (typeof pin === 'undefined') throw new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`);
+        if (typeof pin === 'undefined') throw new Error(`Invalid Pin #${headerId}-${pinId}. Could not find pin in controller`);
         return new Promise<number>(async (resolve, reject) => {
             try {
                 let val = await pin.gpio.read();
