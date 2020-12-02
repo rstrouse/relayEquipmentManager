@@ -814,5 +814,45 @@
                 });
         }
     });
+    $.widget('pic.pnlI2cADC', {
+        options: {},
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-i2cdevice-adc');
+            el.attr('data-bind', 'channelStates');
+            el[0].val = function (val) { return self.val(val); }
+
+            self._buildControls();
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            var line = $('<div></div>').appendTo(el);
+            $('<div></div>').appendTo(line).pickList({
+                labelText: "Converter",
+                binding: 'options.adcType',
+                columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'desc', text: 'Converter', style: { whiteSpace: 'nowrap' } }],
+                items: o.adcTypes,
+                inputAttrs: { style: { width: '10rem' } }
+            }).on('selchanged', function (evt) {
+                el.find('div.adc-board').each(function () {
+                    this.channelCount(evt.newItem.options.maxChannels);
+                });
+            });
+            line = $('<div></div>').appendTo(line);
+            $('<hr></hr>').appendTo(line);
+            line = $('<div></div>').appendTo(line);
+            $('<div></div>').appendTo(el).css({ width: '21rem' }).adcBoard({ binding: 'values.channels' })
+                .on('saveChannel', function (evt) {
+                });
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val !== 'undefined')
+                el.find('div.adc-board').each(function () {
+                    for (var i = 0; i < val.length; i++)  this.setChannel(val[i]);
+                });
+        }
+    });
+
 
 })(jQuery);

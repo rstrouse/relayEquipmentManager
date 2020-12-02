@@ -3808,6 +3808,185 @@ $.ui.position.fieldTip = {
             }
         }
     });
+    $.widget('pic.adcBoard', {
+        options: { columns: 4, total: 0, channels: [] },
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].val = function (val) { return self.val(val); };
+            el[0].channelCount = function (val) { return self.channelCount(val); };
+            el[0].setChannel = function (val) { return self.setChannel(val); }
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('adc-board');
+            if (typeof o.binding !== 'undefined') el.attr('data-bind', o.binding);
+            for (var i = 0; i < o.total; i++) {
+                self.addChannel(o.channels.find(elem => elem.id === i + 1) || { id: i + 1, name: `Channel #${i + 1}`, enabled: false });
+            }
+            el.on('click', 'span.channel-module-configure', function (e) {
+                var evt = $.Event('configureChannel');
+                var elemChannel = $(e.currentTarget).parents('div.channel-module:first');
+                var id = parseInt(elemChannel.attr('data-channelid'), 10);
+                evt.channel = o.channels.find(elem => elem.id === id) || { id: id, name: `Channel #${id}`, enabled: false };
+                el.trigger(evt);
+                if (!evt.isDefaultPrevented()) {
+                    self.openConfigureChannel(evt.channel);
+                }
+                e.stopImmediatePropagation();
+                e.preventDefault();
+            });
+            el.on('click', 'div.channel-module', function (e) {
+                if (!$(e.currentTarget).hasClass('disabled')) {
+                    var evt = $.Event('clickChannel');
+                    var elemChannel = $(e.currentTarget);
+                    var id = parseInt(elemChannel.attr('data-channelid'), 10);
+                    evt.channel = o.channels.find(elem => elem.id === id) || { id: id, name: `Channel #${id}`, enabled: false };
+                    el.trigger(evt);
+                }
+                e.stopImmediatePropagation();
+                e.preventDefault();
+            });
+        },
+        openConfigureChannel: function (channel) {
+            var self = this, o = self.options, el = self.element;
+            var dlg = $.pic.modalDialog.createDialog(`dlgEditChannel${channel.id}`, {
+                width: '407px',
+                height: 'auto',
+                title: `Edit Channel #${channel.id}`,
+                position: { my: "center center", at: "center center", of: window },
+                buttons: [
+                    {
+                        text: 'Save', icon: '<i class="fas fa-save"></i>',
+                        click: (evt) => {
+                            var r = dataBinder.fromElement(dlg);
+                            if (dataBinder.checkRequired(dlg, true)) {
+                                self.saveChannel(r);
+                            }
+                            $.pic.modalDialog.closeDialog(dlg[0]);
+                        }
+                    },
+                    {
+                        text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                        click: function () { $.pic.modalDialog.closeDialog(this); }
+                    }
+                ]
+            });
+            $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(channel.id);
+            $('<div></div>').appendTo(dlg).html('Enable this channel if you are controlling it from REM.  Changes to the channel will not be saved until you save the overall channel.<hr style="margin:3px"></hr>');
+            $('<hr></hr>').appendTo(dlg);
+            var line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });
+            $('<div></div>').appendTo(line).checkbox({ labelText: 'Enabled', binding: 'enabled' });
+            line = $('<div></div>').appendTo(dlg);
+            dataBinder.bind(dlg, channel);
+            dlg.css({ overflow: 'visible' });
+        },
+        createChannelElem: function (channel) {
+            var self = this, o = self.options, el = self.element;
+            var module = $('<div></div>').addClass('channel-module');
+            var header = $('<div></div>').appendTo(module);
+            $('<span></span>').addClass('channel-module-indicator').appendTo(header);
+            $('<i class="fas fa-cogs"></i>').appendTo($('<span></span>').addClass('channel-module-configure').addClass('header-icon-btn').appendTo(header));
+            module.attr('data-channelid', channel.id);
+            var name = $('<div></div>').addClass('channel-module-name').appendTo(module);
+            $('<span></span>').appendTo(name).text(channel.name);
+            if (typeof channel === 'undefined' || !makeBool(channel.enabled)) module.addClass('disabled');
+            module.attr('data-state', makeBool(channel.state));
+            return module;
+        },
+        addChannel: function (channel) {
+            var self = this, o = self.options, el = self.element;
+            var before;
+            console.log(channel);
+            el.children('div.channel-module').each(function () {
+                if (parseInt($(this).attr('data-channelid'), 10) > channel.id) {
+                    before = $(this);
+                    return false;
+                }
+            });
+            if (typeof before !== 'undefined' && before.length > 0) self.createChannelElem(channel).insertBefore(before);
+            else self.createChannelElem(channel).appendTo(el);
+            if (typeof o.channels.find(elem => elem.id === channel.id) === 'undefined') {
+                o.channels.push(channel);
+                o.channels.sort((a, b) => { return a.id - b.id; });
+            }
+        },
+        setChannel: function (channel) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof channel.id === 'undefined') return;
+            var r = o.channels.find(elem => elem.id === channel.id);
+            if (typeof r === 'undefined') {
+                channel.enabled = makeBool(channel.enabled);
+                if (typeof channel.name === 'undefined') channel.name(`Channel #${channel.id}`);
+                self.addChannel(channel);
+            }
+            else {
+                for (var prop in channel) {
+                    if (prop !== 'id') r[prop] = channel[prop];
+                }
+            }
+            var elemChannel = el.find(`div.channel-module[data-channelid="${channel.id}"]`);
+            if (typeof channel.state !== 'undefined') elemChannel.attr('data-state', makeBool(channel.state));
+            if (elemChannel.length === 0) self.addChannel(channel);
+            else {
+                elemChannel.find('div.channel-module-name > span').text(channel.name);
+                if (channel.enabled) elemChannel.removeClass('disabled');
+                else elemChannel.addClass('disabled');
+            }
+        },
+        saveChannel: function (channel) {
+            var self = this, o = self.options, el = self.element;
+            var evt = $.Event('saveChannel');
+            evt.channel = channel;
+            el.trigger(evt);
+            if (!evt.isDefaultPrevented()) {
+                self.setChannel(evt.channel);
+            }
+        },
+        removeChannel: function (channelId) {
+            var self = this, o = self.options, el = self.element;
+            for (var i = o.channels.length - 1; i >= 0; i--) {
+                if (o.channels[i].id > count) o.channels.splice(i, 1);
+            }
+            el.find(`div.channel-module[data-channelid = "${channelId}]`).remove();
+        },
+        channelCount: function (count) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof count !== 'undefined') {
+                console.log(o.channels);
+                o.channels.sort((a, b) => { return a.id - b.id; });
+                if (count < o.channels.length) {
+                    for (var i = o.channels.length - 1; i >= 0; i--) {
+                        if (o.channels[i].id > count) o.channels.splice(i, 1);
+                    }
+                    el.find('div.channel-module').each(function () {
+                        var id = parseInt($(this).attr('data-channelid'), 10);
+                        if (id > count) $(this).remove();
+                    });
+                }
+                else if (count > o.channels.length) {
+                    for (var i = o.channels.length; i < count; i++) {
+                        self.addChannel({ id: i + 1, name: `Channel #${i + 1}`, enabled: false });
+                    }
+                }
+            }
+            else return o.channels.length;
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            console.log(val);
+            if (typeof val !== 'undefined') {
+                self.channelCount(val.length);
+                val.sort((a, b) => { return a.id - b.id });
+                for (var i = 0; i < val.length; i++) {
+                    self.setChannel(val[i]);
+                }
+            }
+            else return o.channels;
+        }
+    });
+
 })(jQuery);
 $.pic.modalDialog.createDialog = function (id, options) {
     var opt = typeof options !== 'undefined' && options !== null ? options : {

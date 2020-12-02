@@ -1,0 +1,87 @@
+﻿{
+  "category": "A/D Converters",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 700,
+      "name": "ADS1x15 ADC",
+      "input": "boolean",
+      "deviceClass": "ads1x15",
+      "module": "./ads1x15",
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 24,
+                  "style": { "width": "16rem" }
+                },
+                "style": { "display": "block" }
+              }
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "fieldset",
+            "legend": "Channels",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            },
+            "cssClass": "i2cReadingValues",
+            "attrs": { "data-bindingcontext": "channels" }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "div",
+                "style": { "width": "21rem" },
+                "html": "Enable each channel you are going to monitor. Each channel must be enabled individually.<hr style=\"margin:2px\"></hr>Only the channels you will be available for feeds.",
+                "cssClass": "script-advanced-instructions"
+              }
+            },
+            {
+              "field": {
+                "type": "panel",
+                "class": "pnlI2cADC",
+                "adcTypes": [
+                  {
+                    "name": "ads1115",
+                    "desc": "ADS1115 16-bit",
+                    "options": {
+                      "maxChannels": 4
+                    }
+                  },
+                  {
+                    "name": "ads1105",
+                    "desc": "ADS1105 12-bit",
+                    "options": {
+                      "maxChannels": 4
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "interfaces": [ "i2c" ]
+    }
+  ]
+}
