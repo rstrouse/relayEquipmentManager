@@ -182,9 +182,10 @@ export class HttpServer extends ProtoServer {
     public init(cfg) {
         if (cfg.enabled) {
             this.app = express();
-
+            
             //this.app.use();
             this.server = http.createServer(this.app);
+            
             if (cfg.httpsRedirect) {
                 var cfgHttps = config.getSection('web').server.https;
                 this.app.get('*', (res: express.Response, req: express.Request) => {

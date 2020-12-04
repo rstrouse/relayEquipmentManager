@@ -229,6 +229,7 @@ export class i2cRelay extends i2cDeviceBase {
     public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
         try {
             let relay = this.relays.find(elem => { return elem.id === opts.id });
+            let oldState = relay.state;
             let command: number[] = [];
             if (typeof relay === 'undefined') {
                 return Promise.reject(`${this.device.name} - Invalid Relay id: ${opts.id}`);
@@ -297,10 +298,12 @@ export class i2cRelay extends i2cDeviceBase {
             }
             if (command.length > 0) {
                 await this.sendCommand(command);
-                if (relay.state !== newState)
+                if (relay.state !== newState) {
                     relay.tripTime = new Date().getTime();
+                }
                 relay.state = newState;
             }
+            if(relay.state !== oldState) webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
             return Promise.resolve(relay);
         }
         catch (err) { return Promise.reject(err) };
