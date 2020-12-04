@@ -484,7 +484,7 @@ export class AtlasEZOpH extends AtlasEZO {
                 if (tempCompensation !== this.values.temperature) await this.setTempCompensation(tempCompensation);
             }
             let result = typeof tempCompensation !== 'undefined' && this.version >= 2.12 ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 900);
-            let val = parseFloat(result);
+            let val = this.i2c.isMock ? 7.4 + (Math.floor(Math.random() * 100) / 1000) : parseFloat(result);
             this.values.pH = val;
             if (typeof tempCompensation !== 'undefined') this.values.temperature = tempCompensation;
             else await this.getTempCompensation();

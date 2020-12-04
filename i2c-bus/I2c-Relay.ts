@@ -340,7 +340,9 @@ export class i2cRelay extends i2cDeviceBase {
             let newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
             let oldState = relay.state;
             if (newState !== oldState) await this.setRelayState({ id: relayId, state: newState });
-            if (latch > 0) this._latchTimers[ordId] = setTimeout(() => this.setRelayState({ id: relayId, state: oldState }), latch);
+            if (latch > 0) {
+                this._latchTimers[ordId] = setTimeout(() => this.setRelayState({ id: relayId, state: !newState }), latch);
+            }
             return extend(true, {}, relay, { oldState: oldState, latchDuration: new Date().getTime() - relay.tripTime });
         } catch (err) { return Promise.reject(err); }
     }
