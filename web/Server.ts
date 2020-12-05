@@ -202,7 +202,7 @@ export class HttpServer extends ProtoServer {
                 if ('OPTIONS' === req.method) { res.sendStatus(200); }
                 else {
                     if (req.url !== '/device') {
-                        console.log(`${req.ip} ${req.method} ${req.url} ${typeof req.body === 'undefined' ? '' : JSON.stringify(req.body)}`);
+                        logger.verbose(`${req.ip} ${req.method} ${req.url} ${typeof req.body === 'undefined' ? '' : JSON.stringify(req.body)}`);
                     }
                     next();
                 }

@@ -65,7 +65,7 @@ export class AtlasEZO extends i2cDeviceBase {
                     return Promise.resolve({ response: value.buffer[0], error: this.createError(value.buffer[0], command) });
             }
             let data = value.buffer.toString('utf8', 1).replace(/^[\s\uFEFF\xA0\0]+|[\s\uFEFF\xA0\0]+$/g, '');
-            logger.info(`${this.device.name} command ${command} bytes written:${w} result:${data}`);
+            logger.debug(`${this.device.name} command ${command} bytes written:${w} result:${data}`);
             return Promise.resolve({ response: value.buffer[0], data: data });
         }
         catch (err) { return Promise.resolve({ response: -1, error: err }); }
@@ -77,7 +77,7 @@ export class AtlasEZO extends i2cDeviceBase {
                 if (this.processing++ > 10) {
                     return Promise.reject(new Error(`${this.device.name}: Device busy could not send command ${command}`))
                 }
-                logger.info(`${this.device.name}: Node busy waiting to send command ${command}`);
+                logger.warn(`${this.device.name}: Node busy waiting to send command ${command}`);
                 await new Promise((resolve, reject) => { setTimeout(() => resolve(), 150); });
             }
             this.processing = 1;
@@ -682,7 +682,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             case 'paused': { return this.dispense.paused; }
             case 'all': { return this.values; }
             default:
-                console.log(`EZO-PMP Asked for values ${prop}`);
+                logger.debug(`EZO-PMP Asked for values ${prop}`);
                 break;
         }
     }

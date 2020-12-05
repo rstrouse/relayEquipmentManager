@@ -14,7 +14,8 @@ export class ConfigRoute {
         app.get('/config/options/general', (req, res) => {
             let opts = {
                 controllerTypes: vMaps.controllerTypes.toArray(),
-                controller: cont.getExtended()
+                controller: cont.getExtended(),
+                logger: config.getSection('log')
             };
             return res.status(200).send(opts);
         });
@@ -331,6 +332,16 @@ export class ConfigRoute {
                 return res.status(200).send(dev.get(true));
             }
             catch (err) { next(err); }
+        });
+        app.get('/app/options/logger', (req, res) => {
+            let opts = {
+                logger: config.getSection('log')
+            }
+            return res.status(200).send(opts);
+        });
+        app.put('/app/logger/setOptions', (req, res) => {
+            logger.setOptions(req.body);
+            return res.status(200).send(logger.options);
         });
     }
 }

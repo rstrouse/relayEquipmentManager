@@ -202,7 +202,7 @@ class SocketServerConnection extends ServerConnection {
         let obj = {};
         obj[opts.property] = opts.value;
         if (typeof opts.options === 'object') obj = extend(true, obj, opts.options);
-        console.log(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
+        logger.verbose(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
         this._sock.emit('/' + opts.eventName, JSON.stringify(obj));
     }
 }
@@ -246,7 +246,7 @@ class MqttConnection extends ServerConnection {
         else if (this._mqtt.connected) {
             logger.silly(`Sending on MQTT Channel ${JSON.stringify(opts)}`);
             this._mqtt.publish(opts.eventName, JSON.stringify(opts.value), { retain: true, qos: 2 }, (err) => {
-                if (err) console.log(err);
+                if (err) logger.error(err);
             });
         }
     }

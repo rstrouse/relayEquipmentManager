@@ -26,7 +26,8 @@
   "log": {
     "app": {
       "enabled": true,
-      "level": "info"
+      "level": "info",
+      "logToFile":  false
     }
   },
   "appVersion": "1.0.0"

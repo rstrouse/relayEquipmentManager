@@ -2,6 +2,7 @@
 import * as fs from 'fs';
 import * as winston from 'winston';
 import * as os from 'os';
+import { utils } from "../boards/Constants";
 import { config } from '../config/Config';
 import { webApp } from '../web/Server';
 
@@ -13,13 +14,16 @@ class Logger {
     }
     private cfg;
     private consoleToFilePath: string;
-    private transports: { console: winston.transports.ConsoleTransportInstance, file?: winston.transports.FileTransportInstance } = {
+    private transports: { console: winston.transports.ConsoleTransportInstance, file?: winston.transports.FileTransportInstance, consoleFile?: winston.transports.FileTransportInstance } = {
         console: new winston.transports.Console({ level: 'silly' })
-    }
+    };
     private captureForReplayBaseDir: string;
     private captureForReplayPath: string;
     private pktTimer: NodeJS.Timeout;
     private currentTimestamp: string;
+    private myFormat = winston.format.printf(({ level, message, label }) => {
+        return `[${new Date().toLocaleString()}] ${level}: ${message}`;
+    });
     private getConsoleToFilePath(): string {
         return 'consoleLog(' + this.getLogTimestamp() + ').log';
     }
@@ -38,6 +42,16 @@ class Logger {
             transports: [this.transports.console]
         });
         this.transports.console.level = this.cfg.app.level;
+        if (this.cfg.app.logToFile) {
+            this.transports.consoleFile = new winston.transports.File({
+                filename: path.join(process.cwd(), '/logs', this.getConsoleToFilePath()),
+                level: 'silly',
+                format: winston.format.combine(winston.format.splat(), winston.format.uncolorize(), this.myFormat)
+            });
+            this.transports.consoleFile.level = this.cfg.app.level;
+            this._logger.add(this.transports.consoleFile);
+        }
+
     }
     public async stopAsync() { }
     public get options(): any { return this.cfg; }
@@ -63,8 +77,25 @@ class Logger {
                 c[prop] = opts[prop];
         }
         config.setSection('log', this.cfg);
+        if (utils.makeBool(this.cfg.app.logToFile)) {
+            if (typeof this.transports.consoleFile === 'undefined') {
+                this.transports.consoleFile = new winston.transports.File({
+                    filename: path.join(process.cwd(), '/logs', this.getConsoleToFilePath()),
+                    level: 'silly',
+                    format: winston.format.combine(winston.format.splat(), winston.format.uncolorize(), this.myFormat)
+                });
+                this._logger.add(this.transports.consoleFile);
+            }
+        }
+        else {
+            if (typeof this.transports.consoleFile !== 'undefined') {
+                this._logger.remove(this.transports.consoleFile);
+                this.transports.consoleFile.close();
+                this.transports.consoleFile = undefined;
+            }
+        }
         for (let [key, transport] of Object.entries(this.transports)) {
-            transport.level = this.cfg.app.level;
+            if (typeof transport !== 'undefined') transport.level = this.cfg.app.level;
         }
     }
 }

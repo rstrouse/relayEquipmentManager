@@ -251,7 +251,7 @@ export class Controller extends ConfigItem {
             this._timerDirty = null;
         }
         if (this._isDirty) {
-            logger.verbose(`Setting Dirty... ${val} ${new Date().getTime() - this._lastPersisted.getTime()}`);
+            logger.silly(`Setting Dirty... ${val} ${new Date().getTime() - this._lastPersisted.getTime()}`);
             if (new Date().getTime() - this._lastPersisted.getTime() > 10000) //TODO: Set this higher as we don't need to write it every 10 seconds.
                 this.persist();
             else
@@ -260,7 +260,7 @@ export class Controller extends ConfigItem {
     }
     public persist() {
         this._isDirty = false;
-        logger.verbose('Persisting Configuration data...');
+        logger.debug('Persisting Configuration data...');
         // Don't overwrite the configuration if we failed during the initialization.
         Promise.resolve()
             .then(() => { fs.writeFileSync(this.cfgPath, JSON.stringify(this.data, undefined, 2)); })

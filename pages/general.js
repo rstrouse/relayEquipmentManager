@@ -11,13 +11,12 @@
             var tabs = $('<div class="picTabPanel"></div>');
             el.addClass('config-general');
             $.getLocalService('/config/options/general', null, function (data, status, xhr) {
-                console.log(data);
                 var outer = $('<div></div>').appendTo(el).addClass('control-panel');
                 var head = $('<div></div>').appendTo(outer).addClass('pnl-settings-header').addClass('control-panel-title');
                 $('<span></span>').appendTo(head).addClass('header-text').text('Settings');
                 var settings = $('<div></div>').appendTo(outer).addClass('pnl-board-settings');
 
-                var line = $('<div></div>').appendTo(settings);
+                var line = $('<div></div>').appendTo(settings).addClass('pnl-board-controllersettings');
                 $('<div></div>').appendTo(line).pickList({
                     required: true,
                     bindColumn: 0, displayColumn: 1, labelText: 'Board', binding: 'controllerType',
@@ -42,7 +41,36 @@
                             el.find('div#cbI2c')[0].val(false);
                         }
                     });
-                var grpInterfaces = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpInterfaces');
+                var grpLogs = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpLogs');
+                $('<legend></legend>').appendTo(grpLogs).text('Logging');
+                line = $('<div></div>').appendTo(grpLogs);
+                $('<div></div>').appendTo(line).pickList({
+                    bindColumn: 0, displayColumn: 1, labelText: 'Level', binding: 'app.level', value: data.logger.app.level,
+                    columns: [{ binding: 'val', hidden: true, text: 'Val', style: { whiteSpace: 'nowrap' } }, { binding: 'name', hidden: false, text: 'Log Level', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { whiteSpace: 'nowrap' } }],
+                    items: [
+                        { val: 'error', name: 'Error', desc: 'Only errors are logged' },
+                        { val: 'warn', name: 'Warn', desc: 'Errors and warnings are logged' },
+                        { val: 'info', name: 'Info', desc: 'Informational events, warnings, and errors are logged' },
+                        { val: 'verbose', name: 'Verbose', desc: 'A high level of events are logged' },
+                        { val: 'debug', name: 'Debug', desc: 'Includes additional debugging information' },
+                        { val: 'silly', name: 'Silly', desc: 'A silly amount of information is logged' }
+                    ], inputAttrs: { style: { width: '9rem' } }, labelAttrs: { style: { width: '4rem' } }
+                }).on('selchanged', function (evt) {
+                    if (typeof evt.oldItem !== 'undefined') {
+                        var opt = $(evt.currentTarget);
+                        var obj = dataBinder.fromElement(opt);
+                        $.putLocalService('app/logger/setOptions', obj);
+                    }
+                });
+
+                $('<div></div>').appendTo(line).checkbox({ id: 'cbLogToFile', labelText: 'Log to File', binding: 'app.logToFile', value: data.logger.app.logToFile, })
+                    .on('changed', function (evt) {
+                        var opt = $(evt.currentTarget);
+                        var obj = dataBinder.fromElement(opt);
+                        $.putLocalService('app/logger/setOptions', obj);
+                    });
+
+                var grpInterfaces = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpInterfaces').addClass('pnl-board-controllersettings');
                 $('<legend></legend>').appendTo(grpInterfaces).text('SPI - Interface');
                 line = $('<div></div>').appendTo(grpInterfaces);
                 $('<div></div>').appendTo(line).checkbox({ id: 'cbSpi0', labelText: 'SPI0 - Serial Peripheral Interface', binding: 'spi0.isActive' }).hide()
@@ -75,12 +103,12 @@
                     .on('click', function (evt) { self.saveSettings(); });
                 o.controllerTypes = data.controllerTypes;
                 self.dataBind(data.controller);
+                
                 conns[0].dataBind(data.controller.connections);
             });
         },
         dataBind: function (data) {
             var self = this, o = self.options, el = self.element;
-            var settings = el.find('div.pnl-board-settings:first');
             _controller().boardType(o.controllerTypes.find(elem => elem.name === data.controllerType));
             el.find('div.crud-list#crudI2cBuses').each(function () {
                 this.clear();
@@ -89,21 +117,30 @@
                     this.addRow(bus);
                 }
             });
-            dataBinder.bind(settings, data);
+            el.find('.pnl-board-controllersettings').each(function () {
+                dataBinder.bind($(this), data);
+            });
             o.controller = data;
         },
         saveSettings: function () {
             var self = this, o = self.options, el = self.element;
             var settings = el.find('div.pnl-board-settings:first');
-            var cont = dataBinder.fromElement(settings);
+            var cont = self.getSettings();
             // Send this off to the service.
             $.putLocalService('/config/general', cont, 'Saving Settings...', function (controller, status, xhr) { self.dataBind(controller); });
+        },
+        getSettings: function () {
+            var settings = {};
+            var self = this, o = self.options, el = self.element;
+            el.find('.pnl-board-controllersettings').each(function () {
+                dataBinder.fromElement($(this), settings);
+            });
+            return settings;
         },
         checkChanged: function (newTabId) {
             var self = this, o = self.options, el = self.element;
             var bChanged = false;
-            var settings = el.find('div.pnl-board-settings:first');
-            var cont = dataBinder.fromElement(settings);
+            var cont = self.getSettings();
             if (o.controller.controllerType !== cont.controllerType ||
                 cont.spi0.isActive !== o.controller.spi0.isActive ||
                 cont.spi1.isActive !== o.controller.spi1.isActive) bChanged = true;

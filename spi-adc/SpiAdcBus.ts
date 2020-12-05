@@ -296,7 +296,7 @@ class mockSpiDevice {
     };
     public transfer(message: { byteLength: number, sendBuffer?:Buffer, receiveBuffer?:Buffer, speedHz?:number, microSecondDelay?:number, bitsPerWord?:number, chipSelectChange?:boolean }[], cb) {
         // Put together the message.
-        logger.verbose(`Send SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].sendBuffer.join(',')}`);
+        logger.silly(`Send SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].sendBuffer.join(',')}`);
         let spi = this.busNumber === 0 ? spi0 : spi1;
         let chan = spi.channels.find(elem => elem.channel === this.deviceNumber);
         let maxRawValue = chan.maxRawValue;
@@ -321,7 +321,7 @@ class mockSpiDevice {
                 v = v >> bbw;
             }
         }
-        logger.verbose(`Receive SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].receiveBuffer.join(',')}`);
+        logger.silly(`Receive SPI Device ${this.busNumber}-${this.deviceNumber} Buffer: ${message[0].receiveBuffer.join(',')}`);
         if (typeof cb === 'function') return cb(undefined, message);
     }
     public getOptions(cb) { if (typeof cb === 'function') return cb(undefined, this._opts); }
