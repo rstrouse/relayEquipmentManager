@@ -228,37 +228,42 @@ export class SpiAdcChannel {
 }
 class SpiAdcFeed {
     public server: ServerConnection;
-    public frequency: number;
-    public eventName: string;
-    public property: string;
+    //public frequency: number;
+    //public eventName: string;
+    //public property: string;
     public lastSent: number;
     public value: number;
-    public changesOnly: boolean;
+    //public changesOnly: boolean;
     private _timerSend: NodeJS.Timeout;
     public translatePayload: Function;
+    public feed: SpiChannelFeed;
     constructor(feed: SpiChannelFeed) {
         this.server = connBroker.findServer(feed.connectionId);
-        this.frequency = feed.frequency * 1000;
-        this.eventName = feed.eventName;
-        this.property = feed.property;
-        this.changesOnly = feed.changesOnly;
-        this._timerSend = setTimeout(() => this.send(), this.frequency);
+        //this.frequency = feed.frequency * 1000;
+        //this.eventName = feed.eventName;
+        //this.property = feed.property;
+        //this.changesOnly = feed.changesOnly;
+        this.feed = feed;
+        this._timerSend = setTimeout(() => this.send(), Math.max(1000, this.feed.frequency * 1000));
         if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0)
             this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
     }
-    public send() {
-        if (this._timerSend) clearTimeout(this._timerSend);
-        if (typeof this.value !== 'undefined') {
-            if (!this.changesOnly || this.lastSent !== this.value) {
-                this.server.send({
-                    eventName: this.eventName,
-                    property: this.property,
-                    value: typeof this.translatePayload === 'function' ? this.translatePayload(this, this.value) : this.value
-                });
-                this.lastSent = this.value;
+    public async send() {
+        try {
+            if (this._timerSend) clearTimeout(this._timerSend);
+            if (typeof this.value !== 'undefined') {
+                if (!this.feed.changesOnly || this.lastSent !== this.value) {
+                    await this.server.send({
+                        eventName: this.feed.eventName,
+                        property: this.feed.property,
+                        deviceBinding: this.feed.deviceBinding,
+                        value: typeof this.translatePayload === 'function' ? this.translatePayload(this, this.value) : this.value
+                    });
+                    this.lastSent = this.value;
+                }
             }
-        }
-        this._timerSend = setTimeout(() => this.send(), this.frequency);
+            this._timerSend = setTimeout(() => this.send(), Math.max(1000, this.feed.frequency * 1000));
+        } catch (err) { }
     }
     public closeAsync() {
         if (typeof this._timerSend !== 'undefined') clearTimeout(this._timerSend);

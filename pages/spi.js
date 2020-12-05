@@ -565,12 +565,13 @@
             var line = $('<div></div>').appendTo(dlg);
             $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(-1);
             var conn = $('<div></div>').appendTo(line).pickList({
-                required: true,
+                required: true, value: -2,
                 bindColumn: 0, displayColumn: 1, labelText: 'Connection', binding: 'connectionId',
                 columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Name', style: { minWidth: '197px' } }, { binding: 'type.desc', text: 'Type', style: { minWidth: '147px' } }],
                 items: f.connections, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
             })
                 .on('selchanged', function (evt) {
+                    console.log(evt.newItem);
                     dlg.find('div.pnl-spi-feed-params').each(function () { this.setConnection(evt.newItem); });
                 });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
@@ -581,8 +582,7 @@
             });
             $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed', style: { marginLeft: '1rem' } });
             line = $('<div></div>').appendTo(dlg);
-            $('<div></div>').appendTo(dlg).pnlSpiFeedParams({});
-            console.log(f.feed);
+            $('<div></div>').appendTo(dlg).pnlSpiFeedParams({ device: f.device });
             if (typeof f.feed.id !== 'undefined') {
                 conn[0].disabled(true);
                 dlg.find('div.pnl-spi-feed-params').each(function () {
@@ -600,11 +600,13 @@
             el.addClass('pnl-spi-feeds').addClass('list-outer');
             el.attr('data-bind', o.binding)
             $('<div></div>').appendTo(el).crudList({
-                id: 'crudFeeds' + o.channelId, actions: { canCreate: true, canEdit: true, canRemove: true },
+                id: 'crudFeeds' + o.deviceId, actions: { canCreate: true, canEdit: true, canRemove: true },
                 key: 'id',
                 caption: 'Channel Feeds', itemName: 'Channel Feeds',
-                columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'eventName', text: 'Topic/Event', style: { width: '127px' } }, { binding: 'property', text: 'Property', style: { width: '247px' }, cellStyle: { } }]
-            }).on('additem', function (evt) {
+                columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } },
+                { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
+            })
+            .on('additem', function (evt) {
                 $.getLocalService('/config/options/spi/' + o.controllerId + '/' + o.channelId + '/feeds', null, function (feeds, status, xhr) {
                     feeds.feed = { isActive: true };
                     self._createFeedDialog('dlgAddSpiFeed', 'Add Feed to Channel #' + o.channelId, feeds);
@@ -705,7 +707,8 @@
         },
         setConnection: function (conn, callback) {
             var self = this, o = self.options, el = self.element;
-            let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' && conn.id > 0 ? conn.type.name : '';
+            let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' ? conn.type.name : '';
+            console.log({ msg: `Setting Connection`, type: type });
             if (el.attr('data-conntype') !== type || type === '') {
                 el.attr('data-conntype', type);
                 el.empty();
@@ -713,19 +716,34 @@
                 if (type !== '') {
                     $.searchLocalService('/config/connection/bindings', { name: type }, 'Getting Connection Bindings...', function (bindings, status, xhr) {
                         o.bindings = bindings;
+                        $('<hr></hr>').appendTo(el);
                         var line = $('<div></div>').appendTo(el);
                         var lbl = type === 'njspc' || type === 'webSocket' ? 'Socket Event' : 'Topic';
-                        if (typeof o.bindings.feeds !== 'undefined' && o.bindings.feeds.length >= 1) {
+                        if (typeof o.bindings.devices !== 'undefined' && o.bindings.devices.length > 0) {
+                            $('<div></div>').appendTo(line).pickList({
+                                required: true,
+                                bindColumn: 0, displayColumn: 2, labelText: 'to Device', binding: 'deviceBinding',
+                                columns: [{ hidden: true, binding: 'uid', text: 'uid' }, { binding: 'type', text: 'Type' }, { binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }],
+                                items: bindings.devices, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            })
+                                .on('selchanged', function (evt) {
+                                    var itm = o.bindings.devices.find(elem => elem.uid === evt.newItem.uid);
+                                    self._build_deviceBindings(itm);
+                                });
+                            self._build_deviceBindings();
+                        }
+                        else if (typeof o.bindings.feeds !== 'undefined' && o.bindings.feeds.length >= 1) {
                             $('<div></div>').appendTo(line).pickList({
                                 required: true,
                                 bindColumn: 0, displayColumn: 0, labelText: lbl, binding: 'eventName',
                                 columns: [{ binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }],
-                                items: bindings.feeds, inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '7rem' } }
+                                items: bindings.feeds, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
                             })
                                 .on('selchanged', function (evt) {
                                     var itm = o.bindings.feeds.find(elem => elem.name === evt.newItem.name);
                                     self._build_bindings(itm);
                                 });
+                            self._build_bindings();
                         }
                         else {
                             $('<div></div>').appendTo(line).inputField({
@@ -738,10 +756,6 @@
                             $('<div></div>').appendTo(line).scriptEditor({ binding: 'payloadExpression', prefix: '(feed, value): any => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
                         }
                         $('<hr></hr>').appendTo(el);
-                        switch (type) {
-                            case 'mqttClient':
-                                break;
-                        }
                         if (typeof callback === 'function') { callback(); }
                     });
                 }
@@ -751,16 +765,41 @@
         },
         _build_bindings: function (feed) {
             var self = this, o = self.options, el = self.element;
-            var line = $('<div></div>').appendTo(el);
-            $('<div></div>').appendTo(line).pickList({
-                canEdit: true,
-                binding: 'property', labelText: 'Property',
-                bindColumn: 0, displayColumn: 0,
-                columns: [{ binding: 'binding', text: 'Variable', style: { whiteSpace: 'nowrap' } }],
-                items: feed.bindings, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
-            });
-
-
+            let pnl = el.find('div.pnl-device-bindings');
+            if (pnl.length === 0) {
+                var line = $('<div></div>').addClass('pnl-device-bindings').appendTo(el);
+                $('<div></div>').appendTo(line).pickList({
+                    canEdit: true,
+                    binding: 'property', labelText: 'Property',
+                    bindColumn: 0, displayColumn: 0,
+                    columns: [{ binding: 'binding', text: 'Variable', style: { whiteSpace: 'nowrap' } }],
+                    items: typeof feed !== 'undefined' ? feed.bindings : [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                });
+            }
+            else {
+                pnl.find('div.picPickList:first').each(function () {
+                    this.items(typeof feed !== 'undefined' ? feed.bindings : []);
+                });
+            }
+        },
+        _build_deviceBindings: function (feed) {
+            var self = this, o = self.options, el = self.element;
+            let pnl = el.find('div.pnl-device-bindings');
+            if (pnl.length === 0) {
+                var line = $('<div></div>').addClass('pnl-device-bindings').appendTo(el);
+                $('<div></div>').appendTo(line).pickList({
+                    canEdit: true,
+                    binding: 'property', labelText: 'Input',
+                    bindColumn: 0, displayColumn: 0,
+                    columns: [{ binding: 'name', text: 'Input', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { whiteSpace: 'nowrap' } }],
+                    items: typeof feed !== 'undefined' ? feed.bindings : [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                });
+            }
+            else {
+                pnl.find('div.picPickList:first').each(function () {
+                    this.items(typeof feed !== 'undefined' ? feed.bindings : []);
+                });
+            }
         }
         
     });

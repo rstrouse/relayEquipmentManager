@@ -305,19 +305,20 @@ class i2cFeed {
         if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0)
             this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
     }
-    public send(dev: i2cDeviceBase) {
-        let value = dev.getValue(this.feed.sendValue) || '';
-        if (!this.feed.isActive) return;
-        if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
-
-            this.server.send({
-                eventName: this.feed.eventName,
-                property: this.feed.property,
-                value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
-                deviceBinding: this.feed.deviceBinding,
-                options: this.feed.options
-            });
-        }
+    public async send(dev: i2cDeviceBase) {
+        try {
+            let value = dev.getValue(this.feed.sendValue) || '';
+            if (!this.feed.isActive) return;
+            if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
+                await this.server.send({
+                    eventName: this.feed.eventName,
+                    property: this.feed.property,
+                    value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
+                    deviceBinding: this.feed.deviceBinding,
+                    options: this.feed.options
+                });
+            }
+        } catch (err) { logger.error(err); }
     }
     public closeAsync() { }
 }
@@ -475,10 +476,12 @@ export class i2cDeviceBase {
     }
     public getValue(prop) { return this.device.values[prop]; }
     public setValue(prop, value) { this.device.values[prop] = value; }
-    public emitFeeds() {
-        for (let i = 0; i < this.feeds.length; i++) {
-            this.feeds[i].send(this);
-        }
+    public async emitFeeds() {
+        try {
+            for (let i = 0; i < this.feeds.length; i++) {
+                await this.feeds[i].send(this);
+            }
+        } catch (err) { logger.error(err); }
     }
     public get values() { return this.device.values; }
     public get options() { return this.device.options; }

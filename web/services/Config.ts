@@ -52,6 +52,7 @@ export class ConfigRoute {
             let opts = {
                 connections: cont.connections.toExtendedArray()
             }
+            opts.connections.unshift(cont.getInternalConnection().getExtended());
             return res.status(200).send(opts);
         });
         app.get('/config/options/i2c/:busNumber/:deviceAddress/feeds', (req, res) => {

@@ -622,8 +622,8 @@
                 o.bindings = undefined;
                 if (type !== '') {
                     $.searchLocalService('/config/connection/bindings', { name: type }, 'Getting Connection Bindings...', function (bindings, status, xhr) {
-                        console.log(bindings);
                         o.bindings = bindings;
+                        console.log(bindings);
                         $('<hr></hr>').appendTo(el);
                         var line = $('<div></div>').appendTo(el);
                         var lbl = type === 'njspc' || type === 'webSocket' ? 'Socket Event' : 'Topic';

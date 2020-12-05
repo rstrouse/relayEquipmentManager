@@ -1253,8 +1253,12 @@ export class SpiChannelFeed extends ConfigItem {
     public set connectionId(val: number) { this.setDataVal('connectionId', val); }
     public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
     public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get deviceBinding(): string { return this.data.deviceBinding; }
+    public set deviceBinding(val: string) { this.setDataVal('deviceBinding', val); }
     public get eventName(): string { return this.data.eventName; }
     public set eventName(val: string) { this.setDataVal('eventName', val); }
+    public get sendValue(): string { return this.data.sendValue; }
+    public set sendValue(val: string) { this.setDataVal('sendValue', val); }
     public get property(): string { return this.data.property; }
     public set property(val: string) { this.setDataVal('property', val); }
     public get frequency(): number { return this.data.frequency; }
@@ -1263,9 +1267,24 @@ export class SpiChannelFeed extends ConfigItem {
     public set changesOnly(val: boolean) { this.setDataVal('changesOnly', val); }
     public get payloadExpression(): string { return this.data.payloadExpression; }
     public set payloadExpression(val: string) { this.setDataVal('payloadExpression', val); }
+    public get options() { return this.data.options; }
+    public set options(val) { this.setDataVal('options', val); }
     public getExtended() {
         let feed = this.get(true);
-        feed.connection = cont.connections.getItemById(this.connectionId).getExtended();
+        feed.connection = this.connectionId === -1 ? cont.getInternalConnection().getExtended() : cont.connections.getItemById(this.connectionId).getExtended();
+        switch (feed.connection.type.name) {
+            case 'internal':
+                let dev = cont.getDeviceByBinding(this.deviceBinding);
+                feed.propertyDesc = typeof dev !== 'undefined' && typeof dev.name !== 'undefined' ? `[${dev.name}].${this.property}` : this.property;
+                break;
+            case 'mqttClient':
+                feed.propertyDesc = this.eventName;
+                break;
+            case 'njspc':
+            case 'webservice':
+                feed.propertyDesc = `[${this.eventName}].${this.property}`;
+                break;
+        }
         return feed;
     }
 

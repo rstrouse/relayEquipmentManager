@@ -100,20 +100,22 @@ export class ServerConnection {
 }
 class InternalConnection extends ServerConnection {
     constructor(server: ConnectionSource) { super(server); }
-    public send(opts) {
+    public async send(opts) {
         try {
             // Take the deviceBinding.
-            let arr = opts.deviceBinding.split(':');
-            if (arr[0] === 'i2c') {
-                i2c.setDeviceValue(parseInt(arr[1], 10), parseInt(arr[2], 10), opts.property, opts.value);
-            }
-            else if (arr[0] === 'spi') {
+            if (typeof opts.deviceBinding !== 'undefined') {
+                let arr = opts.deviceBinding.split(':');
+                if (arr[0] === 'i2c') {
+                    await i2c.setDeviceValue(parseInt(arr[1], 10), parseInt(arr[2], 10), opts.property, opts.value);
+                }
+                else if (arr[0] === 'spi') {
 
-            }
-            else if (arr[0] === 'gpio') {
+                }
+                else if (arr[0] === 'gpio') {
 
+                }
             }
-        } catch (err) { logger.error(`Error sending on internal connection ${opts.binding}`); }
+        } catch (err) { logger.error(`Error sending on internal connection ${opts.deviceBinding}: ${err.message}`); }
     }
 }
 class SocketServerConnection extends ServerConnection {
