@@ -15,6 +15,7 @@ export class i2cRelay extends i2cDeviceBase {
         seeed: [0x06]
     };
     protected _latchTimers = {};
+    protected _relayBitmask = 0;
     public get relays() { return typeof this.values.relays === 'undefined' ? this.values.relays = [] : this.values.relays; }
     public set relays(val) { this.values.relays = val; }
     protected getCommandByte(ord: number): number {
@@ -27,7 +28,7 @@ export class i2cRelay extends i2cDeviceBase {
         try {
             let buffer = Buffer.from(command);
             let w = await this.i2c.writeCommand(this.device.address, buffer);
-            logger.info(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
+            logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
             return Promise.resolve(w);
         }
         catch (err) { logger.error(err); }
@@ -35,6 +36,7 @@ export class i2cRelay extends i2cDeviceBase {
     protected async readCommand(command: number): Promise<number> {
         try {
             let r = await this.i2c.readByte(this.device.address, command);
+            if (this.i2c.isMock) r = this._relayBitmask;
             //logger.info(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
             return Promise.resolve(r);
         }
@@ -84,7 +86,11 @@ export class i2cRelay extends i2cDeviceBase {
                             await this.sendCommand([0x03, 0x00]);
                             await this.sendCommand([0x01, 0x00]);
                         }
-                        byte = await this.readCommand(0x00) >> 4;
+                        byte = await this.readCommand(0x00);
+                        if (this.i2c.isMock) {
+                            byte = this._relayBitmask;
+                        }
+                        byte = this.decodeSequent(byte, [0x80, 0x40, 0x20, 0x10]);
                         this.relays.sort((a, b) => { return a.id - b.id; });
                         for (let i = 0; i < this.relays.length; i++) {
                             let relay = this.relays[i];
@@ -104,6 +110,10 @@ export class i2cRelay extends i2cDeviceBase {
                             await this.sendCommand([0x01, 0x00]);
                         }
                         byte = await this.readCommand(0x00);
+                        if (this.i2c.isMock) {
+                            byte = this._relayBitmask;
+                        }
+                        byte = this.decodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]);
                         this.relays.sort((a, b) => { return a.id - b.id; });
                         for (let i = 0; i < this.relays.length; i++) {
                             let relay = this.relays[i];
@@ -156,7 +166,9 @@ export class i2cRelay extends i2cDeviceBase {
                             await this.sendCommand([0x01, 0x00]);
                         }
                         // These come in the high nibble. Shift them to the low nibble.
-                        byte = await this.readCommand(0x00) >> 4;
+                        byte = await this.readCommand(0x00);
+                        if (this.i2c.isMock) byte = this._relayBitmask;
+                        byte = this.decodeSequent(byte, [0x80, 0x40, 0x20, 0x10]);
                         byte = byte & (1 << (relay.id - 1));
                     }
                     break;
@@ -169,10 +181,11 @@ export class i2cRelay extends i2cDeviceBase {
                         }
                         // These come in the high nibble. Shift them to the low nibble.
                         byte = await this.readCommand(0x00);
+                        if (this.i2c.isMock) byte = this._relayBitmask;
+                        byte = this.decodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]);
                         byte = byte & (1 << (relay.id - 1));
                     }
                     break;
-
                 case 'bit':
                     let bmOrd = Math.floor(relay.id / 8);
                     cmdByte = this.getCommandByte(bmOrd);
@@ -226,6 +239,21 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { return Promise.reject(err); }
     }
+    protected encodeSequent(byte, map) { // To the IO byte
+        let val = 0;
+        for (let i = 0; i < map.length; i++) {
+            if ((byte & (1 << i)) !== 0) val = val + map[i];
+        }
+        return val;
+    }
+    protected decodeSequent(byte, map) { // From the IO byte
+        let val = 0;
+        for (let i = 0; i < map.length; i++) {
+            if ((byte & map[i]) !== 0)
+                val = val + (1 << i);
+        }
+        return val;
+    }
     public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
         try {
             let relay = this.relays.find(elem => { return elem.id === opts.id });
@@ -244,11 +272,14 @@ export class i2cRelay extends i2cDeviceBase {
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
                         for (let i = 0; i < this.relays.length; i++) {
                             let r = this.relays[i];
-                            if (utils.makeBool(r.state) || (relay.id === r.id && newState)) {
-                                byte |= (1 << (r.id - 1));
+                            if (relay.id === r.id) {
+                                if (newState) byte |= (1 << (r.id - 1));
                             }
+                            else if (utils.makeBool(r.state))
+                                byte |= (1 << (r.id - 1));
                         }
-                        await this.sendCommand([0x01, byte]);
+                        await this.sendCommand([0x01, this.encodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10])]);
+                        if (this.i2c.isMock) this._relayBitmask = this.encodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]);
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();
@@ -262,11 +293,14 @@ export class i2cRelay extends i2cDeviceBase {
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
                         for (let i = 0; i < this.relays.length; i++) {
                             let r = this.relays[i];
-                            if (utils.makeBool(r.state) || (relay.id === r.id && newState)) {
-                                byte |= (1 << (r.id - 1));
+                            if (relay.id === r.id) {
+                                if(newState) byte |= (1 << (r.id - 1));
                             }
+                            else if (utils.makeBool(r.state))
+                                byte |= (1 << (r.id - 1));
                         }
-                        await this.sendCommand([0x01, byte << 4]);
+                        await this.sendCommand([0x01, this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10])]);
+                        if (this.i2c.isMock) this._relayBitmask = this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10]);
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();

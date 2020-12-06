@@ -16,7 +16,7 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             let buffer = Buffer.from(command);
             let w = await this.i2c.writeCommand(this.device.address, buffer);
-            logger.info(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
+            logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
             return Promise.resolve(w);
         }
         catch (err) { logger.error(err); }
