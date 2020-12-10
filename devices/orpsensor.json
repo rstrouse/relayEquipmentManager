@@ -20,11 +20,13 @@
       "outputs": [
         {
           "name": "orp",
-          "desc": "ORP value in mV"
+          "desc": "ORP value in mV",
+          "maxSamples":  10
         },
         {
           "name": "all",
-          "desc": "All values"
+          "desc": "All values",
+          "maxSamples":  10
         }
 
       ],

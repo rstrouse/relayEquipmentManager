@@ -28,11 +28,13 @@
       "outputs": [
         {
           "name": "pressure",
-          "desc": "Presure in the reported units"
+          "desc": "Presure in the reported units",
+          "maxSamples":  10
         },
         {
           "name": "all",
-          "desc": "All values"
+          "desc": "All values",
+          "maxSamples": 10
         }
       ],
       "options": [

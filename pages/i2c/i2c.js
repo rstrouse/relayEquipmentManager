@@ -536,11 +536,6 @@
                 });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
             line = $('<div></div>').appendTo(dlg);
-            //$('<div></div>').appendTo(line).valueSpinner({
-            //    required: true, canEdit: true, binding: 'frequency', labelText: 'Send Every', fmtMask: '#,###.##', dataType: 'number', step: .1,
-            //    min: .1, max: 1000, units: 'seconds', inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
-            //});
-            line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).pickList({
                 required: true,
                 bindColumn: 0, displayColumn: 1, labelText: 'Send Value', binding: 'sendValue',
@@ -549,6 +544,12 @@
                 
             });
             $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed' });
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).valueSpinner({
+                required: true, canEdit: true, binding: 'sampling', labelText: 'Sampling', fmtMask: '#,##0', dataType: 'number', step: 1,
+                min: 1, max: 20, units: `smooth reading using median samples`, inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
+            });
+
             line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(dlg).pnlI2cFeedParams({ device: f.device });
             if (typeof f.feed.id !== 'undefined') {

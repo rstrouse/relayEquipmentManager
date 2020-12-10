@@ -284,24 +284,13 @@ export class i2cBus {
 }
 class i2cFeed {
     public server: ServerConnection;
-    //public frequency: number;
-    //public eventName: string;
-    //public property: string;
-    //public lastSent: number;
-    //public value: number;
-    //public changesOnly: boolean;
-    //private _timerSend: NodeJS.Timeout;
     public lastSent;
+    public sampling = [];
     public translatePayload: Function;
     public feed: I2cDeviceFeed;
     constructor(feed: I2cDeviceFeed) {
         this.server = connBroker.findServer(feed.connectionId);
-        //this.frequency = feed.frequency * 1000;
-        //this.eventName = feed.eventName;
-        //this.property = feed.property;
-        //this.changesOnly = feed.changesOnly;
         this.feed = feed;
-        //this._timerSend = setTimeout(() => this.send(), this.frequency);
         if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0)
             this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
     }
@@ -309,14 +298,32 @@ class i2cFeed {
         try {
             let value = dev.getValue(this.feed.sendValue) || '';
             if (!this.feed.isActive) return;
-            if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
-                await this.server.send({
-                    eventName: this.feed.eventName,
-                    property: this.feed.property,
-                    value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
-                    deviceBinding: this.feed.deviceBinding,
-                    options: this.feed.options
-                });
+            if (this.feed.sampling > 1) {
+                this.sampling.push(value);
+                if (this.feed.sampling >= this.sampling.length) {
+                    value = dev.calcMedian(this.feed.property, this.sampling);
+                    await this.server.send({
+                        eventName: this.feed.eventName,
+                        property: this.feed.property,
+                        value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
+                        deviceBinding: this.feed.deviceBinding,
+                        options: this.feed.options
+                    });
+
+                    // Reset the sampling and start over.
+                    this.sampling = [];
+                }
+            }
+            else {
+                if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
+                    await this.server.send({
+                        eventName: this.feed.eventName,
+                        property: this.feed.property,
+                        value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
+                        deviceBinding: this.feed.deviceBinding,
+                        options: this.feed.options
+                    });
+                }
             }
         } catch (err) { logger.error(err); }
     }
@@ -476,6 +483,18 @@ export class i2cDeviceBase {
     }
     public getValue(prop) { return this.device.values[prop]; }
     public setValue(prop, value) { this.device.values[prop] = value; }
+    public calcMedian(prop, values: any[]) {
+        let arr = [];
+        for (let i = 0; i < values.length; i++) {
+            if (typeof values[i] === 'number') arr.push(values[i]);
+        }
+        if (arr.length > 0) {
+            let mid = Math.floor(arr.length / 2);
+            let nums = [...arr].sort((a, b) => a - b);
+            return arr.length % 2 !== 0 ? nums[mid] : ((nums[mid - 1] + nums[mid]) / 2);
+        }
+        return arr[0];
+    }
     public async emitFeeds() {
         try {
             for (let i = 0; i < this.feeds.length; i++) {

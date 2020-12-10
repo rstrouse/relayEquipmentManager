@@ -20,35 +20,43 @@
       "outputs": [
         {
           "name": "dispensing",
-          "desc": "Indicates whether the pump is dispensing"
+          "desc": "Indicates whether the pump is dispensing",
+          "maxSamples":  1
         },
         {
           "name": "mode",
-          "desc": "Current dispense mode"
+          "desc": "Current dispense mode",
+          "maxSamples": 1
         },
         {
           "name": "maxRate",
-          "desc": "Max calibrated dispense rate"
+          "desc": "Max calibrated dispense rate",
+          "maxSamples": 1
         },
         {
           "name": "totalVolume",
-          "desc": "Total volume dispensed"
+          "desc": "Total volume dispensed",
+          "maxSamples": 1
         },
         {
           "name": "flowRate",
-          "desc": "Current flow rate being dispensed"
+          "desc": "Current flow rate being dispensed",
+          "maxSamples": 10
         },
         {
           "name": "dispenseTime",
-          "desc": "Current dispense time"
+          "desc": "Current dispense time",
+          "maxSamples": 1
         },
         {
           "name": "paused",
-          "desc": "Indicates whether the dispense is current paused"
+          "desc": "Indicates whether the dispense is current paused",
+          "maxSamples": 1
         },
         {
           "name": "tank",
-          "desc": "Tank Object"
+          "desc": "Tank Object",
+          "maxSamples": 1
         },
         {
           "name": "dispense",
@@ -56,7 +64,8 @@
         },
         {
           "name": "all",
-          "desc": "All values related to the pump"
+          "desc": "All values related to the pump",
+          "maxSamples": 1
         }
       ],
       "options": [

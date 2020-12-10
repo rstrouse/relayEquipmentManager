@@ -413,6 +413,17 @@ export class AtlasEZOorp extends AtlasEZO {
             case 'all': { return this.values; }
         }
     }
+    public calMedian(prop: string, values: any[]) {
+        switch (prop) {
+            case 'orp':
+                return super.calcMedian(prop, values);
+            case 'all':
+                // Only the ORP reading is a median here.
+                let arr = [];
+                for (let i = 0; i < values[i]; i++) { arr.push(values[i].orp); }
+                return { orp: super.calcMedian(prop, arr) };
+        }
+    }
 }
 export class AtlasEZOpH extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
@@ -638,6 +649,20 @@ export class AtlasEZOpH extends AtlasEZO {
                 break;
         }
     }
+    public calMedian(prop: string, values: any[]) {
+        switch (prop) {
+            case 'phLevel':
+            case 'pn':
+                return super.calcMedian(prop, values);
+            case 'all':
+                // Only the ORP reading is a median here.
+                let arrPh = [];
+                let arrTemp = [];
+                for (let i = 0; i < values[i]; i++) { arrPh.push(values[i].pH); arrTemp.push(values[i].temperature); }
+                return { pH: super.calcMedian(prop, arrPh), temperature: super.calcMedian(prop, arrTemp) };
+        }
+    }
+
 }
 export class AtlasEZOpmp extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {

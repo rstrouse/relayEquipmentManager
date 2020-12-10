@@ -33,11 +33,13 @@
       "outputs": [
         {
           "name": "pH",
-          "desc": "Probe pH"
+          "desc": "Probe pH",
+          "maxSamples":  10
         },
         {
           "name": "all",
-          "desc": "All values"
+          "desc": "All values",
+          "maxSamples":  10
         }
 
       ],

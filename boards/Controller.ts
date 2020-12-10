@@ -1171,6 +1171,8 @@ export class I2cDeviceFeed extends ConfigItem {
     public set deviceBinding(val: string) { this.setDataVal('deviceBinding', val); }
     public get sendValue(): string { return this.data.sendValue; }
     public set sendValue(val: string) { this.setDataVal('sendValue', val); }
+    public get sampling(): number { return this.data.sampling; }
+    public set sampling(val: number) { this.setDataVal('sampling', val); }
     
     public get eventName(): string { return this.data.eventName; }
     public set eventName(val: string) { this.setDataVal('eventName', val); }
