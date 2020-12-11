@@ -541,14 +541,21 @@
                 bindColumn: 0, displayColumn: 1, labelText: 'Send Value', binding: 'sendValue',
                 columns: [{ binding: 'name', text: 'Name', style: { maxWidth: '197px' } }, { binding: 'desc', text: 'Type', style: { minWidth: '347px' } }],
                 items: f.device.deviceType.outputs, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
-                
+
+            }).on('selchanged', function (evt) {
+                var elSamp = dlg.find('div[data-bind="sampling"]').each(function () {
+                    if (evt.newItem.maxSamples <= 1 || typeof evt.newItem.maxSamples === 'undefined') this.val(1);
+                    this.options({ max: evt.newItem.maxSamples || 1 });
+                });
+                if (evt.newItem.maxSamples <= 1 || typeof evt.newItem.maxSamples === 'undefined') elSamp.hide();
+                else elSamp.show();
             });
             $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed' });
             line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).valueSpinner({
                 required: true, canEdit: true, binding: 'sampling', labelText: 'Sampling', fmtMask: '#,##0', dataType: 'number', step: 1,
                 min: 1, max: 20, units: `smooth reading using median samples`, inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
-            });
+            }).hide();
 
             line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(dlg).pnlI2cFeedParams({ device: f.device });

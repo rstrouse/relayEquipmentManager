@@ -413,15 +413,15 @@ export class AtlasEZOorp extends AtlasEZO {
             case 'all': { return this.values; }
         }
     }
-    public calMedian(prop: string, values: any[]) {
+    public calcMedian(prop: string, values: any[]) {
         switch (prop) {
             case 'orp':
                 return super.calcMedian(prop, values);
             case 'all':
                 // Only the ORP reading is a median here.
                 let arr = [];
-                for (let i = 0; i < values[i]; i++) { arr.push(values[i].orp); }
-                return { orp: super.calcMedian(prop, arr) };
+                for (let i = 0; i < values.length; i++) { arr.push(values[i].orp); }
+                return extend(true, {}, this.values, { orp: super.calcMedian(prop, arr) });
         }
     }
 }
@@ -634,7 +634,7 @@ export class AtlasEZOpH extends AtlasEZO {
     }
     public getValue(prop: string) {
         switch (prop.toLowerCase()) {
-            case 'phlevel':
+            case 'phlevel': 
             case 'ph': { return this.values.pH; }
             case 'all': { return this.values; }
         }
@@ -649,17 +649,19 @@ export class AtlasEZOpH extends AtlasEZO {
                 break;
         }
     }
-    public calMedian(prop: string, values: any[]) {
-        switch (prop) {
-            case 'phLevel':
-            case 'pn':
+    public calcMedian(prop: string, values: any[]) {
+        switch (prop.toLowerCase()) {
+            case 'phlevel':
+            case 'ph':
                 return super.calcMedian(prop, values);
             case 'all':
                 // Only the ORP reading is a median here.
                 let arrPh = [];
                 let arrTemp = [];
-                for (let i = 0; i < values[i]; i++) { arrPh.push(values[i].pH); arrTemp.push(values[i].temperature); }
-                return { pH: super.calcMedian(prop, arrPh), temperature: super.calcMedian(prop, arrTemp) };
+                for (let i = 0; i < values.length; i++) {
+                    arrPh.push(values[i].pH); arrTemp.push(values[i].temperature);
+                }
+                return extend(true, {}, this.values, { pH: super.calcMedian(prop, arrPh), temperature: super.calcMedian(prop, arrTemp) });
         }
     }
 
@@ -1143,6 +1145,17 @@ export class AtlasEZOprs extends AtlasEZO {
             case 'all': { return this.values; }
         }
     }
+    public calcMedian(prop: string, values: any[]) {
+        switch (prop.toLowerCase()) {
+            case 'pressure':
+                return super.calcMedian(prop, values);
+            case 'all':
+                // Only the ORP reading is a median here.
+                let arrPress = [];
+                for (let i = 0; i < values.length; i++) { arrPress.push(values[i].pressure); }
+                return extend(true, {}, this.values, { pressure: super.calcMedian(prop, arrPress) });
+        }
+    }
     public async setOptions(opts): Promise<any> {
         try {
             this.suspendPolling = true;
@@ -1302,6 +1315,20 @@ export class AtlasEZOrtd extends AtlasEZO {
                 return this.values;
         }
     }
+    public calcMedian(prop: string, values: any[]) {
+        switch (prop.toLowerCase()) {
+            case 'tempK':
+            case 'tempC':
+            case 'tempF':
+                return super.calcMedian(prop, values);
+            case 'all':
+                // Only the ORP reading is a median here.
+                let arrTemp = [];
+                for (let i = 0; i < values.length; i++) { arrTemp.push(values[i].temperature); }
+                return extend(true, {}, this.values, { temperature: super.calcMedian(prop, arrTemp) });
+        }
+    }
+
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
@@ -1475,6 +1502,42 @@ export class AtlasEZOec extends AtlasEZO {
             case 'all': { return this.values; }
         }
     }
+    public calcMedian(prop: string, values: any[]) {
+        switch (prop.toLowerCase()) {
+            case 'conductivity':
+            case 'dissolvedsolids':
+            case 'salinity':
+            case 'saltlevel':
+            case 'specificgravity':
+            case 'temperature':
+                return super.calcMedian(prop, values);
+            case 'all':
+                // Only the ORP reading is a median here.
+                let arrCond = [];
+                let arrDs = [];
+                let arrSal = [];
+                let arrSalt = [];
+                let arrSg = [];
+                let arrTemp = [];
+                for (let i = 0; i < values.length; i++) {
+                    let v = values[i];
+                    arrCond.push(v.conductivity);
+                    arrDs.push(v.dissolvedSolids);
+                    arrSal.push(v.salinity);
+                    arrSalt.push(v.saltLevel);
+                    arrSg.push(v.specificGravity);
+                }
+                return extend(true, {}, this.values, {
+                    conductivity: super.calcMedian(prop, arrCond),
+                    dissolvedSolids: super.calcMedian(prop, arrDs),
+                    salinity: super.calcMedian(prop, arrSal),
+                    saltLevel: super.calcMedian(prop, arrSalt),
+                    specificGravity: super.calcMedian(prop, arrSg),
+                    temperature: super.calcMedian(prop, arrTemp)
+                });
+        }
+    }
+
     public setValue(prop: string, value) {
         switch (prop) {
             case 'tempC':
@@ -1861,6 +1924,24 @@ export class AtlasEZOhum extends AtlasEZO {
             case 'all': { return this.values; }
         }
     }
+    public calcMedian(prop: string, values: any[]) {
+        switch (prop) {
+            case 'temperature':
+            case 'humidity':
+            case 'dewpoint':
+                return super.calcMedian(prop, values);
+            case 'all':
+                // Only the ORP reading is a median here.
+                let arrTemp = [];
+                let arrHum = [];
+                let arrDew = [];
+                for (let i = 0; i < values.length; i++) { arrTemp.push(values[i].temperature); arrHum.push(values[i].humidity); arrDew.push(values[i].dewpoint); }
+                return extend(true, {}, this.values, {
+                    temperature: super.calcMedian(prop, arrTemp), humidity: super.calcMedian(prop, arrHum), dewpoint: super.calcMedian(prop, arrDew)
+                });
+        }
+    }
+
     public setValue(prop: string, value) {
         switch (prop) {
         }

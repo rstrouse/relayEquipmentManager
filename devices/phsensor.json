@@ -32,14 +32,19 @@
       ],
       "outputs": [
         {
+          "name": "tempC",
+          "desc": "Temperature in C",
+          "maxSamples": 10
+        },
+        {
           "name": "pH",
           "desc": "Probe pH",
-          "maxSamples":  10
+          "maxSamples": 10
         },
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples":  10
+          "maxSamples": 10
         }
 
       ],

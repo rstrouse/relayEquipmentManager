@@ -299,9 +299,9 @@ class i2cFeed {
             let value = dev.getValue(this.feed.sendValue) || '';
             if (!this.feed.isActive) return;
             if (this.feed.sampling > 1) {
-                this.sampling.push(value);
-                if (this.feed.sampling >= this.sampling.length) {
-                    value = dev.calcMedian(this.feed.property, this.sampling);
+                this.sampling.push(JSON.parse(JSON.stringify(value)));
+                if (this.sampling.length >= this.feed.sampling) {
+                    value = dev.calcMedian(this.feed.sendValue, this.sampling);
                     await this.server.send({
                         eventName: this.feed.eventName,
                         property: this.feed.property,
@@ -309,9 +309,8 @@ class i2cFeed {
                         deviceBinding: this.feed.deviceBinding,
                         options: this.feed.options
                     });
-
                     // Reset the sampling and start over.
-                    this.sampling = [];
+                    this.sampling.length = 0;
                 }
             }
             else {

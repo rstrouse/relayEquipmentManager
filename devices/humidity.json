@@ -20,15 +20,19 @@
       "outputs": [
         {
           "name": "humidity",
-          "desc": "Humidity %"
+          "desc": "Humidity %",
+          "maxSamples": 10
+
         },
         {
           "name": "temperature",
-          "desc": "Air Temp"
+          "desc": "Air Temp",
+          "maxSamples": 10
         },
         {
           "name": "dewpiont",
-          "desc": "Dewpoint"
+          "desc": "Dewpoint",
+          "maxSamples": 10
         },
         {
           "name": "units",
@@ -36,7 +40,8 @@
         },
         {
           "name": "all",
-          "desc": "All values"
+          "desc": "All values",
+          "maxSamples": 10
         }
       ],
       "inputs": [],
