@@ -780,7 +780,7 @@ var dataBinder = {
                     break;
                 default:
                     t[arr[arr.length - 1]] = val;
-                    if (binding.endsWith(']')) console.log({ binding: binding, val:val });
+                    if (binding.endsWith(']')) console.log({ binding: binding, val: val });
                     break;
             }
         }
@@ -1088,7 +1088,7 @@ $.ui.position.fieldTip = {
             el.on('click', function (evt) {
                 self.val(!o.isOn);
             });
-            
+
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
@@ -1123,7 +1123,7 @@ $.ui.position.fieldTip = {
             el[0].buttonIcon = function (val) { return self.buttonIcon(val); };
             el[0].disabled = function (val) { return self.disabled(val); };
             if (typeof o.style !== 'undefined') el.css(o.style);
-           
+
         },
         buttonText: function (val) {
             var self = this, o = self.options, el = self.element;
@@ -2336,7 +2336,7 @@ $.ui.position.fieldTip = {
             el.attr('data-fmtMask', o.fmtMask);
             el.attr('data-emptyMask', o.emptyMask);
             $('<span class="picStatic-units picUnits"></span>').attr('data-bind', o.unitsBinding).appendTo(el);
-            if(typeof o.units !== 'undefined') el.find('span.picStatic-units').html(o.units);
+            if (typeof o.units !== 'undefined') el.find('span.picStatic-units').html(o.units);
 
             self._applyStyles();
             el[0].label = function () { return el.find('label:first'); };
@@ -2843,7 +2843,7 @@ $.ui.position.fieldTip = {
             caption: '',
             itemName: 'Item',
             columns: [],
-            actions: {canCreate: false, canEdit:false, canRemove: false, canClear:false}
+            actions: { canCreate: false, canEdit: false, canRemove: false, canClear: false }
         },
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -2909,7 +2909,7 @@ $.ui.position.fieldTip = {
             });
             return body;
         },
-        _createActionButton: function(icon, title, cssClass) {
+        _createActionButton: function (icon, title, cssClass) {
             var self = this, o = self.options, el = self.element;
             var span = $('<span></span>').addClass('crud-row-btn').addClass(cssClass).attr('title', title);
             $('<i></i>').appendTo(span).addClass(icon);
@@ -2977,7 +2977,7 @@ $.ui.position.fieldTip = {
             });
             self.actions(o.actions);
         },
-        actions: function(val) {
+        actions: function (val) {
             var self = this, o = self.options, el = self.element;
             if (typeof val === 'undefined') {
                 return o.actions = {
@@ -3010,7 +3010,7 @@ $.ui.position.fieldTip = {
                     }
                 }
             }
-            
+
         }
 
     });
@@ -3563,7 +3563,7 @@ $.ui.position.fieldTip = {
             }
             else {
                 for (var prop in relay) {
-                    if(prop !== 'id') r[prop] = relay[prop];
+                    if (prop !== 'id') r[prop] = relay[prop];
                 }
             }
             var elemRelay = el.find(`div.relay-module[data-relayid="${relay.id}"]`);
@@ -3598,7 +3598,7 @@ $.ui.position.fieldTip = {
                 o.relays.sort((a, b) => { return a.id - b.id; });
                 if (count < o.relays.length) {
                     for (var i = o.relays.length - 1; i >= 0; i--) {
-                        if(o.relays[i].id > count) o.relays.splice(i, 1);
+                        if (o.relays[i].id > count) o.relays.splice(i, 1);
                     }
                     el.find('div.relay-module').each(function () {
                         var id = parseInt($(this).attr('data-relayid'), 10);
@@ -3711,7 +3711,7 @@ $.ui.position.fieldTip = {
                 pct.text(`${capacity[0].val() !== 0 ? Math.round((qty[0].val() / capacity[0].val()) * 100) : 0}%`);
             });
             $('<div></div>').appendTo(line).pickList({
-                bindColumn: 0, displayColumn: 0, labelText: 'Capacity Units', binding: 'units', value:'gal',
+                bindColumn: 0, displayColumn: 0, labelText: 'Capacity Units', binding: 'units', value: 'gal',
                 columns: [{ binding: 'name', text: 'Units', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { minWidth: '12rem' } }],
                 items: [{ name: 'gal', desc: 'US Gallons' }, { name: 'L', desc: 'Litres' }, { name: 'cL', desc: 'Centilitres' }, { name: 'mL', desc: 'Millilitres' }, { name: 'oz', desc: 'Fluid Ounces' }, { name: 'qts', desc: 'Quarts' }, { name: 'pints', desc: 'Pints' }],
                 inputAttrs: { style: { textAlign: 'center', width: '3rem' } }, labelAttrs: { style: { paddingLeft: '.1rem', display: 'none' } }
@@ -3878,6 +3878,79 @@ $.ui.position.fieldTip = {
             var line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Enabled', binding: 'enabled' });
+            $('<div></div>').appendTo(dlg).pickList({
+                'labelText': 'Power Gain', 'binding': 'pga',
+                "labelAttrs": {
+                    "style": { "width": "3rem" }
+                },
+                "columns": [
+                    {
+                        "hidden": true,
+                        "binding": "name",
+                        "text": "name",
+                        "style": { "whiteSpace": "nowrap" }
+                    },
+                    {
+                        "hidden": false,
+                        "binding": "desc",
+                        "text": "Description",
+                        "style": { "whiteSpace": "nowrap" }
+                    }
+                ],
+                "items": [
+                    {
+                        "name": 0x0000,
+                        "desc": "6.144v"
+                    },
+                    {
+                        "name": 0x0200,
+                        "desc": "4.096v"
+                    },
+                    {
+                        "name": 0x0400,
+                        "desc": "2.048v"
+                    },
+                    {
+                        "name": 0x0600,
+                        "desc": "1.024v"
+                    },
+                    {
+                        "name": 0x0800,
+                        "desc": "0.512v"
+                    },
+                    {
+                        "name": 0x0A00,
+                        "desc": "0.256v"
+                    }
+                ],
+                'default': '2.048v',
+                "inputAttrs": { "style": { "width": "7rem" } }
+            })
+            $('<br />').appendTo(dlg)
+            $('<div></div>').appendTo(dlg).valueSpinner({
+                "default": 5.00,
+                "binding": "inducerOffset",
+                "labelText": "Inducer Offset Volts",
+                "labelAttrs": {
+                    "style": { "padding-right": ".25rem" }
+                },
+                "min": 0,
+                "max": 50
+            })
+            $('<br />').appendTo(dlg)
+            $('<div></div>').appendTo(dlg).valueSpinner({
+                "default": 25,
+                "binding": "psiPerVolt",
+                "labelText": "PSI per Volt",
+                "labelAttrs": {
+                    "style": { "padding-right": ".25rem" }
+                },
+                "min": 0,
+                "max": 50
+            })
+
+
+
             line = $('<div></div>').appendTo(dlg);
             dataBinder.bind(dlg, channel);
             dlg.css({ overflow: 'visible' });
@@ -4025,7 +4098,7 @@ $.pic.modalDialog.createConfirm = function (id, options) {
                 click: function () {
                     var evt = $.Event('confirmed');
                     dlg.trigger(evt);
-                    if (!evt.isDefaultPrevented()) $.pic.modalDialog.closeDialog(this); 
+                    if (!evt.isDefaultPrevented()) $.pic.modalDialog.closeDialog(this);
                 }
             }
         ]

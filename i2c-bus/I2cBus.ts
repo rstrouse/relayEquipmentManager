@@ -202,6 +202,21 @@ export class i2cBus {
         }
         catch (err) { logger.error(err); }
     }
+    public async readWord(addr: number, cmd: number): Promise<number> {
+        try {
+            let word = await this._i2cBus.readWord(addr, cmd);
+            return Promise.resolve(word);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async writeI2cBlock(address: number, reg: number, length: number, command:Buffer ){
+        try {
+
+            let ret = await this._i2cBus.writeI2cBlock(address, reg, length, command)
+            return Promise.resolve(ret)
+        }
+        catch (err) { logger.error(err); return Promise.resolve(0); }
+    }
     public async writeCommand(address: number, command: string | number | Buffer, length?: number): Promise<number> {
         try {
             let ret = { bytesWritten: -1 };
