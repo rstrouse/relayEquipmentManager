@@ -173,6 +173,7 @@ export class ads1x15 extends i2cDeviceBase {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
+            if (typeof this.options.adcType === 'undefined') this.options.adcType = 'ads1115';
             if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 1000;
             if (typeof this.device.options === 'undefined') this.device.options = {};
             if (typeof this.device.options.comparatorReadings === 'undefined') this.device.options.comparatorReadings = ads1x15.comparatorQueue['NONE'];
@@ -182,6 +183,7 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof this.device.options.mode === 'undefined') this.device.options.mode = ads1x15.mode['SINGLE'];
             if (typeof this.device.options.mux === 'undefined') this.device.options.mux = ads1x15.mux['SINGLE_3'];
             if (typeof this.device.values.channels === 'undefined') this.device.values.channels = [];
+            if (typeof this.device.name === 'undefined') this.device.name = this.options.name = this.options.adcType.toUpperCase();
             if (typeof this.device.options.adcType !== 'undefined') {
 
                 // let w = await this.sendCommand([ads1x15.registers['CONFIG'], (this.config >> 8) & 0xFF, this.config & 0xFF]);
@@ -239,13 +241,16 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof this.device.options.channels === 'undefined') return;
             let channels = this.device.options.channels;
             for (let i = 0; i < channels.length; i++) {
-                if (typeof channels[i].pga === 'undefined') channels[i].pga = this.pga.getValue('2.048v');
+                if (typeof channels[i].pga === 'undefined') channels[i].pga = 2.048;
                 if (channels[i].enabled) {
                     await this.sendInit(channels[i]);
                     let r: number[];
                     if (this.i2c.isMock) r = [Math.random() * 50, Math.random() * 255];
                     else r = await this.readCommand(ads1x15.registers['CONVERT'])
                     let value = this.convertValue(r);
+                    // bytes = [115, 35]
+                    // value = 29475
+                    // voltage = value / max * pga = 29475 / 65355 * 1024
                     let voltage = this.getVoltageFromValue(value, channels[i].pga);
                     let psi = Math.max(0,((voltage - channels[i].inducerOffset) * channels[i].psiPerVolt)).toFixed(2);
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });

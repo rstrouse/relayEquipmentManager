@@ -218,7 +218,7 @@
         },
         createDeviceOptions: function (dev) {
             var self = this, o = self.options, el = self.element;
-            if (el.attr('data-typeid') !== dev.id.toString()) {
+            if (typeof dev === 'undefined' || typeof dev.id === 'undefined' || el.attr('data-typeid') !== dev.id.toString()) {
                 el.attr('data-typeid', dev.id);
                 var pnl = el.find('div.pnl-i2cdevice-options:first');
                 pnl.empty();
@@ -829,7 +829,6 @@
             el.addClass('pnl-i2cdevice-adc');
             el.attr('data-bind', 'options.channelStates');
             el[0].val = function (val) { return self.val(val); }
-
             self._buildControls();
         },
         _buildControls: function () {
@@ -837,21 +836,26 @@
             var line = $('<div></div>').appendTo(el);
             $('<div></div>').appendTo(line).pickList({
                 labelText: "Converter",
+                value: o.adcType,
                 binding: 'options.adcType',
+                required: true,
                 columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'desc', text: 'Converter', style: { whiteSpace: 'nowrap' } }],
                 items: o.adcTypes,
                 inputAttrs: { style: { width: '10rem' } }
             }).on('selchanged', function (evt) {
-                el.find('div.adc-board').each(function () {
-                    this.channelCount(evt.newItem.options.maxChannels);
-                });
+                el.find('div.adc-board').each(function () { this.channelCount(evt.newItem.options.maxChannels); });
             });
+            var type = o.adcTypes.find(elem => elem.name === o.adcType);
+            console.log(type);
             line = $('<div></div>').appendTo(line);
-            $('<hr></hr>').appendTo(line);
+            $('<hr></hr>').appendTo(line).css({ margin: '3px' });
             line = $('<div></div>').appendTo(line);
-            $('<div></div>').appendTo(el).css({ width: '21rem' }).adcBoard({ binding: 'options.channels', total: 4 })
+            $('<div></div>').appendTo(el).css({ width: '21rem' }).adcBoard({
+                binding: 'options.channels',
+                total: (typeof type !== 'undefined' && typeof type.options !== 'undefined') ? type.options.maxChannels || 0 : 0
+            })
                 .on('saveChannel', function (evt) {
-                    console.log(`Here`)
+                    console.log(evt);
                 });
         },
         val: function (val) {

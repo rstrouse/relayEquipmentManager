@@ -3851,6 +3851,7 @@ $.ui.position.fieldTip = {
                 e.stopImmediatePropagation();
                 e.preventDefault();
             });
+            
         },
         openConfigureChannel: function (channel) {
             var self = this, o = self.options, el = self.element;
@@ -3883,7 +3884,7 @@ $.ui.position.fieldTip = {
             $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Enabled', binding: 'enabled' });
             $('<div></div>').appendTo(dlg).pickList({
-                labelText: 'Power Gain', 'binding': 'pga',
+                labelText: 'Power Gain', binding: 'pga', dataType:'number',
                 labelAttrs: {
                     style: { width: "3rem" }
                 },
@@ -3895,40 +3896,40 @@ $.ui.position.fieldTip = {
                         style: { whiteSpace: "nowrap" }
                     },
                     {
-                        "hidden": false,
-                        "binding": "desc",
-                        "text": "Description",
-                        "style": { "whiteSpace": "nowrap" }
+                        hidden: false,
+                        binding: "desc",
+                        text: "Description",
+                        style: { whiteSpace: "nowrap" }
                     }
                 ],
-                "items": [
+                items: [
                     {
-                        "name": 6.144,
-                        "desc": "6.144v"
+                        name: 6.144,
+                        desc: "6.144v"
                     },
                     {
-                        "name": 4.096,
-                        "desc": "4.096v"
+                        name: 4.096,
+                        desc: "4.096v"
                     },
                     {
-                        "name": 2.048,
-                        "desc": "2.048v"
+                        name: 2.048,
+                        desc: "2.048v"
                     },
                     {
-                        "name": 1.024,
-                        "desc": "1.024v"
+                        name: 1.024,
+                        desc: "1.024v"
                     },
                     {
-                        "name": 0.512,
-                        "desc": "0.512v"
+                        name: 0.512,
+                        desc: "0.512v"
                     },
                     {
-                        "name": 0.256,
-                        "desc": "0.256v"
+                        name: 0.256,
+                        desc: "0.256v"
                     }
                 ],
-                'value': 2.048,
-                "inputAttrs": { "style": { "width": "7rem" } }
+                value: 2.048,
+                inputAttrs: { style: { width: "7rem" } }
             })
             $('<br />').appendTo(dlg)
             $('<div></div>').appendTo(dlg).valueSpinner({
