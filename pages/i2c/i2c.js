@@ -842,8 +842,9 @@
             line = $('<div></div>').appendTo(line);
             $('<hr></hr>').appendTo(line);
             line = $('<div></div>').appendTo(line);
-            $('<div></div>').appendTo(el).css({ width: '21rem' }).adcBoard({ binding: 'values.channels' })
+            $('<div></div>').appendTo(el).css({ width: '21rem' }).adcBoard({ binding: 'options.channels', total: 4 })
                 .on('saveChannel', function (evt) {
+                    console.log(`Here`)
                 });
         },
         val: function (val) {

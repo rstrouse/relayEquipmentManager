@@ -182,10 +182,10 @@ export class HttpServer extends ProtoServer {
     public init(cfg) {
         if (cfg.enabled) {
             this.app = express();
-            
+
             //this.app.use();
             this.server = http.createServer(this.app);
-            
+
             if (cfg.httpsRedirect) {
                 var cfgHttps = config.getSection('web').server.https;
                 this.app.get('*', (res: express.Response, req: express.Request) => {
@@ -240,9 +240,13 @@ export class HttpServer extends ProtoServer {
             this.app.get('/config/:section', (req, res) => {
                 return res.status(200).send(config.getSection(req.params.section));
             });
+            this.app.use((req, res, next) => {
+                logger.info(`[${new Date().toLocaleTimeString()}] ${req.ip} ${req.method} ${req.url} ${typeof req.body === 'undefined' ? '' : JSON.stringify(req.body)}`);
+                next()
+            });
             ConfigRoute.initRoutes(this.app);
             StateRoute.initRoutes(this.app);
-        
+
             this.isRunning = true;
             this.app.use((error, req, res, next) => {
                 logger.error(error);

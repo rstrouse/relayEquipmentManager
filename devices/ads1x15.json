@@ -31,9 +31,162 @@
                 },
                 "style": { "display": "block" }
               }
+              
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Channel 1",
+                    "binding": "values.channels[0].psi",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "---.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "units": "psi"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Channel 2",
+                    "binding": "values.channels[1].psi",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "---.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "units": "psi"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Channel 3",
+                    "binding": "values.channels[2].psi",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "---.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": { "width": "5rem" }
+                    },
+                    "units": "psi"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "attrs": { "data-bindingcontext": "calibration" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Channel 4",
+                        "binding": "values.channels[3].psi",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0###",
+                        "emptyMask": "---.-",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5rem" }
+                        },
+                        "units": "psi"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Offset",
+                        "binding": "options.channels[3].inducerOffset",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "4.5rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "v"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "PSI per Volt",
+                        "binding": "options.channels[3].psiPerVolt",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "4.5rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "psi"
+                      }
+                    }
+
+                  ]
+                }
+              ]
             }
           ]
         },
+        
         {
           "dataType": "panel",
           "field": {
@@ -52,7 +205,7 @@
               "field": {
                 "type": "div",
                 "style": { "width": "21rem" },
-                "html": "Enable each channel you are going to monitor. Each channel must be enabled individually.<hr style=\"margin:2px\"></hr>Only the channels you will be available for feeds.",
+                "html": "Enable each channel you are going to monitor. Each channel must be enabled individually.<hr style=\"margin:2px\"></hr>Only the channels you enable will be available for feeds.",
                 "cssClass": "script-advanced-instructions"
               }
             },
