@@ -13,17 +13,18 @@ export class ads1x15 extends i2cDeviceBase {
     public set channels(val) { this.options.channels = val; }
     private suspendPolling: boolean = false;
     private config(channel: any): number {
-        return this.device.options.comparatorReadings // Set comparator readings (or disable)
+         return this.device.options.comparatorReadings // Set comparator readings (or disable)
             | this.device.options.comparatorLatchingMode    // Set latching mode
             | this.device.options.comparatorActiveMode      // Set active/ready mode
             | this.device.options.comparatorMode            // Set comparator mode
             | this.device.options.mode                      // Set operation mode (single, continuous)
             | this.device.options.sps                       // Set sample per seconds
-            | channel.pga                                   // Set PGA/voltage range
+            | channel.pgaMask                                   // Set PGA/voltage range
             | ads1x15.mux[channel.id - 1]                       // Set mux (channel or differential bit)
             | ads1x15.registers['SINGLE']                   // Set 'start single-conversion' bit
-        // 62243 total [243,35]
-    }
+         // 62243 total [243,35]
+
+}
     protected static spsToMilliseconds = {
         ads1015: {
             128: 1000 / 128,
@@ -62,22 +63,22 @@ export class ads1x15 extends i2cDeviceBase {
     // noinspection JSUnusedLocalSymbols
     private static OS_NOTBUSY = 0x8000;   // Read: Bit = 1 when device is not performing a conversion
     private static mux = {
-        'DIFF_0_1': 0x0000, // Differential P = AIN0, N = AIN1 (default)
-        'DIFF_0_3': 0x1000, // Differential P = AIN0, N = AIN3
-        'DIFF_1_3': 0x2000, // Differential P = AIN1, N = AIN3
-        'DIFF_2_3': 0x3000, // Differential P = AIN2, N = AIN3
+        // 'DIFF_0_1': 0x0000, // Differential P = AIN0, N = AIN1 (default)
+        // 'DIFF_0_3': 0x1000, // Differential P = AIN0, N = AIN3
+        // 'DIFF_1_3': 0x2000, // Differential P = AIN1, N = AIN3
+        // 'DIFF_2_3': 0x3000, // Differential P = AIN2, N = AIN3
         0: 0x4000, // Single-ended AIN0
         1: 0x5000, // Single-ended AIN1
         2: 0x6000, // Single-ended AIN2
         3: 0x7000 // Single-ended AIN3
     }
     public pga: valueMap = new valueMap([
-        [0x0000, { name: '6.144v', desc: '6.144v' }],
-        [0x0200, { name: '4.096v', desc: '4.196v' }],
-        [0x0400, { name: '2.048v', desc: '2.048v' }], // default
-        [0x0600, { name: '1.024v', desc: '1.024v' }],
-        [0x0800, { name: '0.512v', desc: '0.512v' }],
-        [0x0A00, { name: '0.256v', desc: '0.256v' }]
+        [6.144, { name: '6.144v', desc: '6.144v', pgaMask: 0x0000 }],
+        [4.096, { name: '4.096v', desc: '4.196v', pgaMask: 0x0200 }],
+        [2.048, { name: '2.048v', desc: '2.048v', pgaMask: 0x0400 }], // default
+        [1.024, { name: '1.024v', desc: '1.024v', pgaMask: 0x0600 }],
+        [0.512, { name: '0.512v', desc: '0.512v', pgaMask: 0x0800 }],
+        [0.256, { name: '0.256v', desc: '0.256v', pgaMask: 0x0A00 }]
     ]);
     private static mode = {
         'CONTINUOUS': 0x0000, // Continuous conversion mode
@@ -137,18 +138,16 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             let buffer = Buffer.from(command);
             let w = await this.i2c.writeCommand(this.device.address, buffer);
-            // let w = await this.i2c.writeI2cBlock(this.device.address, this.ADS1015_REG_POINTER_CONFIG, 2, buffer);
-            // NEED =>   this.i2c.write(this.address, ADS1015_REG_POINTER_CONFIG, Buffer.from(bytes), (
             logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
             return Promise.resolve(w);
         }
         catch (err) { logger.error(err); }
     }
-    protected async readCommand(command: number): Promise<Buffer> {
+    protected async readCommand(command: number): Promise<number[]> {
         try {
-            // let r = await this.i2c.readBytes(this.device.address, command);
-            let r = await this.i2c.readWord(this.device.address, command);
-            return Promise.resolve(r);
+            let r = await this.i2c.read(this.device.address, 2);
+            let data = r.buffer.toJSON().data;
+            return Promise.resolve(data);
         }
         catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
     }
@@ -222,7 +221,7 @@ export class ads1x15 extends i2cDeviceBase {
     }
     private async sendInit(channel: any): Promise<boolean> {
         try {
-            this.suspendPolling = true;
+            // this.suspendPolling = true;
             let config = this.config(channel);
             let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
             logger.debug(`Wrote ${this.device.options.name} config (${config}) bytes ${w}`)
@@ -230,7 +229,7 @@ export class ads1x15 extends i2cDeviceBase {
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
-        finally { this.suspendPolling = false; }
+        // finally { this.suspendPolling = false; }
     }
 
     public async takeReadings(): Promise<boolean> {
@@ -243,10 +242,10 @@ export class ads1x15 extends i2cDeviceBase {
                 if (typeof channels[i].pga === 'undefined') channels[i].pga = this.pga.getValue('2.048v');
                 if (channels[i].enabled) {
                     await this.sendInit(channels[i]);
-                    let r: Buffer;
-                    if (this.i2c.isMock) r = Buffer.from([Math.random() * 4, Math.random() * 100])
+                    let r: number[];
+                    if (this.i2c.isMock) r = [Math.random() * 50, Math.random() * 255];
                     else r = await this.readCommand(ads1x15.registers['CONVERT'])
-                    let value = this.convertValue(r.toJSON().data);
+                    let value = this.convertValue(r);
                     let voltage = this.getVoltageFromValue(value, channels[i].pga);
                     let psi = Math.max(0,((voltage - channels[i].inducerOffset) * channels[i].psiPerVolt)).toFixed(2);
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
@@ -296,6 +295,7 @@ export class ads1x15 extends i2cDeviceBase {
         let max = ads1x15.thresholdValues[this.device.options.adcType];
         // positive values must be 1 less than max range value (e.g. full scale of 12 bit ADC => 2^(12-1)-1 => -2048 to 2047)
         max = value > 0 ? max - 1 : max;
+        // FIX to dynamic
         return value / max * pga; // value / mx = % of scale, scale * pga = Volts
     }
 
@@ -303,6 +303,7 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             await this.stopRead();
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.device.options.name = this.device.name = opts.name;
+            if (this.device.options.name === '') this.device.options.name = this.device.options.adcType === 'adc1015'?'ADC1015':'ADC1115';
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
             if (typeof opts.adcType !== 'undefined') {
                 this.device.options.adcType = opts.adcType;
@@ -310,7 +311,8 @@ export class ads1x15 extends i2cDeviceBase {
             }
             if (typeof opts.channels !== 'undefined') this.device.options.channels = opts.channels;
             for (let c of opts.channels) {
-                if (typeof c.pga === 'undefined') c.pga = this.pga.getValue('2.048v');
+
+                c.pgaMask = this.pga.get(c.pga).pgaMask;    
             }
             this.channels.sort((a, b) => { return a.id - b.id; });
             this.pollReadings();

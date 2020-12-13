@@ -3903,43 +3903,43 @@ $.ui.position.fieldTip = {
                 ],
                 "items": [
                     {
-                        "name": 0x0000,
+                        "name": 6.144,
                         "desc": "6.144v"
                     },
                     {
-                        "name": 0x0200,
+                        "name": 4.096,
                         "desc": "4.096v"
                     },
                     {
-                        "name": 0x0400,
+                        "name": 2.048,
                         "desc": "2.048v"
                     },
                     {
-                        "name": 0x0600,
+                        "name": 1.024,
                         "desc": "1.024v"
                     },
                     {
-                        "name": 0x0800,
+                        "name": 0.512,
                         "desc": "0.512v"
                     },
                     {
-                        "name": 0x0A00,
+                        "name": 0.256,
                         "desc": "0.256v"
                     }
                 ],
-                'default': '2.048v',
+                'value': 2.048,
                 "inputAttrs": { "style": { "width": "7rem" } }
             })
             $('<br />').appendTo(dlg)
             $('<div></div>').appendTo(dlg).valueSpinner({
-                value: 5.00,
+                value: 0.5,
                 binding: "inducerOffset",
                 labelText: "Inducer Offset Volts",
                 labelAttrs: {
                     style: { "padding-right": ".25rem" }
                 },
                 min: 0,
-                max: 50
+                max: 5
             })
             $('<br />').appendTo(dlg)
             $('<div></div>').appendTo(dlg).valueSpinner({
