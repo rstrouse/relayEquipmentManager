@@ -718,9 +718,9 @@ var dataBinder = {
                     if (isNaN(ord)) ord = 0;
                     if (typeof arrayRef[sRef] === 'undefined') {
                         if (typeof t[v] === 'undefined') {
-                            t[v] = new Array();
-                            t[v].push(new Object());
-                            t = t[v][0];
+                            t[v] = [];
+                            t[v][ord] = {};
+                            t = t[v][ord];
                             arrayRef[sRef] = ord;
                         }
                         else {
@@ -728,12 +728,12 @@ var dataBinder = {
                             if (typeof k === 'undefined') {
                                 a = t[v];
                                 k = a.length;
-                                arrayRef[sRef] = k;
-                                a.push(new Object());
-                                t = a[k];
+                                arrayRef[sRef] = ord;
+                                if (typeof a[ord] === 'undefined') a[ord] = {};
+                                t = a[ord];
                             }
                             else
-                                t = t[v][k];
+                                t = t[v][ord];
                         }
                     }
                     else {
@@ -741,13 +741,17 @@ var dataBinder = {
                         if (typeof k === 'undefined') {
                             a = t[v];
                             k = a.length;
-                            arrayRef[sRef] = k;
-                            a.push(new Object());
-                            t = a[k];
+                            arrayRef[sRef] = ord;
+                            if (typeof a[ord] === 'undefined') a[ord] = {};
+                            t = a[ord];
                         }
                         else
-                            t = t[v][k];
+                            t = t[v][ord];
                     }
+                    if (typeof t === 'undefined') {
+                        console.log({ ord: ord, arrayRef: arrayRef, obj: obj, sRef: sRef });
+                    }
+
                 }
                 else if (typeof t[s] === 'undefined') {
                     t[s] = new Object();
@@ -3879,16 +3883,16 @@ $.ui.position.fieldTip = {
             $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Enabled', binding: 'enabled' });
             $('<div></div>').appendTo(dlg).pickList({
-                'labelText': 'Power Gain', 'binding': 'pga',
-                "labelAttrs": {
-                    "style": { "width": "3rem" }
+                labelText: 'Power Gain', 'binding': 'pga',
+                labelAttrs: {
+                    style: { width: "3rem" }
                 },
-                "columns": [
+                columns: [
                     {
-                        "hidden": true,
-                        "binding": "name",
-                        "text": "name",
-                        "style": { "whiteSpace": "nowrap" }
+                        hidden: true,
+                        binding: "name",
+                        text: "name",
+                        style: { whiteSpace: "nowrap" }
                     },
                     {
                         "hidden": false,
@@ -3928,25 +3932,25 @@ $.ui.position.fieldTip = {
             })
             $('<br />').appendTo(dlg)
             $('<div></div>').appendTo(dlg).valueSpinner({
-                "default": 5.00,
-                "binding": "inducerOffset",
-                "labelText": "Inducer Offset Volts",
-                "labelAttrs": {
-                    "style": { "padding-right": ".25rem" }
+                value: 5.00,
+                binding: "inducerOffset",
+                labelText: "Inducer Offset Volts",
+                labelAttrs: {
+                    style: { "padding-right": ".25rem" }
                 },
-                "min": 0,
-                "max": 50
+                min: 0,
+                max: 50
             })
             $('<br />').appendTo(dlg)
             $('<div></div>').appendTo(dlg).valueSpinner({
-                "default": 25,
-                "binding": "psiPerVolt",
-                "labelText": "PSI per Volt",
-                "labelAttrs": {
-                    "style": { "padding-right": ".25rem" }
+                value: 25,
+                binding: "psiPerVolt",
+                labelText: "PSI per Volt",
+                labelAttrs: {
+                    style: { "padding-right": ".25rem" }
                 },
-                "min": 0,
-                "max": 50
+                min: 0,
+                max: 50
             })
 
 

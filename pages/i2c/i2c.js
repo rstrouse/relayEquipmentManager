@@ -827,7 +827,7 @@
         _create: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-i2cdevice-adc');
-            el.attr('data-bind', 'channelStates');
+            el.attr('data-bind', 'options.channelStates');
             el[0].val = function (val) { return self.val(val); }
 
             self._buildControls();
