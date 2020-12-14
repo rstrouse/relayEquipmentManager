@@ -13,7 +13,7 @@ export class ads1x15 extends i2cDeviceBase {
     public set channels(val) { this.options.channels = val; }
     private suspendPolling: boolean = false;
     private config(channel: any): number {
-         return this.device.options.comparatorReadings // Set comparator readings (or disable)
+        return this.device.options.comparatorReadings // Set comparator readings (or disable)
             | this.device.options.comparatorLatchingMode    // Set latching mode
             | this.device.options.comparatorActiveMode      // Set active/ready mode
             | this.device.options.comparatorMode            // Set comparator mode
@@ -22,9 +22,9 @@ export class ads1x15 extends i2cDeviceBase {
             | channel.pgaMask                                   // Set PGA/voltage range
             | ads1x15.mux[channel.id - 1]                       // Set mux (channel or differential bit)
             | ads1x15.registers['SINGLE']                   // Set 'start single-conversion' bit
-         // 62243 total [243,35]
+        // 62243 total [243,35]
 
-}
+    }
     protected static spsToMilliseconds = {
         ads1015: {
             128: 1000 / 128,
@@ -139,15 +139,21 @@ export class ads1x15 extends i2cDeviceBase {
             let buffer = Buffer.from(command);
             let w = await this.i2c.writeCommand(this.device.address, buffer);
             logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
+            //let r = await this.readCommand(0);
+            //console.log(r);
             return Promise.resolve(w);
         }
         catch (err) { logger.error(err); }
     }
     protected async readCommand(command: number): Promise<number[]> {
         try {
-            let r = await this.i2c.read(this.device.address, 2);
-            let data = r.buffer.toJSON().data;
-            return Promise.resolve(data);
+            //let r = await this.i2c.read(this.device.address, 2);
+            // let r = await this.i2c.readWord(this.device.address, 0);  // read val
+            let r = await this.i2c.readI2cBlock(this.device.address, 0, 2);  // read val
+            //let data = r.buffer.toJSON().data;
+            //let r2 = await this.i2c.readWord(this.device.address, 1);/// read config red
+            // return Promise.resolve([r >> 8, r & 0xff]);
+            return Promise.resolve(r.buffer.toJSON().data);
         }
         catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
     }
@@ -215,18 +221,14 @@ export class ads1x15 extends i2cDeviceBase {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
     private getSPSTimeout() {
-        if (this.device.options.adcType === 'ads1015') {
-            return ads1x15.spsToMilliseconds[this.device.options.adcType][this.device.options.sps] + 1; //+ this.spsExtraDelay;
-        } else {
-            return ads1x15.spsToMilliseconds[this.device.options.adcType][this.device.options.sps] + 1; //+ this.spsExtraDelay;
-        }
+            return ads1x15.spsToMilliseconds[this.device.options.adcType][this.device.options.sps]*2 + 1; //+ this.spsExtraDelay;
     }
     private async sendInit(channel: any): Promise<boolean> {
         try {
             // this.suspendPolling = true;
             let config = this.config(channel);
             let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
-            logger.debug(`Wrote ${this.device.options.name} config (${config}) bytes ${w}`)
+            logger.debug(`Wrote ${this.device.options.name} config  (${config}) bytes ${w}`)
             await this.timeout(this.getSPSTimeout());
             return Promise.resolve(true);
         }
@@ -243,16 +245,20 @@ export class ads1x15 extends i2cDeviceBase {
             for (let i = 0; i < channels.length; i++) {
                 if (typeof channels[i].pga === 'undefined') channels[i].pga = 2.048;
                 if (channels[i].enabled) {
+                    console.log(`begin reading channel ${i + 1}`)
+                    console.log(`send init`)
                     await this.sendInit(channels[i]);
                     let r: number[];
+                    console.log(`read val`)
                     if (this.i2c.isMock) r = [Math.random() * 50, Math.random() * 255];
                     else r = await this.readCommand(ads1x15.registers['CONVERT'])
+                    console.log(`returned ${r}`)
                     let value = this.convertValue(r);
                     // bytes = [115, 35]
                     // value = 29475
                     // voltage = value / max * pga = 29475 / 65355 * 1024
                     let voltage = this.getVoltageFromValue(value, channels[i].pga);
-                    let psi = Math.max(0,((voltage - channels[i].inducerOffset) * channels[i].psiPerVolt)).toFixed(2);
+                    let psi = Math.max(0, ((voltage - channels[i].inducerOffset) * channels[i].psiPerVolt)).toFixed(2);
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
                     if (typeof valElem !== 'undefined') {
                         valElem.value = value;
@@ -268,7 +274,7 @@ export class ads1x15 extends i2cDeviceBase {
                 else {
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
                     if (typeof valElem === 'undefined') {
-                        this.device.values.channels.push({ id: channels[i].id});
+                        this.device.values.channels.push({ id: channels[i].id });
                     }
                 }
             }
@@ -308,16 +314,16 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             await this.stopRead();
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.device.options.name = this.device.name = opts.name;
-            if (this.device.options.name === '') this.device.options.name = this.device.options.adcType === 'adc1015'?'ADC1015':'ADC1115';
+            if (this.device.options.name === '') this.device.options.name = this.device.options.adcType === 'adc1015' ? 'ADC1015' : 'ADC1115';
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
             if (typeof opts.adcType !== 'undefined') {
                 this.device.options.adcType = opts.adcType;
-                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1015' ? 1600 : 16];
+                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1015' ? 1600 : 32];
             }
             if (typeof opts.channels !== 'undefined') this.device.options.channels = opts.channels;
             for (let c of opts.channels) {
 
-                c.pgaMask = this.pga.get(c.pga).pgaMask;    
+                c.pgaMask = this.pga.get(c.pga).pgaMask;
             }
             this.channels.sort((a, b) => { return a.id - b.id; });
             this.pollReadings();
@@ -352,12 +358,4 @@ export class ads1x15 extends i2cDeviceBase {
         }
         return desc;
     }
-}
-// Special processing for ADS1115 adc.
-export class ads1115 extends ads1x15 {
-
-}
-// Special processing for the ADS1105 adc
-export class ads1015 extends ads1x15 {
-
 }

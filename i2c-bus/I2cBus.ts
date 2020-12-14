@@ -209,6 +209,14 @@ export class i2cBus {
         }
         catch (err) { logger.error(err); }
     }
+    public async readI2cBlock(address: number, reg: number, length: number ): Promise<{bytesRead: number, buffer: Buffer}>{
+        try {
+            let buffer = Buffer.allocUnsafe(length);
+            let ret = await this._i2cBus.readI2cBlock(address, reg, length, buffer)
+            return Promise.resolve(ret)
+        }
+        catch (err) { logger.error(err);}
+    }
     public async writeI2cBlock(address: number, reg: number, length: number, command:Buffer ){
         try {
 

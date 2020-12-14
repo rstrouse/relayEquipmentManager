@@ -3940,7 +3940,8 @@ $.ui.position.fieldTip = {
                     style: { "padding-right": ".25rem" }
                 },
                 min: 0,
-                max: 5
+                max: 5,
+                step: 0.1
             })
             $('<br />').appendTo(dlg)
             $('<div></div>').appendTo(dlg).valueSpinner({
@@ -3951,7 +3952,8 @@ $.ui.position.fieldTip = {
                     style: { "padding-right": ".25rem" }
                 },
                 min: 0,
-                max: 50
+                max: 50,
+                canEdit: true
             })
 
 

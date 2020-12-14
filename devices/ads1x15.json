@@ -213,7 +213,6 @@
               "field": {
                 "type": "panel",
                 "class": "pnlI2cADC",
-                "adcType": "ads1115",
                 "adcTypes": [
                   {
                     "name": "ads1115",
