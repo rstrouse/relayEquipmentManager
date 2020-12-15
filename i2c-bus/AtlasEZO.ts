@@ -17,7 +17,7 @@ import * as extend from "extend";
 import { Buffer } from "buffer";
 import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";
-import { I2cDevice } from "../boards/Controller";
+import { I2cDevice, DeviceBinding } from "../boards/Controller";
 
 export class AtlasEZO extends i2cDeviceBase {
     protected _timerRead: NodeJS.Timeout;

@@ -531,9 +531,21 @@ export class i2cDeviceBase {
         desc.push({ type: 'i2c', isActive: this.device.isActive, name: this.device.name, binding: `i2c:${this.i2c.busId}:${this.device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown' });
         return desc;
     }
+    public async feedDeviceValue(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            let props = Object.getOwnPropertyNames(data);
+            for (let i = 0; i < props.length; i++) {
+                await this.setValue(props[i], data[props[i]]);
+            }
+            return this.values;
+        } catch (err) { return Promise.reject(err); }
+    }
+
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+
             return this.values;
         } catch (err) { return Promise.reject(err); }
     }

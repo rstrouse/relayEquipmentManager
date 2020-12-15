@@ -245,14 +245,14 @@ export class ads1x15 extends i2cDeviceBase {
             for (let i = 0; i < channels.length; i++) {
                 if (typeof channels[i].pga === 'undefined') channels[i].pga = 2.048;
                 if (channels[i].enabled) {
-                    console.log(`begin reading channel ${i + 1}`)
-                    console.log(`send init`)
+                    //console.log(`begin reading channel ${i + 1}`)
+                    //console.log(`send init`)
                     await this.sendInit(channels[i]);
                     let r: number[];
-                    console.log(`read val`)
+                    //console.log(`read val`)
                     if (this.i2c.isMock) r = [Math.random() * 50, Math.random() * 255];
                     else r = await this.readCommand(ads1x15.registers['CONVERT'])
-                    console.log(`returned ${r}`)
+                    //console.log(`returned ${r}`)
                     let value = this.convertValue(r);
                     // bytes = [115, 35]
                     // value = 29475

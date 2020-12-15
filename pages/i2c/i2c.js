@@ -161,8 +161,8 @@
                     evt.stopPropagation();
                 }).hide();
                 $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabOptions', text: 'Device Options' })).pnlI2cOptions();
-                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabTriggers', text: 'Triggers' })).pnlI2cTriggers();
-                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabFeeds', text: 'Feeds' })).pnlI2cFeeds({deviceId: i2cDevice.device.id, busNumber: o.busNumber, busId: o.busId, address: o.address })[0].dataBind(i2cDevice.device.feeds);
+                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabTriggers', text: 'Triggers' })).pnlI2cTriggers({ deviceId: i2cDevice.device.id, busNumber: o.busNumber, busId: o.busId, address: o.address })[0].dataBind(i2cDevice.device.triggers);
+                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabFeeds', text: 'Feeds' })).pnlI2cFeeds({ deviceId: i2cDevice.device.id, busNumber: o.busNumber, busId: o.busId, address: o.address })[0].dataBind(i2cDevice.device.feeds);
                 tabBar[0].selectTabById('tabOptions');
                 if (typeof dt !== 'undefined') self.createDeviceOptions(dt);
                 i2cDevice.device.busNumber = o.busNumber;
@@ -427,7 +427,71 @@
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('i2cdevice-triggers');
+            self._buildControls();
+            el[0].dataBind = function (feeds) { self.dataBind(feeds); }
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-i2cdevice-triggers');
+            $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Triggers act upon input from other devices and are used as inputs for this i2c device.');
+            $('<div></div>').appendTo(el).crudList({
+                id: 'crudTriggers' + o.deviceId, actions: { canCreate: true, canEdit: true, canRemove: true },
+                key: 'id',
+                caption: 'Device Triggers', itemName: 'Device Triggers',
+                columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
+            }).css({ width: '100%' })
+                .on('additem', function (evt) {
+                    $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/triggers', null, function (triggers, status, xhr) {
+                        triggers.trigger = { isActive: true };
+                        self._createTriggerDialog('dlgAddI2cTrigger', 'Add Trigger to I2c Device', triggers);
+                    });
+                }).on('edititem', function (evt) {
+                    $.getLocalService('/config/options/i2c/' + o.busId + '/' + o.address + '/triggers', null, function (triggers, status, xhr) {
+                        triggers.trigger = o.triggers.find(elem => elem.id == evt.dataKey);
+                        self._createTriggerDialog('dlgEditI2cTrigger', 'Edit I2C Device Trigger', triggers);
+                    });
+                }).on('removeitem', function (evt) {
+                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteI2cTrigger', {
+                        message: 'Are you sure you want to delete Trigger?',
+                        width: '350px',
+                        height: 'auto',
+                        title: 'Confirm Delete Device Trigger',
+                        buttons: [{
+                            text: 'Yes', icon: '<i class="fas fa-trash"></i>',
+                            click: function () {
+                                var trigger = o.triggers.find(elem => elem.id == evt.dataKey) || {};
+                                trigger.busId = o.busId;
+                                trigger.busNumber = o.busNumber;
+                                trigger.deviceId = o.deviceId;
+                                trigger.address = o.address;
+                                trigger.id = evt.dataKey;
+                                $.deleteLocalService('/config/i2c/device/trigger', trigger, function (triggers, status, xhr) {
+                                    $.pic.modalDialog.closeDialog(dlg);
+                                    self.dataBind(triggers)
+                                });
+                                //o.triggers.splice(evt.dataKey - 1, 1);
+                                //self.loadTriggers(o.triggers);
+                            }
+                        },
+                        {
+                            text: 'No', icon: '<i class="far fa-window-close"></i>',
+                            click: function () { $.pic.modalDialog.closeDialog(this); }
+                        }]
+                    });
+                });
+        },
+        dataBind: function (triggers) {
+            var self = this, o = self.options, el = self.element;
+            var felem = el.find('div.crud-list:first').each(function () {
+                this.clear();
+                if (typeof triggers !== 'undefined') {
+                    for (var i = 0; i < triggers.length; i++) {
+                        var trigger = triggers[i];
+                        this.addRow(trigger);
+                    }
+                }
+            });
+            o.triggers = triggers;
         }
 
     });
