@@ -478,7 +478,7 @@
                             click: function () { $.pic.modalDialog.closeDialog(this); }
                         }]
                     });
-                });
+                }).hide();
         },
         dataBind: function (triggers) {
             var self = this, o = self.options, el = self.element;
