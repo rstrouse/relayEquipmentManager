@@ -664,7 +664,16 @@ export class AtlasEZOpH extends AtlasEZO {
                 return extend(true, {}, this.values, { pH: super.calcMedian(prop, arrPh), temperature: super.calcMedian(prop, arrTemp) });
         }
     }
-
+    public async clearCalibration(): Promise<I2cDevice> {
+        try {
+            this.suspendPolling = true;
+            await this.execCommand(`Cal,clear`, 300);
+            await this.getCalibrated();
+            return Promise.resolve(this.device);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
 }
 export class AtlasEZOpmp extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
