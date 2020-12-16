@@ -410,6 +410,9 @@
                         "labelText": "Mid Point",
                         "min": 0,
                         "max": 10,
+                        "canEdit": true,
+                        "fmtMask": "#,##0.##",
+                        "emptyMask": "--",
                         "labelAttrs": {
                           "style": {
                             "display": "none"
@@ -453,6 +456,9 @@
                         "labelText": "Low Point",
                         "min": 0,
                         "max": 10,
+                        "canEdit": true,
+                        "fmtMask": "#,##0.##",
+                        "emptyMask": "--",
                         "labelAttrs": {
                           "style": {
                             "display": "none"
@@ -495,6 +501,9 @@
                         "labelText": "High Point",
                         "min": 0,
                         "max": 10,
+                        "canEdit": true,
+                        "fmtMask": "#,##0.##",
+                        "emptyMask": "--",
                         "labelAttrs": {
                           "style": {
                             "display": "none"
