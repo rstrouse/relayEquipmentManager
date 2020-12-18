@@ -31,7 +31,7 @@ export class i2cRelay extends i2cDeviceBase {
             logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
             return Promise.resolve(w);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`${this.device.address} ${command}: ${err.message}`); }
     }
     protected async readCommand(command: number): Promise<number> {
         try {
@@ -40,7 +40,7 @@ export class i2cRelay extends i2cDeviceBase {
             //logger.info(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
             return Promise.resolve(r);
         }
-        catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
+        catch (err) { logger.error(`${this.device.name} Read Command: ${err.message}`); }
     }
 
     public async stopReadContinuous() {

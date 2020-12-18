@@ -200,14 +200,14 @@ export class i2cBus {
             let byte = await this._i2cBus.readByte(addr, cmd);
             return Promise.resolve(byte);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { return Promise.reject(err); }
     }
     public async readWord(addr: number, cmd: number): Promise<number> {
         try {
             let word = await this._i2cBus.readWord(addr, cmd);
             return Promise.resolve(word);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { return Promise.reject(err); }
     }
     public async readI2cBlock(address: number, reg: number, length: number ): Promise<{bytesRead: number, buffer: Buffer}>{
         try {
@@ -215,7 +215,7 @@ export class i2cBus {
             let ret = await this._i2cBus.readI2cBlock(address, reg, length, buffer)
             return Promise.resolve(ret)
         }
-        catch (err) { logger.error(err);}
+        catch (err) { return Promise.reject(err); }
     }
     public async writeI2cBlock(address: number, reg: number, length: number, command:Buffer ){
         try {
@@ -223,7 +223,7 @@ export class i2cBus {
             let ret = await this._i2cBus.writeI2cBlock(address, reg, length, command)
             return Promise.resolve(ret)
         }
-        catch (err) { logger.error(err); return Promise.resolve(0); }
+        catch (err) { return Promise.reject(err); }
     }
     public async writeCommand(address: number, command: string | number | Buffer, length?: number): Promise<number> {
         try {
@@ -267,7 +267,7 @@ export class i2cBus {
             }
             return Promise.resolve(ret.bytesWritten);
         }
-        catch (err) { logger.error(err); return Promise.resolve(0); }
+        catch (err) { return Promise.reject(err); }
     }
     public async read(address: number, length: number): Promise<{ bytesRead: number, buffer: Buffer }> {
         try {
@@ -275,7 +275,7 @@ export class i2cBus {
             let ret = await this._i2cBus.i2cRead(address, length, buffer);
             return Promise.resolve(ret);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { return Promise.reject(err); }
     }
     public async resetAsync(bus): Promise<void> {
         try {
@@ -469,6 +469,7 @@ export class i2cDeviceBase {
     public writable: boolean = false;
     public status: string;
     public initialized: boolean = false;
+    public hasFault: boolean = false;
     public i2c;
     public device: I2cDevice;
     public async closeAsync(): Promise<void> {
@@ -541,7 +542,6 @@ export class i2cDeviceBase {
             return this.values;
         } catch (err) { return Promise.reject(err); }
     }
-
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;

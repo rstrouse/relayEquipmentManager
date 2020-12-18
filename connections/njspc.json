@@ -248,6 +248,35 @@
       ]
     },
     {
+      "name": "chlorinator",
+      "frequency": "2",
+      "bindings": [
+        {
+          "binding": "saltLevel",
+          "type": "number"
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "valueSpinner",
+            "binding": "options.id",
+            "labelText": "Chlorinator Id",
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "value": 1,
+            "canEdit": true,
+            "dataType": "number",
+            "fmtMask": "#,##0",
+            "emptyMask": "0",
+            "inputAttrs": { "style": { "width": "3rem" } },
+            "labelAttrs": { "style": { "width": "7rem" } }
+          }
+        }
+      ]
+    },
+    {
       "name": "chemController",
       "frequency": "2",
       "bindings": [
@@ -294,6 +323,7 @@
             "type": "valueSpinner",
             "binding": "options.id",
             "labelText": "Controller Id",
+            "value": 50,
             "min": 0,
             "max": 100,
             "step": 1,
