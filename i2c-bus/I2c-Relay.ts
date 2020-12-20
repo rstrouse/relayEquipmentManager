@@ -29,18 +29,20 @@ export class i2cRelay extends i2cDeviceBase {
             let buffer = Buffer.from(command);
             let w = await this.i2c.writeCommand(this.device.address, buffer);
             logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
+            this.hasFault = false;
             return Promise.resolve(w);
         }
-        catch (err) { logger.error(`${this.device.address} ${command}: ${err.message}`); }
+        catch (err) { logger.error(`${this.device.address} ${command}: ${err.message}`); this.hasFault = true; }
     }
     protected async readCommand(command: number): Promise<number> {
         try {
             let r = await this.i2c.readByte(this.device.address, command);
             if (this.i2c.isMock) r = this._relayBitmask;
-            //logger.info(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
+            logger.debug(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
+            this.hasFault = false;
             return Promise.resolve(r);
         }
-        catch (err) { logger.error(`${this.device.name} Read Command: ${err.message}`); }
+        catch (err) { logger.error(`${this.device.name} Read Command: ${err.message}`); this.hasFault = true; }
     }
 
     public async stopReadContinuous() {

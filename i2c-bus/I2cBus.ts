@@ -1,7 +1,7 @@
 ﻿import { logger } from "../logger/Logger";
 import { I2cController, cont, I2cBus, I2cDevice, I2cDeviceFeed, DeviceBinding } from "../boards/Controller";
 import { setTimeout, clearTimeout } from "timers";
-import { AnalogDevices } from "../devices/AnalogDevices";
+import { AnalogDevices, IDevice, DeviceStatus } from "../devices/AnalogDevices";
 import { utils } from "../boards/Constants";
 import { webApp } from "../web/Server";
 import { PromisifiedBus } from "i2c-bus";
@@ -147,6 +147,14 @@ export class i2cBus {
     public busId: number;
     constructor() { }
     public get isMock(): boolean { return utils.makeBool(this._i2cBus.isMock); }
+    public setCommSuccess(address: number) {
+        let dev = this.devices.find(elem => elem.device.address === address);
+        if (typeof dev !== 'undefined') { dev.lastComm = new Date().getTime(); dev.hasFault = false; dev.status = '' }
+    }
+    public setCommFailure(address: number, err: Error) {
+        let dev = this.devices.find(elem => elem.device.address === address);
+        if (typeof dev !== 'undefined') { dev.hasFault = true; dev.status = `Comm failure: ${typeof err !== 'undefined' ? err.message : 'Unspecified error'}` }
+    }
     public async scanBus(start: number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
@@ -198,6 +206,7 @@ export class i2cBus {
     public async readByte(addr: number, cmd: number): Promise<number> {
         try {
             let byte = await this._i2cBus.readByte(addr, cmd);
+            this.setCommSuccess(addr);
             return Promise.resolve(byte);
         }
         catch (err) { return Promise.reject(err); }
@@ -205,6 +214,7 @@ export class i2cBus {
     public async readWord(addr: number, cmd: number): Promise<number> {
         try {
             let word = await this._i2cBus.readWord(addr, cmd);
+            this.setCommSuccess(addr);
             return Promise.resolve(word);
         }
         catch (err) { return Promise.reject(err); }
@@ -212,7 +222,8 @@ export class i2cBus {
     public async readI2cBlock(address: number, reg: number, length: number ): Promise<{bytesRead: number, buffer: Buffer}>{
         try {
             let buffer = Buffer.allocUnsafe(length);
-            let ret = await this._i2cBus.readI2cBlock(address, reg, length, buffer)
+            let ret = await this._i2cBus.readI2cBlock(address, reg, length, buffer);
+            this.setCommSuccess(address);
             return Promise.resolve(ret)
         }
         catch (err) { return Promise.reject(err); }
@@ -220,7 +231,8 @@ export class i2cBus {
     public async writeI2cBlock(address: number, reg: number, length: number, command:Buffer ){
         try {
 
-            let ret = await this._i2cBus.writeI2cBlock(address, reg, length, command)
+            let ret = await this._i2cBus.writeI2cBlock(address, reg, length, command);
+            this.setCommSuccess(address);
             return Promise.resolve(ret)
         }
         catch (err) { return Promise.reject(err); }
@@ -265,6 +277,7 @@ export class i2cBus {
                 logger.error(err);
                 return Promise.reject(err);
             }
+            this.setCommSuccess(address);
             return Promise.resolve(ret.bytesWritten);
         }
         catch (err) { return Promise.reject(err); }
@@ -273,6 +286,7 @@ export class i2cBus {
         try {
             let buffer: Buffer = Buffer.alloc(length);
             let ret = await this._i2cBus.i2cRead(address, length, buffer);
+            this.setCommSuccess(address);
             return Promise.resolve(ret);
         }
         catch (err) { return Promise.reject(err); }
@@ -440,13 +454,14 @@ class mockI2cBus {
     public writeQuick(add: number, bit: number): Promise<void> { return Promise.resolve(); }
     public writeI2cBlock(addr: number, cmd: number, length: number, buffer: Buffer): Promise<{ bytesWritten: number, buffer: Buffer }> { return Promise.resolve({ bytesWritten: length, buffer: buffer }); }
 }
-export class i2cDeviceBase {
+export class i2cDeviceBase implements IDevice {
     public static async factoryCreate(i2c, dev: I2cDevice): Promise<i2cDeviceBase> {
         try {
             let dt = dev.getDeviceType();
             if (typeof dt === 'undefined') return Promise.reject(new Error(`Cannot initialize I2c device id${dev.id} on Bus ${i2c.busNumber}: Device type not found ${dev.typeId}`));
             let d = await i2cDeviceFactory.createDevice(dt.module, dt.deviceClass, i2c, dev);
             if (typeof d !== 'undefined') {
+                d.category = dt.category;
                 d.initialized = false;
                 webApp.emitToClients('i2cDeviceStatus', { busNumber: i2c.busNumber, id: dev.id, address: dev.address, status: d.status, intialized: d.initialized, device: dev.getExtended() });
                 if (await d.initAsync(dt)) {
@@ -468,10 +483,13 @@ export class i2cDeviceBase {
     public readable: boolean = false;
     public writable: boolean = false;
     public status: string;
+    public category: string;
     public initialized: boolean = false;
     public hasFault: boolean = false;
     public i2c;
     public device: I2cDevice;
+    public lastComm: number;
+    public get deviceStatus(): DeviceStatus { return { name: this.device.name, category: this.category, hasFault: utils.makeBool(this.hasFault), status: this.status, lastComm: this.lastComm, protocol: 'i2c', busNumber: this.i2c.busNumber, address: this.device.address } }
     public async closeAsync(): Promise<void> {
         try {
             logger.info(`Stopped I2c ${this.device.name}`);
@@ -479,7 +497,7 @@ export class i2cDeviceBase {
         }
         catch (err) { logger.error(err); return Promise.resolve(); }
     }
-    public async initAsync(deviceType: any): Promise<boolean> { return Promise.resolve(true); }
+    public async initAsync(deviceType: any): Promise<boolean> { this.category = deviceType.category; return Promise.resolve(true); }
     public async callCommand(cmd: any): Promise<any> {
         try {
             if (typeof cmd.name !== 'string') return Promise.reject(new Error(`Invalid command ${cmd.name}`));

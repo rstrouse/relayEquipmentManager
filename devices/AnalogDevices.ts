@@ -170,3 +170,16 @@ export class AnalogDevice {
     public category: string;
     public name: string;
 }
+export interface IDevice {
+    deviceStatus: DeviceStatus
+}
+export class DeviceStatus {
+    public name: string;
+    public category: string;
+    public hasFault: boolean;
+    public status: string;
+    public lastComm: number;
+    public protocol: string;
+    public busNumber: number;
+    public address: number;
+}

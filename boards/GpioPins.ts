@@ -3,11 +3,12 @@ import * as fs from "fs";
 import * as extend from "extend";
 import * as util from "util";
 
-import { setTimeout } from "timers";
+import { setTimeout, clearTimeout } from "timers";
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { vMaps, valueMap, utils } from "./Constants";
 import { cont, DeviceBinding } from "../boards/Controller";
+import { IDevice, DeviceStatus } from "../devices/AnalogDevices";
 
 import { PinDefinitions } from "../pinouts/Pinouts";
 import { connBroker } from "../connections/Bindings";
@@ -16,7 +17,7 @@ const gp = require('onoff').Gpio;
 
 export class GpioController  {
     constructor(data) { }
-    public pins = [];
+    public pins: gpioPin[] = [];
     public init() {
         this.initPins();
         return this;
@@ -58,9 +59,9 @@ export class GpioController  {
             if (typeof pinoutHeader !== 'undefined') {
                 let pinout = pinoutHeader.pins.find(elem => elem.id === pinDef.id);
                 if (typeof pinout !== 'undefined') {
-                    let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === - pinDef.headerId);
+                    let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === pinDef.headerId);
                     if (typeof pin === 'undefined') {
-                        pin = { headerId: pinDef.headerId, pinId: pinDef.id, gpioId: pinout.gpioId };
+                        pin = new gpioPin(pinDef.headerId, pinDef.id, pinout.gpioId);
                         this.pins.push(pin);
                         if (useGpio) {
                             logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId}.`);
@@ -140,6 +141,53 @@ export class GpioController  {
             });
         }
         return states;
+    }
+}
+export class gpioPin implements IDevice {
+    constructor(headerId: number, pinId: number, gpioId: number) {
+        this.headerId = headerId;
+        this.pinId = pinId;
+        this.gpioId = gpioId;
+    }
+    private _latchTimer: NodeJS.Timeout;
+    public lastComm: number;
+    public status: string;
+    public hasFault: boolean = false;
+    public headerId: number;
+    public pinId: number;
+    public gpioId: number;
+    public state: number;
+    public gpio;
+    public get deviceStatus(): DeviceStatus { return { name: `GPIO Pin #${this.headerId}-${this.pinId}`, category: 'GPIO Pin', hasFault: utils.makeBool(this.hasFault), status: this.status, lastComm: this.lastComm, protocol: 'gpio', busNumber: this.headerId, address: this.gpioId }; }
+    public async readPinAsync(): Promise<number> {
+        try {
+            let val = await this.gpio.read();
+            this.lastComm = new Date().getTime();
+            this.hasFault = false;
+            this.status = undefined;
+            this.state = val;
+            return val;
+        } catch (err) { this.hasFault = true; this.status = err.message; return Promise.reject(err); }
+    }
+    public async writePinAsync(val: number, latch?: number): Promise<void> {
+        try {
+            if (typeof latch !== 'undefined') {
+                if (typeof this._latchTimer !== 'undefined') clearTimeout(this._latchTimer);
+                this._latchTimer = undefined;
+            }
+            await this.gpio.write(val);
+            if (latch > 0) {
+                this._latchTimer = setTimeout(async () => {
+                    try { await this.writePinAsync(val ? 0 : 1); } catch (err) { logger.error(`Error unlatching GPIO Pin #${this.headerId}-${this.pinId}: ${err.message}`); }
+                }, latch);
+            }
+            this.lastComm = new Date().getTime();
+            this.hasFault = false;
+            this.status = undefined;
+            this.state = val;
+            webApp.emitToClients('gpioPin', { pinId: this.pinId, headerId: this.headerId, gpioId: this.gpioId, state: val });
+        }
+        catch (err) { this.hasFault = true; this.status = err.message; return Promise.reject(err); }
     }
 }
 class MockGpio {

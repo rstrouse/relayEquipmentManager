@@ -62,13 +62,16 @@ export class AtlasEZO extends i2cDeviceBase {
                         return await this.tryCommand(command, timeout, length);
                     }
                 default:
+                    this.hasFault = true;
                     return Promise.resolve({ response: value.buffer[0], error: this.createError(value.buffer[0], command) });
             }
             let data = value.buffer.toString('utf8', 1).replace(/^[\s\uFEFF\xA0\0]+|[\s\uFEFF\xA0\0]+$/g, '');
             logger.debug(`${this.device.name} command ${command} bytes written:${w} result:${data}`);
+            this.hasFault = false;
+            this.lastComm = new Date().getTime();
             return Promise.resolve({ response: value.buffer[0], data: data });
         }
-        catch (err) { return Promise.resolve({ response: -1, error: err }); }
+        catch (err) { this.hasFault = true; return Promise.resolve({ response: -1, error: err }); }
         finally { this.suspendPolling = false; }
     }
     protected async execCommand(command: string, timeout: number, length: number = 31): Promise<string> {

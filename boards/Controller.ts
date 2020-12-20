@@ -551,6 +551,26 @@ export class Controller extends ConfigItem {
         catch (err) { return Promise.reject(err); }
 
     }
+    public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (bind.type === 'i2c') {
+                return await this.i2c.getDeviceStatus(bind);
+            }
+            else if (bind.type === 'gpio') {
+                return await this.gpio.getDeviceStatus(bind);
+            }
+            else if (bind.type === 'spi') {
+                if (isNaN(bind.busId) || bind.busId > 2)
+                    return Promise.reject(new Error(`setDeviceState: Invalid spi busId ${bind.busId} - ${bind.binding}`));
+            }
+            else {
+                return Promise.reject(new Error(`setDeviceState: Unrecognized I/O Channel ${bind.type}`));
+            }
+        }
+        catch (err) { return Promise.reject(err); }
+
+    }
     public async feedDeviceValue(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -589,7 +609,6 @@ export class Controller extends ConfigItem {
             }
         }
         catch (err) { return Promise.reject(err); }
-
     }
 }
 //export class Interfaces extends ConfigItem {
@@ -671,10 +690,21 @@ export class Gpio extends ConfigItem {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
             // Find the pinId.
-            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceState: Invalid pin #${bind.binding}`));
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDevice: Invalid pin #${bind.binding}`));
             let pin = this.pins.find(elem => elem.id === bind.deviceId);
-            if (typeof pin === 'undefined') return Promise.reject(new Error(`getDeviceState: Pin #${bind.deviceId} not found.`));
+            if (typeof pin === 'undefined') return Promise.reject(new Error(`getDevice: Pin #${bind.deviceId} not found.`));
             return pin;
+        }
+        catch (err) { return Promise.reject(new Error(`Could not set gpio state: ${err}`)); }
+    }
+    public async getDeviceStatus(binding: string | DeviceBinding) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // Find the pinId.
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceStatus: Invalid pin #${bind.binding}`));
+            let pin = this.pins.find(elem => elem.id === bind.deviceId);
+            if (typeof pin === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Pin #${bind.deviceId} not found.`));
+            return pin.getDeviceStatus();
         }
         catch (err) { return Promise.reject(new Error(`Could not set gpio state: ${err}`)); }
     }
@@ -780,7 +810,18 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
+    public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // A valid device binding for i2c includes i2c:<busId>:<deviceId>.
+            if (isNaN(bind.busId)) return Promise.reject(new Error(`getDevice: Invalid i2c bus id ${bind.busId} - ${bind.binding}`));
+            let bus = this.buses.find(elem => elem.id === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDevice: i2c bus not found ${bind.busId} - ${bind.binding}`));
+            // At this point we know the protocol and we know the bus so forward this to our bus.
+            return await bus.getDeviceStatus(bind);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
     public async setDevice(dev): Promise<I2cDevice> {
         try {
             let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
@@ -947,20 +988,33 @@ export class I2cBus extends ConfigItem {
     public async feedDeviceValue(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
-            if (isNaN(bind.deviceId)) return Promise.reject(`feedDeviceValue: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`);
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`feedDeviceValue: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
             let device = this.devices.find(elem => elem.id === bind.deviceId);
-            if (typeof device === 'undefined') return Promise.reject(`feedDeviceValue: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`feedDeviceValue: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
             return await device.feedDeviceValue(bind, data);
         } catch (err) { return Promise.reject(err); }
     }
-
     public async getDevice(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
-            if (isNaN(bind.deviceId)) return Promise.reject(`getDevice: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`);
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDevice: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
             let device = this.devices.find(elem => elem.id === bind.deviceId);
-            if (typeof device === 'undefined') return Promise.reject(`getDevice: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDevice: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
             return device;
+        } catch (err) { return Promise.reject(err); }
+    }
+
+    public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceStatus: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.devices.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            let bus = i2c.buses.find(elem => this.busNumber === elem.busNumber);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Bus not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let dev = bus.devices.find(elem => elem.device.id === bind.deviceId);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Device not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            return dev.deviceStatus;
         } catch (err) { return Promise.reject(err); }
     }
 
@@ -1434,6 +1488,14 @@ export class GpioPin extends ConfigItem {
         return pin;
     }
     public get isOutput(): boolean { return typeof this.data.direction === 'string' ? this.data.direction.indexOf('output') >= 0 : false; }
+    public async getDeviceStatus(): Promise<any> {
+        try {
+            let p = gpioPins.pins.find(elem => elem.headerId === this.headerId && elem.pinId === this.id);
+            if (typeof p === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Could not find active Pin #${this.headerId}-${this.id}`));
+            return p.deviceStatus;
+        }
+        catch (err) { return Promise.reject(`getDeviceStatus: Error getting Pin #${this.headerId}-${this.id} status: ${err}`); }
+    }
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
@@ -1443,39 +1505,22 @@ export class GpioPin extends ConfigItem {
             if (!this.isOutput) return Promise.reject(new Error(`setDeviceState: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
             // At this point we have the current value.
             let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
-            if (isNaN(latch)) return Promise.reject(`setDeviceState: GPIO Pin #${this.headerId} - ${this.id} latch data is invalid ${data.latch}.`);
+            if (isNaN(latch)) return Promise.reject(new Error(`setDeviceState: GPIO Pin #${this.headerId} - ${this.id} latch data is invalid ${data.latch}.`));
             let p = gpioPins.pins.find(elem => elem.headerId === this.headerId && elem.pinId === this.id);
-            
-            if (typeof p._latchTimer !== 'undefined') {
-                clearTimeout(p._latchTimer);
-                p._latchTimer = undefined;
-            }
-            let oldState = await gpioPins.readPinAsync(this.headerId, this.id);
+            let oldState = await p.readPinAsync();
 
             // Now that the state has been read lets set its state.
             let newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
-            await gpioPins.writePinAsync(this.headerId, this.id, newState ? 1 : 0);
+            await p.writePinAsync(newState ? 1 : 0, latch);
             let vmState = vMaps.pinStates.transform(newState ? 1 : 0);
             this.setDataVal('state', vmState.name);
-            let pin = {
+            return {
                 id: this.id,
                 name: this.name,
                 enabled: this.isActive,
                 oldState: oldState > 0,
                 state: newState
             };
-            // Not in love with the unlatching mechanism.  This has to do with the fact that gpio values are not true/false but at
-            // this point we are only taking the pin high or low.
-            if (latch > 0) {
-                p._latchTimer = setTimeout(async () => {
-                    try {
-                        await gpioPins.writePinAsync(this.headerId, this.id, newState ? 0 : 1);
-                        this.setDataVal('state', newState ? 'off' : 'on');
-                    }
-                    catch (err) { logger.error(`Unable to unlatch Pin #${this.headerId}-${this.id}`); }
-                }, latch);
-            }
-            return pin;
         }
         catch (err) { return Promise.reject(`setDeviceState: Error setting pin state: ${err}`); }
     }
@@ -1490,16 +1535,10 @@ export class GpioPin extends ConfigItem {
             let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
             if (isNaN(latch)) return Promise.reject(`feedDeviceValue: GPIO Pin #${this.headerId} - ${this.id} latch data is invalid ${data.latch}.`);
             let p = gpioPins.pins.find(elem => elem.headerId === this.headerId && elem.pinId === this.id);
-
-            if (typeof p._latchTimer !== 'undefined') {
-                clearTimeout(p._latchTimer);
-                p._latchTimer = undefined;
-            }
-            let oldState = await gpioPins.readPinAsync(this.headerId, this.id);
-
+            let oldState = await p.readPinAsync();
             // Now that the state has been read lets set its state.
             let newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
-            await gpioPins.writePinAsync(this.headerId, this.id, newState ? 1 : 0);
+            await p.writePinAsync(newState ? 1 : 0, latch);
             let vmState = vMaps.pinStates.transform(newState ? 1 : 0);
             this.setDataVal('state', vmState.name);
             let pin = {
@@ -1509,17 +1548,6 @@ export class GpioPin extends ConfigItem {
                 oldState: oldState > 0,
                 state: newState
             };
-            // Not in love with the unlatching mechanism.  This has to do with the fact that gpio values are not true/false but at
-            // this point we are only taking the pin high or low.
-            if (latch > 0) {
-                p._latchTimer = setTimeout(async () => {
-                    try {
-                        await gpioPins.writePinAsync(this.headerId, this.id, newState ? 0 : 1);
-                        this.setDataVal('state', newState ? 'off' : 'on');
-                    }
-                    catch (err) { logger.error(`Unable to unlatch Pin #${this.headerId}-${this.id}`); }
-                }, latch);
-            }
             return pin;
         }
         catch (err) { return Promise.reject(`feedDeviceValue: Error setting pin value: ${err}`); }

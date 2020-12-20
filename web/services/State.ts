@@ -51,9 +51,16 @@ export class StateRoute {
             }
             catch (err) { next(err); }
         });
+        app.get('/status/device/:binding', async (req, res, next) => {
+            try {
+                let ret = await cont.getDeviceStatus(req.params.binding);
+                return res.status(200).send(ret);
+            }
+            catch (err) { next(err); }
+        });
         app.put('/feed/device/:binding', async (req, res, next) => {
             try {
-                console.log(`feed: ${req.params.binding}: ${JSON.stringify(req.body)}`);
+                //console.log(`feed: ${req.params.binding}: ${JSON.stringify(req.body)}`);
                 let ret = await cont.feedDeviceValue(req.params.binding, req.body);
                 return res.status(200).send(ret);
             }
