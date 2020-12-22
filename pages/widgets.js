@@ -3886,7 +3886,7 @@ $.ui.position.fieldTip = {
             $('<div></div>').appendTo(dlg).pickList({
                 labelText: 'Power Gain', binding: 'pga', dataType:'number',
                 labelAttrs: {
-                    style: { width: "3rem" }
+                    style: { width: "6rem" }
                 },
                 columns: [
                     {
@@ -3929,7 +3929,7 @@ $.ui.position.fieldTip = {
                     }
                 ],
                 value: 2.048,
-                inputAttrs: { style: { width: "7rem" } }
+                inputAttrs: { style: { width: "5rem" } }
             })
             $('<br />').appendTo(dlg)
             $('<div></div>').appendTo(dlg).valueSpinner({

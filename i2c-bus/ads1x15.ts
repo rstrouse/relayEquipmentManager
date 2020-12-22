@@ -279,8 +279,6 @@ export class ads1x15 extends i2cDeviceBase {
                 }
             }
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
-            // logger.debug(`${this.device.name} - Read Channel 3.  Results: ${r} ${JSON.stringify(r)}`)
-            // }
             this.emitFeeds();
             return Promise.resolve(true);
         }
@@ -306,7 +304,6 @@ export class ads1x15 extends i2cDeviceBase {
         let max = ads1x15.thresholdValues[this.device.options.adcType];
         // positive values must be 1 less than max range value (e.g. full scale of 12 bit ADC => 2^(12-1)-1 => -2048 to 2047)
         max = value > 0 ? max - 1 : max;
-        // FIX to dynamic
         return value / max * pga; // value / mx = % of scale, scale * pga = Volts
     }
 
