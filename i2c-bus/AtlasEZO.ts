@@ -309,7 +309,7 @@ export class AtlasEZOorp extends AtlasEZO {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
         }
@@ -1367,7 +1367,7 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async setOptions(opts): Promise<any> {
         try {
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && utils.makeBool(this.options.isProtocolLocked) !== utils.makeBool(opts.isProcolLocked)) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.isProtocolLocked !== 'undefined' && utils.makeBool(this.options.isProtocolLocked) !== utils.makeBool(opts.isProtocolLocked)) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
             if (typeof this.options.scale === 'undefined') await this.getScale();
@@ -1962,7 +1962,7 @@ export class AtlasEZOhum extends AtlasEZO {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) await this.setName(opts.name);
-            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProcolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
+            if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
             if (typeof opts.units === 'string' && ['C', 'F'].includes(opts.units.toUpperCase())) { await this.setUnits(opts.units); }
