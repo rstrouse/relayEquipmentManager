@@ -8,7 +8,9 @@
       "input": "mV",
       "resistor": 10000,
       "convertValue": "return value;",
-      "interfaces": [ "spi" ]
+      "interfaces": [
+        "spi"
+      ]
     },
     {
       "id": 201,
@@ -29,7 +31,7 @@
         {
           "name": "pressure",
           "desc": "Presure in the reported units",
-          "maxSamples":  10
+          "maxSamples": 10
         },
         {
           "name": "all",
@@ -42,7 +44,9 @@
           "dataType": "panel",
           "field": {
             "type": "div",
-            "style": { "display": "inline-block" }
+            "style": {
+              "display": "inline-block"
+            }
           },
           "options": [
             {
@@ -56,9 +60,13 @@
                 "labelText": "Name",
                 "inputAttrs": {
                   "maxLength": 16,
-                  "style": { "width": "16rem" }
+                  "style": {
+                    "width": "16rem"
+                  }
                 },
-                "style": { "display": "block" }
+                "style": {
+                  "display": "block"
+                }
               }
             },
             {
@@ -82,7 +90,9 @@
                     "type": "checkbox",
                     "bind": "options.ledEnabled",
                     "labelText": "LED Enabled",
-                    "style": { "marginLeft": "1rem" }
+                    "style": {
+                      "marginLeft": "1rem"
+                    }
                   }
                 }
               ]
@@ -109,7 +119,9 @@
                       "lineHeight": "1.2"
                     },
                     "labelAttrs": {
-                      "style": { "width": "5.5rem" }
+                      "style": {
+                        "width": "5.5rem"
+                      }
                     },
                     "cssClass": "i2cDeviceInformation"
                   }
@@ -117,7 +129,9 @@
                 {
                   "field": {
                     "type": "div",
-                    "style": { "lineHeight": ".8" }
+                    "style": {
+                      "lineHeight": ".8"
+                    }
                   },
                   "options": [
                     {
@@ -130,7 +144,9 @@
                           "lineHeight": "1.2"
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         }
                       }
                     },
@@ -145,7 +161,6 @@
                         }
                       }
                     }
-
                   ]
                 },
                 {
@@ -168,7 +183,9 @@
                       }
                     },
                     "labelAttrs": {
-                      "style": { "width": "5.5rem" }
+                      "style": {
+                        "width": "5.5rem"
+                      }
                     },
                     "units": "volts"
                   }
@@ -202,7 +219,9 @@
                     },
                     "unitsBinding": "values.units.name",
                     "labelAttrs": {
-                      "style": { "width": "5rem" }
+                      "style": {
+                        "width": "5rem"
+                      }
                     }
                   }
                 }
@@ -240,7 +259,9 @@
                         "min": 0,
                         "max": 3,
                         "labelAttrs": {
-                          "style": { "width": "5rem" }
+                          "style": {
+                            "width": "5rem"
+                          }
                         }
                       }
                     },
@@ -252,22 +273,30 @@
                         "binding": "options.units.name",
                         "bindColumn": 0,
                         "displayColumn": 0,
-                        "style": { "display": "block" },
+                        "style": {
+                          "display": "block"
+                        },
                         "labelAttrs": {
-                          "style": { "width": "5rem" }
+                          "style": {
+                            "width": "5rem"
+                          }
                         },
                         "columns": [
                           {
                             "hidden": false,
                             "binding": "name",
                             "text": "name",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           },
                           {
                             "hidden": false,
                             "binding": "desc",
                             "text": "Description",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           }
                         ],
                         "items": [
@@ -296,7 +325,11 @@
                             "desc": "Centimeters of Water Column"
                           }
                         ],
-                        "inputAttrs": { "style": { "width": "4rem" } }
+                        "inputAttrs": {
+                          "style": {
+                            "width": "4rem"
+                          }
+                        }
                       }
                     }
                   ]
@@ -312,19 +345,22 @@
                 {
                   "field": {
                     "type": "div",
-                    "style": { "width": "15rem" },
+                    "style": {
+                      "width": "15rem"
+                    },
                     "html": "These settings will trigger the alarm pin when the pressure is exceeded.  This trigger will not be identified in the REM although it could be wired to a GPIO pin to reflect the alarm state.<hr style=\"margin:2px\"></hr>Provide the max pressure as well as the tolerance for when the alarm will reset.",
                     "cssClass": "script-advanced-instructions"
                   }
                 },
-
                 {
                   "default": 0,
                   "field": {
                     "binding": "options.alarm.enable",
                     "type": "checkbox",
                     "labelText": "Enable",
-                    "style": { "display": "block" }
+                    "style": {
+                      "display": "block"
+                    }
                   }
                 },
                 {
@@ -335,12 +371,20 @@
                     "labelText": "Pressure",
                     "min": 0,
                     "max": 1000,
-                    "style": { "display": "block" },
-                    "labelAttrs": {
-                      "style": { "width": "5rem" }
+                    "style": {
+                      "display": "block"
                     },
-                    "inputAttrs": { "style": { "width": "5rem" } },
-                    "unitsBinding":  "options.alarm.units.name"
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "unitsBinding": "options.alarm.units.name"
                   }
                 },
                 {
@@ -351,21 +395,359 @@
                     "labelText": "Tolerance",
                     "min": 0,
                     "max": 1000,
-                    "style": { "display": "block" },
-                    "labelAttrs": {
-                      "style": { "width": "5rem" }
+                    "style": {
+                      "display": "block"
                     },
-                    "inputAttrs": { "style": { "width": "5rem" } },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
                     "unitsBinding": "options.alarm.units.name"
                   }
                 }
               ]
             }
-
           ]
         }
       ],
-      "interfaces": [ "i2c" ]
+      "interfaces": [
+        "i2c"
+      ]
+    },
+    {
+      "id": 202,
+      "name": "Pressure Transducer",
+      "input": "volts",
+      "_deviceClass": "Transducer",
+      "outputs": [
+        {
+          "name": "pressure",
+          "desc": "Presure in the reported units",
+          "maxSamples": 10
+        },
+        {
+          "name": "all",
+          "desc": "All values",
+          "maxSamples": 10
+        }
+      ],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block"
+            }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": {
+                    "width": "16rem"
+                  }
+                },
+                "style": {
+                  "display": "block"
+                }
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Pressure",
+                    "binding": "values.pressure",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "units": "psi",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Volts",
+                    "binding": "values.volts",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0###",
+                    "emptyMask": "--.-",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "units": "v",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Settings"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div"
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "bind": "options.powerGain",
+                        "dataType": "number",
+                        "default": 10000,
+                        "type": "pickList",
+                        "fmtMask": "#,###",
+                        "labelText": "Power Gain",
+                        "required": true,
+                        "units": "v",
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "canEdit": true,
+                        "columns": [
+                          {
+                            "hidden": true,
+                            "binding": "name",
+                            "text": "name",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          },
+                          {
+                            "hidden": false,
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "name": 6.144,
+                            "desc": "6.144"
+                          },
+                          {
+                            "name": 4.096,
+                            "desc": "4.096"
+                          },
+                          {
+                            "name": 2.048,
+                            "desc": "2.048"
+                          },
+                          {
+                            "name": 1.024,
+                            "desc": "1.024"
+                          },
+                          {
+                            "name": 0.512,
+                            "desc": "0.512"
+                          },
+                          {
+                            "name": 0.256,
+                            "desc": "0.256"
+                          }
+                        ],
+                        "value": 2.048
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "br"
+                      }
+                    },
+                    {
+                      "bind": "options.inducerOffset",
+                      "dataType": "number",
+                      "default": 0.5,
+                      "field": {
+                        "type": "valueSpinner",
+                        "bind": "options.inducerOffset",
+                        "labelText": "Inducer Offset",
+                        "units": "v",
+                        "required": true,
+                        "canEdit": true,
+                        "labelAttrs": {
+                          "style": {
+                            "padding-right": ".25rem"
+                          }
+                        },
+                        "min": 0,
+                        "max": 10,
+                        "step": 0.1
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "br"
+                      }
+                    },
+                    {
+                      "bind": "options.psiPerVolt",
+                      "dataType": "number",
+                      "default": 25,
+                      "field": {
+                        "bind": "options.psiPerVolt",
+                        "type": "valueSpinner",
+                        "labelText": "PSI per Volt",
+                        "required": true,
+                        "canEdit": true,
+                        "labelAttrs": {
+                          "style": {
+                            "padding-right": ".25rem"
+                          }
+                        },
+                        "min": 0,
+                        "max": 50
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "High Pressure Alarm"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "width": "15rem"
+                    },
+                    "html": "These settings will trigger the alarm pin when the pressure is exceeded.  This trigger will not be identified in the REM although it could be wired to a GPIO pin to reflect the alarm state.<hr style=\"margin:2px\"></hr>Provide the max pressure as well as the tolerance for when the alarm will reset.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.enable",
+                    "type": "checkbox",
+                    "labelText": "Enable",
+                    "style": {
+                      "display": "block"
+                    }
+                  }
+                },
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.pressure",
+                    "type": "valueSpinner",
+                    "labelText": "Pressure",
+                    "min": 0,
+                    "max": 1000,
+                    "style": {
+                      "display": "block"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "unitsBinding": "options.alarm.units.name"
+                  }
+                },
+                {
+                  "default": 0,
+                  "field": {
+                    "binding": "options.alarm.tolerance",
+                    "type": "valueSpinner",
+                    "labelText": "Tolerance",
+                    "min": 0,
+                    "max": 1000,
+                    "style": {
+                      "display": "block"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "unitsBinding": "options.alarm.units.name"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        "i2c",
+        "generic",
+        "spi"
+      ]
     }
   ]
 }

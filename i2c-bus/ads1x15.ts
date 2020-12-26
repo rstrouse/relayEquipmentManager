@@ -139,20 +139,13 @@ export class ads1x15 extends i2cDeviceBase {
             let buffer = Buffer.from(command);
             let w = await this.i2c.writeCommand(this.device.address, buffer);
             logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
-            //let r = await this.readCommand(0);
-            //console.log(r);
             return Promise.resolve(w);
         }
         catch (err) { logger.error(err); }
     }
     protected async readCommand(command: number): Promise<number[]> {
         try {
-            //let r = await this.i2c.read(this.device.address, 2);
-            // let r = await this.i2c.readWord(this.device.address, 0);  // read val
             let r = await this.i2c.readI2cBlock(this.device.address, 0, 2);  // read val
-            //let data = r.buffer.toJSON().data;
-            //let r2 = await this.i2c.readWord(this.device.address, 1);/// read config red
-            // return Promise.resolve([r >> 8, r & 0xff]);
             return Promise.resolve(r.buffer.toJSON().data);
         }
         catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
@@ -165,11 +158,6 @@ export class ads1x15 extends i2cDeviceBase {
     public async readContinuous(): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
-            // TODO: Add the byte sequence to read from the ADC.
-
-            // read from channel 3
-            // this.values.channels[0].val = Math.random() * 100;
-
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             this._timerRead = setTimeout(() => { this.readContinuous(); }, this.device.options.readInterval || 500);
             return Promise.resolve(true);
@@ -191,18 +179,12 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof this.device.values.channels === 'undefined') this.device.values.channels = [];
             if (typeof this.device.name === 'undefined') this.device.name = this.options.name = this.options.adcType.toUpperCase();
             if (typeof this.device.options.adcType !== 'undefined') {
-
-                // let w = await this.sendCommand([ads1x15.registers['CONFIG'], (this.config >> 8) & 0xFF, this.config & 0xFF]);
-                // await this.timeout(ads1x15[this.device.options.adcType][this.device.options.sps]);
-                // logger.debug(`${this.device.name} - Sent device config.  Wrote ${w} bytes.`)
-                // // this.readContinuous();
                 this.pollReadings();
             }
             return Promise.resolve(true);
         }
         catch (err) { logger.error(err); return Promise.resolve(false); }
         finally {
-            // setTimeout(() => { this.pollDeviceInformation(); }, 2000);
             if (this.device.options.adcType !== 'undefined') setTimeout(() => { this.pollReadings(); }, 5000);
         }
     }
@@ -225,7 +207,6 @@ export class ads1x15 extends i2cDeviceBase {
     }
     private async sendInit(channel: any): Promise<boolean> {
         try {
-            // this.suspendPolling = true;
             let config = this.config(channel);
             let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
             logger.debug(`Wrote ${this.device.options.name} config  (${config}) bytes ${w}`)
@@ -233,7 +214,6 @@ export class ads1x15 extends i2cDeviceBase {
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
-        // finally { this.suspendPolling = false; }
     }
 
     public async takeReadings(): Promise<boolean> {
@@ -245,18 +225,12 @@ export class ads1x15 extends i2cDeviceBase {
             for (let i = 0; i < channels.length; i++) {
                 if (typeof channels[i].pga === 'undefined') channels[i].pga = 2.048;
                 if (channels[i].enabled) {
-                    //console.log(`begin reading channel ${i + 1}`)
-                    //console.log(`send init`)
                     await this.sendInit(channels[i]);
                     let r: number[];
-                    //console.log(`read val`)
                     if (this.i2c.isMock) r = [Math.random() * 50, Math.random() * 255];
                     else r = await this.readCommand(ads1x15.registers['CONVERT'])
-                    //console.log(`returned ${r}`)
                     let value = this.convertValue(r);
-                    // bytes = [115, 35]
-                    // value = 29475
-                    // voltage = value / max * pga = 29475 / 65355 * 1024
+                    // voltage = value / max * pga = e.g. 29475 / 65355 * 1024
                     let voltage = this.getVoltageFromValue(value, channels[i].pga);
                     let psi = Math.max(0, ((voltage - channels[i].inducerOffset) * channels[i].psiPerVolt)).toFixed(2);
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
@@ -332,7 +306,6 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             await this.stopRead();
             // RSG - Don't set anything here; values with ADC should only come from the readings
-            //if (typeof vals.channels !== 'undefined') this.device.values.channels = vals.channels
             this.pollReadings();
             Promise.resolve(this.device.values);
         }

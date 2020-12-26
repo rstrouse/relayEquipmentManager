@@ -7,6 +7,7 @@ import * as readline from 'readline';
 import { gpioPins } from "./boards/GpioPins";
 import { spi0, spi1 } from "./spi-adc/SpiAdcBus";
 import { i2c } from "./i2c-bus/I2cBus";
+require("source-map-support/register")
 
 export function initAsync() {
     return Promise.resolve()

@@ -12,5 +12,6 @@
     "channels": []
   },
   "i2c": { "isActive": false },
-  "connections": []
+  "connections": [],
+  "genericDevices": {"isActive": true}
 }

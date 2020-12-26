@@ -931,7 +931,7 @@ var templateBuilder = {
                 if (typeof opt.field.attrs !== 'undefined') {
                     for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
                 }
-                if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
+                if (typeof opt.options !== 'undefined') self.createObjectOptions(fld, opt, binding + prop);
                 break;
             case 'panel':
                 fld = $('<div></div>').appendTo(pnl)[`${opt.field.class}`](opt.field);
@@ -951,7 +951,7 @@ var templateBuilder = {
                 if (typeof opt.field.attrs !== 'undefined') {
                     for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
                 }
-                if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
+                if (typeof opt.options !== 'undefined') self.createObjectOptions(fld, opt, binding + prop);
                 break;
         }
         if (typeof fld !== 'undefined' && typeof opt.field !== 'undefined') {

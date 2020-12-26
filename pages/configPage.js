@@ -29,6 +29,10 @@
                     evt.newTab.contents.empty();
                     $('<div></div>').appendTo(evt.newTab.contents).pnlCfgSpi({ controllerId: 1 });
                     break;
+                case 'tabGenericDevices':
+                    evt.newTab.contents.empty();
+                    $('<div></div>').appendTo(evt.newTab.contents).pnlCfgGenericDevices();
+                    break;
                 default:
                     evt.newTab.contents.empty();
                     if (evt.newTab.id.startsWith('tabI2c')) {
@@ -52,6 +56,7 @@
             tab = self._addConfigTab({ id: 'tabGpio', text: 'GPIO - Pinouts', cssClass: 'cfgGpio' });
             tab = self._addConfigTab({ id: 'tabSpi0', text: 'SPI0 - Devices', cssClass: 'cfgSpi0' });
             tab = self._addConfigTab({ id: 'tabSpi1', text: 'SPI1 - Devices', cssClass: 'cfgSpi1' });
+            tab = self._addConfigTab({ id: 'tabGenericDevices', text: 'Generic Devices', cssClass: 'cfgGenericDevices' });
             tabs[0].showTab('tabSpi0', false);
             tabs[0].showTab('tabSpi1', false);
             tabs[0].selectTabById('tabGeneral');

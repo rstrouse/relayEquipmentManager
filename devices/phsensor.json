@@ -570,7 +570,7 @@
           ]
         }
       ],
-      "interfaces": [ "i2c" ]
+      "interfaces": [ "i2c", "generic" ]
     }
   ]
 }

@@ -155,7 +155,7 @@ export class ConfigRoute {
                 let opts = { chipType: chip, adcChipTypes: cont.spiAdcChips };
                 return res.status(200).send(opts);
             }
-            catch(err) { next(err); }
+            catch (err) { next(err); }
         });
         app.delete('/config/options/spi/chipType/:id', (req, res, next) => {
             try {
@@ -319,7 +319,7 @@ export class ConfigRoute {
                 while (times > 0) {
                     await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: state });
                     await new Promise((resolve, reject) => setTimeout(() => { resolve(); }, req.body.delay || 100));
-                    if(times > 1) await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: !state });
+                    if (times > 1) await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: !state });
                     times--;
                 }
                 return res.status(200).send(pin.getExtended());
@@ -330,6 +330,36 @@ export class ConfigRoute {
             try {
                 let dev = await cont.getDevice(req.params.binding);
                 return res.status(200).send(dev.get(true));
+            }
+            catch (err) { next(err); }
+        });
+        app.get('/config/options/genericDevices/', (req, res) => {
+            // let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
+            let device = cont.genericDevices;  // bus.devices.getItemByAddress(parseInt(req.params.deviceAddress, 10));
+            let opts = {
+                // bus: bus.getExtended(),
+                genericDevices: device.getExtended(),
+                deviceTypes: cont.analogDevices.filter(elem => typeof elem.interfaces === 'undefined' || elem.interfaces.indexOf('generic') !== -1)
+            };
+            return res.status(200).send(opts);
+        });
+        app.put('/config/genericDevices/device', async (req, res, next) => {
+            try {
+                let dev = await cont.genericDevices.setDevice(req.body);
+                return res.status(200).send(dev.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/genericDevices/device', async (req, res, next) => {
+            try {
+                let dev = await cont.genericDevices.deleteDevice(req.body);
+                let device = cont.genericDevices;  // bus.devices.getItemByAddress(parseInt(req.params.deviceAddress, 10));
+                let opts = {
+                    // bus: bus.getExtended(),
+                    genericDevices: device.getExtended(),
+                    deviceTypes: cont.analogDevices.filter(elem => typeof elem.interfaces === 'undefined' || elem.interfaces.indexOf('generic') !== -1)
+                };
+                return res.status(200).send(opts);
             }
             catch (err) { next(err); }
         });
