@@ -699,7 +699,7 @@
                         $('<hr></hr>').appendTo(el);
                         var line = $('<div></div>').appendTo(el);
                         var lbl = type === 'njspc' || type === 'webSocket' ? 'Socket Event' : 'Topic';
-                        if (typeof o.bindings.devices !== 'undefined' && o.bindings.devices.length > 0) {
+                        if (typeof o.bindings.devices !== 'undefined' && type === 'internal') {
                             $('<div></div>').appendTo(line).pickList({
                                 required: true,
                                 bindColumn: 0, displayColumn: 2, labelText: 'to Device', binding: 'deviceBinding',
