@@ -468,6 +468,15 @@
               }
             },
             {
+              "dataType": "boolean",
+              "default": true,
+              "field": {
+                "type": "checkbox",
+                "bind": "isActive",
+                "labelText": "Is Active"
+              }
+            },
+            {
               "dataType": "panel",
               "field": {
                 "type": "fieldset",

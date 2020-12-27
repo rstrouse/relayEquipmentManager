@@ -103,7 +103,7 @@
             console.log(device)
             var self = this, o = self.options, el = self.element;
             var dlg = $.pic.modalDialog.createDialog(id, {
-                width: '570px',
+                width: '610px',
                 height: 'auto',
                 title: title,
                 buttons: [
@@ -125,18 +125,26 @@
                         click: function () { $.pic.modalDialog.closeDialog(this); }
                     }]
             });
+
+            var tabBar = $('<div></div>').appendTo(dlg).tabBar().on('tabchange', function (evt) {
+                evt.stopPropagation();
+            })
+            // .hide();
+            $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabOptions', text: 'Device Options' })).pnlDevice();
+            $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabTriggers', text: 'Triggers' })).pnlDeviceTriggers({ device })[0].dataBind(device.triggers);
+            $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabFeeds', text: 'Feeds' })).pnlDeviceFeeds({ device })[0].dataBind(device.feeds);
+            tabBar[0].selectTabById('tabOptions');
+
             dlg.attr('id', 'edit-generic-device');
             $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', "id").attr('data-datatype', 'int');
-            var line = $('<div></div>').appendTo(dlg);
-            line = $('<div></div>').appendTo(dlg);
-            $('<input type="hidden"></input>').appendTo(line).attr('data-bind', 'id').attr('data-datatype', 'int');
-            $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive' });
+            // var line = $('<div></div>').appendTo(dlg);
+            // line = $('<div></div>').appendTo(dlg);
+            $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int');
+            // $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive' });
 
-            $('<div></div>').appendTo(dlg).pnlDevice();
+            // $('<div></div>').appendTo(dlg).pnlDevice();
             dlg.find('div.pnl-generic-device-details').each(function () { this.dataBind(device.deviceType); });
-            dlg.css({ overflow: 'visible' });
-            $('<div></div>').appendTo(dlg)
-            .text('End');
+            // dlg.css({ overflow: 'visible' });
             return dlg;
         },
         _buildControls: function () {
@@ -218,4 +226,373 @@
             el.attr('data-genericDeviceId', device.id);
         }
     });
+
+    $.widget('pic.pnlDeviceTriggers', {
+        options: {},
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].dataBind = function (feeds) { self.dataBind(feeds); }
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-i2cdevice-triggers');
+            $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Triggers act upon input from other devices and are used as inputs for this i2c device.');
+            $('<div></div>').appendTo(el).crudList({
+                id: 'crudTriggers' + o.deviceId, actions: { canCreate: true, canEdit: true, canRemove: true },
+                key: 'id',
+                caption: 'Device Triggers', itemName: 'Device Triggers',
+                columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
+            }).css({ width: '100%' })
+                .on('additem', function (evt) {
+                    $.getLocalService('/config/options/genericDevices/' + o.busNumber + '/' + o.address + '/triggers', null, function (triggers, status, xhr) {
+                        triggers.trigger = { isActive: true };
+                        self._createTriggerDialog('dlgAddI2cTrigger', 'Add Trigger to I2c Device', triggers);
+                    });
+                }).on('edititem', function (evt) {
+                    $.getLocalService('/config/options/genericDevices/' + o.busId + '/' + o.address + '/triggers', null, function (triggers, status, xhr) {
+                        triggers.trigger = o.triggers.find(elem => elem.id == evt.dataKey);
+                        self._createTriggerDialog('dlgEditI2cTrigger', 'Edit I2C Device Trigger', triggers);
+                    });
+                }).on('removeitem', function (evt) {
+                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteI2cTrigger', {
+                        message: 'Are you sure you want to delete Trigger?',
+                        width: '350px',
+                        height: 'auto',
+                        title: 'Confirm Delete Device Trigger',
+                        buttons: [{
+                            text: 'Yes', icon: '<i class="fas fa-trash"></i>',
+                            click: function () {
+                                var trigger = o.triggers.find(elem => elem.id == evt.dataKey) || {};
+                                trigger.busId = o.busId;
+                                trigger.busNumber = o.busNumber;
+                                trigger.deviceId = o.deviceId;
+                                trigger.address = o.address;
+                                trigger.id = evt.dataKey;
+                                $.deleteLocalService('/config/i2c/device/trigger', trigger, function (triggers, status, xhr) {
+                                    $.pic.modalDialog.closeDialog(dlg);
+                                    self.dataBind(triggers)
+                                });
+                                //o.triggers.splice(evt.dataKey - 1, 1);
+                                //self.loadTriggers(o.triggers);
+                            }
+                        },
+                        {
+                            text: 'No', icon: '<i class="far fa-window-close"></i>',
+                            click: function () { $.pic.modalDialog.closeDialog(this); }
+                        }]
+                    });
+                }).hide();
+        },
+        dataBind: function (triggers) {
+            var self = this, o = self.options, el = self.element;
+            var felem = el.find('div.crud-list:first').each(function () {
+                this.clear();
+                if (typeof triggers !== 'undefined') {
+                    for (var i = 0; i < triggers.length; i++) {
+                        var trigger = triggers[i];
+                        this.addRow(trigger);
+                    }
+                }
+            });
+            o.triggers = triggers;
+        }
+
+    });
+    $.widget('pic.pnlDeviceFeeds', {
+        options: {},
+        _create: function (device) {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].dataBind = function (feeds) { self.dataBind(feeds); }
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-genericdevice-feeds');
+            $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Feeds send values from the device via a connection to other software.  The defined connection determines the format, protocol, and potential data that is sent.');
+            $('<div></div>').appendTo(el).crudList({
+                id: 'crudFeeds' + o.deviceId, actions: { canCreate: true, canEdit: true, canRemove: true },
+                key: 'id',
+                caption: 'Device Value Feeds', itemName: 'Value Feeds',
+                columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
+            }).css({ width: '100%' })
+                .on('additem', function (evt) {
+                    $.getLocalService('/config/options/genericDevices/' + o.busNumber + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
+                        feeds.feed = { isActive: true };
+                        self._createFeedDialog('dlgAddI2cFeed', 'Add Feed to I2c Device', feeds);
+                    });
+                }).on('edititem', function (evt) {
+                    $.getLocalService('/config/options/genericDevices/' + o.busId + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
+                        feeds.feed = o.feeds.find(elem => elem.id ==  evt.dataKey);
+                        self._createFeedDialog('dlgEditI2cFeed', 'Edit I2C Device Feed', feeds);
+                    });
+                }).on('removeitem', function (evt) {
+                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteI2cFeed', {
+                        message: 'Are you sure you want to delete Feed?',
+                        width: '350px',
+                        height: 'auto',
+                        title: 'Confirm Delete Device Feed',
+                        buttons: [{
+                            text: 'Yes', icon: '<i class="fas fa-trash"></i>',
+                            click: function () {
+                                var feed = o.feeds.find(elem => elem.id == evt.dataKey) || {};
+                                feed.busId = o.busId;
+                                feed.busNumber = o.busNumber;
+                                feed.deviceId = o.deviceId;
+                                feed.address = o.address;
+                                feed.id = evt.dataKey;
+                                $.deleteLocalService('/config/i2c/device/feed', feed, function (feeds, status, xhr) {
+                                    $.pic.modalDialog.closeDialog(dlg);
+                                    self.dataBind(feeds)
+                                });
+                                //o.feeds.splice(evt.dataKey - 1, 1);
+                                //self.loadFeeds(o.feeds);
+                            }
+                        },
+                        {
+                            text: 'No', icon: '<i class="far fa-window-close"></i>',
+                            click: function () { $.pic.modalDialog.closeDialog(this); }
+                        }]
+                    });
+                });
+
+        },
+        _createFeedDialog: function (id, title, f) {
+            var self = this, o = self.options, el = self.element;
+            if ($(`div#${id}`).length > 0) return;
+
+            var dlg = $.pic.modalDialog.createDialog(id, {
+                width: '547px',
+                height: 'auto',
+                title: title,
+                position: { my: "center top", at: "center top", of: window },
+                buttons: [
+                    {
+                        text: 'Save', icon: '<i class="fas fa-save"></i>',
+                        click: function (evt) {
+                            var feed = dataBinder.fromElement(dlg);
+                            if (dataBinder.checkRequired(dlg, true)) {
+                                feed.connection = dlg.find('div[data-bind="connectionId"]')[0].selectedItem();
+                                feed.busId = o.busId;
+                                feed.busNumber = o.busNumber;
+                                feed.deviceId = o.deviceId;
+                                feed.address = o.address;
+                                ///feed.device = dlg.find('div[data-bind="deviceBinding"]')[0].selectedItem();
+                                self.saveFeed(feed);
+                                $.pic.modalDialog.closeDialog(this);
+                            }
+                        }
+                    },
+                    {
+                        text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                        click: function () { $.pic.modalDialog.closeDialog(this); }
+                    }
+                ]
+            });
+            $('<div></div>').appendTo(dlg).text('A Data Feed is used to transport data to the specified data source.  You can add multiple data feeds for the device.');
+            $('<hr></hr>').appendTo(dlg);
+            var line = $('<div></div>').appendTo(dlg);
+            $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(-1);
+            var conn = $('<div></div>').appendTo(line).pickList({
+                required: true,
+                bindColumn: 0, displayColumn: 1, labelText: 'Connection', binding: 'connectionId',
+                columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Name', style: { minWidth: '197px' } }, { binding: 'type.desc', text: 'Type', style: { minWidth: '147px' } }],
+                items: f.connections, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+            })
+                .on('selchanged', function (evt) {
+                    dlg.find('div.pnl-i2c-feed-params').each(function () { this.setConnection(evt.newItem); });
+                });
+            $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).pickList({
+                required: true,
+                bindColumn: 0, displayColumn: 1, labelText: 'Send Value', binding: 'sendValue',
+                columns: [{ binding: 'name', text: 'Name', style: { maxWidth: '197px' } }, { binding: 'desc', text: 'Type', style: { minWidth: '347px' } }],
+                items: f.device.deviceType.outputs, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+
+            }).on('selchanged', function (evt) {
+                var elSamp = dlg.find('div[data-bind="sampling"]').each(function () {
+                    if (evt.newItem.maxSamples <= 1 || typeof evt.newItem.maxSamples === 'undefined') this.val(1);
+                    this.options({ max: evt.newItem.maxSamples || 1 });
+                });
+                if (evt.newItem.maxSamples <= 1 || typeof evt.newItem.maxSamples === 'undefined') elSamp.hide();
+                else elSamp.show();
+            });
+            $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed' });
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).valueSpinner({
+                required: true, canEdit: true, binding: 'sampling', labelText: 'Sampling', fmtMask: '#,##0', dataType: 'number', step: 1,
+                min: 1, max: 20, units: `smooth reading using median samples`, inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
+            }).hide();
+
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(dlg).pnlDeviceFeedParams({ device: f.device });
+            if (typeof f.feed.id !== 'undefined') {
+                conn[0].disabled(true);
+                dlg.find('div.pnl-i2c-feed-params').each(function () {
+                    var pnl = this;
+                    this.dataBind(f.feed);
+                });
+                dataBinder.bind(dlg, f.feed);
+            }
+            dlg.css({ overflow: 'visible' });
+            return dlg;
+        },
+        saveFeed: function (feed) {
+            var self = this, o = self.options, el = self.element;
+            $.putLocalService('/config/i2c/device/feed', feed, 'Saving Device Feed...', function (f, result, xhr) {
+                self.dataBind(f);
+            });
+        },
+        dataBind: function (feeds) {
+            var self = this, o = self.options, el = self.element;
+            var felem = el.find('div.crud-list:first').each(function () {
+                this.clear();
+                for (var i = 0; i < feeds.length; i++) {
+                    var feed = feeds[i];
+                    this.addRow(feed);
+                }
+            });
+            o.feeds = feeds;
+        }
+    });
+    $.widget('pic.pnlDeviceFeedParams', {
+        options: {},
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].setConnection = function (conn) { self.setConnection(conn); };
+            el[0].dataBind = function (data) { self.dataBind(data); };
+            el[0].setTopic = function (data) { self.setTopic(data); };
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-i2c-feed-params');
+        },
+        setTopic: function () {
+            var self = this, o = self.options, el = self.element;
+
+        },
+        dataBind: function (data) {
+            var self = this, o = self.options, el = self.element;
+            self.setConnection(data.connection, function () {
+                var fldEventName = el.find('div[data-bind="eventName"]');
+                if (typeof data.eventName !== 'undefined' && fldEventName.length > 0) {
+                    if (fldEventName[0].val() !== data.eventName) {
+                        fldEventName[0].val(data.eventName);
+                        dataBinder.bind(el, data);
+                    }
+                }
+                else {
+                    console.log(data);
+                    dataBinder.bind(el, data);
+                }
+            });
+        },
+        setConnection: function (conn, callback) {
+            var self = this, o = self.options, el = self.element;
+            let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' && conn.id !== 0 ? conn.type.name : '';
+            if (el.attr('data-conntype') !== type || type === '') {
+                el.attr('data-conntype', type);
+                el.empty();
+                o.bindings = undefined;
+                if (type !== '') {
+                    $.searchLocalService('/config/connection/bindings', { name: type }, 'Getting Connection Bindings...', function (bindings, status, xhr) {
+                        o.bindings = bindings;
+                        console.log(bindings);
+                        $('<hr></hr>').appendTo(el);
+                        var line = $('<div></div>').appendTo(el);
+                        var lbl = type === 'njspc' || type === 'webSocket' ? 'Socket Event' : 'Topic';
+                        if (typeof o.bindings.devices !== 'undefined' && o.bindings.devices.length > 0) {
+                            $('<div></div>').appendTo(line).pickList({
+                                required: true,
+                                bindColumn: 0, displayColumn: 2, labelText: 'to Device', binding: 'deviceBinding',
+                                columns: [{ hidden: true, binding: 'uid', text: 'uid' }, { binding: 'type', text: 'Type' }, { binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }],
+                                items: bindings.devices, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            })
+                                .on('selchanged', function (evt) {
+                                    var itm = o.bindings.devices.find(elem => elem.uid === evt.newItem.uid);
+                                    self._build_deviceBindings(itm);
+                                });
+                            self._build_deviceBindings();
+                        }
+                        else if (typeof o.bindings.feeds !== 'undefined' && o.bindings.feeds.length >= 1) {
+                            $('<div></div>').appendTo(line).pickList({
+                                required: true,
+                                bindColumn: 0, displayColumn: 0, labelText: lbl, binding: 'eventName',
+                                columns: [{ binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }],
+                                items: bindings.feeds, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            })
+                                .on('selchanged', function (evt) {
+                                    var itm = o.bindings.feeds.find(elem => elem.name === evt.newItem.name);
+                                    self._build_bindings(itm);
+                                });
+                            self._build_bindings();
+                        }
+                        else {
+                            $('<div></div>').appendTo(line).inputField({
+                                required: true, binding: 'eventName', labelText: "Topic", inputAttrs: { style: { width: '17rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            });
+                            line = $('<div></div>').appendTo(el);
+                            $('<div></div>').appendTo(line).addClass('script-advanced-instructions').html('Enter plain javascript for the generated payload.  Return a string, number, or object from the function.');
+
+                            line = $('<div></div>').appendTo(el);
+                            $('<div></div>').appendTo(line).scriptEditor({ binding: 'payloadExpression', prefix: '(feed, value): any => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
+                        }
+                        if (typeof callback === 'function') { callback(); }
+                    });
+                }
+                else if (typeof callback === 'function') { callback(); }
+            }
+            //else if (typeof callback === 'function') { console.log('callback2 called'); callback(); }
+        },
+        _build_bindings: function (feed) {
+            var self = this, o = self.options, el = self.element;
+            let pnl = el.find('div.pnl-device-bindings');
+            if (pnl.length === 0) {
+                var line = $('<div></div>').addClass('pnl-device-bindings').appendTo(el);
+                $('<div></div>').appendTo(line).pickList({
+                    canEdit: true,
+                    binding: 'property', labelText: 'Property',
+                    bindColumn: 0, displayColumn: 0,
+                    columns: [{ binding: 'binding', text: 'Variable', style: { whiteSpace: 'nowrap' } }],
+                    items: typeof feed !== 'undefined' ? feed.bindings : [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                });
+                $('<div></div>').addClass('pnl-feed-params').appendTo(line);
+            }
+            else {
+                pnl.find('div.picPickList:first').each(function () {
+                    this.items(typeof feed !== 'undefined' ? feed.bindings : []);
+                });
+                let pnlParams = pnl.find('div.pnl-feed-params');
+                if (typeof feed === 'undefined' || typeof feed.options === 'undefined' || pnlParams.attr('data-feedname') !== feed.name) pnlParams.empty();
+                if (typeof feed !== 'undefined' && typeof feed.options !== 'undefined' && pnlParams.attr('data-feedname') !== feed.name) {
+                    // Bind up these params.
+                    templateBuilder.createObjectOptions(pnlParams, feed);
+                }
+                if (typeof feed !== 'undefined') dataBinder.bind(pnlParams, feed);
+                pnlParams.attr('data-feedname', typeof feed !== 'undefined' ? feed.pnlParams || '' : '');
+            }
+        },
+        _build_deviceBindings: function (feed) {
+            var self = this, o = self.options, el = self.element;
+            let pnl = el.find('div.pnl-device-bindings');
+            if (pnl.length === 0) {
+                var line = $('<div></div>').addClass('pnl-device-bindings').appendTo(el);
+                $('<div></div>').appendTo(line).pickList({
+                    canEdit: true,
+                    binding: 'property', labelText: 'Input',
+                    bindColumn: 0, displayColumn: 0,
+                    columns: [{ binding: 'name', text: 'Input', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { whiteSpace: 'nowrap' } }],
+                    items: typeof feed !== 'undefined' ? feed.bindings: [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                });
+            }
+            else {
+                pnl.find('div.picPickList:first').each(function () {
+                    this.items(typeof feed !== 'undefined' ? feed.bindings : []);
+                });
+            }
+        }
+    });
+
 })(jQuery);
