@@ -1,7 +1,7 @@
 ﻿import { logger } from "../logger/Logger";
 import { SpiController, cont, SpiChannel, SpiChannelFeed } from "../boards/Controller";
 import { setTimeout, clearTimeout } from "timers";
-import { AnalogDevices } from "../devices/AnalogDevices";
+import { AnalogDevices, DeviceStatus } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";
 import { connBroker, ServerConnection } from "../connections/Bindings";
 import * as extend from "extend";
@@ -81,6 +81,7 @@ export class SpiAdcChannel {
     public sampling: number = 1;
     public samples: number[] = [];
     public isOpen: boolean = false;
+    public lastComm: number;
     constructor(ct, chan: SpiChannel, refVoltage) {
         this._ct = ct;
         this.channel = chan.id - 1;
@@ -115,6 +116,7 @@ export class SpiAdcChannel {
             } catch (err) { logger.error(err); }
         });
     }
+    public get deviceStatus(): DeviceStatus { return { name: this.device.name, category: 'SPI Channel', hasFault: !this.isOpen, status: this.isOpen ? 'ok' : 'not open', lastComm: this.lastComm, protocol: 'spi', busNumber: this.busNumber, address: this.channel } }
     private convertValue(val): number {
         let ratio = val !== 0 ? ((this.maxRawValue / val - 1)) : 0;
         let lval;

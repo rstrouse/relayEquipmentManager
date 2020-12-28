@@ -11,9 +11,10 @@ import { PinDefinitions } from "../pinouts/Pinouts";
 import { SpiAdcChips } from "../spi-adc/SpiAdcChips";
 import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
-import { spi0, spi1 } from "../spi-adc/SpiAdcBus";
+import { spi0, spi1, SpiAdcChannel } from "../spi-adc/SpiAdcBus";
 import { i2c, i2cBus } from "../i2c-bus/I2cBus";
 import { AnalogDevices } from "../devices/AnalogDevices";
+import { ECONNRESET } from "constants";
 interface IConfigItemCollection {
     set(data);
     clear();
@@ -563,6 +564,25 @@ export class Controller extends ConfigItem {
         catch (err) { return Promise.reject(err); }
 
     }
+    public async getDeviceState(binding: string | DeviceBinding) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (bind.type === 'i2c') {
+                return await this.i2c.getDeviceState(bind);
+            }
+            else if (bind.type === 'gpio') {
+                return await this.gpio.getDeviceState(bind);
+            }
+            else if (bind.type === 'spi') {
+                if (isNaN(bind.busId) || bind.busId > 2)
+                    return Promise.reject(new Error(`getDeviceState: Invalid spi busId ${bind.busId} - ${bind.binding}`));
+            }
+            else {
+                return Promise.reject(new Error(`getDeviceState: Unrecognized I/O Channel ${bind.type}`));
+            }
+        }
+        catch (err) { return Promise.reject(err); }
+    }
     public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -574,17 +594,19 @@ export class Controller extends ConfigItem {
             }
             else if (bind.type === 'spi') {
                 if (isNaN(bind.busId) || bind.busId > 2)
-                    return Promise.reject(new Error(`setDeviceState: Invalid spi busId ${bind.busId} - ${bind.binding}`));
+                    return Promise.reject(new Error(`getDeviceStatus: Invalid spi busId ${bind.busId} - ${bind.binding}`));
+                else if (bind.busId === 0) return await this.spi0.getDeviceStatus(bind);
+                else if (bind.busId === 1) return await this.spi1.getDeviceStatus(bind);
+                else return Promise.reject(new Error(`getDeviceStatus: Invalid spi busId ${bind.busId} - ${bind.binding}`));
             }
             else if (bind.type === 'generic') {
                 return await this.genericDevices.getDeviceStatus(bind);
             }
             else {
-                return Promise.reject(new Error(`setDeviceState: Unrecognized I/O Channel ${bind.type}`));
+                return Promise.reject(new Error(`getDeviceStatus: Unrecognized I/O Channel ${bind.type}`));
             }
         }
         catch (err) { return Promise.reject(err); }
-
     }
     public async feedDeviceValue(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
@@ -729,6 +751,17 @@ export class Gpio extends ConfigItem {
         }
         catch (err) { return Promise.reject(new Error(`Could not set gpio state: ${err}`)); }
     }
+    public async getDeviceState(binding: string | DeviceBinding) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // Find the pinId.
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceState: Invalid pin #${bind.binding}`));
+            let pin = this.pins.find(elem => elem.id === bind.deviceId);
+            if (typeof pin === 'undefined') return Promise.reject(new Error(`getDeviceState: Pin #${bind.deviceId} not found.`));
+            return { status: pin.getDeviceStatus(), state: pin.state };
+        }
+        catch (err) { return Promise.reject(new Error(`Could not set gpio state: ${err}`)); }
+    }
 
 }
 export class SpiController extends ConfigItem {
@@ -773,6 +806,37 @@ export class SpiController extends ConfigItem {
         }
         return devices;
     }
+    public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceStatus: Invalid SPI Channel ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.channels.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Could not find SPI Channel ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            let dev: SpiAdcChannel;
+            if (this.busNumber === 0)
+                dev = spi0.channels.find(elem => bind.deviceId === elem.channel);
+            else
+                dev = spi1.channels.find(elem => bind.deviceId === elem.channel);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Channel not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            return dev.deviceStatus;
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceState: Invalid SPI Channel ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.channels.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find SPI Channel ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            let dev: SpiAdcChannel;
+            if (this.busNumber === 0)
+                dev = spi0.channels.find(elem => bind.deviceId === elem.channel);
+            else
+                dev = spi1.channels.find(elem => bind.deviceId === elem.channel);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceState: Channel not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            return { status: dev.deviceStatus, state: dev.lastVal };
+        } catch (err) { return Promise.reject(err); }
+    }
+
 }
 export class I2cController extends ConfigItem {
     constructor(data, name: string) { super(data, name); }
@@ -843,6 +907,19 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // A valid device binding for i2c includes i2c:<busId>:<deviceId>.
+            if (isNaN(bind.busId)) return Promise.reject(new Error(`getDeviceState: Invalid i2c bus id ${bind.busId} - ${bind.binding}`));
+            let bus = this.buses.find(elem => elem.id === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDeviceState: i2c bus not found ${bind.busId} - ${bind.binding}`));
+            // At this point we know the protocol and we know the bus so forward this to our bus.
+            return await bus.getDeviceState(bind);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
     public async setDevice(dev): Promise<I2cDevice> {
         try {
             let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
@@ -1036,6 +1113,19 @@ export class I2cBus extends ConfigItem {
             let dev = bus.devices.find(elem => elem.device.id === bind.deviceId);
             if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Device not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
             return dev.deviceStatus;
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceState: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.devices.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            let bus = i2c.buses.find(elem => this.busNumber === elem.busNumber);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDeviceState: Bus not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let dev = bus.devices.find(elem => elem.device.id === bind.deviceId);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceState: Device not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            return { status: dev.deviceStatus, state: await dev.getDeviceState(bind) };
         } catch (err) { return Promise.reject(err); }
     }
 

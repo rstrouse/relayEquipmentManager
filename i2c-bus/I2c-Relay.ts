@@ -382,7 +382,21 @@ export class i2cRelay extends i2cDeviceBase {
             return extend(true, {}, relay, { oldState: oldState, latchDuration: new Date().getTime() - relay.tripTime });
         } catch (err) { return Promise.reject(err); }
     }
-
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what relay we are referring to.
+            // i2c:1:24:3
+            let relayId = parseInt(bind.params[0], 10);
+            if (isNaN(relayId)) return Promise.reject(new Error(`getDeviceState: Invalid relay Id ${bind.params[0]}`));
+            let relay = this.relays.find(elem => elem.id === relayId);
+            if (typeof relay === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find relay Id ${bind.params[0]}`));
+            if (!relay.enabled) return Promise.reject(new Error(`getDeviceState: Relay [${relay.name}] is not enabled.`));
+            await this.readRelayState(relay);
+            // Now that the relay has been read lets set its state.
+            return relay.state;
+        } catch (err) { return Promise.reject(err); }
+    }
 }
 export class i2cRelayMulti extends i2cRelay {
 

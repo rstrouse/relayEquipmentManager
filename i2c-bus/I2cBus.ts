@@ -563,7 +563,12 @@ export class i2cDeviceBase implements IDevice {
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
-
+            return this.getDeviceState(bind);
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
             return this.values;
         } catch (err) { return Promise.reject(err); }
     }
