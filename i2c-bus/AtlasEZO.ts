@@ -427,6 +427,14 @@ export class AtlasEZOorp extends AtlasEZO {
                 return extend(true, {}, this.values, { orp: super.calcMedian(prop, arr) });
         }
     }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            return this.values.orp;
+        } catch (err) { return Promise.reject(err); }
+    }
 }
 export class AtlasEZOpH extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
@@ -676,6 +684,14 @@ export class AtlasEZOpH extends AtlasEZO {
         }
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            return this.values.pH;
+        } catch (err) { return Promise.reject(err); }
     }
 }
 export class AtlasEZOpmp extends AtlasEZO {
@@ -1126,6 +1142,14 @@ export class AtlasEZOpmp extends AtlasEZO {
         }
         catch (err) { this.logError(err); Promise.reject(err); }
     }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            return this.dispense.dispensing;
+        } catch (err) { return Promise.reject(err); }
+    }
 }
 export class AtlasEZOprs extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
@@ -1313,6 +1337,14 @@ export class AtlasEZOprs extends AtlasEZO {
         catch (err) { this.logError(err); return Promise.reject(err); }
         finally { this.suspendPolling = false; }
     }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (bind.params.length > 0 && typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            return this.values.pressure;
+        } catch (err) { return Promise.reject(err); }
+    }
 }
 export class AtlasEZOrtd extends AtlasEZO {
     public getValue(prop: string) {
@@ -1340,7 +1372,6 @@ export class AtlasEZOrtd extends AtlasEZO {
                 return extend(true, {}, this.values, { temperature: super.calcMedian(prop, arrTemp) });
         }
     }
-
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
@@ -1473,6 +1504,14 @@ export class AtlasEZOrtd extends AtlasEZO {
         }
         catch (err) { this.logError(err); }
         finally { this.suspendPolling = false; }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            return this.values.temperature;
+        } catch (err) { return Promise.reject(err); }
     }
 }
 export class AtlasEZOec extends AtlasEZO {
@@ -1905,6 +1944,14 @@ export class AtlasEZOec extends AtlasEZO {
         // Return it in 4 decimal places.
         return Math.round((rho + factA * salinity + factB * Math.pow(salinity, (3 / 2)) + 0.00048314 * Math.pow(salinity, 2)) * 1000) / 1000;
     }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (bind.params.length > 0 && typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            return this.values.conductivity;
+        } catch (err) { return Promise.reject(err); }
+    }
 }
 export class AtlasEZOhum extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
@@ -2139,5 +2186,13 @@ export class AtlasEZOhum extends AtlasEZO {
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
         finally { this.suspendPolling = false; }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (bind.params.length > 0 && typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            return this.values.humidity;
+        } catch (err) { return Promise.reject(err); }
     }
 }
