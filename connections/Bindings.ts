@@ -114,6 +114,10 @@ class InternalConnection extends ServerConnection {
                 else if (arr[0] === 'gpio') {
 
                 }
+                else if (arr[0] === 'generic'){
+                    // generic:typeId:id
+                    await cont.genericDevices.setDeviceValue(parseInt(arr[1], 10), parseInt(arr[2], 10), opts.property, opts.value);
+                }
             }
         } catch (err) { logger.error(`Error sending on internal connection ${opts.deviceBinding}: ${err.message}`); }
     }

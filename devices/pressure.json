@@ -187,7 +187,7 @@
                         "width": "5.5rem"
                       }
                     },
-                    "units": "volts"
+                    "units": "voltage"
                   }
                 }
               ]
@@ -423,11 +423,17 @@
     {
       "id": 202,
       "name": "Pressure Transducer",
-      "input": "volts",
       "_deviceClass": "Transducer",
+      "convertValue": "device.values.psi = Math.max(0, ((device.values.voltage - device.options.inducerOffset) * device.options.psiPerVolt)).toFixed(2);",
+      "inputs": [
+        {
+          "name": "voltage",
+          "desc": "Voltage"
+        }
+      ],
       "outputs": [
         {
-          "name": "pressure",
+          "name": "PSI",
           "desc": "Presure in the reported units",
           "maxSamples": 10
         },
@@ -491,8 +497,8 @@
                 {
                   "field": {
                     "type": "staticField",
-                    "labelText": "Pressure",
-                    "binding": "values.pressure",
+                    "labelText": "PSI",
+                    "binding": "values.psi",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",
@@ -513,7 +519,7 @@
                   "field": {
                     "type": "staticField",
                     "labelText": "Volts",
-                    "binding": "values.volts",
+                    "binding": "values.voltage",
                     "dataType": "number",
                     "fmtMask": "#,##0.0###",
                     "emptyMask": "--.-",

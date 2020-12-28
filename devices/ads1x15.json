@@ -8,6 +8,18 @@
       "input": "boolean",
       "deviceClass": "ads1x15",
       "module": "./ads1x15",
+      "outputs": [
+        {
+          "name": "values[3].voltage",
+          "desc": "Voltage",
+          "maxSamples": 10
+        },
+        {
+          "name": "all",
+          "desc": "All values",
+          "maxSamples": 10
+        }
+      ],
       "options": [
         {
           "dataType": "panel",
@@ -125,6 +137,32 @@
                           "style": { "width": "5rem" }
                         },
                         "units": "psi"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Voltage",
+                        "binding": "values.channels[3].voltage",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "emptyMask": "---",
+                        "style": {
+                          "display": "block",
+                          "marginLeft": "1rem",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "4.5rem" }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.5rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "units": "v"
                       }
                     },
                     {

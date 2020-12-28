@@ -168,7 +168,7 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             if (typeof this.options.adcType === 'undefined') this.options.adcType = 'ads1115';
-            if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 1000;
+            if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 5000;
             if (typeof this.device.options === 'undefined') this.device.options = {};
             if (typeof this.device.options.comparatorReadings === 'undefined') this.device.options.comparatorReadings = ads1x15.comparatorQueue['NONE'];
             if (typeof this.device.options.comparatorLatchingMode === 'undefined') this.device.options.comparatorLatchingMode = ads1x15.latch['NONLATCH'];
