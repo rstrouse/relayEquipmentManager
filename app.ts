@@ -7,6 +7,7 @@ import * as readline from 'readline';
 import { gpioPins } from "./boards/GpioPins";
 import { spi0, spi1 } from "./spi-adc/SpiAdcBus";
 import { i2c } from "./i2c-bus/I2cBus";
+import { setTimeout } from "timers";
 require("source-map-support/register")
 
 export function initAsync() {
@@ -21,22 +22,25 @@ export function initAsync() {
         .then(function () { spi1.initAsync(cont.spi1); })
         .then(function () { i2c.initAsync(cont.i2c); });
 }
-export function stopAsync(): Promise<void> {
-    return Promise.resolve()
-        .then(function () { console.log('Shutting down open processes'); })
-        .then(function () { connBroker.stopAsync(); }) // Stop communicating first.
-        .then(function () { i2c.closeAsync(); })
-        .then(function () { spi0.closeAsync(); })
-        .then(function () { spi1.closeAsync(); })
-        .then(function () { gpioPins.stopAsync(); })
-        .then(function () { cont.stopAsync(); })
-        .then(function () { process.exit(); });
+export async function stopAsync(): Promise<void> {
+    try {
+        console.log(`Shutting down Relay Equipment Manager`);
+        try { await connBroker.stopAsync(); } catch (err) { console.error(`Error stopping Connection Broker: ${err.message}`); }
+        try { await i2c.closeAsync(); } catch (err) { console.error(`Error stopping I2c bus interface: ${err.message}`); }
+        try { await spi0.closeAsync(); } catch (err) { console.error(`Error stopping SPI0 bus interface: ${err.message}`); }
+        try { await spi1.closeAsync(); } catch (err) { console.error(`Error stopping SPI1 bus interface: ${err.message}`); }
+        try { await gpioPins.stopAsync(); } catch (err) { console.log(`Error stopping GPIO interface: ${err.message}`); }
+        try { await cont.stopAsync(); } catch (err) { console.log(`Error closing controller interface: ${err.message}`); }
+        try { await logger.stopAsync(); } catch (err) { console.log(`Error closing logger: ${err.message}`); }
+        //await new Promise((resolve) => { setTimeout(() => { resolve(); }, 3000); });
+    } catch (err) { console.error(`Error stopping processes: ${err.message}`); }
+    finally { process.exit(); }
 }
 if (process.platform === 'win32') {
     let rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     rl.on('SIGINT', async () => { await stopAsync(); });
 }
 else {
-    process.on('SIGINT', function () { return stopAsync(); });
+    process.on('SIGINT', async () => { await stopAsync(); });
 }
 initAsync();

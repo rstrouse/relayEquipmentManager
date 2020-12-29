@@ -1221,7 +1221,9 @@ export class AtlasEZOprs extends AtlasEZO {
     public async readProbe(): Promise<number> {
         try {
             this.suspendPolling = true;
-            let result = await this.execCommand('R', 900);
+            let result = '10.2';
+            if (!this.i2c.isMock)
+                result = await this.execCommand('R', 900);
             let val = parseFloat(result);
             this.values.pressure = val;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
