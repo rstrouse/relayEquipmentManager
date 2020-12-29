@@ -10,7 +10,7 @@
       "module": "./ads1x15",
       "outputs": [
         {
-          "name": "values[3].voltage",
+          "name": "channels[3].voltage",
           "desc": "Voltage",
           "maxSamples": 10
         },
@@ -25,7 +25,9 @@
           "dataType": "panel",
           "field": {
             "type": "div",
-            "style": { "display": "inline-block" }
+            "style": {
+              "display": "inline-block"
+            }
           },
           "options": [
             {
@@ -39,11 +41,14 @@
                 "labelText": "Name",
                 "inputAttrs": {
                   "maxLength": 24,
-                  "style": { "width": "16rem" }
+                  "style": {
+                    "width": "16rem"
+                  }
                 },
-                "style": { "display": "block" }
+                "style": {
+                  "display": "block"
+                }
               }
-              
             },
             {
               "dataType": "panel",
@@ -59,172 +64,205 @@
               "options": [
                 {
                   "field": {
-                    "type": "staticField",
-                    "labelText": "Channel 1",
-                    "binding": "values.channels[0].psi",
-                    "dataType": "number",
-                    "fmtMask": "#,##0.0###",
-                    "emptyMask": "---.-",
+                    "binding": "options.channels[0].name",
+                    "dataType": "string",
                     "style": {
-                      "display": "block",
                       "fontSize": ".8rem",
                       "lineHeight": "1.2"
                     },
                     "labelAttrs": {
-                      "style": { "width": "5rem" }
-                    },
-                    "units": "psi"
-                  }
-                },
-                {
-                  "field": {
-                    "type": "staticField",
-                    "labelText": "Channel 2",
-                    "binding": "values.channels[1].psi",
-                    "dataType": "number",
-                    "fmtMask": "#,##0.0###",
-                    "emptyMask": "---.-",
-                    "style": {
-                      "display": "block",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    },
-                    "labelAttrs": {
-                      "style": { "width": "5rem" }
-                    },
-                    "units": "psi"
-                  }
-                },
-                {
-                  "field": {
-                    "type": "staticField",
-                    "labelText": "Channel 3",
-                    "binding": "values.channels[2].psi",
-                    "dataType": "number",
-                    "fmtMask": "#,##0.0###",
-                    "emptyMask": "---.-",
-                    "style": {
-                      "display": "block",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    },
-                    "labelAttrs": {
-                      "style": { "width": "5rem" }
-                    },
-                    "units": "psi"
-                  }
-                },
-                {
-                  "field": {
-                    "type": "div",
-                    "attrs": { "data-bindingcontext": "calibration" }
-                  },
-                  "options": [
-                    {
-                      "field": {
-                        "type": "staticField",
-                        "labelText": "Channel 4",
-                        "binding": "values.channels[3].psi",
-                        "dataType": "number",
-                        "fmtMask": "#,##0.0###",
-                        "emptyMask": "---.-",
-                        "style": {
-                          "display": "block",
-                          "fontSize": ".8rem",
-                          "lineHeight": "1.2"
-                        },
-                        "labelAttrs": {
-                          "style": { "width": "5rem" }
-                        },
-                        "units": "psi"
-                      }
-                    },
-                    {
-                      "field": {
-                        "type": "staticField",
-                        "labelText": "Voltage",
-                        "binding": "values.channels[3].voltage",
-                        "dataType": "number",
-                        "fmtMask": "#,##0.####",
-                        "emptyMask": "---",
-                        "style": {
-                          "display": "block",
-                          "marginLeft": "1rem",
-                          "fontSize": ".8rem",
-                          "lineHeight": "1.2"
-                        },
-                        "labelAttrs": {
-                          "style": { "width": "4.5rem" }
-                        },
-                        "inputAttrs": {
-                          "style": {
-                            "width": "2.5rem",
-                            "textAlign": "right"
-                          }
-                        },
-                        "units": "v"
-                      }
-                    },
-                    {
-                      "field": {
-                        "type": "staticField",
-                        "labelText": "Offset",
-                        "binding": "options.channels[3].inducerOffset",
-                        "dataType": "number",
-                        "fmtMask": "#,##0.####",
-                        "emptyMask": "---",
-                        "style": {
-                          "display": "block",
-                          "marginLeft": "1rem",
-                          "fontSize": ".8rem",
-                          "lineHeight": "1.2"
-                        },
-                        "labelAttrs": {
-                          "style": { "width": "4.5rem" }
-                        },
-                        "inputAttrs": {
-                          "style": {
-                            "width": "2.5rem",
-                            "textAlign": "right"
-                          }
-                        },
-                        "units": "v"
-                      }
-                    },
-                    {
-                      "field": {
-                        "type": "staticField",
-                        "labelText": "PSI per Volt",
-                        "binding": "options.channels[3].psiPerVolt",
-                        "dataType": "number",
-                        "fmtMask": "#,##0.####",
-                        "emptyMask": "---",
-                        "style": {
-                          "display": "block",
-                          "marginLeft": "1rem",
-                          "fontSize": ".8rem",
-                          "lineHeight": "1.2"
-                        },
-                        "labelAttrs": {
-                          "style": { "width": "4.5rem" }
-                        },
-                        "inputAttrs": {
-                          "style": {
-                            "width": "2.5rem",
-                            "textAlign": "right"
-                          }
-                        },
-                        "units": "psi"
+                      "style": {
+                        "width": "5rem"
                       }
                     }
-
-                  ]
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Voltage",
+                    "binding": "values.channels[0].voltage",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
+                      }
+                    },
+                    "units": "v"
+                  }
+                },
+                {
+                  "field": {
+                    "binding": "options.channels[1].name",
+                    "dataType": "string",
+                    "style": {
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Voltage",
+                    "binding": "values.channels[1].voltage",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
+                      }
+                    },
+                    "units": "v"
+                  }
+                },
+                {
+                  "field": {
+                    "binding": "options.channels[2].name",
+                    "dataType": "string",
+                    "style": {
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Voltage",
+                    "binding": "values.channels[2].voltage",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
+                      }
+                    },
+                    "units": "v"
+                  }
+                },
+                {
+                  "field": {
+                    "binding": "options.channels[3].name",
+                    "dataType": "string",
+                    "style": {
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Voltage",
+                    "binding": "values.channels[3].voltage",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.####",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
+                      }
+                    },
+                    "units": "v"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "checkbox",
+                    "labelText": "Enabled",
+                    "binding": "options.channels[3].enabled",
+                    "disabled": true,
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
+                      }
+                    }
+                  }
                 }
               ]
             }
           ]
         },
-        
         {
           "dataType": "panel",
           "field": {
@@ -236,13 +274,17 @@
               "marginLeft": ".5rem"
             },
             "cssClass": "i2cReadingValues",
-            "attrs": { "data-bindingcontext": "channels" }
+            "attrs": {
+              "data-bindingcontext": "channels"
+            }
           },
           "options": [
             {
               "field": {
                 "type": "div",
-                "style": { "width": "21rem" },
+                "style": {
+                  "width": "21rem"
+                },
                 "html": "Enable each channel you are going to monitor. Each channel must be enabled individually.<hr style=\"margin:2px\"></hr>Only the channels you enable will be available for feeds.",
                 "cssClass": "script-advanced-instructions"
               }
@@ -272,7 +314,9 @@
           ]
         }
       ],
-      "interfaces": [ "i2c" ]
+      "interfaces": [
+        "i2c"
+      ]
     }
   ]
 }

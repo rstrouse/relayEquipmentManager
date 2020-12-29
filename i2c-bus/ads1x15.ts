@@ -232,15 +232,13 @@ export class ads1x15 extends i2cDeviceBase {
                     let value = this.convertValue(r);
                     // voltage = value / max * pga = e.g. 29475 / 65355 * 1024
                     let voltage = this.getVoltageFromValue(value, channels[i].pga);
-                    let psi = Math.max(0, ((voltage - channels[i].inducerOffset) * channels[i].psiPerVolt)).toFixed(2);
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
                     if (typeof valElem !== 'undefined') {
                         valElem.value = value;
-                        valElem.voltage = voltage.toFixed(2);
-                        valElem.psi = psi;
+                        valElem.voltage = parseFloat(voltage.toFixed(2));
                     }
                     else {
-                        let res = { id: channels[i].id, value, voltage: voltage.toFixed(2), psi };
+                        let res = { id: channels[i].id, value, voltage: parseFloat(voltage.toFixed(2)) };
                         this.device.values.channels.push(res);
                     }
                     this.device.values.channels.sort((a, b) => { return a.id - b.id; });

@@ -133,7 +133,13 @@
                     console.log({ evt: 'i2cDeviceStatus', data: data, control: this });
                     this.setStatus(data);
                 });
-
+                
+            });
+            o.socket.on('genericDataValues', function (data) {
+                el.find(`.pnl-generic-device-details[data-id="${data.id}"][data-typeId=${data.typeId}] .genericReadingValues`).each(function () {
+                    console.log({ evt: 'genericDataValues', data: data, control: this });
+                    dataBinder.bind($(this), data);
+                });
             });
             o.socket.on('i2cDeviceInformation', function (data) {
                 //console.log({ evt: 'i2cDeviceInformation', data: data });

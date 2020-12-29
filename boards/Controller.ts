@@ -2196,6 +2196,15 @@ export class GenericDevice extends ConfigItem {
         else if (typeof ad.module !== 'undefined') {
             // load/store/do something with the module
         }
+        webApp.emitToClients('genericDataValues', { id: this.id, typeId: this.typeId, values: this.values });
+        this.emitFeeds();
+    }
+    public async emitFeeds() {
+        try {
+            for (let i = 0; i < this.feeds.length; i++) {
+                await this.feeds[i].send(this);
+            }
+        } catch (err) { logger.error(err); }
     }
 }
 export class GenericDeviceFeedCollection extends ConfigItemCollection<GenericDeviceFeed> {

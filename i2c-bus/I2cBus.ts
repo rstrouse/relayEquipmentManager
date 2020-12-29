@@ -219,7 +219,7 @@ export class i2cBus {
         }
         catch (err) { return Promise.reject(err); }
     }
-    public async readI2cBlock(address: number, reg: number, length: number ): Promise<{bytesRead: number, buffer: Buffer}>{
+    public async readI2cBlock(address: number, reg: number, length: number): Promise<{ bytesRead: number, buffer: Buffer }> {
         try {
             let buffer = Buffer.allocUnsafe(length);
             let ret = await this._i2cBus.readI2cBlock(address, reg, length, buffer);
@@ -228,7 +228,7 @@ export class i2cBus {
         }
         catch (err) { return Promise.reject(err); }
     }
-    public async writeI2cBlock(address: number, reg: number, length: number, command:Buffer ){
+    public async writeI2cBlock(address: number, reg: number, length: number, command: Buffer) {
         try {
 
             let ret = await this._i2cBus.writeI2cBlock(address, reg, length, command);
@@ -522,8 +522,24 @@ export class i2cDeviceBase implements IDevice {
             this.feeds.push(new i2cFeed(f));
         }
     }
-    public getValue(prop) { return this.device.values[prop]; }
-    public setValue(prop, value) { this.device.values[prop] = value; }
+    public getValue(prop) {
+        let replaceSymbols = /(?:\]\.|\[|\.)/g
+        let _prop = prop.replace(replaceSymbols, ',').split(',');
+        let val = this.device.values;
+        for (let i = 0; i < _prop.length; i++) {
+            val = val[_prop[i]];
+        }
+        return val;
+    }
+    public setValue(prop, value) { 
+        let replaceSymbols = /(?:\]\.|\[|\.)/g
+            let _prop = prop.replace(replaceSymbols, ',').split(',');
+            let obj = this.device.values;
+            for (let i = 0; i < prop.length; i++) {
+                obj = obj[_prop[i]];
+            }
+            obj = value;
+    }
     public calcMedian(prop, values: any[]) {
         let arr = [];
         for (let i = 0; i < values.length; i++) {

@@ -3931,33 +3931,6 @@ $.ui.position.fieldTip = {
                 value: 2.048,
                 inputAttrs: { style: { width: "5rem" } }
             })
-            $('<br />').appendTo(dlg)
-            $('<div></div>').appendTo(dlg).valueSpinner({
-                value: 0.5,
-                binding: "inducerOffset",
-                labelText: "Inducer Offset Volts",
-                labelAttrs: {
-                    style: { "padding-right": ".25rem" }
-                },
-                min: 0,
-                max: 5,
-                step: 0.1
-            })
-            $('<br />').appendTo(dlg)
-            $('<div></div>').appendTo(dlg).valueSpinner({
-                value: 25,
-                binding: "psiPerVolt",
-                labelText: "PSI per Volt",
-                labelAttrs: {
-                    style: { "padding-right": ".25rem" }
-                },
-                min: 0,
-                max: 50,
-                canEdit: true
-            })
-
-
-
             line = $('<div></div>').appendTo(dlg);
             dataBinder.bind(dlg, channel);
             dlg.css({ overflow: 'visible' });
