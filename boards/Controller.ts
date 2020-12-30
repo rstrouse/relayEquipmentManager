@@ -13,8 +13,7 @@ import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
 import { spi0, spi1, SpiAdcChannel } from "../spi-adc/SpiAdcBus";
 import { i2c, i2cBus } from "../i2c-bus/I2cBus";
-import { AnalogDevices } from "../devices/AnalogDevices";
-import { ECONNRESET } from "constants";
+import { AnalogDevices, DeviceStatus } from "../devices/AnalogDevices";
 interface IConfigItemCollection {
     set(data);
     clear();
@@ -572,6 +571,9 @@ export class Controller extends ConfigItem {
             }
             else if (bind.type === 'gpio') {
                 return await this.gpio.getDeviceState(bind);
+            }
+            else if (bind.type === 'generic') {
+                return await this.genericDevices.getDeviceState(bind);
             }
             else if (bind.type === 'spi') {
                 if (isNaN(bind.busId) || bind.busId > 2)
@@ -1939,6 +1941,15 @@ export class GenericDeviceController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.id)) return Promise.reject(new Error(`getDeviceState: Invalid generic device id ${bind.typeId} ${bind.id} - ${bind.binding}`));
+            let device = this.devices.find(elem => elem.id === bind.id);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find generic device ${bind.typeId}:${bind.id} - ${bind.binding}`));
+            return { status: device.deviceStatus, state: await device.getDeviceState(bind) };
+        } catch (err) { return Promise.reject(err); }
+    }
     public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
         try {
             /*             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -2102,6 +2113,7 @@ export class GenericDevice extends ConfigItem {
     public set values(val: any) { this.setDataVal('values', val || {}); }
     public get sampling(): number { return this.data.sampling; }
     public set sampling(val: number) { this.setDataVal('sampling', val); }
+    public get deviceStatus(): DeviceStatus { return { name: this.name, category: this.getDeviceType().category, hasFault: false, status: 'ok', lastComm: 0, protocol: 'generic', busNumber: 0, address: this.typeId } }
     public getExtended() {
         let dev = this.get(true);
         dev.deviceType = cont.analogDevices.find(elem => elem.id === this.typeId);
@@ -2206,6 +2218,23 @@ export class GenericDevice extends ConfigItem {
         }
         webApp.emitToClients('genericDataValues', { id: this.id, typeId: this.typeId, values: this.values });
         this.emitFeeds();
+    }
+    public getValue(prop: string) {
+        switch (prop) {
+            case 'all': { return this.values; }
+            default: {
+                return this.values[prop];
+            }
+        }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            let prop = this.getDeviceType().outputs[0].name;
+            return Promise.resolve(this.values[prop]);
+        } catch (err) { return Promise.reject(err); }
     }
     public async emitFeeds() {
         try {

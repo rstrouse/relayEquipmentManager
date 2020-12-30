@@ -433,7 +433,7 @@
       ],
       "outputs": [
         {
-          "name": "PSI",
+          "name": "psi",
           "desc": "Presure in the reported units",
           "maxSamples": 10
         },

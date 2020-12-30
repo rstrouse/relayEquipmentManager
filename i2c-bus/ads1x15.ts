@@ -138,7 +138,6 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             let buffer = Buffer.from(command);
             let w = await this.i2c.writeCommand(this.device.address, buffer);
-            logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
             return Promise.resolve(w);
         }
         catch (err) { logger.error(err); }
@@ -209,7 +208,6 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             let config = this.config(channel);
             let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
-            logger.debug(`Wrote ${this.device.options.name} config  (${config}) bytes ${w}`)
             await this.timeout(this.getSPSTimeout());
             return Promise.resolve(true);
         }
