@@ -2114,6 +2114,14 @@ export class GenericDevice extends ConfigItem {
     public getDeviceType() {
         return cont.analogDevices.find(elem => elem.id === this.typeId);
     }
+    public getDeviceDescriptions(dev) {
+        // RSG - this can't act the same as the other getDeviceDescriptions because a single dev type can be present multiple times
+        // logic taken care of in /devices/all for now
+        let desc = [];
+        let category = typeof dev !== 'undefined' ? dev.category : 'Unknown';
+        desc.push({ type: 'generic', isActive: this.isActive, name: `${typeof this.options.name !== 'undefined' ? this.options.name : dev.name}, binding: generic:${this.typeId}:${this.id}`, category});
+        return desc;
+    }
     public setValue(prop: string, value) {
         this.values[prop] = value;
         this.doStuff();

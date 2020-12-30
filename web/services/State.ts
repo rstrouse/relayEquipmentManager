@@ -41,6 +41,11 @@ export class StateRoute {
                     else devices.push({ type: 'i2c', isActive: device.isActive, name: device.name, binding: `i2c:${bus.id}:${device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown'  });
                 }
             }
+            for (let i = 0; i < cont.genericDevices.devices.length; i++) {
+                let genericDevice = cont.genericDevices.devices.getItemByIndex(i);
+                let deviceType = devs.find(elem => elem.id === genericDevice.typeId);
+                devices.push({ type: 'generic', isActive: genericDevice.isActive, name: typeof genericDevice.options.name !== 'undefined' ? genericDevice.options.name : deviceType.name, binding: `generic:${genericDevice.typeId}:${genericDevice.id}`, category: typeof deviceType !== 'undefined' ? deviceType.category : 'Unknown Generic Device' });
+            }
             return res.status(200).send(devices);
         });
         app.put('/state/device/:binding', async (req, res, next) => {
