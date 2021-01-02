@@ -2,7 +2,7 @@
 import { vMaps } from "../boards/Constants";
 import * as path from "path";
 import * as fs from "fs";
-import { cont, ConnectionSource } from "../boards/Controller";
+import { cont, ConnectionSource, DeviceBinding } from "../boards/Controller";
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { i2c } from "../i2c-bus/I2cBus";
@@ -112,7 +112,8 @@ class InternalConnection extends ServerConnection {
 
                 }
                 else if (arr[0] === 'gpio') {
-
+                    // await cont.gpio.setDeviceValue(parseInt(arr[1], 10), parseInt(arr[2], 10), opts.property, opts.value);
+                    await cont.setDeviceState(opts.deviceBinding, opts.value);
                 }
                 else if (arr[0] === 'generic'){
                     // generic:typeId:id

@@ -96,6 +96,8 @@
             $('<hr></hr>').appendTo(el);
             var trigs = $('<div></div>').appendTo(el);
             $('<div></div>').appendTo(trigs).pnlPinTriggers().hide();
+            var feeds = $('<div></div>').appendTo(el);
+            $('<div></div>').appendTo(feeds).pnlPinFeeds().hide();
             $('<div></div>').appendTo(el).addClass('select-pin-message').text('Select a pin from the displayed header(s) to edit its defintion');
             var btnPnl = $('<div class="btn-panel"></div>').appendTo(el).hide();
             $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Save Pin', icon: '<i class="fas fa-save"></i>' })
@@ -113,17 +115,20 @@
             var self = this, o = self.options, el = self.element;
             el.find('div.pnl-pin-outer').each(function () { dataBinder.bind($(this), data.pin); });
             el.find('div.pnl-pin-triggers').each(function () { this.dataBind(data); });
+            el.find('div.pnl-pin-feeds').each(function () { this.dataBind(data); });
             if (typeof data.pin === 'undefined' || typeof data.pin.id === 'undefined' || data.pin.id === 0) {
                 el.find('div.pin-definition').hide();
                 el.find('div.select-pin-message').show();
                 el.find('div.btn-panel').hide();
                 el.find('div.pnl-pin-triggers').hide();
+                el.find('div.pnl-pin-feeds').hide();
             }
             else {
                 el.find('div.pin-definition').show();
                 el.find('div.select-pin-message').hide();
                 el.find('div.pnl-pin-triggers').show();
                 el.find('div.btn-panel').show();
+                el.find('div.pnl-pin-feeds').show();
             }
             if (typeof data.pin === 'undefined' || !makeBool(data.pin.isExported)) {
                 el.find('div.pin-state-panel').hide().find('div.picToggleButton').attr('data-gpioid', '').val(false);
@@ -565,6 +570,310 @@
                 }
             }
             return div;
+        }
+    });
+    $.widget('pic.pnlPinFeeds', {
+        options: {},
+        _create: function (device) {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].dataBind = function (feeds) { self.dataBind(feeds); }
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-pin-feeds');
+            $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Feeds send values from the device via a connection to other software.  The defined connection determines the format, protocol, and potential data that is sent.');
+            $('<div></div>').appendTo(el).crudList({
+                id: 'crudFeeds', actions: { canCreate: true, canEdit: true, canRemove: true },
+                key: 'id',
+                caption: 'Device Value Feeds', itemName: 'Value Feeds',
+                columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
+            }).css({ width: '100%' })
+                .on('additem', function (evt) {
+                    $.getLocalService('/config/options/pin/' + o.headerId + '/' + o.pinId + '/feeds', null, function (feeds, status, xhr) {
+                        feeds.feed = { isActive: true };
+                        self._createFeedDialog('dlgAddGPIOFeed', 'Add Feed to GPIO Device', feeds);
+                    });
+                }).on('edititem', function (evt) {
+                    $.getLocalService('/config/options/pin/' + o.headerId + '/'+ o.pinId + '/'+ '/feeds', null, function (feeds, status, xhr) {
+                        feeds.feed = o.feeds.find(elem => elem.id == evt.dataKey);
+                        self._createFeedDialog('dlgEditGPIOFeed', 'Edit GPIO Device Feed', feeds);
+                    });
+                }).on('removeitem', function (evt) {
+                    var p = dataBinder.fromElement(el);
+                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteGPIOFeed', {
+                        message: 'Are you sure you want to delete Feed?',
+                        width: '350px',
+                        height: 'auto',
+                        title: 'Confirm Delete Device Feed',
+                        buttons: [{
+                            text: 'Yes', icon: '<i class="fas fa-trash"></i>',
+                            click: function () {
+                                var feed = {
+                                    headerId: o.headerId,
+                                    pinId: o.pinId,
+                                    id: evt.dataKey
+                                };
+                                $.deleteLocalService('/config/pin/feed', feed, function (feeds, status, xhr) {
+                                    $.pic.modalDialog.closeDialog(dlg);
+                                    // self.dataBind(feeds)
+                                    self.reloadFeeds();
+                                });
+                                //o.feeds.splice(evt.dataKey - 1, 1);
+                                //self.loadFeeds(o.feeds);
+                            }
+                        },
+                        {
+                            text: 'No', icon: '<i class="far fa-window-close"></i>',
+                            click: function () { $.pic.modalDialog.closeDialog(this); }
+                        }]
+                    });
+                });
+
+        },
+        _createFeedDialog: function (id, title, f) {
+            var self = this, o = self.options, el = self.element;
+            if ($(`div#${id}`).length > 0) return;
+
+            var dlg = $.pic.modalDialog.createDialog(id, {
+                width: '547px',
+                height: 'auto',
+                title: title,
+                position: { my: "center top", at: "center top", of: window },
+                buttons: [
+                    {
+                        text: 'Save', icon: '<i class="fas fa-save"></i>',
+                        click: function (evt) {
+                            var feed = dataBinder.fromElement(dlg);
+                            if (dataBinder.checkRequired(dlg, true)) {
+                                feed.connection = dlg.find('div[data-bind="connectionId"]')[0].selectedItem();
+                                feed.pinId = o.pinId;
+                                feed.headerId = o.headerId;
+                                ///feed.device = dlg.find('div[data-bind="deviceBinding"]')[0].selectedItem();
+                                self.saveFeed(feed);
+                                $.pic.modalDialog.closeDialog(this);
+                            }
+                        }
+                    },
+                    {
+                        text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                        click: function () { $.pic.modalDialog.closeDialog(this); }
+                    }
+                ]
+            });
+            $('<div></div>').appendTo(dlg).text('A Data Feed is used to transport data to the specified data source.  You can add multiple data feeds for the device.');
+            $('<hr></hr>').appendTo(dlg);
+            var line = $('<div></div>').appendTo(dlg);
+            $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(-1);
+            var conn = $('<div></div>').appendTo(line).pickList({
+                required: true,
+                bindColumn: 0, displayColumn: 1, labelText: 'Connection', binding: 'connectionId',
+                columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Name', style: { minWidth: '197px' } }, { binding: 'type.desc', text: 'Type', style: { minWidth: '147px' } }],
+                items: f.connections, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+            })
+                .on('selchanged', function (evt) {
+                    dlg.find('div.pnl-i2c-feed-params').each(function () { this.setConnection(evt.newItem); });
+                });
+            $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).pickList({
+                required: true,
+                bindColumn: 0, displayColumn: 1, labelText: 'Send Value', binding: 'sendValue',
+                columns: [{ binding: 'name', text: 'Name', style: { maxWidth: '197px' } }, { binding: 'desc', text: 'Type', style: { minWidth: '347px' } }],
+                items: [{ name: 'state', desc: 'State of the Pin', type: 'boolean' }], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+
+            }).on('selchanged', function (evt) {
+                var elSamp = dlg.find('div[data-bind="sampling"]').each(function () {
+                    if (evt.newItem.maxSamples <= 1 || typeof evt.newItem.maxSamples === 'undefined') this.val(1);
+                    this.options({ max: evt.newItem.maxSamples || 1 });
+                });
+                if (evt.newItem.maxSamples <= 1 || typeof evt.newItem.maxSamples === 'undefined') elSamp.hide();
+                else elSamp.show();
+            });
+            $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed' });
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).valueSpinner({
+                required: true, canEdit: true, binding: 'sampling', labelText: 'Sampling', fmtMask: '#,##0', dataType: 'number', step: 1,
+                min: 1, max: 20, units: `smooth reading using median samples`, inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
+            }).hide();
+
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(dlg).pnlDeviceFeedParams({ device: f.device });
+            if (typeof f.feed.id !== 'undefined') {
+                conn[0].disabled(true);
+                dlg.find('div.pnl-gpio-feed-params').each(function () {
+                    var pnl = this;
+                    self.dataBind(f.feed);
+                });
+                dataBinder.bind(dlg, f.feed);
+            }
+            dlg.css({ overflow: 'visible' });
+            return dlg;
+        },
+        saveFeed: function (feed) {
+            var self = this, o = self.options, el = self.element;
+            $.putLocalService('/config/pin/feed', feed, 'Saving Device Feed...', function (f, result, xhr) {
+                self.reloadFeeds();
+            });
+        },
+        reloadFeeds: function() {
+            var self = this, o = self.options, el = self.element;
+            $.getLocalService('/config/options/pin/' + o.headerId + '/' + o.pinId, null, function (pin, status, xhr) {
+                // Find the pin definition from the header.
+                console.log(pin);
+                self.dataBind(pin);
+            });
+        },
+        dataBind: function (data) {
+            var self = this, o = self.options, el = self.element;
+            dataBinder.bind(el, data);
+            var felem = el.find('div#crudFeeds:first').each(function () {
+                this.clear();
+                for (var i = 0; i < data.pin.feeds.length; i++) {
+                    var feed = data.pin.feeds[i];
+                    this.addRow(feed);
+                }
+            });
+            o.headerId = data.pin.headerId;
+            o.pinId = data.pin.id;
+        }
+    });
+    $.widget('pic.pnlDeviceFeedParams', {
+        options: {},
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].setConnection = function (conn) { self.setConnection(conn); };
+            el[0].dataBind = function (data) { self.dataBind(data); };
+            el[0].setTopic = function (data) { self.setTopic(data); };
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('pnl-gpio-feed-params');
+        },
+        setTopic: function () {
+            var self = this, o = self.options, el = self.element;
+
+        },
+        dataBind: function (data) {
+            var self = this, o = self.options, el = self.element;
+            self.setConnection(data.connection, function () {
+                var fldEventName = el.find('div[data-bind="eventName"]');
+                if (typeof data.eventName !== 'undefined' && fldEventName.length > 0) {
+                    if (fldEventName[0].val() !== data.eventName) {
+                        fldEventName[0].val(data.eventName);
+                        dataBinder.bind(el, data);
+                    }
+                }
+                else {
+                    console.log(data);
+                    dataBinder.bind(el, data);
+                }
+            });
+        },
+        setConnection: function (conn, callback) {
+            var self = this, o = self.options, el = self.element;
+            let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' && conn.id !== 0 ? conn.type.name : '';
+            if (el.attr('data-conntype') !== type || type === '') {
+                el.attr('data-conntype', type);
+                el.empty();
+                o.bindings = undefined;
+                if (type !== '') {
+                    $.searchLocalService('/config/connection/bindings', { name: type }, 'Getting Connection Bindings...', function (bindings, status, xhr) {
+                        o.bindings = bindings;
+                        console.log(bindings);
+                        $('<hr></hr>').appendTo(el);
+                        var line = $('<div></div>').appendTo(el);
+                        var lbl = type === 'njspc' || type === 'webSocket' ? 'Socket Event' : 'Topic';
+                        if (typeof o.bindings.devices !== 'undefined' && o.bindings.devices.length > 0) {
+                            $('<div></div>').appendTo(line).pickList({
+                                required: true,
+                                bindColumn: 0, displayColumn: 2, labelText: 'to Device', binding: 'deviceBinding',
+                                columns: [{ hidden: true, binding: 'uid', text: 'uid' }, { binding: 'type', text: 'Type' }, { binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }],
+                                items: bindings.devices, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            })
+                                .on('selchanged', function (evt) {
+                                    var itm = o.bindings.devices.find(elem => elem.uid === evt.newItem.uid);
+                                    self._build_deviceBindings(itm);
+                                });
+                            self._build_deviceBindings();
+                        }
+                        else if (typeof o.bindings.feeds !== 'undefined' && o.bindings.feeds.length >= 1) {
+                            $('<div></div>').appendTo(line).pickList({
+                                required: true,
+                                bindColumn: 0, displayColumn: 0, labelText: lbl, binding: 'eventName',
+                                columns: [{ binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }],
+                                items: bindings.feeds, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            })
+                                .on('selchanged', function (evt) {
+                                    var itm = o.bindings.feeds.find(elem => elem.name === evt.newItem.name);
+                                    self._build_bindings(itm);
+                                });
+                            self._build_bindings();
+                        }
+                        else {
+                            $('<div></div>').appendTo(line).inputField({
+                                required: true, binding: 'eventName', labelText: "Topic", inputAttrs: { style: { width: '17rem' } }, labelAttrs: { style: { width: '7rem' } }
+                            });
+                            line = $('<div></div>').appendTo(el);
+                            $('<div></div>').appendTo(line).addClass('script-advanced-instructions').html('Enter plain javascript for the generated payload.  Return a string, number, or object from the function.');
+
+                            line = $('<div></div>').appendTo(el);
+                            $('<div></div>').appendTo(line).scriptEditor({ binding: 'payloadExpression', prefix: '(feed, value): any => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
+                        }
+                        if (typeof callback === 'function') { callback(); }
+                    });
+                }
+                else if (typeof callback === 'function') { callback(); }
+            }
+            //else if (typeof callback === 'function') { console.log('callback2 called'); callback(); }
+        },
+        _build_bindings: function (feed) {
+            var self = this, o = self.options, el = self.element;
+            let pnl = el.find('div.pnl-device-bindings');
+            if (pnl.length === 0) {
+                var line = $('<div></div>').addClass('pnl-device-bindings').appendTo(el);
+                $('<div></div>').appendTo(line).pickList({
+                    canEdit: true,
+                    binding: 'property', labelText: 'Property',
+                    bindColumn: 0, displayColumn: 0,
+                    columns: [{ binding: 'binding', text: 'Variable', style: { whiteSpace: 'nowrap' } }],
+                    items: typeof feed !== 'undefined' ? feed.bindings : [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                });
+                $('<div></div>').addClass('pnl-feed-params').appendTo(line);
+            }
+            else {
+                pnl.find('div.picPickList:first').each(function () {
+                    this.items(typeof feed !== 'undefined' ? feed.bindings : []);
+                });
+                let pnlParams = pnl.find('div.pnl-feed-params');
+                if (typeof feed === 'undefined' || typeof feed.options === 'undefined' || pnlParams.attr('data-feedname') !== feed.name) pnlParams.empty();
+                if (typeof feed !== 'undefined' && typeof feed.options !== 'undefined' && pnlParams.attr('data-feedname') !== feed.name) {
+                    // Bind up these params.
+                    templateBuilder.createObjectOptions(pnlParams, feed);
+                }
+                if (typeof feed !== 'undefined') dataBinder.bind(pnlParams, feed);
+                pnlParams.attr('data-feedname', typeof feed !== 'undefined' ? feed.pnlParams || '' : '');
+            }
+        },
+        _build_deviceBindings: function (feed) {
+            var self = this, o = self.options, el = self.element;
+            let pnl = el.find('div.pnl-device-bindings');
+            if (pnl.length === 0) {
+                var line = $('<div></div>').addClass('pnl-device-bindings').appendTo(el);
+                $('<div></div>').appendTo(line).pickList({
+                    canEdit: true,
+                    binding: 'property', labelText: 'Input',
+                    bindColumn: 0, displayColumn: 0,
+                    columns: [{ binding: 'name', text: 'Input', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { whiteSpace: 'nowrap' } }],
+                    items: typeof feed !== 'undefined' ? feed.bindings : [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                });
+            }
+            else {
+                pnl.find('div.picPickList:first').each(function () {
+                    this.items(typeof feed !== 'undefined' ? feed.bindings : []);
+                });
+            }
         }
     });
 })(jQuery);

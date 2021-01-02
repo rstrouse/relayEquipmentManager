@@ -319,7 +319,7 @@ export class i2cBus {
         if (typeof device !== 'undefined') device.initFeeds();
     }
 }
-class i2cFeed {
+export class i2cFeed {
     public server: ServerConnection;
     public lastSent;
     public sampling = [];

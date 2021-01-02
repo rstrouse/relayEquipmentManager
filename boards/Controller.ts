@@ -12,7 +12,7 @@ import { SpiAdcChips } from "../spi-adc/SpiAdcChips";
 import { connBroker, ConnectionBindings } from "../connections/Bindings";
 import { gpioPins } from "./GpioPins";
 import { spi0, spi1, SpiAdcChannel } from "../spi-adc/SpiAdcBus";
-import { i2c, i2cBus } from "../i2c-bus/I2cBus";
+import { i2c, i2cBus, i2cFeed, i2cDeviceBase } from "../i2c-bus/I2cBus";
 import { AnalogDevices, DeviceStatus } from "../devices/AnalogDevices";
 interface IConfigItemCollection {
     set(data);
@@ -474,6 +474,7 @@ export class Controller extends ConfigItem {
             if (typeof pin !== 'undefined' && pin.isActive) {
                 try {
                     pin.state = utils.makeBool(data.state) ? 'on' : 'off';
+                    pin.emitFeeds();
                     resolve(pin);
                 }
                 catch (err) { reject(err); }
@@ -676,6 +677,7 @@ export class Gpio extends ConfigItem {
     protected initData(data?: any) {
         if (typeof this.data.pins === 'undefined') this.data.pins = [];
         if (typeof this.data.exported === 'undefined') this.data.exported = [];
+        // this.initFeeds();
         return data;
     }
     public upgrade(ver) { this.pins.upgrade(ver); }
@@ -764,7 +766,33 @@ export class Gpio extends ConfigItem {
         }
         catch (err) { return Promise.reject(new Error(`Could not set gpio state: ${err}`)); }
     }
-
+    public async setDeviceFeed(data): Promise<I2cDeviceFeedCollection> {
+        try {
+            if (typeof data.pinId === 'undefined') return Promise.reject(new Error(`Feed device pin id was not provided.`));
+            let pinId = (typeof data.pinId !== 'undefined') ? parseInt(data.pinId, 10) : undefined;
+            let dev = this.pins.getItemById(pinId);
+            await dev.setDeviceFeed(data);
+            dev.initFeeds();
+            return Promise.resolve(dev.feeds);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceFeed(data): Promise<I2cDeviceFeedCollection> {
+        try {
+            if (typeof data.pinId === 'undefined') return Promise.reject(new Error(`Feed device pin id was not provided.`));
+            let devId = (typeof data.pinId !== 'undefined') ? parseInt(data.pinId, 10) : undefined;
+            let dev = this.pins.getItemById(devId);
+            await dev.deleteDeviceFeed(data);
+            dev.initFeeds();
+            return Promise.resolve(dev.feeds);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    // public async setDeviceValue(headerId: number, id: number, prop: string, value: any) {
+    //     // generic:typeId:id
+    //     let device = this.pins.find(elem => elem.id === id);
+    //     if (typeof device !== 'undefined') cont.setDeviceState(value);
+    // }
 }
 export class SpiController extends ConfigItem {
     constructor(data, name: string) { super(data, name); }
@@ -1263,7 +1291,6 @@ export class I2cBus extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public getDeviceById(deviceId: number) { return this.devices.getItemById(deviceId); }
 
 }
@@ -1553,6 +1580,7 @@ export class GpioPin extends ConfigItem {
         if (typeof this.data.isInverted === 'undefined') this.isInverted = false;
         if (typeof this.data.direction === 'undefined') this.direction = 'output';
         if (typeof this.data.triggers === 'undefined') this.data.triggers = [];
+        this.initFeeds();
         return data;
     }
     public upgrade(ver) {
@@ -1587,9 +1615,30 @@ export class GpioPin extends ConfigItem {
     public get name(): string { return this.data.name = `Pin #${this.headerId}-${this.id}`; }
     public set name(val: string) { this.data.name = `Pin #${this.headerId}-${this.id}`; }
     public get triggers(): GpioPinTriggerCollection { return new GpioPinTriggerCollection(this.data, 'triggers'); }
+    public get feeds(): I2cDeviceFeedCollection { return new I2cDeviceFeedCollection(this.data, 'feeds'); }
+    public getValue(prop: string) {
+        return this.data[prop];
+    }
+    public _feeds: i2cFeed[] = [];
+    public initFeeds() {
+        this._feeds = [];
+        for (let i = 0; i < this.feeds.length; i++) {
+            let f = this.feeds.getItemByIndex(i);
+            this._feeds.push(new i2cFeed(f as any as I2cDeviceFeed));
+        }
+    }
+    public async emitFeeds() {
+        try {
+            this.initFeeds();
+            for (let i = 0; i < this._feeds.length; i++) {
+                await this._feeds[i].send(this as any as i2cDeviceBase);
+            }
+        } catch (err) { logger.error(err); }
+    }
     public getExtended() {
         let pin = this.get(true);
         pin.triggers = [];
+        pin.feeds = [];
         let pinouts = cont.pinouts;
         let header = pinouts.headers.find(elem => elem.id === this.headerId);
         let pinout = typeof header !== 'undefined' ? header.pins.find(elem => elem.id === this.id) : {};
@@ -1600,6 +1649,9 @@ export class GpioPin extends ConfigItem {
         pin.isExported = typeof cont.gpio.exported.find(elem => elem === pin.gpioId) !== 'undefined';
         for (let i = 0; i < this.triggers.length; i++) {
             pin.triggers.push(this.triggers.getItemByIndex(i).getExtended());
+        }
+        for (let i = 0; i < this.feeds.length; i++) {
+            pin.feeds.push(this.feeds.getItemByIndex(i).getExtended());
         }
         return pin;
     }
@@ -1626,7 +1678,7 @@ export class GpioPin extends ConfigItem {
             let oldState = await p.readPinAsync();
 
             // Now that the state has been read lets set its state.
-            let newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
+            let newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : typeof data !== 'undefined' ? utils.makeBool(data) : false;
             await p.writePinAsync(newState ? 1 : 0, latch);
             let vmState = vMaps.pinStates.transform(newState ? 1 : 0);
             this.setDataVal('state', vmState.name);
@@ -1667,6 +1719,46 @@ export class GpioPin extends ConfigItem {
             return pin;
         }
         catch (err) { return Promise.reject(`feedDeviceValue: Error setting pin value: ${err}`); }
+    }
+    public async setDeviceFeed(data): Promise<I2cDeviceFeed> {
+        try {
+            let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
+            if (isNaN(feedId)) return Promise.reject(`The feed identifier is not valid.`);
+            let feed: I2cDeviceFeed;
+            let connectionId;
+            let connection;
+            if (feedId !== -1) {
+                // We are updating.
+                feed = this.feeds.find(elem => elem.id === feedId);
+                if (typeof feed === 'undefined') return Promise.reject(`Could not find a feed by id ${feedId}`);
+                connectionId = feed.connectionId;
+            }
+            else {
+                // We are adding.
+                feedId = (this.feeds.getMaxId() || 0) + 1;
+                connectionId = parseInt(data.connectionId, 10);
+                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
+            }
+            connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
+            if (connectionId !== -1 && typeof connection === 'undefined') return Promise.reject(`The feed connection was not found at id ${connectionId}`);
+            feed = this.feeds.getItemById(feedId, true);
+            feed.connectionId = connectionId;
+            feed.set(data);
+            feed.id = feedId;
+            return Promise.resolve(feed);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceFeed(data): Promise<I2cDeviceFeed> {
+        try {
+            let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
+            if (isNaN(feedId)) return Promise.reject(`The feed identifier is not valid.`);
+            let feed: I2cDeviceFeed;
+            feed = this.feeds.getItemById(feedId);
+            this.feeds.removeItemById(feedId);
+            return Promise.resolve(feed);
+        }
+        catch (err) { return Promise.reject(err); }
     }
 }
 export class GpioPinTriggerCollection extends ConfigItemCollection<GpioPinTrigger> {
@@ -2131,7 +2223,7 @@ export class GenericDevice extends ConfigItem {
         // logic taken care of in /devices/all for now
         let desc = [];
         let category = typeof dev !== 'undefined' ? dev.category : 'Unknown';
-        desc.push({ type: 'generic', isActive: this.isActive, name: `${typeof this.options.name !== 'undefined' ? this.options.name : dev.name}, binding: generic:${this.typeId}:${this.id}`, category});
+        desc.push({ type: 'generic', isActive: this.isActive, name: `${typeof this.options.name !== 'undefined' ? this.options.name : dev.name}, binding: generic:${this.typeId}:${this.id}`, category });
         return desc;
     }
     public setValue(prop: string, value) {

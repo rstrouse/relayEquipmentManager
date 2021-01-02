@@ -41,6 +41,14 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
+        app.get('/config/options/pin/:headerId/:pinId/feeds', (req, res) => {
+            let opts = {
+                pin: cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10)).getExtended(),
+                connections: cont.connections.toExtendedArray()
+            }
+            opts.connections.unshift(cont.getInternalConnection().getExtended());
+            return res.status(200).send(opts);
+        });
         app.get('/config/options/spi/:controllerId', (req, res) => {
             let opts = {
                 adcChipTypes: cont.spiAdcChips,
@@ -258,6 +266,20 @@ export class ConfigRoute {
                 if (isNaN(triggerId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
                 let pin = await cont.deletePinTriggerAsync(headerId, pinId, triggerId);
                 return res.status(200).send(pin.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/pin/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.gpio.setDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        })
+        app.delete('/config/pin/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.gpio.deleteDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
             }
             catch (err) { next(err); }
         });
