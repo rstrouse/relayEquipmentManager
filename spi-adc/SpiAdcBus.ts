@@ -1,5 +1,5 @@
 ﻿import { logger } from "../logger/Logger";
-import { SpiController, cont, SpiChannel, SpiChannelFeed } from "../boards/Controller";
+import { SpiController, cont, SpiChannel, DeviceFeed } from "../boards/Controller";
 import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices, DeviceStatus } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";
@@ -100,7 +100,7 @@ export class SpiAdcChannel {
         }
     }
     public openAsync(spiBus, opts) {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.busNumber = opts.busNumber;
             try {
                 logger.info(`Attempting to open SPI Bus #${opts.busNumber} Channel #${this.channel}`);
@@ -238,8 +238,8 @@ class SpiAdcFeed {
     //public changesOnly: boolean;
     private _timerSend: NodeJS.Timeout;
     public translatePayload: Function;
-    public feed: SpiChannelFeed;
-    constructor(feed: SpiChannelFeed) {
+    public feed: DeviceFeed;
+    constructor(feed: DeviceFeed) {
         this.server = connBroker.findServer(feed.connectionId);
         //this.frequency = feed.frequency * 1000;
         //this.eventName = feed.eventName;

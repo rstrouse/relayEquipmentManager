@@ -7,7 +7,7 @@ import { cont, ConfigItem } from "../../boards/Controller";
 import { PinDefinitions } from "../../pinouts/Pinouts";
 import { Client } from "node-ssdp";
 import { ConnectionBindings } from "../../connections/Bindings";
-import { gpioPins } from "../../boards/GpioPins";
+import { gpioCont } from "../../gpio/Gpio-Controller";
 import { SpiAdcChips } from "../../spi-adc/SpiAdcChips";
 import { i2c, i2cBus } from "../../i2c-bus/I2cBus";
 

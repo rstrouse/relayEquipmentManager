@@ -4,7 +4,7 @@ import { cont } from "./boards/Controller";
 import { webApp } from "./web/Server";
 import { connBroker } from "./connections/Bindings";
 import * as readline from 'readline';
-import { gpioPins } from "./boards/GpioPins";
+import { gpioCont } from "./gpio/Gpio-Controller";
 import { spi0, spi1 } from "./spi-adc/SpiAdcBus";
 import { i2c } from "./i2c-bus/I2cBus";
 import { setTimeout } from "timers";
@@ -17,7 +17,7 @@ export function initAsync() {
         .then(function () { cont.init(); })
         .then(function () { webApp.init(); })
         .then(function () { connBroker.init(); })
-        .then(function () { gpioPins.init(); })
+        .then(function () { gpioCont.init(); })
         .then(function () { spi0.initAsync(cont.spi0); })
         .then(function () { spi1.initAsync(cont.spi1); })
         .then(function () { i2c.initAsync(cont.i2c); });
@@ -29,7 +29,7 @@ export async function stopAsync(): Promise<void> {
         try { await i2c.closeAsync(); } catch (err) { console.error(`Error stopping I2c bus interface: ${err.message}`); }
         try { await spi0.closeAsync(); } catch (err) { console.error(`Error stopping SPI0 bus interface: ${err.message}`); }
         try { await spi1.closeAsync(); } catch (err) { console.error(`Error stopping SPI1 bus interface: ${err.message}`); }
-        try { await gpioPins.stopAsync(); } catch (err) { console.log(`Error stopping GPIO interface: ${err.message}`); }
+        try { await gpioCont.stopAsync(); } catch (err) { console.log(`Error stopping GPIO interface: ${err.message}`); }
         try { await cont.stopAsync(); } catch (err) { console.log(`Error closing controller interface: ${err.message}`); }
         try { await logger.stopAsync(); } catch (err) { console.log(`Error closing logger: ${err.message}`); }
         //await new Promise((resolve) => { setTimeout(() => { resolve(); }, 3000); });

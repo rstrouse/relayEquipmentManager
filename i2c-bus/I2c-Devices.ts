@@ -1,5 +1,5 @@
 ﻿import { logger } from "../logger/Logger";
-import { I2cController, cont, I2cBus, I2cDevice, I2cDeviceFeed } from "../boards/Controller";
+import { I2cController, cont, I2cBus, I2cDevice } from "../boards/Controller";
 import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";

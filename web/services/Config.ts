@@ -7,7 +7,7 @@ import { cont, ConfigItem } from "../../boards/Controller";
 import { PinDefinitions } from "../../pinouts/Pinouts";
 import { Client } from "node-ssdp";
 import { ConnectionBindings } from "../../connections/Bindings";
-import { gpioPins } from "../../boards/GpioPins";
+import { gpioCont } from "../../gpio/Gpio-Controller";
 import { SpiAdcChips } from "../../spi-adc/SpiAdcChips";
 export class ConfigRoute {
     public static initRoutes(app: express.Application) {
@@ -21,7 +21,7 @@ export class ConfigRoute {
         });
         app.get('/config/options/gpio', (req, res) => {
             let pinouts = cont.pinouts;
-            let states = gpioPins.pinStates;
+            let states = gpioCont.pinStates;
             for (let i = 0; i < states.length; i++) {
                 let state = states[i];
                 let header = pinouts.headers.find(elem => elem.id === state.headerId);
@@ -240,7 +240,7 @@ export class ConfigRoute {
                 var pinId = parseInt(req.params.pinId, 10);
                 if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
                 if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
-                let pin = await cont.setPinAsync(headerId, pinId, req.body);
+                let pin = await cont.gpio.setPinAsync(headerId, pinId, req.body);
                 return res.status(200).send(pin.getExtended());
             }
             catch (err) { next(err); }
@@ -251,7 +251,7 @@ export class ConfigRoute {
                 let pinId = parseInt(req.params.pinId, 10);
                 if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
                 if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
-                let trig = await cont.setPinTriggerAsync(headerId, pinId, req.body);
+                let trig = await cont.gpio.setPinTriggerAsync(headerId, pinId, req.body);
                 return res.status(200).send(trig.getExtended());
             }
             catch (err) { next(err); }
@@ -264,7 +264,7 @@ export class ConfigRoute {
                 if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
                 if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
                 if (isNaN(triggerId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
-                let pin = await cont.deletePinTriggerAsync(headerId, pinId, triggerId);
+                let pin = await cont.gpio.deletePinTriggerAsync(headerId, pinId, triggerId);
                 return res.status(200).send(pin.getExtended());
             }
             catch (err) { next(err); }
@@ -284,7 +284,7 @@ export class ConfigRoute {
             catch (err) { next(err); }
         });
         app.search('/config/findServer', async (req, res, next) => {
-            let prom = new Promise((resolve, reject) => {
+            let prom = new Promise<void>((resolve, reject) => {
                 let ssdpClient = new Client({});
                 let servers = [];
                 try {
@@ -319,31 +319,14 @@ export class ConfigRoute {
         });
         app.put('/state/setPinState', async (req, res, next) => {
             try {
-                let pin = await cont.setPinStateAsync(req.body);
+                let pin = await cont.gpio.setPinStateAsync(parseInt(req.body.headerId, 10), parseInt(req.body.gpioId, 10), req.body);
                 return res.status(200).send(pin.getExtended());
             }
             catch (err) { next(err); }
         });
         app.put('/state/jogPin', async (req, res, next) => {
             try {
-                let pin = cont.gpio.pins.getPinById(req.body.headerId, req.body.pinId || 1);
-                if (!pin.isActive) {
-                    logger.error(`GPIO Pin #${req.body.headerId} ${req.body.pinId} is not active.`);
-                    return next(new Error(`GPIO Pin #${req.body.headerId} ${req.body.pinId} is not active.`));
-                }
-                let currentState = utils.makeBool(pin.state.gpio);
-                let state = req.body.state !== 'undefined' ? utils.makeBool(req.body.state) : pin.state.gpio === 'on' ? true : false;
-                let times = req.body.times || 1;
-                if (currentState === state) {
-                    await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: !state });
-                    await new Promise((resolve, reject) => setTimeout(() => { resolve(); }, req.body.delay || 100));
-                }
-                while (times > 0) {
-                    await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: state });
-                    await new Promise((resolve, reject) => setTimeout(() => { resolve(); }, req.body.delay || 100));
-                    if (times > 1) await cont.setPinStateAsync({ pinId: pin.id, headerId: pin.headerId, state: !state });
-                    times--;
-                }
+                let pin = await cont.gpio.jogPinAsync(req.body.headerId, req.body.pinId || 1, req.body);
                 return res.status(200).send(pin.getExtended());
             }
             catch (err) { next(err); }

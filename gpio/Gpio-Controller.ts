@@ -6,7 +6,7 @@ import * as util from "util";
 import { setTimeout, clearTimeout } from "timers";
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
-import { vMaps, valueMap, utils } from "./Constants";
+import { vMaps, valueMap, utils } from "../boards/Constants";
 import { cont, DeviceBinding } from "../boards/Controller";
 import { IDevice, DeviceStatus } from "../devices/AnalogDevices";
 
@@ -15,9 +15,9 @@ import { connBroker } from "../connections/Bindings";
 import { EPERM } from "constants";
 const gp = require('onoff').Gpio;
 
-export class GpioController  {
+export class GpioController {
     constructor(data) { }
-    public pins: gpioPin[] = [];
+    public pins: gpioPinComms[] = [];
     public init() {
         this.initPins();
         return this;
@@ -61,7 +61,7 @@ export class GpioController  {
                 if (typeof pinout !== 'undefined') {
                     let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === pinDef.headerId);
                     if (typeof pin === 'undefined') {
-                        pin = new gpioPin(pinDef.headerId, pinDef.id, pinout.gpioId);
+                        pin = new gpioPinComms(pinDef.headerId, pinDef.id, pinout.gpioId);
                         this.pins.push(pin);
                         if (useGpio) {
                             logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId}.`);
@@ -115,20 +115,13 @@ export class GpioController  {
             catch (err) { reject(err); }
         });
     }
-    public async writePinAsync(headerId: number, pinId: number, val:number): Promise<void> {
-        return new Promise<void>(async (resolve, reject) => {
-            try {
-                let pin = this.pins.find(elem => elem.headerId === headerId && elem.pinId === pinId);
-                if (typeof pin === 'undefined') return reject(new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`));
-                logger.info(`Writing Pin #${pin.headerId}:${pin.pinId} -> GPIO #${pin.gpioId} to ${val}`);
-                await pin.gpio.write(val);
-                cont.gpio.emitFeeds(pin.pinId, pin.headerId);
-                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: val });
-                pin.state = val;
-                resolve();
-            }
-            catch (err) { reject(err); }
-        });
+    public async writePinAsync(headerId: number, pinId: number, val: number, latch?: number): Promise<void> {
+        try {
+            let pin = this.pins.find(elem => elem.headerId === headerId && elem.pinId === pinId);
+            if (typeof pin === 'undefined') return Promise.reject(new Error(`Invalid pin. Could not find pin in controller. ${headerId}:${pinId}`));
+            return await pin.writePinAsync(val, latch);
+        }
+        catch (err) { Promise.reject(err); }
     }
     public get pinStates() {
         let states = [];
@@ -144,7 +137,7 @@ export class GpioController  {
         return states;
     }
 }
-export class gpioPin implements IDevice {
+export class gpioPinComms implements IDevice {
     constructor(headerId: number, pinId: number, gpioId: number) {
         this.headerId = headerId;
         this.pinId = pinId;
@@ -171,32 +164,35 @@ export class gpioPin implements IDevice {
         } catch (err) { this.hasFault = true; this.status = err.message; return Promise.reject(err); }
     }
     public async writePinAsync(val: number, latch?: number): Promise<void> {
-        try {
-            if (typeof latch !== 'undefined') {
-                if (typeof this._latchTimer !== 'undefined') clearTimeout(this._latchTimer);
-                this._latchTimer = undefined;
+        return new Promise(async (resolve, reject) => {
+
+            try {
+                if (typeof latch !== 'undefined') {
+                    if (typeof this._latchTimer !== 'undefined') clearTimeout(this._latchTimer);
+                    this._latchTimer = undefined;
+                }
+                logger.info(`Writing Pin #${this.headerId}:${this.pinId} -> GPIO #${this.gpioId} to ${val}`);
+                await this.gpio.write(val);
+                if (latch > 0) {
+                    this._latchTimer = setTimeout(async () => {
+                        try {
+                            // await this.writePinAsync(val ? 0 : 1, -1);
+                            cont.gpio.setDeviceStateAsync(new DeviceBinding(`gpio:0:${this.pinId}`), val ? 0 : 1);
+                        }
+                        catch (err) { logger.error(`Error unlatching GPIO Pin #${this.headerId}-${this.pinId}: ${err.message}`); }
+                    }, latch);
+                }
+                this.lastComm = new Date().getTime();
+                this.hasFault = false;
+                this.status = undefined;
+                this.state = val;
+                cont.gpio.emitFeeds(this.pinId, this.headerId);
+                // logger.info(`writePinAsync with val: ${val}, latch: ${latch}`)
+                webApp.emitToClients('gpioPin', { pinId: this.pinId, headerId: this.headerId, gpioId: this.gpioId, state: val });
+                resolve();
             }
-            await this.gpio.write(val);
-            if (latch > 0) {
-                this._latchTimer = setTimeout(async () => {
-                    try { 
-                        // await this.writePinAsync(val ? 0 : 1, -1);
-                        cont.gpio.setDeviceState(new DeviceBinding(`gpio:0:${this.pinId}`), val ? 0 : 1);
-                    } 
-                    catch (err) { logger.error(`Error unlatching GPIO Pin #${this.headerId}-${this.pinId}: ${err.message}`); }
-                }, latch);
-            }
-            this.lastComm = new Date().getTime();
-            this.hasFault = false;
-            this.status = undefined;
-            this.state = val;
-            // let pin = cont.gpio.pins.getItemById(this.pinId);
-            // pin.state = utils.makeBool(val);
-            cont.gpio.emitFeeds(this.pinId, this.headerId);
-            // logger.info(`writePinAsync with val: ${val}, latch: ${latch}`)
-            webApp.emitToClients('gpioPin', { pinId: this.pinId, headerId: this.headerId, gpioId: this.gpioId, state: val });
-        }
-        catch (err) { this.hasFault = true; this.status = err.message; return Promise.reject(err); }
+            catch (err) { this.hasFault = true; this.status = err.message; reject(err); }
+        })
     }
 }
 class MockGpio {
@@ -224,7 +220,7 @@ class MockGpio {
                 break;
         }
         this._edge = edge;
-        this._opts = extend(true, { activeLow: false, debounceTimeout:0, reconfigureDirection:true }, options);
+        this._opts = extend(true, { activeLow: false, debounceTimeout: 0, reconfigureDirection: true }, options);
         this._value = 0;
         this._isExported = true;
         if (this._direction !== direction) logger.info(`Input direction translated to initial state ${direction} --> ${this._direction}`);
@@ -237,7 +233,7 @@ class MockGpio {
     }
     public readSync(): number {
         if (!this._isExported)
-            throw this.notExportedError() 
+            throw this.notExportedError()
         return this._value;
     }
     public write(val: number, callback?: (err, value) => void) {
@@ -295,7 +291,7 @@ class MockGpio {
         logger.info(`Set GPIO #${this._pinId} Edge to ${this.edge}`);
     }
     public activeLow(): boolean {
-        logger.info(`Get GPIO #${this._pinId} ActiveLow: ${ this._opts.activeLow }`);
+        logger.info(`Get GPIO #${this._pinId} ActiveLow: ${this._opts.activeLow}`);
         return utils.makeBool(this._opts.activeLow);
     }
     public setActiveLow(activeLow: boolean) { this._opts.activeLow = activeLow; }
@@ -330,4 +326,4 @@ class MockGpio {
     public static HIGH = 1;
     public static LOW = 0;
 }
-export let gpioPins = new GpioController({});
+export let gpioCont = new GpioController({});

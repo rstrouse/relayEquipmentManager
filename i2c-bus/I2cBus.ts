@@ -1,5 +1,5 @@
 ﻿import { logger } from "../logger/Logger";
-import { I2cController, cont, I2cBus, I2cDevice, I2cDeviceFeed, DeviceBinding } from "../boards/Controller";
+import { I2cController, cont, I2cBus, I2cDevice, DeviceBinding, ConfigItem, Feed } from "../boards/Controller";
 import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices, IDevice, DeviceStatus } from "../devices/AnalogDevices";
 import { utils } from "../boards/Constants";
@@ -319,52 +319,7 @@ export class i2cBus {
         if (typeof device !== 'undefined') device.initFeeds();
     }
 }
-export class i2cFeed {
-    public server: ServerConnection;
-    public lastSent;
-    public sampling = [];
-    public translatePayload: Function;
-    public feed: I2cDeviceFeed;
-    constructor(feed: I2cDeviceFeed) {
-        this.server = connBroker.findServer(feed.connectionId);
-        this.feed = feed;
-        if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0)
-            this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
-    }
-    public async send(dev: i2cDeviceBase) {
-        try {
-            let value = dev.getValue(this.feed.sendValue) || '';
-            if (!this.feed.isActive) return;
-            if (this.feed.sampling > 1) {
-                this.sampling.push(JSON.parse(JSON.stringify(value)));
-                if (this.sampling.length >= this.feed.sampling) {
-                    value = dev.calcMedian(this.feed.sendValue, this.sampling);
-                    await this.server.send({
-                        eventName: this.feed.eventName,
-                        property: this.feed.property,
-                        value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
-                        deviceBinding: this.feed.deviceBinding,
-                        options: this.feed.options
-                    });
-                    // Reset the sampling and start over.
-                    this.sampling.length = 0;
-                }
-            }
-            else {
-                if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
-                    await this.server.send({
-                        eventName: this.feed.eventName,
-                        property: this.feed.property,
-                        value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
-                        deviceBinding: this.feed.deviceBinding,
-                        options: this.feed.options
-                    });
-                }
-            }
-        } catch (err) { logger.error(err); }
-    }
-    public closeAsync() { }
-}
+
 const i2cBits = {
     I2C_FUNC_I2C: 0x00000001,
     I2C_FUNC_10BIT_ADDR: 0x00000002,
@@ -479,7 +434,7 @@ export class i2cDeviceBase implements IDevice {
         this.device = dev;
         this.initFeeds();
     }
-    public feeds: i2cFeed[] = [];
+    public feeds: Feed[] = [];
     public readable: boolean = false;
     public writable: boolean = false;
     public status: string;
@@ -519,7 +474,7 @@ export class i2cDeviceBase implements IDevice {
         this.feeds = [];
         for (let i = 0; i < this.device.feeds.length; i++) {
             let f = this.device.feeds.getItemByIndex(i);
-            this.feeds.push(new i2cFeed(f));
+            this.feeds.push(new Feed(f));
         }
     }
     public getValue(prop) {
