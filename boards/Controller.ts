@@ -474,7 +474,6 @@ export class Controller extends ConfigItem {
             if (typeof pin !== 'undefined' && pin.isActive) {
                 try {
                     pin.state = utils.makeBool(data.state) ? 'on' : 'off';
-                    pin.emitFeeds();
                     resolve(pin);
                 }
                 catch (err) { reject(err); }
@@ -788,11 +787,10 @@ export class Gpio extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-    // public async setDeviceValue(headerId: number, id: number, prop: string, value: any) {
-    //     // generic:typeId:id
-    //     let device = this.pins.find(elem => elem.id === id);
-    //     if (typeof device !== 'undefined') cont.setDeviceState(value);
-    // }
+    public emitFeeds(pinId, headerId) {
+        let dev = this.pins.getItemById(pinId);
+        setTimeout(() => {dev.emitFeeds();}, 250);
+    }
 }
 export class SpiController extends ConfigItem {
     constructor(data, name: string) { super(data, name); }
@@ -1580,7 +1578,6 @@ export class GpioPin extends ConfigItem {
         if (typeof this.data.isInverted === 'undefined') this.isInverted = false;
         if (typeof this.data.direction === 'undefined') this.direction = 'output';
         if (typeof this.data.triggers === 'undefined') this.data.triggers = [];
-        this.initFeeds();
         return data;
     }
     public upgrade(ver) {
@@ -1607,6 +1604,7 @@ export class GpioPin extends ConfigItem {
                     .then(() => {
                         this.setMapVal('state', val, vMaps.pinStates);
                     })
+                    .then(()=>(this.emitFeeds()))
                     .catch(err => logger.error(err));
             }
             else this.setMapVal('state', val, vMaps.pinStates);
