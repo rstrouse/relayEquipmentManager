@@ -180,7 +180,8 @@ export class gpioPin implements IDevice {
             if (latch > 0) {
                 this._latchTimer = setTimeout(async () => {
                     try { 
-                        await this.writePinAsync(val ? 0 : 1, -1);
+                        // await this.writePinAsync(val ? 0 : 1, -1);
+                        cont.gpio.setDeviceState(new DeviceBinding(`gpio:0:${this.pinId}`), val ? 0 : 1);
                     } 
                     catch (err) { logger.error(`Error unlatching GPIO Pin #${this.headerId}-${this.pinId}: ${err.message}`); }
                 }, latch);
