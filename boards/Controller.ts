@@ -358,7 +358,7 @@ export class Controller extends ConfigItem {
      * Api Methods
      *************************************************/
     public async setGeneralConfigAsync(data): Promise<void> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.set(data);
             resolve();
         });
@@ -969,7 +969,7 @@ export class GpioPin extends ConfigItem {
         });
     }
     public async setPinStateAsync(state: string | boolean | number): Promise<GpioPin> {
-        return new Promise(async (resolve, reject) => {
+        return new Promise<GpioPin>(async (resolve, reject) => {
             let mv = this.getMapVal(utils.makeBool(state) ? 'on' : 'off', vMaps.pinStates);
             if (typeof mv !== 'undefined') {
                 if (mv.gpio !== 'undefined' && this.isActive) {

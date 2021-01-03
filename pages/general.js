@@ -38,7 +38,7 @@
                         if (makeBool(evt.newItem.i2c)) el.find('div#cbI2c').show();
                         else {
                             el.find('div#cbI2c').hide();
-                            el.find('div#cbI2c')[0].val(false);
+                            //el.find('div#cbI2c')[0].val(false);
                         }
                     });
                 var grpLogs = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpLogs');

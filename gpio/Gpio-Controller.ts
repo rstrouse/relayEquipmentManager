@@ -164,7 +164,7 @@ export class gpioPinComms implements IDevice {
         } catch (err) { this.hasFault = true; this.status = err.message; return Promise.reject(err); }
     }
     public async writePinAsync(val: number, latch?: number): Promise<void> {
-        return new Promise(async (resolve, reject) => {
+        return new Promise<void>(async (resolve, reject) => {
 
             try {
                 if (typeof latch !== 'undefined') {
