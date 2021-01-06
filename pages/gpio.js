@@ -588,7 +588,7 @@
                 key: 'id',
                 caption: 'Device Value Feeds', itemName: 'Value Feeds',
                 columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
-            }).css({ width: '100%' })
+            })
                 .on('additem', function (evt) {
                     $.getLocalService('/config/options/pin/' + o.headerId + '/' + o.pinId + '/feeds', null, function (feeds, status, xhr) {
                         feeds.feed = { isActive: true };
