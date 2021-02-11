@@ -59,7 +59,7 @@
           }
         }
       },
-      "interfaces": [ "spi", "i2cAdc", "generic" ]
+      "interfaces": [ "spi", "i2cAdc" ]
     },
     {
       "id": 2,

@@ -696,7 +696,6 @@
         }
       ],
       "interfaces": [
-        "i2c",
         "generic",
         "spi"
       ]
