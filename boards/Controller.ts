@@ -681,7 +681,7 @@ export class Feed {
     public async send(dev: any) {
         try {
             let value = dev.getValue(this.feed.sendValue) || '';
-            if (!this.feed.isActive)
+            if (!this.feed.isActive || typeof this.server === 'undefined')
                 return;
             if (this.feed.sampling > 1) {
                 this.sampling.push(JSON.parse(JSON.stringify(value)));
