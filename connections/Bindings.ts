@@ -229,7 +229,11 @@ class MqttConnection extends ServerConnection {
     public connect() {
         let url = this.server.url;
         logger.info(`Connecting mqtt to ${url}`);
-        this._mqtt = connect(url, this.server.options);
+        let opts = extend(true, {}, this.server.options);
+        if (typeof this.server.userName !== 'undefined' && this.server.userName !== '') opts.username = this.server.userName;
+        if (typeof this.server.password !== 'undefined' && this.server.password !== '') opts.password = this.server.password;
+
+        this._mqtt = connect(url, opts);
         this._mqtt.on('connect', () => {
             logger.info(`MQTT Connected to ${url}`);
             this.isOpen = true;
