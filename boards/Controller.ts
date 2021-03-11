@@ -787,7 +787,8 @@ export class Gpio extends ConfigItem {
         else return Promise.reject(new Error(`Cannot set pin state: Unidentified Pin # -- ${JSON.stringify(data)}`));
     }
     public async setPinTriggerAsync(headerId: number, pinId: number, data): Promise<GpioPinTrigger> {
-        return await this.pins.getPinById(headerId, pinId, true).setPinTriggerAsync(data);
+        let pin = this.pins.getPinById(headerId, pinId, true);
+        return await pin.setPinTriggerAsync(data);
     }
 
     public async deletePinTriggerAsync(headerId: number, pinId: number, data): Promise<GpioPin> {
@@ -1096,6 +1097,7 @@ export class GpioPin extends ConfigItem {
         if (typeof c === 'undefined') {
             data.id = this.triggers.getMaxId(false, -1) + 1;
             if (data.id === 0) data.id = 1;
+            c = this.triggers.getItemById(data.id, true);
         }
         return await c.setPinTriggerAsync(data);
     }
