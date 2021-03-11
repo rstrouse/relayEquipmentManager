@@ -135,6 +135,7 @@ class SocketServerConnection extends ServerConnection {
     public processEvent(event, data) {
         // Find the event.
         var evt = this.events.find(elem => elem.name === event);
+        logger.info(`Processing socket event ${event}`);
         if (typeof evt !== 'undefined') {
             // Go through all the triggers to see if we find one.
             //console.log('Processing event:' + event);
@@ -162,7 +163,8 @@ class SocketServerConnection extends ServerConnection {
             // Go through an set all my states for the event.
             for (let i = 0; i < states.length; i++) {
                 let state = states[i];
-                state.pin.state = state.state;
+                logger.info(`Processing GPIO Pin #${state.pin.headerId}-${state.pin.id} state = ${state.state}`);
+                state.pin.setPinStateAsync(state.state);
             }
         }
     }
@@ -189,7 +191,7 @@ class SocketServerConnection extends ServerConnection {
                         if (typeof evt === 'undefined') {
                             evt = { name: trigger.eventName, triggers: [] };
                             this.events.push(evt);
-                            logger.info(`Binding ${evt.name} from ${this.server.name}`);
+                            logger.info(`Binding ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
                             this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
                         }
                         try {
