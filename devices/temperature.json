@@ -325,22 +325,22 @@
         {
           "name": "tempF",
           "desc": "Degrees Fahrenheit",
-          "maxSamples":  10
+          "maxSamples":  50
         },
         {
           "name": "tempC",
           "desc": "Degrees Celsius",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "tempK",
           "desc": "Degrees Kelvin",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples": 10
+          "maxSamples": 50
         }
       ],
       "options": [

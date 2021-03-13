@@ -21,27 +21,27 @@
         {
           "name": "conductivity",
           "desc": "Conductivity in μS",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "dissolvedSolids",
           "desc": "Dissolved Solids",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "salinity",
           "desc": "Salinity",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "saltLevel",
           "desc": "Salt Level",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "specificGravity",
           "desc": "Specific Gravity",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "tdsFactor",
@@ -50,12 +50,12 @@
         {
           "name": "temperature",
           "desc": "Temp Compensation in C",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples": 10
+          "maxSamples": 50
         }
       ],
       "inputs": [

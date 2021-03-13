@@ -41,7 +41,7 @@
         {
           "name": "flowRate",
           "desc": "Current flow rate being dispensed",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "dispenseTime",

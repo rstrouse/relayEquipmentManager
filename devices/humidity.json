@@ -21,18 +21,18 @@
         {
           "name": "humidity",
           "desc": "Humidity %",
-          "maxSamples": 10
+          "maxSamples": 50
 
         },
         {
           "name": "temperature",
           "desc": "Air Temp",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "dewpiont",
           "desc": "Dewpoint",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "units",
@@ -41,7 +41,7 @@
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples": 10
+          "maxSamples": 50
         }
       ],
       "inputs": [],

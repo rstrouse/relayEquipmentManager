@@ -21,12 +21,12 @@
         {
           "name": "orp",
           "desc": "ORP value in mV",
-          "maxSamples":  10
+          "maxSamples":  50
         },
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples":  10
+          "maxSamples":  50
         }
 
       ],

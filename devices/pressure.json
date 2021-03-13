@@ -31,12 +31,12 @@
         {
           "name": "pressure",
           "desc": "Presure in the reported units",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples": 10
+          "maxSamples": 50
         }
       ],
       "options": [
@@ -435,12 +435,12 @@
         {
           "name": "psi",
           "desc": "Presure in the reported units",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples": 10
+          "maxSamples": 50
         }
       ],
       "options": [

@@ -12,12 +12,12 @@
         {
           "name": "channels[3].voltage",
           "desc": "Voltage",
-          "maxSamples": 10
+          "maxSamples": 50
         },
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples": 10
+          "maxSamples": 50
         }
       ],
       "options": [
