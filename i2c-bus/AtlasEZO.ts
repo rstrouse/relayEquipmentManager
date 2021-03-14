@@ -1507,6 +1507,16 @@ export class AtlasEZOrtd extends AtlasEZO {
         catch (err) { this.logError(err); }
         finally { this.suspendPolling = false; }
     }
+    public async clearCalibration(): Promise<I2cDevice> {
+        try {
+            this.suspendPolling = true;
+            await this.execCommand(`Cal,clear`, 300);
+            await this.getCalibrated();
+            return Promise.resolve(this.device);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
     public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
