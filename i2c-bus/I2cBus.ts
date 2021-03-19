@@ -175,6 +175,15 @@ export class i2cBus {
                     logger.silly(`Error Executing deviceId for address ${cdev.address}: ${err}`);
                 }
             }
+            for (let i = 0; i < bus.devices.length; i++) {
+                let d = bus.devices.getItemByIndex(i);
+                let addr = bus.addresses.find(elem => elem.address === d.address);
+                if (typeof addr === 'undefined') {
+                    logger.info(`Adding I2C device that could not be scanned 0x${d.address.toString(16)}`);
+                    bus.addresses.push({ address: d.address, manufacturer: 0, product: 0, name: d.name || 'Unknown' });
+                }
+            }
+            bus.addresses.sort((a, b) => { return a.address - b.address });
             return Promise.resolve(devs);
         }
         catch (err) { logger.error(`Error Scanning i2c Bus #${this.busNumber}: ${err}`); }
