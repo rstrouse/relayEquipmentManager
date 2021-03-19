@@ -165,13 +165,12 @@ export class gpioPinComms implements IDevice {
     }
     public async writePinAsync(val: number, latch?: number): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
-
             try {
                 if (typeof latch !== 'undefined') {
                     if (typeof this._latchTimer !== 'undefined') clearTimeout(this._latchTimer);
                     this._latchTimer = undefined;
                 }
-                logger.info(`Writing Pin #${this.headerId}:${this.pinId} -> GPIO #${this.gpioId} to ${val}`);
+                logger.debug(`Writing Pin #${this.headerId}:${this.pinId} -> GPIO #${this.gpioId} to ${val}`);
                 await this.gpio.write(val);
                 if (latch > 0) {
                     this._latchTimer = setTimeout(async () => {
@@ -302,7 +301,7 @@ class MockGpio {
     private setValueInternal(err, val) {
         if (!err && this._isExported) {
             let oldVal = this._value;
-            logger.info(`Wrote GPIO #${this._pinId} from ${oldVal} to ${val}`);
+            logger.debug(`Wrote GPIO #${this._pinId} from ${oldVal} to ${val}`);
             this._value = val;
             if ((typeof oldVal === 'undefined' || oldVal !== val) && ((this._edge === 'both') ||
                 (this._edge === 'rising' && val === 1) ||

@@ -138,33 +138,18 @@ class SocketServerConnection extends ServerConnection {
         logger.info(`Processing socket event ${event}`);
         if (typeof evt !== 'undefined') {
             // Go through all the triggers to see if we find one.
-            //console.log('Processing event:' + event);
-            let states = [];
             for (let i = 0; i < evt.triggers.length; i++) {
-                let trigger = evt.triggers[i];
-                if (trigger.trigger.sourceId !== this.server.id) continue;
-                if (trigger.usePinId && data.pinId !== trigger.pin.id) continue;
-                try {
-                    let val = trigger.filter(this.server.get(true), trigger.pin.get(true), trigger.trigger.get(true), data);
-                    //console.log(trigger.filter);
-                    if (val === true) {
-                        //console.log(trigger.trigger.state);
-                        let p = states.find(elem => elem.id === trigger.pin.id);
-                        if (typeof p === 'undefined') {
-                            p = { id: trigger.pin.id, pin: trigger.pin };
-                            states.push(p);
-                        }
-                        p.state = trigger.trigger.state.name;
-                    }
-                } catch (err) {
-                    logger.error(`Error processing filter expression for Pin #${trigger.pin.id}. ${err}`);
+                let trig = evt.triggers[i];
+                let device = cont.getDeviceByBinding(trig.binding);
+                if (typeof device === 'undefined' || device.isActive === false) continue;
+                let trigger = device.triggers.getItemById(trig.triggerId);
+                if (typeof trigger === 'undefined' || !trigger.isActive) continue;
+                if (trigger.sourceId !== this.server.id) continue;
+                let val = typeof trig.filter === 'function' ? trig.filter(this.server.get(true), device.get(true), trigger.get(true), data) : true;
+                if (val === true) {
+                    if (trig.binding.startsWith('gpio')) device.setDeviceState({ state: trigger.state.val });
+                    else device.setDeviceState(data);
                 }
-            }
-            // Go through an set all my states for the event.
-            for (let i = 0; i < states.length; i++) {
-                let state = states[i];
-                logger.info(`Processing GPIO Pin #${state.pin.headerId}-${state.pin.id} state = ${state.state}`);
-                state.pin.setPinStateAsync(state.state);
             }
         }
     }
@@ -176,33 +161,77 @@ class SocketServerConnection extends ServerConnection {
         this._sock.on('reconnecting', (sock) => { logger.info(`Reconnecting to ${this.server.name} : ${url}`); });
         this._sock.on('connect', (sock) => {
             logger.info(`Connected to ${this.server.name} : ${url}`);
-            let bindings = ConnectionBindings.loadBindingsByConnectionType(this.server.type);
-            // Go through each of the sockets and add them in.
+            // Put a list of events together for the devuces.
             for (let i = 0; i < cont.gpio.pins.length; i++) {
                 let pin = cont.gpio.pins.getItemByIndex(i);
-                for (let k = 0; k < pin.triggers.length; k++) {
-                    let trigger = pin.triggers.getItemByIndex(k);
-                    if (!trigger.isActive) continue;
-                    if (trigger.sourceId !== this.server.id) continue;
-                    // See if there is a binding for this connection type.
-                    let binding = bindings.events.find(elem => elem.name === trigger.eventName);
-                    if (typeof trigger.eventName !== 'undefined' && trigger.eventName !== '') {
+                let triggers = pin.triggers.toArray();
+                for (let j = 0; j < triggers.length; j++) {
+                    let trigger = triggers[j];
+                    if (trigger.sourceId !== this.server.id || typeof trigger.eventName === 'undefined' || trigger.eventName === '') continue;
+                    let evt = this.events.find(elem => elem.name === trigger.eventName);
+                    if (typeof evt === 'undefined') {
+                        evt = { name: trigger.eventName, triggers: [] };
+                        this.events.push(evt);
+                        logger.info(`Binding ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+                        this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
+                    }
+                    try {
+                        let fnFilter = trigger.makeTriggerFunction();
+                        evt.triggers.push({ filter: fnFilter, binding: `gpio:${pin.headerId}:${pin.id}`, triggerId: trigger.id });
+                    }
+                    catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                }
+            }
+            for (let k = 0; k < cont.i2c.buses.length; k++) {
+                let bus = cont.i2c.buses.getItemByIndex(k);
+                for (let i = 0; i < bus.devices.length; i++) {
+                    let device = bus.devices.getItemByIndex(i);
+                    let triggers = device.triggers.toArray();
+                    for (let j = 0; j < triggers.length; j++) {
+                        let trigger = triggers[j];
+                        if (trigger.sourceId !== this.server.id || typeof trigger.eventName === 'undefined' || trigger.eventName === '') continue;
                         let evt = this.events.find(elem => elem.name === trigger.eventName);
                         if (typeof evt === 'undefined') {
                             evt = { name: trigger.eventName, triggers: [] };
                             this.events.push(evt);
-                            logger.info(`Binding ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+                            logger.info(`Binding ${evt.name} from ${this.server.name} to i2c Device ${bus.busNumber}-${device.address} ${device.name}`);
                             this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
                         }
                         try {
                             let fnFilter = trigger.makeTriggerFunction();
-                            evt.triggers.push({ pin: pin, filter: fnFilter, trigger: trigger });
+                            evt.triggers.push({ filter: fnFilter, binding: `i2c:${bus.busNumber}:${device.id}`, triggerId: trigger.id });
                         }
-                        catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
-                       
+                        catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
                     }
                 }
             }
+            //let bindings = ConnectionBindings.loadBindingsByConnectionType(this.server.type);
+            //// Go through each of the sockets and add them in.
+            //for (let i = 0; i < cont.gpio.pins.length; i++) {
+            //    let pin = cont.gpio.pins.getItemByIndex(i);
+            //    for (let k = 0; k < pin.triggers.length; k++) {
+            //        let trigger = pin.triggers.getItemByIndex(k);
+            //        if (!trigger.isActive) continue;
+            //        if (trigger.sourceId !== this.server.id) continue;
+            //        // See if there is a binding for this connection type.
+            //        let binding = bindings.events.find(elem => elem.name === trigger.eventName);
+            //        if (typeof trigger.eventName !== 'undefined' && trigger.eventName !== '') {
+            //            let evt = this.events.find(elem => elem.name === trigger.eventName);
+            //            if (typeof evt === 'undefined') {
+            //                evt = { name: trigger.eventName, triggers: [] };
+            //                this.events.push(evt);
+            //                logger.info(`Binding ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+            //                this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
+            //            }
+            //            try {
+            //                let fnFilter = trigger.makeTriggerFunction();
+            //                evt.triggers.push({ pin: pin, filter: fnFilter, trigger: trigger });
+            //            }
+            //            catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                       
+            //        }
+            //    }
+            //}
         });
     }
     public send(opts) {
@@ -215,6 +244,8 @@ class SocketServerConnection extends ServerConnection {
 }
 class MqttConnection extends ServerConnection {
     private _mqtt: MqttClient;
+    public events = [];
+    public subscribed = false;
     constructor(server: ConnectionSource) { super(server); }
     public disconnect() {
         if (typeof this._mqtt !== 'undefined') this._mqtt.removeAllListeners();
@@ -223,10 +254,89 @@ class MqttConnection extends ServerConnection {
         super.disconnect();
     }
     private initSubscribe() {
-
+        // Put a list of events together for the devuces.
+        for (let i = 0; i < cont.gpio.pins.length; i++) {
+            let pin = cont.gpio.pins.getItemByIndex(i);
+            let triggers = pin.triggers.toArray();
+            for (let j = 0; j < triggers.length; j++) {
+                let trigger = triggers[j];
+                if (trigger.sourceId !== this.server.id || typeof trigger.eventName === 'undefined' || trigger.eventName === '') continue;
+                let evt = this.events.find(elem => elem.topic === trigger.eventName);
+                if (typeof evt === 'undefined') {
+                    evt = { topic: trigger.eventName, triggers: [] };
+                    this.events.push(evt);
+                    logger.info(`Binding MQTT ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+                    this._mqtt.subscribe(evt.topic, (err, granted) => {
+                        if (err)
+                            logger.error(`Error binding MQTT ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+                        else 
+                            logger.info(`Bound MQTT ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+                    });
+                }
+                try {
+                    let fnFilter = trigger.makeTriggerFunction();
+                    evt.triggers.push({ filter: fnFilter, binding: `gpio:${pin.headerId}:${pin.id}`, triggerId: trigger.id });
+                }
+                catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+            }
+        }
+        for (let k = 0; k < cont.i2c.buses.length; k++) {
+            let bus = cont.i2c.buses.getItemByIndex(k);
+            for (let i = 0; i < bus.devices.length; i++) {
+                let device = bus.devices.getItemByIndex(i);
+                let triggers = device.triggers.toArray();
+                for (let j = 0; j < triggers.length; j++) {
+                    let trigger = triggers[j];
+                    if (trigger.sourceId !== this.server.id || typeof trigger.eventName === 'undefined' || trigger.eventName === '') continue;
+                    let evt = this.events.find(elem => elem.topic === trigger.eventName);
+                    if (typeof evt === 'undefined') {
+                        evt = { topic: trigger.eventName, triggers: [] };
+                        this.events.push(evt);
+                        this._mqtt.subscribe(evt.topic, (err, granted) => {
+                            if (err)
+                                logger.error(`Error binding MQTT ${evt.name} from ${this.server.name} to I2c Device ${bus.busNumber}-${device.address} ${device.name}`);
+                            else
+                                logger.info(`Bound MQTT ${evt.name} from ${this.server.name} to I2c Device ${bus.busNumber}-${device.address} ${device.name}`);
+                        });
+                    }
+                    try {
+                        let fnFilter = trigger.makeTriggerFunction();
+                        evt.triggers.push({ binding: `${bus.busNumber}:${device.id}`, filter: fnFilter, triggerId: trigger.id });
+                    }
+                    catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                }
+            }
+        }
+        if (this.subscribed) this._mqtt.off('message', this.messageHandler);
+        this._mqtt.on('message', this.messageHandler)
+        this.subscribed = true;
     }
     private initPublish() {
 
+    }
+    private messageHandler = async (topic, message) => {
+        let msg = message.toString();
+        let evt = this.events.find(elem => elem.topic === topic);
+        logger.info(`Processing MQTT topic ${topic}`);
+        if (typeof evt !== 'undefined') {
+            if (msg.startsWith('{')) msg = JSON.parse(msg);
+            // Go through all the triggers to see if we find one.
+            for (let i = 0; i < evt.triggers.length; i++) {
+                let trig = evt.triggers[i];
+                let device = cont.getDeviceByBinding(trig.binding);
+                if (typeof device === 'undefined' || device.isActive === false) continue;
+                let trigger = device.triggers.getItemById(trig.triggerId);
+                if (typeof trigger === 'undefined' || !trigger.isActive) continue;
+                if (trigger.sourceId !== this.server.id) continue;
+                let val = typeof trig.filter === 'function' ? trig.filter(this.server.get(true), device.get(true), trigger.get(true), msg) : true;
+                console.log(`Handing MQTT Topic ${topic} ${val}`);
+                if (val === true) {
+
+                    if (trig.binding.startsWith('gpio')) device.setDeviceState({ state: trigger.state.val });
+                    else device.setDeviceState(msg);
+                }
+            }
+        }
     }
     public connect() {
         let url = this.server.url;

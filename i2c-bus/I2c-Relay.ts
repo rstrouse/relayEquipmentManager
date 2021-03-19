@@ -44,6 +44,41 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { logger.error(`${this.device.name} Read Command: ${err.message}`); this.hasFault = true; }
     }
+    public async emitFeeds() {
+        try {
+            for (let i = 0; i < this.feeds.length; i++) {
+                await this.feeds[i].send(this);
+            }
+        } catch (err) { logger.error(err); }
+    }
+    public getValue(prop: string) : any {
+        let name = prop.toLowerCase();
+        if (name === 'relayvalall') {
+            let vals = [];
+            for (let i = 0; i < this.relays.length; i++) {
+                vals.push(this.relays[i].state);
+            }
+        }
+        else if (name.startsWith('relayval')) {
+            let ord = parseInt(name.substring(8), 10);
+            if (!isNaN(ord) && this.relays.length > ord) {
+                logger.verbose(`Get Relay Value ${this.relays[ord - 1].state}`)
+                return this.relays[ord - 1].state;
+            }
+            else {
+                logger.error(`Error getting ${this.device.name} relay value for ${prop}`);
+            }
+        }
+        else if (name.startsWith('relayobj')) {
+            let ord = parseInt(name.substring(8), 10);
+            if (!isNaN(ord) && this.relays.length > ord) {
+                return this.relays[ord - 1];
+            }
+            else {
+                logger.error(`Error getting ${this.device.name} relay object for ${prop}`);
+            }
+        }
+    }
 
     public async stopReadContinuous() {
         if (typeof this._timerRead !== 'undefined')
@@ -339,7 +374,8 @@ export class i2cRelay extends i2cDeviceBase {
                 }
                 relay.state = newState;
             }
-            if(relay.state !== oldState) webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+            if (relay.state !== oldState) webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+            await this.emitFeeds();
             return Promise.resolve(relay);
         }
         catch (err) { return Promise.reject(err) };

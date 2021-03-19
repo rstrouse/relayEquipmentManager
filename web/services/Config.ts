@@ -76,6 +76,18 @@ export class ConfigRoute {
             opts.connections.unshift(cont.getInternalConnection().getExtended());
             return res.status(200).send(opts);
         });
+        app.get('/config/options/i2c/:busNumber/:deviceAddress/trigger/:triggerId', (req, res) => {
+            let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
+            let device = bus.devices.getItemByAddress(parseInt(req.params.deviceAddress, 10));
+            let trigger = device.triggers.getItemById(parseInt(req.params.triggerId, 10));
+            let opts = {
+                bus: bus.getExtended(),
+                device: device.getExtended(),
+                trigger: trigger.getExtended(),
+                connections: cont.connections.toExtendedArray()
+            };
+            return res.status(200).send(opts);
+        });
         app.get('/config/options/i2c/:busNumber/:deviceAddress', (req, res) => {
             let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
             let device = bus.devices.getItemByAddress(parseInt(req.params.deviceAddress, 10));
@@ -86,9 +98,14 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
-        app.get('/config/options/i2c/:busId', (req, res) => {
-            let opts = { bus: cont.i2c.buses.getItemById(parseInt(req.params.busId, 10)).getExtended() };
-            return res.status(200).send(opts);
+
+        app.get('/config/options/i2c/:busId', async (req, res, next) => {
+            try {
+                let bus = cont.i2c.buses.getItemById(parseInt(req.params.busId, 10));
+                await bus.scanBus();
+                let opts = { bus: cont.i2c.buses.getItemById(parseInt(req.params.busId, 10)).getExtended() };
+                return res.status(200).send(opts);
+            } catch (err) { next(err); }
         });
         app.get('/config/options/i2c', (req, res) => {
             let opts = {
@@ -195,6 +212,7 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
+
         app.get('/config/options/connections/:connectionId', (req, res) => {
             let connection = (typeof req.params.connectionId !== 'undefined') ? cont.connections.getItemById(parseInt(req.params.connectionId, 10)).getExtended() : undefined;
             let opts = {

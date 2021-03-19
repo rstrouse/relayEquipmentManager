@@ -93,15 +93,31 @@ export class ConfigItem {
     }
     public get(bCopy?: boolean): any { return bCopy ? JSON.parse(JSON.stringify(this.data)) : this.data; }
     public getExtended(): any { return this.get(true); }
+    public getProperties(): string[] {
+        let props = [];
+        let obj = this;
+        let that = obj;
+        
+        do {
+            Object.getOwnPropertyNames(obj).forEach((prop) => {
+                try {
+                    if (props.indexOf(prop) === -1 && typeof that[prop] !== 'function') props.push(prop);
+                } catch (err) { }
+
+            });
+        } while (obj = Object.getPrototypeOf(obj));
+        return props;
+    }
     public set(data: any) {
-        let op = Object.getOwnPropertyNames(Object.getPrototypeOf(this));
+        //let op = Object.getOwnPropertyNames(Object.getPrototypeOf(this));
+        let op = this.getProperties();
         for (let i in op) {
             let prop = op[i];
             if (typeof this[prop] === 'function') continue;
+            if (prop.startsWith('_')) continue;
             if (typeof data[prop] !== 'undefined') {
-                if (this[prop] instanceof ConfigItemCollection) {
+                if (this[prop] instanceof ConfigItemCollection)
                     ((this[prop] as unknown) as IConfigItemCollection).set(data[prop]);
-                }
                 else if (this[prop] instanceof ConfigItem)
                     ((this[prop] as unknown) as ConfigItem).set(data[prop]);
                 else {
@@ -481,9 +497,6 @@ export class Controller extends ConfigItem {
                 return this.gpio.pins.getItemById(parseInt(arr[2], 10));
             case 'generic':
                 return this.genericDevices.getDevice(binding);
-
-                break;
-
         }
     }
     public getInternalConnection() {
@@ -680,7 +693,8 @@ export class Feed {
     }
     public async send(dev: any) {
         try {
-            let value = dev.getValue(this.feed.sendValue) || '';
+            let value = dev.getValue(this.feed.sendValue);
+            if (typeof value === 'undefined') value = '';
             if (!this.feed.isActive || typeof this.server === 'undefined')
                 return;
             if (this.feed.sampling > 1) {
@@ -1147,6 +1161,84 @@ export class GpioPin extends ConfigItem {
         catch (err) { return Promise.reject(err); }
     }
 }
+export class DataTrigger extends ConfigItem {
+    constructor(data) { super(data); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.bindings === 'undefined') this.data.bindings = [];
+        return data;
+    }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get sourceId(): number { return this.data.sourceId; }
+    public set sourceId(val: number) { this.setDataVal('sourceId', val); }
+    public get eventName(): string { return this.data.eventName; }
+    public set eventName(val: string) { this.setDataVal('eventName', val); }
+    public get usePinId(): boolean { return utils.makeBool(this.data.usePinId); }
+    public set usePinId(val: boolean) { this.setDataVal('usePinId', val); }
+    public get expression(): string { return this.data.expression; }
+    public set expression(val: string) { this.setDataVal('expression', val); }
+    public get bindings(): DeviceTriggerBindingCollection { return new DeviceTriggerBindingCollection(this.data, 'bindings'); }
+    public get filter(): string {
+        let filter = '';
+        let n = 0;
+        let bindings = this.bindings;
+        for (let i = 0; i < bindings.length; i++) {
+            let b = bindings.getItemByIndex(i);
+            if (!b.isActive)
+                continue;
+            if (n !== 0)
+                filter += ' &&\r\n';
+            filter += `${b.binding} ${b.operator.op} `;
+            if (typeof b.bindValue === 'string')
+                filter += `'${b.bindValue}'`;
+            else
+                filter += `${b.bindValue}`;
+            n++;
+        }
+        if (typeof this.expression !== 'undefined' && this.expression !== '') {
+            if (n > 0)
+                filter += ' &&\r\n';
+            filter += '<script expression>';
+        }
+        return filter;
+    }
+    public makeExpression() { return DataTrigger._makeExpression(this.data, 'data'); }
+    protected static _makeExpression(data, dataName) {
+        let expression = '';
+        if ((typeof data.binding === 'undefined' || data.bindings.length == 0) && (typeof data.expression === 'undefined' || data.expression.length === 0)) return 'return true;';
+        if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) {
+            let n = 0;
+            expression += 'if(!(';
+            if (utils.makeBool(data.usePinId)) {
+                expression += 'parseInt(data.pinId, 10) === pin.id';
+                n++;
+            }
+            for (let i = 0; i < data.bindings.length; i++) {
+                let b = data.bindings[i];
+                if (!utils.makeBool(b.isActive))
+                    continue;
+                let op = vMaps.operators.transform(b.operator);
+                if (n !== 0)
+                    expression += ' && ';
+                expression += `${dataName}.${b.binding} ${op.op} `;
+                if (typeof b.bindValue === 'string')
+                    expression += `'${b.bindValue}'`;
+                else
+                    expression += `${b.bindValue}`;
+                n++;
+            }
+            expression += ')) return false;';
+        }
+        if (typeof data.expression !== 'undefined' && data.expression !== '') {
+            expression += ' {' + data.expression + '}';
+        }
+        else if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) { expression += ' else return true;'; }
+        return expression;
+    }
+}
 export class GpioPinTriggerCollection extends ConfigItemCollection<GpioPinTrigger> {
     constructor(data: any, name?: string) { super(data, name || 'triggers'); }
     public createItem(data: any): GpioPinTrigger { return new GpioPinTrigger(data); }
@@ -1157,14 +1249,10 @@ export class GpioPinTriggerCollection extends ConfigItemCollection<GpioPinTrigge
         }
     }
 }
-export class GpioPinTrigger extends ConfigItem {
+export class GpioPinTrigger extends DataTrigger {
     constructor(data) { super(data); }
     public initData(data?: any) {
-        if (typeof this.data.isActive === 'undefined')
-            this.isActive = false;
-        if (typeof this.data.bindings === 'undefined')
-            this.data.bindings = [];
-        return data;
+        super.initData(data);
     }
     public upgrade(ver) {
         if (typeof this.data.binding !== 'undefined') {
@@ -1183,12 +1271,74 @@ export class GpioPinTrigger extends ConfigItem {
             this.data.bindValue = undefined;
         }
     }
-    public get id(): number { return this.data.id; }
-    public set id(val: number) { this.setDataVal('id', val); }
-    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
-    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
-    public get sourceId(): number { return this.data.sourceId; }
-    public set sourceId(val: number) { this.setDataVal('sourceId', val); }
+    public get state() { return this.getMapVal(this.data.state || 0, vMaps.triggerStates); }
+    public set state(val) { this.setMapVal('state', val, vMaps.triggerStates); }
+    public getExtended() {
+        let trigger = this.get(true);
+        trigger.state = this.state;
+        trigger.connection = cont.connections.getItemById(this.sourceId).getExtended();
+        trigger.filter = this.filter;
+        let binds = [];
+        // TODO: Move this into a normalize method so that it is only done
+        // once.  Probably during the upgrade process.
+        // Reorganize the bindings so that they match what we get from the event.
+        if (typeof this.data.bindings !== 'undefined' && typeof this.data.eventName !== 'undefined' && typeof this.data.sourceId !== 'undefined') {
+            let conn = cont.connections.getItemById(this.data.sourceId);
+            let bindings = ConnectionBindings.loadBindingsByConnectionType(conn.type.name);
+            if (typeof bindings !== 'undefined' && typeof bindings.events !== 'undefined') {
+                let event = bindings.events.find(elem => elem.name === trigger.eventName);
+                if (typeof event !== 'undefined') {
+                    for (let i = 0; i < event.bindings.length; i++) {
+                        binds.push({ binding: event.bindings[i].binding, isActive: false });
+                    }
+                }
+            }
+        }
+        for (let i = 0; i < trigger.bindings.length; i++) {
+            let bind = trigger.bindings[i];
+            let b = binds.find(elem => elem.binding === bind.binding);
+            if (typeof b !== 'undefined') {
+                b.isActive = bind.isActive;
+                b.operator = bind.operator;
+                b.bindValue = bind.bindValue;
+            }
+        }
+        trigger.bindings = binds;
+        return trigger;
+    }
+    public static validateExpression(data) {
+        try {
+            new Function('connection', 'pin', 'trigger', 'data', DataTrigger._makeExpression(data, 'data'));
+        }
+        catch (err) { return new Error(`${err} ${DataTrigger._makeExpression(data, 'data')}`); }
+    }
+    public makeTriggerFunction() { return new Function('connection', 'pin', 'trigger', 'data', DataTrigger._makeExpression(this.data, 'data')); }
+    public async setPinTriggerAsync(data): Promise<GpioPinTrigger> {
+        return new Promise<GpioPinTrigger>((resolve, reject) => {
+            if (typeof data.bindings !== 'undefined' || typeof data.expression !== 'undefined' || data.expression !== '') {
+                let test = extend(true, this.get(true), data);
+                let err = GpioPinTrigger.validateExpression(test);
+                if (typeof err !== 'undefined') {
+                    logger.error(`Invalid Pin#${this.id} Trigger Expression: ${err}`);
+                    return reject(new Error(`Invalid Pin#${this.id} Trigger Expression: ${err}`));
+                }
+            }
+            this.set(data);
+            resolve(this);
+        });
+    }
+}
+export class DeviceTriggerCollection extends ConfigItemCollection<DeviceTrigger> {
+    constructor(data: any, name?: string) { super(data, name || 'triggers'); }
+    public createItem(data: any): DeviceTrigger { return new DeviceTrigger(data); }
+}
+export class DeviceTrigger extends DataTrigger {
+    constructor(data) { super(data); }
+    public initData(data?: any) {
+        if (typeof this.data.bindings === 'undefined')
+            this.data.bindings = [];
+        return data;
+    }
     public get usePinId(): boolean { return utils.makeBool(this.data.usePinId); }
     public set usePinId(val: boolean) { this.setDataVal('usePinId', val); }
     public get state() { return this.getMapVal(this.data.state || 0, vMaps.triggerStates); }
@@ -1230,8 +1380,8 @@ export class GpioPinTrigger extends ConfigItem {
     public set eventName(val: string) { this.setDataVal('eventName', val); }
     public get expression(): string { return this.data.expression; }
     public set expression(val: string) { this.setDataVal('expression', val); }
-    public get bindings(): GpioPinTriggerBindingCollection {
-        return new GpioPinTriggerBindingCollection(this.data, 'bindings');
+    public get bindings(): DeviceTriggerBindingCollection {
+        return new DeviceTriggerBindingCollection(this.data, 'bindings');
     }
     public get filter(): string {
         let filter = '';
@@ -1257,53 +1407,21 @@ export class GpioPinTrigger extends ConfigItem {
         }
         return filter;
     }
-    public makeExpression() { return GpioPinTrigger._makeExpression(this.data, 'data'); }
-    private static _makeExpression(data, dataName) {
-        let expression = '';
-        if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) {
-            let n = 0;
-            expression += 'if(!(';
-            if (utils.makeBool(data.usePinId)) {
-                expression += 'parseInt(data.pinId, 10) === pin.id';
-                n++;
-            }
-            for (let i = 0; i < data.bindings.length; i++) {
-                let b = data.bindings[i];
-                if (!utils.makeBool(b.isActive))
-                    continue;
-                let op = vMaps.operators.transform(b.operator);
-                if (n !== 0)
-                    expression += ' && ';
-                expression += `${dataName}.${b.binding} ${op.op} `;
-                if (typeof b.bindValue === 'string')
-                    expression += `'${b.bindValue}'`;
-                else
-                    expression += `${b.bindValue}`;
-                n++;
-            }
-            expression += ')) return false;';
-        }
-        if (typeof data.expression !== 'undefined' && data.expression !== '') {
-            expression += ' {' + data.expression + '}';
-        }
-        else if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) { expression += ' else return true;'; }
-        return expression;
-    }
     public static validateExpression(data) {
         try {
-            new Function('connection', 'pin', 'trigger', 'data', GpioPinTrigger._makeExpression(data, 'data'));
+            new Function('connection', 'device', 'trigger', 'data', DeviceTrigger._makeExpression(data, 'data'));
         }
-        catch (err) { return new Error(`${err} ${GpioPinTrigger._makeExpression(data, 'data')}`); }
+        catch (err) { return new Error(`${err} ${DeviceTrigger._makeExpression(data, 'data')}`); }
     }
-    public makeTriggerFunction() { return new Function('connection', 'pin', 'trigger', 'data', GpioPinTrigger._makeExpression(this.data, 'data')); }
-    public async setPinTriggerAsync(data): Promise<GpioPinTrigger> {
-        return new Promise<GpioPinTrigger>((resolve, reject) => {
+    public makeTriggerFunction() { return new Function('connection', 'device', 'trigger', 'data', DeviceTrigger._makeExpression(this.data, 'data')); }
+    public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
+        return new Promise<DeviceTrigger>((resolve, reject) => {
             if (typeof data.bindings !== 'undefined' || typeof data.expression !== 'undefined' || data.expression !== '') {
                 let test = extend(true, this.get(true), data);
-                let err = GpioPinTrigger.validateExpression(test);
+                let err = DeviceTrigger.validateExpression(test);
                 if (typeof err !== 'undefined') {
-                    logger.error(`Invalid Pin#${this.id} Trigger Expression: ${err}`);
-                    return reject(new Error(`Invalid Pin#${this.id} Trigger Expression: ${err}`));
+                    logger.error(`Invalid Device #${this.id} Trigger Expression: ${err}`);
+                    return reject(new Error(`Invalid Device #${this.id} Trigger Expression: ${err}`));
                 }
             }
             this.set(data);
@@ -1311,11 +1429,11 @@ export class GpioPinTrigger extends ConfigItem {
         });
     }
 }
-export class GpioPinTriggerBindingCollection extends ConfigItemCollection<GpioPinTriggerBinding> {
+export class DeviceTriggerBindingCollection extends ConfigItemCollection<DeviceTriggerBinding> {
     constructor(data: any, name?: string) { super(data, name || 'bindings'); }
-    public createItem(data: any): GpioPinTriggerBinding { return new GpioPinTriggerBinding(data); }
+    public createItem(data: any): DeviceTriggerBinding { return new DeviceTriggerBinding(data); }
 }
-export class GpioPinTriggerBinding extends ConfigItem {
+export class DeviceTriggerBinding extends ConfigItem {
     constructor(data) { super(data); }
     public initData(data?: any) {
         if (typeof this.data.isActive === 'undefined')
@@ -1336,6 +1454,8 @@ export class GpioPinTriggerBinding extends ConfigItem {
         return exp;
     }
 }
+
+
 
 export class SpiController extends ConfigItem {
     constructor(data, name: string) { super(data, name); }
@@ -1647,6 +1767,12 @@ export class I2cBus extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async scanBus() {
+        try {
+            let dbus = i2c.buses.find(elem => elem.busNumber === this.busNumber);
+            if(typeof dbus !== 'undefined') this.addresses = await dbus.scanBus();
+        } catch (err) { return Promise.reject(err); }
+    }
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -1835,7 +1961,13 @@ export class I2cBus extends ConfigItem {
         catch (err) { return Promise.reject(err); }
     }
     public getDeviceById(deviceId: number) { return this.devices.getItemById(deviceId); }
-
+    public async setDeviceTriggerAsync(deviceId: number, data): Promise<DeviceTrigger> {
+        let dev = this.devices.getItemById(deviceId, true);
+        return await dev.setDeviceTriggerAsync(data);
+    }
+    public async deleteDeviceTriggerAsync(deviceId: number, data): Promise<I2cDevice> {
+        return await this.devices.getItemById(deviceId, false).deleteDeviceTriggerAsync(data);
+    }
 }
 export class I2cDeviceCollection extends ConfigItemCollection<I2cDevice> {
     constructor(data: any, name?: string) { super(data, name || 'devices') }
@@ -1867,6 +1999,7 @@ export class I2cDevice extends ConfigItem {
     public get address(): number { return this.data.address; }
     public set address(val: number) { this.setDataVal('address', val); }
     public get feeds(): DeviceFeedCollection { return new DeviceFeedCollection(this.data, 'feeds'); }
+    public get triggers(): DeviceTriggerCollection { return new DeviceTriggerCollection(this.data, 'triggers'); }
     public get options(): any { return typeof this.data.options === 'undefined' ? this.data.options = {} : this.data.options; }
     public set options(val: any) { this.setDataVal('options', val || {}); }
     public get info(): any { return typeof this.data.info === 'undefined' ? this.data.info = {} : this.data.info; }
@@ -1930,6 +2063,22 @@ export class I2cDevice extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async deleteDeviceTriggerAsync(triggerId: number): Promise<I2cDevice> {
+        return new Promise<I2cDevice>((resolve, reject) => {
+            this.triggers.removeItemById(triggerId);
+            resolve(this);
+        });
+    }
+    public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
+        let c = this.triggers.find(elem => elem.id === data.id);
+        if (typeof c === 'undefined') {
+            data.id = this.triggers.getMaxId(false, -1) + 1;
+            if (data.id === 0) data.id = 1;
+            c = this.triggers.getItemById(data.id, true);
+        }
+        return await c.setDeviceTriggerAsync(data);
+    }
+
     public async setDeviceState(binding: string | DeviceBinding, data: any) {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -2042,6 +2191,7 @@ export class GenericDeviceController extends ConfigItem {
         if (typeof this.data.isActive === 'undefined') this.isActive = true; // can init to false later if to make it a config item
         if (typeof this.data.buses === 'undefined') this.data.buses = [];
         if (typeof this.data.detected === 'undefined') this.data.detected = [];
+        if (typeof this.data.options === 'undefined') this.data.options = {};
         return data;
     }
     // public get id(): number { return this.data.id; }
@@ -2119,7 +2269,7 @@ export class GenericDeviceController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-    public async setDevice(dev): Promise<I2cDevice> {
+    public async setDevice(dev): Promise<GenericDevice> {
         try {
             /*             let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
                         let busNumber = (typeof dev.busNumber !== 'undefined') ? parseInt(dev.busNumber, 10) : undefined;
@@ -2162,7 +2312,7 @@ export class GenericDeviceController extends ConfigItem {
             }
             catch (err) { return Promise.reject(err); }
         } */
-    public async deleteDevice(dev): Promise<I2cDevice> {
+    public async deleteDevice(dev): Promise<GenericDevice> {
         try {
             if (typeof dev.id === 'undefined') return Promise.reject(`Could not find generic device ith id id ${dev.id}`);
             let device = await this.devices.removeItemById(dev.id);

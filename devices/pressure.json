@@ -428,7 +428,8 @@
       "inputs": [
         {
           "name": "voltage",
-          "desc": "Voltage"
+          "desc": "Voltage",
+          "dataType": "number"
         }
       ],
       "outputs": [

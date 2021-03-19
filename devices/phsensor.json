@@ -19,15 +19,19 @@
       "inputs": [
         {
           "name": "tempC",
-          "desc": "Temperature in C"
+          "desc": "Temperature in C",
+          "dataType": "number"
+
         },
         {
           "name": "tempF",
-          "desc": "Temperature in F"
+          "desc": "Temperature in F",
+          "dataType": "number"
         },
         {
           "name": "tempK",
-          "desc": "Temperature in K"
+          "desc": "Temperature in K",
+          "dataType": "number"
         }
       ],
       "outputs": [
