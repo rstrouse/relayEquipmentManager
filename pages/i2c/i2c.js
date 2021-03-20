@@ -479,20 +479,21 @@
                 columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap', width: '77px' } }, { binding: 'name', text: 'State', style: { minWidth: '9rem', whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { minWidth: '227px' } }],
                 items: trig.device.deviceType.inputs, inputAttrs: { style: { width: '9rem' } }, labelAttrs: { style: { width: '7rem' } }
             }).on('selchanged', (evt) => {
-                if (typeof evt.oldItem !== 'undefined') {
-                    var dsp = dlg.find('div.pnl-state-params');
-                    dsp.empty();
-                    if (typeof evt.newItem.options !== 'undefined');
-                    templateBuilder.createObjectOptions(dsp, evt.newItem);
-                }
+                var dsp = dlg.find('div.pnl-state-params');
+                dsp.empty();
+                if (typeof evt.newItem.options !== 'undefined');
+                templateBuilder.createObjectOptions(dsp, evt.newItem);
             });
             line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).addClass('pnl-state-params');
             $('<div></div>').appendTo(dlg).pnlI2cTriggerParams({});
             if (typeof trig.trigger.id !== 'undefined') {
                 var d = dlg.find('div.pnl-state-params');
-                templateBuilder.createObjectOptions(d, trig.device.deviceType.inputs.find(elem => elem.name === trig.trigger.state.name));
-                console.log(trig.trigger);
+                if (typeof trig.trigger !== 'undefined' &&
+                    typeof trig.trigger.state !== 'undefined' &&
+                    typeof trig.device !== 'undefined' &&
+                    typeof trig.device.deviceType !== 'undefined' &&
+                    typeof trig.device.deviceType.inputs !== 'undefined') templateBuilder.createObjectOptions(d, trig.device.deviceType.inputs.find(elem => elem.name === trig.trigger.state.name));
                 dlg.find('div.pnl-trigger-params').each(function () {
                     var pnl = this;
                     this.dataBind(trig.trigger);
