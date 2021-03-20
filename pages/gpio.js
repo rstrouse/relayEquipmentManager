@@ -216,7 +216,10 @@
                 id: 'crudTriggers', actions: { canCreate: true, canEdit: true, canRemove: true },
                 key: 'id',
                 caption: 'Triggers', itemName: 'Pin Trigger',
-                columns: [{ binding: 'state.desc', text: 'State', style: { width: '47px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'eventName', text: 'Event', style: { width: '127px' } }, { binding: 'filter', text: 'Filter', style: { width: '197px' }, cellStyle: { fontSize: '8pt', whiteSpace: 'nowrap' } }]
+                columns: [{ binding: 'state.desc', text: 'State', style: { width: '47px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+                    { binding: 'connection.name', text: 'Connection', style: { width: '157px' } },
+                    { binding: 'eventName', text: 'Event', style: { width: '127px' } },
+                    { binding: 'filter', text: 'Filter', style: { width: '197px' }, cellStyle: { fontSize: '8pt', whiteSpace: 'nowrap' } }]
             }).on('additem', function (evt) {
                 var p = dataBinder.fromElement(el);
                 $.getLocalService('/config/options/trigger/' + p.pin.headerId + '/' + p.pin.id + '/0', null, function (trig, status, xhr) {
@@ -347,8 +350,8 @@
                         $('<hr></hr>').appendTo(el);
                         var tabBar = $('<div></div>').appendTo(el).tabBar();
                         {
-                            // Add in the basic bindings.
-                            var basic = tabBar[0].addTab({ id: 'tabBasic', text: 'Basic Bindings' });
+                            // Add in the basic filters.
+                            var basic = tabBar[0].addTab({ id: 'tabBasic', text: 'Basic Filters' });
                             var pnl = $('<div></div>').addClass('pnl-trigger-basic-bindings').appendTo(basic);
                         }
                         {

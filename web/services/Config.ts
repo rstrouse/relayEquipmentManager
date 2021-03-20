@@ -136,7 +136,21 @@ export class ConfigRoute {
                 return res.status(200).send(feeds.toExtendedArray());
             }
             catch (err) { next(err); }
-        })
+        });
+        app.put('/config/i2c/device/trigger', async (req, res, next) => {
+            try {
+                let trigs = await cont.i2c.setDeviceTrigger(req.body);
+                return res.status(200).send(trigs.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/i2c/device/trigger', async (req, res, next) => {
+            try {
+                let trigs = await cont.i2c.deleteDeviceTrigger(req.body);
+                return res.status(200).send(trigs.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
 
         app.delete('/config/i2c/bus', async (req, res, next) => {
             try {

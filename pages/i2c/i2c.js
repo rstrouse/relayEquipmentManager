@@ -443,13 +443,13 @@
                         click: function (evt) {
                             var trigger = dataBinder.fromElement(dlg);
                             if (dataBinder.checkRequired(dlg, true)) {
-                                console.log(trigger);
-                                $.putLocalService('/config/i2c/trigger/' + trig.device.busId + '/' + trig.device.address, trigger, 'Saving Trigger...', function (t, status, xhr) {
-                                    dataBinder.bind(dlg, t);
-                                    self.reloadTriggers();
+                                trigger.busId = trig.bus.id;
+                                trigger.busNumber = trig.bus.busNumber;
+                                trigger.deviceId = trig.device.id;
+                                $.putLocalService('/config/i2c/device/trigger', trigger, 'Saving Trigger...', function (t, status, xhr) {
+                                    self.dataBind(t);
                                 });
                             }
-                            //console.log(trigger);
                         }
                     },
                     {
@@ -479,15 +479,20 @@
                 columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap', width: '77px' } }, { binding: 'name', text: 'State', style: { minWidth: '9rem', whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { minWidth: '227px' } }],
                 items: trig.device.deviceType.inputs, inputAttrs: { style: { width: '9rem' } }, labelAttrs: { style: { width: '7rem' } }
             }).on('selchanged', (evt) => {
-                var dsp = dlg.find('div.pnl-state-params');
-                dsp.empty();
-                if (typeof evt.newItem.options !== 'undefined');
-                templateBuilder.createObjectOptions(dsp, evt.newItem);
+                if (typeof evt.oldItem !== 'undefined') {
+                    var dsp = dlg.find('div.pnl-state-params');
+                    dsp.empty();
+                    if (typeof evt.newItem.options !== 'undefined');
+                    templateBuilder.createObjectOptions(dsp, evt.newItem);
+                }
             });
             line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).addClass('pnl-state-params');
             $('<div></div>').appendTo(dlg).pnlI2cTriggerParams({});
             if (typeof trig.trigger.id !== 'undefined') {
+                var d = dlg.find('div.pnl-state-params');
+                templateBuilder.createObjectOptions(d, trig.device.deviceType.inputs.find(elem => elem.name === trig.trigger.state.name));
+                console.log(trig.trigger);
                 dlg.find('div.pnl-trigger-params').each(function () {
                     var pnl = this;
                     this.dataBind(trig.trigger);
@@ -505,11 +510,13 @@
                 id: 'crudTriggers' + o.deviceId, actions: { canCreate: true, canEdit: true, canRemove: true },
                 key: 'id',
                 caption: 'Device Triggers', itemName: 'Device Triggers',
-                columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
+                columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } },
+                    { binding: 'eventName', text: 'Event', style: { width: '127px' } },
+                    { binding: 'filter', text: 'Filter', style: { width: '247px' }, cellStyle: { fontSize: '8pt', whiteSpace: 'nowrap' } }]
             }).css({ width: '100%' })
                 .on('additem', function (evt) {
                     $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/trigger/0', null, function (triggers, status, xhr) {
-                        triggers.trigger = { isActive: true };
+                        triggers.trigger = { id: -1, isActive: true };
                         self._createTriggerDialog('dlgAddI2cTrigger', 'Add Trigger to I2c Device', triggers);
                     });
                 }).on('edititem', function (evt) {
@@ -547,14 +554,23 @@
                     });
                 });//.hide();
         },
+        reloadTriggers: function () {
+            var self = this, o = self.options, el = self.element;
+            var p = dataBinder.fromElement(el);
+            $.getLocalService('/config/options/device/' + p.bus.busNumber + '/' + p.device.id, null, function (opts, status, xhr) {
+                self.loadTriggers(opts.device.triggers);
+            });
+        },
+
         dataBind: function (triggers) {
             var self = this, o = self.options, el = self.element;
-            var felem = el.find('div.crud-list:first').each(function () {
+            el.find('div.crud-list:first').each(function () {
                 this.clear();
                 if (typeof triggers !== 'undefined') {
                     for (var i = 0; i < triggers.length; i++) {
                         var trigger = triggers[i];
                         this.addRow(trigger);
+                        console.log(trigger);
                     }
                 }
             });
@@ -624,8 +640,16 @@
                         $('<hr></hr>').appendTo(el);
                         var tabBar = $('<div></div>').appendTo(el).tabBar();
                         {
-                            // Add in the basic bindings.
-                            var basic = tabBar[0].addTab({ id: 'tabBasic', text: 'Basic Bindings' });
+                            var binding = tabBar[0].addTab({ id: 'tabBinding', text: 'Binding' });
+                            var pnl = $('<div></div>').addClass('pnl-trigger-advanced-bindings').appendTo(binding);
+                            $('<div></div>').appendTo(pnl).addClass('script-advanced-instructions').html('<div>Enter plain javascript to transform the incoming data into the state representation for the device.</div><div class="pnl-state-instructions"></div>');
+                            $('<div></div>').appendTo(pnl).scriptEditor({ binding: 'stateExpression', prefix: '(connection, trigger, device, data) => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
+                            var stateItem = pnl.parents('div.ui-dialog-content:first').find('div[data-bind="state.name"]')[0].selectedItem();
+                            el.find('div.pnl-state-instructions').html(typeof stateItem === 'object' ? stateItem.instructions || '' : '');
+                        }
+                        {
+                            // Add in the basic filter bindings.
+                            var basic = tabBar[0].addTab({ id: 'tabBasic', text: 'Basic Filters' });
                             var pnl = $('<div></div>').addClass('pnl-trigger-basic-bindings').appendTo(basic);
                         }
                         {

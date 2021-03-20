@@ -138,6 +138,11 @@ export class i2cController {
         let bus = this.buses.find(elem => elem.busId === busId);
         if (typeof bus !== 'undefined') bus.resetDeviceFeeds(deviceId);
     }
+    public resetDeviceTriggers(busId: number, deviceId: number) {
+        let bus = this.buses.find(elem => elem.busId === busId);
+        if (typeof bus !== 'undefined') bus.resetDeviceTriggers(deviceId);
+    }
+
 }
 export class i2cBus {
     //private _opts;
@@ -327,6 +332,12 @@ export class i2cBus {
         let device = this.devices.find(elem => elem.device.id === deviceId);
         if (typeof device !== 'undefined') device.initFeeds();
     }
+    public resetDeviceTriggers(deviceId: number) {
+        let device = this.devices.find(elem => elem.device.id === deviceId);
+        if (typeof device !== 'undefined') {
+            device.initTriggers();
+        }
+    }
 }
 
 const i2cBits = {
@@ -485,6 +496,20 @@ export class i2cDeviceBase implements IDevice {
             let f = this.device.feeds.getItemByIndex(i);
             this.feeds.push(new Feed(f));
         }
+    }
+    public initTriggers() {
+        let conns = [];
+        for (let i = 0; i < this.device.triggers.length; i++) {
+            let trigger = this.device.triggers.getItemByIndex(i);
+            if (typeof conns.find(elem => elem.id === trigger.sourceId) === 'undefined') conns.push(connBroker.findServer(trigger.sourceId));
+        }
+        console.log(conns);
+
+        //this.triggers = [];
+        //for (let i = 0; i < this.device.triggers.length; i++) {
+        //    let f = this.device.triggers.getItemByIndex(i);
+        //    this.triggers.push(new Feed(f));
+        //}
     }
     public getValue(prop) {
         let replaceSymbols = /(?:\]\.|\[|\.)/g

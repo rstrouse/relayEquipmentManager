@@ -400,7 +400,8 @@ export class i2cRelay extends i2cDeviceBase {
             if (typeof relay === 'undefined') return Promise.reject(new Error(`setDeviceState: Could not find relay Id ${bind.params[0]}`));
             if (!relay.enabled) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] is not enabled.`));
             let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
-            if (isNaN(latch)) return Promise.reject(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`)
+            if (isNaN(latch)) return Promise.reject(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`);
+            
             let ordId = `r${relayId}`;
             let _lt = this._latchTimers[ordId];
             if (typeof _lt !== 'undefined') {
@@ -409,7 +410,29 @@ export class i2cRelay extends i2cDeviceBase {
             }
             await this.readRelayState(relay);
             // Now that the relay has been read lets set its state.
-            let newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
+            let newState;
+            switch (typeof data) {
+                case 'boolean':
+                    newState = data;
+                    break;
+                case 'number':
+                    newState = data === 1 ? true : data === 0 ? false : relay.state;
+                    break;
+                case 'string':
+                    switch (data.toLowerCase()) {
+                        case 'on':
+                        case '1':
+                            newState = true;
+                        case '0':
+                        case 'off':
+                            newState = false;
+                            break;
+                    }
+                    break;
+                default:
+                    newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
+                    break;
+            }
             let oldState = relay.state;
             if (newState !== oldState) await this.setRelayState({ id: relayId, state: newState });
             if (latch > 0) {

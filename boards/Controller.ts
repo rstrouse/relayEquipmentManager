@@ -487,7 +487,7 @@ export class Controller extends ConfigItem {
     }
     public getDeviceByBinding(binding: string) {
         let arr = binding.split(':');
-        if (arr.length !== 3) return;
+        if (arr.length < 3) return;
         switch (arr[0]) {
             case 'spi':
                 return this[`spi${arr[1]}`].channels.getItemById(parseInt(arr[2], 10));
@@ -1343,6 +1343,13 @@ export class DeviceTrigger extends DataTrigger {
     public set usePinId(val: boolean) { this.setDataVal('usePinId', val); }
     public get state() { return this.getMapVal(this.data.state || 0, vMaps.triggerStates); }
     public set state(val) { this.setMapVal('state', val, vMaps.triggerStates); }
+    public get options(): any { return typeof this.data.options === 'undefined' ? this.data.options = {} : this.data.options; }
+    public set options(val: any) { this.setDataVal('options', val || {}); }
+    public get channelId(): number { return this.data.channelId; }
+    public set channelId(val: number) { this.setDataVal('channelId', val); }
+    
+    public get stateExpression(): string { return this.data.stateExpression; }
+    public set stateExpression(val: string) { this.setDataVal('stateExpression', val); }
     public getExtended() {
         let trigger = this.get(true);
         trigger.state = this.state;
@@ -1380,9 +1387,7 @@ export class DeviceTrigger extends DataTrigger {
     public set eventName(val: string) { this.setDataVal('eventName', val); }
     public get expression(): string { return this.data.expression; }
     public set expression(val: string) { this.setDataVal('expression', val); }
-    public get bindings(): DeviceTriggerBindingCollection {
-        return new DeviceTriggerBindingCollection(this.data, 'bindings');
-    }
+    public get bindings(): DeviceTriggerBindingCollection { return new DeviceTriggerBindingCollection(this.data, 'bindings'); }
     public get filter(): string {
         let filter = '';
         let n = 0;
@@ -1414,20 +1419,20 @@ export class DeviceTrigger extends DataTrigger {
         catch (err) { return new Error(`${err} ${DeviceTrigger._makeExpression(data, 'data')}`); }
     }
     public makeTriggerFunction() { return new Function('connection', 'device', 'trigger', 'data', DeviceTrigger._makeExpression(this.data, 'data')); }
-    public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
-        return new Promise<DeviceTrigger>((resolve, reject) => {
-            if (typeof data.bindings !== 'undefined' || typeof data.expression !== 'undefined' || data.expression !== '') {
-                let test = extend(true, this.get(true), data);
-                let err = DeviceTrigger.validateExpression(test);
-                if (typeof err !== 'undefined') {
-                    logger.error(`Invalid Device #${this.id} Trigger Expression: ${err}`);
-                    return reject(new Error(`Invalid Device #${this.id} Trigger Expression: ${err}`));
-                }
-            }
-            this.set(data);
-            resolve(this);
-        });
-    }
+    //public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
+    //    return new Promise<DeviceTrigger>((resolve, reject) => {
+    //        if (typeof data.bindings !== 'undefined' || typeof data.expression !== 'undefined' || data.expression !== '') {
+    //            let test = extend(true, this.get(true), data);
+    //            let err = DeviceTrigger.validateExpression(test);
+    //            if (typeof err !== 'undefined') {
+    //                logger.error(`Invalid Device #${this.id} Trigger Expression: ${err}`);
+    //                return reject(new Error(`Invalid Device #${this.id} Trigger Expression: ${err}`));
+    //            }
+    //        }
+    //        this.set(data);
+    //        resolve(this);
+    //    });
+    //}
 }
 export class DeviceTriggerBindingCollection extends ConfigItemCollection<DeviceTriggerBinding> {
     constructor(data: any, name?: string) { super(data, name || 'bindings'); }
@@ -1718,6 +1723,49 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async setDeviceTrigger(data): Promise<DeviceTriggerCollection> {
+        if (typeof data.busNumber === 'undefined' && typeof data.busId === 'undefined') return Promise.reject(new Error(`A valid i2c bus identifier was not provided`));
+        try {
+            let busId;
+            let busNumber;
+            let bus: I2cBus;
+            if (typeof data.busId !== 'undefined') {
+                busId = parseInt(data.busId, 10);
+                if (isNaN(busId)) return Promise.reject(new Error(`A valid i2c bus id was not provided ${data.busId}`));
+            }
+            if (typeof data.busNumber !== 'undefined') {
+                busNumber = parseInt(data.busNumber, 10);
+                if (isNaN(busNumber)) return Promise.reject(new Error(`A valid i2c bus # was not provided ${data.busNumber}`));
+            }
+            if (!isNaN(busId)) bus = this.buses.getItemById(busId);
+            else if (!isNaN(busNumber)) bus = this.buses.getItemByBusNumber(busNumber);
+            else return Promise.reject(new Error(`A valid i2c bus identifier was not provided`));
+            return await bus.setDeviceTrigger(data);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceTrigger(data): Promise<DeviceTriggerCollection> {
+        if (typeof data.busNumber === 'undefined' && typeof data.busId === 'undefined') return Promise.reject(new Error(`A valid i2c bus identifier was not provided`));
+        try {
+            let busId;
+            let busNumber;
+            let bus: I2cBus;
+            if (typeof data.busId !== 'undefined') {
+                busId = parseInt(data.busId, 10);
+                if (isNaN(busId)) return Promise.reject(new Error(`A valid i2c bus id was not provided ${data.busId}`));
+            }
+            if (typeof data.busNumber !== 'undefined') {
+                busNumber = parseInt(data.busNumber, 10);
+                if (isNaN(busNumber)) return Promise.reject(new Error(`A valid i2c bus # was not provided ${data.busNumber}`));
+            }
+            if (!isNaN(busId)) bus = this.buses.getItemById(busId);
+            else if (!isNaN(busNumber)) bus = this.buses.getItemByBusNumber(busNumber);
+            else return Promise.reject(new Error(`A valid i2c bus identifier was not provided`));
+            return await bus.deleteDeviceTrigger(data);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
 }
 export class I2cBusCollection extends ConfigItemCollection<I2cBus> {
     constructor(data: any, name?: string) { super(data, name) }
@@ -1775,6 +1823,7 @@ export class I2cBus extends ConfigItem {
     }
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
+            console.log(`Setting device state ${binding}`);
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
             if (isNaN(bind.deviceId)) return Promise.reject(`setDeviceState: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`);
             let device = this.devices.find(elem => elem.id === bind.deviceId);
@@ -1960,14 +2009,41 @@ export class I2cBus extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async setDeviceTrigger(data): Promise<DeviceTriggerCollection> {
+        try {
+            if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Feed device address or id was not provided.`));
+            let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
+            let address = (typeof data.address !== 'undefined') ? parseInt(data.address, 10) : undefined;
+            let dev: I2cDevice = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
+            await dev.setDeviceTrigger(data);
+            i2c.resetDeviceTriggers(this.id, dev.id);
+            return Promise.resolve(dev.triggers);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceTrigger(data): Promise<DeviceTriggerCollection> {
+        try {
+            if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Trigger device address or id was not provided.`));
+            let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
+            let address = (typeof data.address !== 'undefined') ? parseInt(data.address, 10) : undefined;
+            let dev: I2cDevice = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Trigger device has not been initialized`));
+            await dev.deleteDeviceTrigger(data);
+            i2c.resetDeviceTriggers(this.id, dev.id);
+            return Promise.resolve(dev.triggers);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
     public getDeviceById(deviceId: number) { return this.devices.getItemById(deviceId); }
-    public async setDeviceTriggerAsync(deviceId: number, data): Promise<DeviceTrigger> {
-        let dev = this.devices.getItemById(deviceId, true);
-        return await dev.setDeviceTriggerAsync(data);
-    }
-    public async deleteDeviceTriggerAsync(deviceId: number, data): Promise<I2cDevice> {
-        return await this.devices.getItemById(deviceId, false).deleteDeviceTriggerAsync(data);
-    }
+    //public async setDeviceTriggerAsync(deviceId: number, data): Promise<DeviceTrigger> {
+    //    let dev = this.devices.getItemById(deviceId, true);
+    //    return await dev.setDeviceTriggerAsync(data);
+    //}
+    //public async deleteDeviceTriggerAsync(deviceId: number, data): Promise<I2cDevice> {
+    //    return await this.devices.getItemById(deviceId, false).deleteDeviceTriggerAsync(data);
+    //}
 }
 export class I2cDeviceCollection extends ConfigItemCollection<I2cDevice> {
     constructor(data: any, name?: string) { super(data, name || 'devices') }
@@ -2014,6 +2090,10 @@ export class I2cDevice extends ConfigItem {
         dev.feeds = [];
         for (let i = 0; i < this.feeds.length; i++) {
             dev.feeds.push(this.feeds.getItemByIndex(i).getExtended());
+        }
+        dev.triggers = [];
+        for (let i = 0; i < this.triggers.length; i++) {
+            dev.triggers.push(this.triggers.getItemByIndex(i).getExtended());
         }
         return dev;
     }
@@ -2063,21 +2143,63 @@ export class I2cDevice extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-    public async deleteDeviceTriggerAsync(triggerId: number): Promise<I2cDevice> {
-        return new Promise<I2cDevice>((resolve, reject) => {
-            this.triggers.removeItemById(triggerId);
-            resolve(this);
-        });
-    }
-    public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
-        let c = this.triggers.find(elem => elem.id === data.id);
-        if (typeof c === 'undefined') {
-            data.id = this.triggers.getMaxId(false, -1) + 1;
-            if (data.id === 0) data.id = 1;
-            c = this.triggers.getItemById(data.id, true);
+    public async setDeviceTrigger(data): Promise<DeviceTrigger> {
+        try {
+            let triggerId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.triggerId !== 'undefined' ? parseInt(data.triggerId, 10) : -1;
+            if (isNaN(triggerId)) return Promise.reject(`The trigger identifier is not valid.`);
+            let trigger : DeviceTrigger;
+            let connectionId;
+            let connection;
+            if (triggerId !== -1) {
+                // We are updating.
+                trigger = this.triggers.find(elem => elem.id === triggerId);
+                if (typeof trigger === 'undefined') return Promise.reject(`Could not find a trigger by id ${triggerId}`);
+                connectionId = trigger.sourceId;
+            }
+            else {
+                // We are adding.
+                triggerId = (this.triggers.getMaxId() || 0) + 1;
+                connectionId = parseInt(data.sourceId, 10);
+                if (isNaN(connectionId)) return Promise.reject(new Error(`The trigger connection identifier was not supplied.`));
+            }
+            connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
+            if (connectionId !== -1 && typeof connection === 'undefined') return Promise.reject(`The trigger connection was not found at id ${connectionId}`);
+            trigger = this.triggers.getItemById(triggerId, true);
+            trigger.sourceId = connectionId;
+            trigger.set(data);
+            trigger.id = triggerId;
+            // Set this on the bus.
+            return Promise.resolve(trigger);
         }
-        return await c.setDeviceTriggerAsync(data);
+        catch (err) { return Promise.reject(err); }
     }
+    public async deleteDeviceTrigger(data): Promise<DeviceTrigger> {
+        try {
+            let triggerId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.triggerId !== 'undefined' ? parseInt(data.triggerId, 10) : -1;
+            if (isNaN(triggerId)) return Promise.reject(`The trigger identifier is not valid.`);
+            let trigger: DeviceTrigger;
+            trigger = this.triggers.getItemById(triggerId);
+            this.triggers.removeItemById(triggerId);
+            return trigger;
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
+    //public async deleteDeviceTriggerAsync(triggerId: number): Promise<I2cDevice> {
+    //    return new Promise<I2cDevice>((resolve, reject) => {
+    //        this.triggers.removeItemById(triggerId);
+    //        resolve(this);
+    //    });
+    //}
+    //public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
+    //    let c = this.triggers.find(elem => elem.id === data.id);
+    //    if (typeof c === 'undefined') {
+    //        data.id = this.triggers.getMaxId(false, -1) + 1;
+    //        if (data.id === 0) data.id = 1;
+    //        c = this.triggers.getItemById(data.id, true);
+    //    }
+    //    return await c.setDeviceTriggerAsync(data);
+    //}
 
     public async setDeviceState(binding: string | DeviceBinding, data: any) {
         try {

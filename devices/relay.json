@@ -18,15 +18,16 @@
           "name": "relayState",
           "desc": "Relay State Value",
           "dataType": "boolean",
+          "instructions": "<hr style=\"margin:1px\"></hr>The incoming data should represent a boolean true/false or an object { state: boolean, latch:number }.  If a latch is supplied the relay will unlatch after the number of ms expires.",
           "options": [
             {
-              "bind": "",
+              "bind": "channelId",
               "dataType": "number",
               "default": "",
               "field": {
                 "type": "valueSpinner",
                 "required": false,
-                "bind": "options.name",
+                "bind": "channelId",
                 "labelText": "Relay #",
                 "min": 1,
                 "max": 16,

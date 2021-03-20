@@ -147,8 +147,24 @@ class SocketServerConnection extends ServerConnection {
                 if (trigger.sourceId !== this.server.id) continue;
                 let val = typeof trig.filter === 'function' ? trig.filter(this.server.get(true), device.get(true), trigger.get(true), data) : true;
                 if (val === true) {
-                    if (trig.binding.startsWith('gpio')) device.setDeviceState({ state: trigger.state.val });
-                    else device.setDeviceState(data);
+                    if (trig.binding.startsWith('gpio')) (async () => {
+                        try {
+                            await device.setDeviceState({ state: trigger.state.val });
+                        } catch (err) { }
+                    })();
+                    else (async () => {
+                        try {
+                            if (typeof trigger.stateExpression !== 'undefined' && trigger.stateExpression.length > 0) {
+                                try {
+                                    let fnTransform = new Function('connection', 'trigger', 'device', 'data', trigger.stateExpression);
+                                    data = fnTransform(this, trigger, device, data);
+                                } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err}`); }
+                            }
+                            await device.setDeviceState(trig.binding, data);
+                        } catch (err) { logger.error(`Error processing MQTT topic ${evt.topic}: ${err}`); }
+                    })();
+                    //if (trig.binding.startsWith('gpio')) device.setDeviceState({ state: trigger.state.val });
+                    //else device.setDeviceState(trig.binding, data);
                 }
             }
         }
@@ -199,7 +215,10 @@ class SocketServerConnection extends ServerConnection {
                         }
                         try {
                             let fnFilter = trigger.makeTriggerFunction();
-                            evt.triggers.push({ filter: fnFilter, binding: `i2c:${bus.busNumber}:${device.id}`, triggerId: trigger.id });
+                            evt.triggers.push({
+                                binding: `i2c:${bus.busNumber}:${device.id}${typeof trigger.channelId !== 'undefined' ? ':' + trigger.channelId : ''}`,
+                                filter: fnFilter, triggerId: trigger.id
+                            });
                         }
                         catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
                     }
@@ -265,12 +284,11 @@ class MqttConnection extends ServerConnection {
                 if (typeof evt === 'undefined') {
                     evt = { topic: trigger.eventName, triggers: [] };
                     this.events.push(evt);
-                    logger.info(`Binding MQTT ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
                     this._mqtt.subscribe(evt.topic, (err, granted) => {
                         if (err)
-                            logger.error(`Error binding MQTT ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+                            logger.error(`Error binding MQTT ${evt.topic} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
                         else 
-                            logger.info(`Bound MQTT ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+                            logger.info(`Bound MQTT ${evt.topic} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
                     });
                 }
                 try {
@@ -294,14 +312,16 @@ class MqttConnection extends ServerConnection {
                         this.events.push(evt);
                         this._mqtt.subscribe(evt.topic, (err, granted) => {
                             if (err)
-                                logger.error(`Error binding MQTT ${evt.name} from ${this.server.name} to I2c Device ${bus.busNumber}-${device.address} ${device.name}`);
+                                logger.error(`Error binding MQTT ${evt.topic} from ${this.server.name} to I2c Device ${bus.busNumber}-${device.address} ${device.name}`);
                             else
-                                logger.info(`Bound MQTT ${evt.name} from ${this.server.name} to I2c Device ${bus.busNumber}-${device.address} ${device.name}`);
+                                logger.info(`Bound MQTT ${evt.topic} from ${this.server.name} to I2c Device ${bus.busNumber}-${device.address} ${device.name}`);
                         });
                     }
                     try {
                         let fnFilter = trigger.makeTriggerFunction();
-                        evt.triggers.push({ binding: `${bus.busNumber}:${device.id}`, filter: fnFilter, triggerId: trigger.id });
+                        evt.triggers.push({
+                            binding: `i2c:${bus.busNumber}:${device.id}${typeof trigger.channelId !== 'undefined' ? ':' + trigger.channelId : ''}`,
+                            filter: fnFilter, triggerId: trigger.id });
                     }
                     catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
                 }
@@ -317,23 +337,43 @@ class MqttConnection extends ServerConnection {
     private messageHandler = async (topic, message) => {
         let msg = message.toString();
         let evt = this.events.find(elem => elem.topic === topic);
-        logger.info(`Processing MQTT topic ${topic}`);
         if (typeof evt !== 'undefined') {
+            logger.info(`Processing MQTT topic ${topic}`);
+            // Do a little messag pre-processing because MQTT is lame.
             if (msg.startsWith('{')) msg = JSON.parse(msg);
+            if (msg === 'true') msg = true;
+            else if (msg === 'false') msg = false;
+            else if (!isNaN(+msg)) msg = parseFloat(msg);
+            
             // Go through all the triggers to see if we find one.
             for (let i = 0; i < evt.triggers.length; i++) {
                 let trig = evt.triggers[i];
                 let device = cont.getDeviceByBinding(trig.binding);
-                if (typeof device === 'undefined' || device.isActive === false) continue;
+                if (typeof device === 'undefined' || device.isActive === false) {
+                    logger.warn(`Could not process MQTT topic ${topic} could not find device ${trig.binding}`);
+                    continue;
+                }
                 let trigger = device.triggers.getItemById(trig.triggerId);
                 if (typeof trigger === 'undefined' || !trigger.isActive) continue;
                 if (trigger.sourceId !== this.server.id) continue;
                 let val = typeof trig.filter === 'function' ? trig.filter(this.server.get(true), device.get(true), trigger.get(true), msg) : true;
-                console.log(`Handing MQTT Topic ${topic} ${val}`);
                 if (val === true) {
-
-                    if (trig.binding.startsWith('gpio')) device.setDeviceState({ state: trigger.state.val });
-                    else device.setDeviceState(msg);
+                    if (trig.binding.startsWith('gpio')) (async () => {
+                        try {
+                            await device.setDeviceState({ state: trigger.state.val });
+                        } catch (err) { }
+                    })();
+                    else (async () => {
+                        try {
+                            if (typeof trigger.stateExpression !== 'undefined' && trigger.stateExpression.length > 0) {
+                                try {
+                                    let fnTransform = new Function('connection', 'trigger', 'device', 'data', trigger.stateExpression);
+                                    msg = fnTransform(this, trigger, device, msg);
+                                } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err}`); }
+                            }
+                            await device.setDeviceState(trig.binding, msg);
+                        } catch (err) { logger.error(`Error processing MQTT topic ${evt.topic}: ${err}`); }
+                    })();
                 }
             }
         }
