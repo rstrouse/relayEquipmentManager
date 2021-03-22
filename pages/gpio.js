@@ -20,7 +20,7 @@
                 var overlays = {
                     spi0: data.controller.spi0.isActive,
                     spi1: data.controller.spi1.isActive,
-                    i2c: data.controller.i2c.isActive
+                    i2c: data.controller.i2c.buses.length > 0
                 };
                 
                 for (var ihead = 0; ihead < pinHeads.length; ihead++) {

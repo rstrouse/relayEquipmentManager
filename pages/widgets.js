@@ -3032,6 +3032,7 @@ $.ui.position.fieldTip = {
             el[0].saveRow = function (data) { return self.saveRow(data); };
             el[0].clear = function () { self.clear(); }
             el[0].actions = function (val) { return self.actions(val); };
+            el[0].val = function (val) { return self.val(val); }
         },
         _getColumn: function (nCol) { return this.options.columns[nCol]; },
         _createCaption: function () {
@@ -3089,6 +3090,16 @@ $.ui.position.fieldTip = {
             var span = $('<span></span>').addClass('slist-row-btn').addClass(cssClass).attr('title', title);
             $('<i></i>').appendTo(span).addClass(icon);
             return span;
+        },
+        val: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val !== 'undefined') {
+                self.clear();
+                for (data in val) {
+                    self.addRow(val[data]);
+                    console.log(val[data]);
+                }
+            }
         },
         addRow: function (data) {
             var self = this, o = self.options, el = self.element;
@@ -3178,10 +3189,12 @@ $.ui.position.fieldTip = {
             var header = self._createHeader().appendTo(el);
             var body = self._createBody().appendTo(el);
             if (typeof o.id !== 'undefined') el.attr('id', o.id);
+            if (typeof o.bind !== 'undefined') el.attr('data-bind', o.bind);
             el.on('click', 'table.slist-table > tbody > tr', function (evt) {
                 self.selectRow($(evt.currentTarget));
             });
             self.actions(o.actions);
+            if (typeof o.style !== 'undefined') el.css(o.style);
         },
         selectRow: function (row) {
             var self = this, o = self.options, el = self.element;

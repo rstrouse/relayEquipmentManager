@@ -208,7 +208,6 @@
           "maxSamples": 1
         }
       ],
-
       "options": [
         {
           "dataType": "panel",
@@ -231,6 +230,48 @@
                   "style": { "width": "16rem" }
                 },
                 "style": { "display": "block" }
+              }
+            },
+            {
+              "bind": "info.registers",
+              "field": {
+                "caption": "Registers",
+                "type": "selectList",
+                "bind": "info.registers",
+                "columns": [
+                  {
+                    "binding": "name",
+                    "text": "Name",
+                    "style": {
+                      "width": "52px",
+                      "whiteSpace": "nowrap",
+                      "overflow": "hidden",
+                      "textOverflow": "ellipsis"
+                    }
+                  },
+                  {
+                    "binding": "value",
+                    "text": "Val",
+                    "style": {
+                      "width": "24px",
+                      "whiteSpace": "nowrap",
+                      "overflow": "hidden",
+                      "textOverflow": "ellipsis",
+                      "textAlign": "center"
+                    }
+                  },
+                  {
+                    "binding": "desc",
+                    "text": "Description",
+                    "style": {
+                      "width": "217px",
+                      "whiteSpace": "nowrap",
+                      "overflow": "hidden",
+                      "textOverflow": "ellipsis"
+                    }
+                  }
+                ],
+                "style": { "fontSize": "8pt" }
               }
             }
           ]

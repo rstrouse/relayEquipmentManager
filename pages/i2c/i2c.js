@@ -346,6 +346,9 @@
                     }
                     if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
                     break;
+                case 'selectList':
+                    fld = $('<div></div>').appendTo(pnl).selectList(opt.field);
+                    break;
                 case 'panel':
                     fld = $('<div></div>').appendTo(pnl)[`${opt.field.class}`](opt.field);
                     if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
