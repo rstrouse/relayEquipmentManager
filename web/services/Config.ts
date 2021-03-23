@@ -255,7 +255,6 @@ export class ConfigRoute {
         });
         app.put('/config/connection', async (req, res, next) => {
             try {
-                console.log(req.body);
                 let conn = await cont.setConnectionAsync(req.body);
                 return res.status(200).send(conn.getExtended());
             }

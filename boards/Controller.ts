@@ -1823,7 +1823,7 @@ export class I2cBus extends ConfigItem {
     }
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
-            console.log(`Setting device state ${binding}`);
+            logger.info(`Setting device state ${binding}`);
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
             if (isNaN(bind.deviceId)) return Promise.reject(`setDeviceState: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`);
             let device = this.devices.find(elem => elem.id === bind.deviceId);
@@ -1980,7 +1980,6 @@ export class I2cBus extends ConfigItem {
                 devices.push({ uid: `i2c:${this.busNumber}:${device.id}`, id: device.id, name: device.name, deviceId: dev.id, type: 'i2c', busNumber: this.busNumber, bindings: dev.inputs });
             }
         }
-        //console.log(devices);
         return devices;
     }
     public async setDeviceFeed(data): Promise<DeviceFeedCollection> {
@@ -2410,7 +2409,7 @@ export class GenericDeviceController extends ConfigItem {
                         let device = await bus.setDevice(dev);
                         return Promise.resolve(device); */
 
-            console.log(`received ${JSON.stringify(dev)}`);
+            logger.info(`received ${JSON.stringify(dev)}`);
             let id = parseInt(dev.id, 10);
             if (isNaN(id)) id = this.devices.length + 1; // if devices get deleted, need to make sure we pick a new id.
             dev.id = id;

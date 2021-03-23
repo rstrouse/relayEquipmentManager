@@ -503,7 +503,7 @@ export class i2cDeviceBase implements IDevice {
             let trigger = this.device.triggers.getItemByIndex(i);
             if (typeof conns.find(elem => elem.id === trigger.sourceId) === 'undefined') conns.push(connBroker.findServer(trigger.sourceId));
         }
-        console.log(conns);
+        //console.log(conns);
 
         //this.triggers = [];
         //for (let i = 0; i < this.device.triggers.length; i++) {

@@ -81,32 +81,39 @@ export class i2cRelay extends i2cDeviceBase {
                     {
                         // Set byte mode for I/O control.
                         //await this.sendCommand([0x0a, 0x00]);
+                        // Bit value of 0 = output (what we need to control a relay) and bit value 1 = input.
                         await this.readConfigRegisters();
+                        
                         let regA = this.device.info.registers.find(elem => elem.name === 'IODIRA') || { value: 0x00 };
                         let regB = this.device.info.registers.find(elem => elem.name === 'IODIRB') || { value: 0x00 };
+                        if (this.i2c.isMock) { regA.value = 0xFF; regB.value = 0xFF; }
                         for (let i = 0; i < this.relays.length; i++) {
                             let relay = this.relays[i];
                             if (utils.makeBool(relay.enabled)) {
-                                (i < 8) ? regA.value |= (1 << i) : regB.value |= (1 << (i - 8));
+                                // Set the bit to 0 for output.
+                                (i < 8) ? regA.value &= ~(1 << i) : regB.value &= ~(1 << (i - 8));
                             }
                         }
+                        logger.info(`Setting config register ${regA.name} ${regA.value}`);
+                        logger.info(`Setting config register ${regB.name} ${regB.value}`);
                         await this.sendCommand([regA.register, regA.value]);
                         await this.sendCommand([regB.register, regB.value]);
-                        await this.readConfigRegisters();
+                        if(!this.i2c.isMock) await this.readConfigRegisters();
                     }
                     break;
                 case 'mcp23008':
                     await this.readConfigRegisters();
                     {
                         let reg = this.device.info.registers.find(elem => elem.name === 'IODIR') || { value: 0x00 };
+                        if (this.i2c.isMock) reg.value = 0xFF;
                         for (let i = 0; i < this.relays.length; i++) {
                             let relay = this.relays[i];
                             if (utils.makeBool(relay.enabled)) {
-                                reg.value |= (1 << i);
+                                reg.value &= ~(1 << i);
                             }
                         }
                         await this.sendCommand([reg.register, reg.value]);
-                        await this.readConfigRegisters();
+                        if (!this.i2c.isMock) await this.readConfigRegisters();
                     }
                     break;
                 case 'sequent8':
@@ -123,6 +130,7 @@ export class i2cRelay extends i2cDeviceBase {
                 default:
                     break;
             }
+            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, options: { deviceInfo: this.device.info } });
 
         } catch (err) { logger.error(`Error Initializing ${this.device.name} registers.`); this.hasFault = true; }
     }
@@ -372,10 +380,12 @@ export class i2cRelay extends i2cDeviceBase {
             await this.stopReadContinuous();
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.device.options.name = this.device.name = opts.name;
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
-            if (typeof opts.relays !== 'undefined') this.relays = opts.relays;
+            if (typeof opts.relays !== 'undefined') {
+                this.relays = opts.relays;
+                await this.initRegisters();
+            }
             if (typeof opts.controllerType !== 'undefined') this.device.options.controllerType = opts.controllerType;
             if (typeof opts.idType !== 'undefined') this.device.options.idType = opts.idType;
-            await this.initRegisters();
             this.readContinuous();
             Promise.resolve(this.device.options);
         }
@@ -384,7 +394,10 @@ export class i2cRelay extends i2cDeviceBase {
     public async setValues(vals): Promise<any> {
         try {
             await this.stopReadContinuous();
-            if (typeof vals.relays !== 'undefined') this.relays = vals.relays;
+            if (typeof vals.relays !== 'undefined') {
+                this.relays = vals.relays;
+                await this.initRegisters();
+            }
             this.readContinuous();
             Promise.resolve(this.device.values);
         }
