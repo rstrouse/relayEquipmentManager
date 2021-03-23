@@ -10,7 +10,8 @@ import { I2cDevice, DeviceBinding } from "../boards/Controller";
 export class i2cRelay extends i2cDeviceBase {
     protected static commandBytes = {
         mcp23017: {
-            state: [0x12, 0x13],
+            read: [0x12, 0x13],
+            write: [0x14, 0x15],
             config: [
                 { name: 'IODIRA', register: 0x00, desc: 'I/O direction for 1-8' },
                 { name: 'IODIRB', register: 0x01, desc: 'I/O direction for 9-16' },
@@ -22,7 +23,8 @@ export class i2cRelay extends i2cDeviceBase {
                 { name: 'DEFVALB', register: 0x07, desc: 'Default interrupt value for 9-16' },
                 { name: 'INTCONA', register: 0x08, desc: 'Interrupt control register for 1-8.  If 0 then interrupt fired on change else it is fired when matches DEFVAL' },
                 { name: 'INTCONB', register: 0x09, desc: 'Interrupt control register for 9-16.  If 0 then interrupt fired on change else it is fired when matches DEFVAL' },
-                { name: 'IOCON', register: 0x0a, desc: 'I/O control per mcp23017 datasheet.  This determines whether in byte mode or sequential mode' },
+                { name: 'IOCONA', register: 0x0a, desc: 'I/O control 1-8 per mcp23017 datasheet.  This determines whether in byte mode or sequential mode' },
+                { name: 'IOCONB', register: 0x0b, desc: 'I/O control 9-16 per mcp23017 datasheet.  This determines whether in byte mode or sequential mode' },
                 { name: 'GPPUA', register: 0x0c, desc: 'Pull up resistor for 1-8' },
                 { name: 'GPPUB', register: 0x0d, desc: 'Pull up resistor for 9-16' },
                 { name: 'INTFA', register: 0x0e, desc: 'Interrupt condition for 1-8' },
@@ -34,7 +36,8 @@ export class i2cRelay extends i2cDeviceBase {
             ]
         },
         mcp23008: {
-            state: [0x09],
+            read: [0x09],
+            write: [0x10],
             config: [
                 { name: 'IODIR', register: 0x00, desc: 'I/O directions for 1-8' },
                 { name: 'IOPOL', register: 0x01, desc: 'Input polarity for 1-8' },
@@ -49,29 +52,35 @@ export class i2cRelay extends i2cDeviceBase {
             ]
         },
         sequent4: {
-            state: [0x01],
+            read: [0x01],
+            write: [0x01],
             config: [
                 {name:'CFG', register: 0x03, desc: 'Configuration register for the relay'}
             ]
         },
         sequent8: {
             state: [0x01],
+            write: [0x01],
             config: [
                 { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' }
             ]
         },
 
-        pcf8574: { state: [] },
-        seeed: { state: [0x06] }
+        pcf8574: { read: [], write: [], config: [] },
+        seeed: { read: [0x06], write: [0x06], config: [] }
     };
     protected _latchTimers = {};
     protected _relayBitmask1 = 0;
     protected _relayBitMask2 = 0;
     public get relays() { return typeof this.values.relays === 'undefined' ? this.values.relays = [] : this.values.relays; }
     public set relays(val) { this.values.relays = val; }
-    protected getStateByte(ord: number): number {
+    protected getReadCommandByte(ord: number): number {
         let arr = i2cRelay.commandBytes[this.device.options.controllerType];
-        return typeof arr !== 'undefined' && typeof arr.state !== 'undefined' && arr.state.length > ord ? arr.state[ord] : undefined;
+        return typeof arr !== 'undefined' && typeof arr.read !== 'undefined' && arr.read.length > ord ? arr.read[ord] : undefined;
+    }
+    protected getWriteCommandByte(ord: number): number {
+        let arr = i2cRelay.commandBytes[this.device.options.controllerType];
+        return typeof arr !== 'undefined' && typeof arr.write !== 'undefined' && arr.write.length > ord ? arr.write[ord] : undefined;
     }
     protected async initRegisters() {
         try {
@@ -296,7 +305,7 @@ export class i2cRelay extends i2cDeviceBase {
                         if (!utils.makeBool(relay.enabled)) continue;
                         // Get the byte map data from the controller.
                         let bmOrd = Math.floor((relay.id - 1) / 8);
-                        let cmdByte = this.getStateByte(bmOrd);
+                        let cmdByte = this.getReadCommandByte(bmOrd);
                         if (bmOrd + 1 > bmVals.length) {
                             if (this.i2c.isMock) bmVals.push(bmOrd === 0 ? this._relayBitmask1 : this._relayBitMask2);
                             else bmVals.push(await this.readCommand(cmdByte));
@@ -354,7 +363,7 @@ export class i2cRelay extends i2cDeviceBase {
                     break;
                 case 'bit':
                     let bmOrd = Math.floor((relay.id - 1) / 8);
-                    cmdByte = this.getStateByte(bmOrd);
+                    cmdByte = this.getReadCommandByte(bmOrd);
                     byte = await this.readCommand(cmdByte);
                     if (this.i2c.isMock) byte = bmOrd === 0 ? this._relayBitmask1 : this._relayBitMask2;
                     byte = byte & 1 << ((relay.id - (bmOrd * 8) - 1));
@@ -486,7 +495,7 @@ export class i2cRelay extends i2cDeviceBase {
                     // MCP23008 uses 0x09 for port A (bmOrd 0)
                     if (await this.readAllRelayStates()) {
                         let bmOrd = Math.floor((relay.id - 1) / 8);
-                        let cmdByte = this.getStateByte(bmOrd);
+                        let cmdByte = this.getWriteCommandByte(bmOrd);
                         let byte = 0x00;
                         for (let i = bmOrd * 8; i < this.relays.length && i < (bmOrd * 8) + 8; i++) {
                             let r = this.relays[i];
@@ -499,8 +508,6 @@ export class i2cRelay extends i2cDeviceBase {
                         }
                         if (typeof cmdByte !== 'undefined') command.push(cmdByte);
                         command.push(byte);
-                        //console.log(`Setting relay ${bmOrd} ${byte}`);
-                        //console.log(command);
                         if (this.i2c.isMock) bmOrd === 0 ? this._relayBitmask1 = byte : this._relayBitMask2 = byte;
                     }
                     break;
