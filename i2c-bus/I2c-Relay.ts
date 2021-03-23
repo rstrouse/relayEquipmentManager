@@ -37,7 +37,7 @@ export class i2cRelay extends i2cDeviceBase {
         },
         mcp23008: {
             read: [0x09],
-            write: [0x10],
+            write: [0x0a],
             config: [
                 { name: 'IODIR', register: 0x00, desc: 'I/O directions for 1-8' },
                 { name: 'IOPOL', register: 0x01, desc: 'Input polarity for 1-8' },
