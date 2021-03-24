@@ -3531,7 +3531,7 @@ $.ui.position.fieldTip = {
                 ]
             });
             $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(relay.id);
-            $('<div></div>').appendTo(dlg).html('Enable this relay if you are controlling it from REM.  Changes to the relay will not be saved until you save the overall relay.<hr style="margin:3px"></hr>The relay adddress register will either be interpolated from the id.');
+            $('<div></div>').appendTo(dlg).html('Enable this relay if you are controlling it from REM.  Changes to the relay will not be saved until you press the save button on the previous screen.');
             $('<hr></hr>').appendTo(dlg);
             var line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });
