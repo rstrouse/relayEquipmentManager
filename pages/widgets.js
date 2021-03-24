@@ -3537,6 +3537,18 @@ $.ui.position.fieldTip = {
             $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Enabled', binding: 'enabled' });
             line = $('<div></div>').appendTo(dlg);
+            $('<hr></hr>').appendTo(line).css({ margin: '3px' });
+            $('<div></div>').appendTo(line).pickList({
+                binding: 'initState', labelText: 'Startup State',
+                bindColumn: 0, displayColumn: 1, value: '',
+                columns: [{ hidden: true, binding: 'name', text: 'name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'desc', text: 'State', style: { whiteSpace: 'nowrap' } }],
+                items: [{ name: 'on', desc: 'Relay On' },
+                    { name: 'off', desc: 'Relay Off' },
+                    { name: '', label: 'No Change', desc: 'No Change' },
+                    { name: 'last', label: 'Last State', desc: 'Last State' }],
+                inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { } }
+            })
+            $('<div></div>').appendTo(line).checkbox({ labelText: 'Invert Output Signal', binding: 'invert' });
             dataBinder.bind(dlg, relay);
             dlg.css({ overflow: 'visible' });
         },

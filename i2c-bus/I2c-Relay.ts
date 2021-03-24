@@ -6,6 +6,7 @@ import { Buffer } from "buffer";
 import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";
 import { I2cDevice, DeviceBinding } from "../boards/Controller";
+import { isArray } from "util";
 
 export class i2cRelay extends i2cDeviceBase {
     protected static commandBytes = {
@@ -231,7 +232,85 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { logger.error(err); }
     }
-
+    protected makeStartupBitmasks(orig: number[]) {
+        let bytes = [];
+        for (let i = 0; i < this.relays.length; i++) {
+            let r = this.relays[i];
+            let ord = Math.floor((r.id - 1) / 8);
+            if (ord + 1 > bytes.length) bytes.push(0);
+            let state = false;
+            let bm = (1 << (((r.id - (ord * 8)) - 1)));
+            if (r.initState === 'on') state = true;
+            else if (r.initState === 'off') state = false;
+            else if (r.initState === 'last') state = utils.makeBool(r.state);
+            else {
+                if (orig.length < ord) {
+                    state = (bytes[ord] & bm) > 0;
+                    if (r.invert === true) state = !state;
+                }
+            }
+            let target = r.invert === true ? !utils.makeBool(state) : utils.makeBool(state);
+            if (target) bytes[ord] |= bm;
+        }
+        return bytes;
+    }
+    protected async initRelayStates() {
+        this.relays.sort((a, b) => { return a.id - b.id; });
+        try {
+            let bytes: number[] = [];
+            let orig: number[] = [];
+            switch (this.device.options.idType) {
+                case 'sequent8':
+                    orig.push(this.decodeSequent(await this.readCommand(0x00), [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]));
+                    bytes = this.makeStartupBitmasks(orig);
+                    await this.sendCommand([0x01, this.encodeSequent(bytes[0], [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10])]);
+                    if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(bytes[0], [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]);
+                    break;
+                case 'sequent4':
+                    orig.push(this.decodeSequent(await this.readCommand(0x00), [0x80, 0x40, 0x20, 0x10]));
+                    bytes = this.makeStartupBitmasks(orig);
+                    await this.sendCommand([0x01, this.encodeSequent(bytes[0], [0x80, 0x40, 0x20, 0x10])]);
+                    if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(bytes[0], [0x80, 0x40, 0x20, 0x10]);
+                    break;
+                case 'bit':
+                    this.relays.sort((a, b) => { return a.id - b.id; });
+                    for (let i = 0; i < this.relays.length; i++) {
+                        let relay = this.relays[i];
+                        // Get the byte map data from the controller.
+                        let ord = Math.floor((relay.id - 1) / 8);
+                        if (ord + 1 > orig.length) {
+                            let cmdByte = this.getReadCommandByte(ord);
+                            orig.push(await this.readCommand(cmdByte));
+                        }
+                    }
+                    bytes = this.makeStartupBitmasks(orig);
+                    for (let i = 0; i < bytes.length; i++) {
+                        await this.sendCommand([this.getWriteCommandByte(i), bytes[i]]);
+                        if (this.i2c.isMock) {
+                            this[`_relayBitmask${i + 1}`] = bytes[i];
+                            await this.readAllRelayStates();
+                        }
+                    }
+                    break;
+                default:
+                    for (let i = 0; i < this.relays.length; i++) {
+                        let r = this.relays[i];
+                        let state = false;
+                        if (r.initState === 'on') state = true;
+                        else if (r.initState === 'off') state = false;
+                        else if (r.initState === 'last') state = utils.makeBool(r.state);
+                        else {
+                            let byte = await this.readCommand(r.id);
+                            state = byte > 0
+                        }
+                        if (r.invert === true) state = !state;
+                        await this.sendCommand([r.id, state ? 255 : 0]);
+                        if (this.i2c.isMock) r.state = state;
+                    }
+                    break;
+            }
+        } catch (err) { logger.error(`Error initializing relay states ${this.device.name}`); }
+    }
     public async initAsync(deviceType): Promise<boolean> {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
@@ -246,6 +325,7 @@ export class i2cRelay extends i2cDeviceBase {
             else this.device.name = this.device.options.name;
             if (typeof this.device.options.idType === 'undefined' || this.device.options.idType.length === 0) this.device.options.idType = 'bit';
             await this.initRegisters();
+            await this.initRelayStates();
             this.readContinuous();
             return Promise.resolve(true);
         }
@@ -268,6 +348,7 @@ export class i2cRelay extends i2cDeviceBase {
                         for (let i = 0; i < this.relays.length; i++) {
                             let relay = this.relays[i];
                             let state = utils.makeBool(byte & (1 << (relay.id - 1)));
+                            if (relay.invert === true) state = !state;
                             if (state !== relay.state) {
                                 relay.state = state;
                                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
@@ -289,6 +370,7 @@ export class i2cRelay extends i2cDeviceBase {
                         for (let i = 0; i < this.relays.length; i++) {
                             let relay = this.relays[i];
                             let state = utils.makeBool(byte & (1 << (relay.id - 1)));
+                            if (relay.invert === true) state = !state;
                             if (state !== relay.state) {
                                 relay.state = state;
                                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
@@ -312,6 +394,7 @@ export class i2cRelay extends i2cDeviceBase {
                         }
                         let byte = bmVals[bmOrd];
                         let state = utils.makeBool((byte & 1 << ((relay.id - (bmOrd * 8)) - 1)));
+                        if (relay.invert === true) state = !state;
                         if (state !== relay.state) {
                             relay.state = state;
                             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates:[relay] });
@@ -375,6 +458,7 @@ export class i2cRelay extends i2cDeviceBase {
             if (typeof byte !== 'undefined') {
                 if (this.i2c.isMock) byte = relay.state;
                 let b = utils.makeBool(byte);
+                if (relay.invert === true) b = !b;
                 if (relay.state !== b) {
                     relay.state = b;
                     webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
@@ -454,10 +538,12 @@ export class i2cRelay extends i2cDeviceBase {
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
                         for (let i = 0; i < this.relays.length; i++) {
                             let r = this.relays[i];
+                            let oldState = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
                             if (relay.id === r.id) {
-                                if (newState) byte |= (1 << (r.id - 1));
+                                let target = r.invert === true ? !utils.makeBool(newState) : utils.makeBool(newState);
+                                if (target) byte |= (1 << (r.id - 1));
                             }
-                            else if (utils.makeBool(r.state))
+                            else if (oldState)
                                 byte |= (1 << (r.id - 1));
                         }
                         await this.sendCommand([0x01, this.encodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10])]);
@@ -475,10 +561,12 @@ export class i2cRelay extends i2cDeviceBase {
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
                         for (let i = 0; i < this.relays.length; i++) {
                             let r = this.relays[i];
+                            let oldState = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
                             if (relay.id === r.id) {
-                                if(newState) byte |= (1 << (r.id - 1));
+                                let target = r.invert === true ? !utils.makeBool(newState) : utils.makeBool(newState);
+                                if(target) byte |= (1 << (r.id - 1));
                             }
-                            else if (utils.makeBool(r.state))
+                            else if (oldState)
                                 byte |= (1 << (r.id - 1));
                         }
                         await this.sendCommand([0x01, this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10])]);
@@ -499,10 +587,12 @@ export class i2cRelay extends i2cDeviceBase {
                         let byte = 0x00;
                         for (let i = bmOrd * 8; i < this.relays.length && i < (bmOrd * 8) + 8; i++) {
                             let r = this.relays[i];
+                            let oldState = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
                             if (relay.id === r.id) {
-                                if (newState) byte |= (1 << (((r.id - (bmOrd * 8)) - 1)));
+                                let target = r.invert === true ? !utils.makeBool(newState) : utils.makeBool(newState);
+                                if (target) byte |= (1 << (((r.id - (bmOrd * 8)) - 1)));
                             }
-                            else if (utils.makeBool(r.state)) {
+                            else if (oldState) {
                                 byte |= (1 << (((r.id - (bmOrd * 8)) - 1)));
                             }
                         }
@@ -513,7 +603,7 @@ export class i2cRelay extends i2cDeviceBase {
                     break;
                 default:
                     command.push(relay.id);
-                    command.push(utils.makeBool(opts.state) ? 255 : 0);
+                    command.push((relay.invert === true ? !utils.makeBool(opts.state) : utils.makeBool(opts.state)) ? 255 : 0);
                     break;
             }
             if (command.length > 0) {
@@ -540,6 +630,7 @@ export class i2cRelay extends i2cDeviceBase {
     }
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
+            
             let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
             // We need to know what relay we are referring to.
             // i2c:1:24:3
@@ -576,6 +667,18 @@ export class i2cRelay extends i2cDeviceBase {
                         case 'off':
                             newState = false;
                             break;
+                    }
+                    break;
+                case 'object':
+                    if (isArray(data) && data.length > 0) {
+                        this.stopReadContinuous();
+                        // This is a sequence.
+                        for (let i = 0; i < data.length; i++) {
+                            let seq = data[i];
+                            await this.setRelayState({ id: relayId, state: utils.makeBool(seq.state || seq.isOn) });
+                            if (seq.timeout) await utils.wait(seq.timeout);
+                        }
+                        this.readContinuous();
                     }
                     break;
                 default:

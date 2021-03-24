@@ -1,6 +1,7 @@
 ﻿import * as extend from 'extend';
 import { EventEmitter } from 'events';
 import { logger } from '../logger/Logger';
+import { setTimeout } from 'timers';
 export class valueMap extends Map<number, any> {
     public transform(byte: number, ext?: number) { return extend(true, { val: byte || 0 }, this.get(byte) || this.get(0)); }
     public toArray(): any[] {
@@ -185,6 +186,7 @@ export class Timestamp {
     }
 }
 export class Utils {
+    public wait(ms) { return new Promise((resolve, reject) => { setTimeout(() => { resolve(ms) }, ms); }); }
     public makeBool(val) {
         if (typeof (val) === 'boolean') return val;
         if (typeof (val) === 'undefined') return false;
