@@ -641,7 +641,6 @@ export class i2cRelay extends i2cDeviceBase {
             if (!relay.enabled) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] is not enabled.`));
             let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
             if (isNaN(latch)) return Promise.reject(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`);
-            
             let ordId = `r${relayId}`;
             let _lt = this._latchTimers[ordId];
             if (typeof _lt !== 'undefined') {

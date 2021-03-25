@@ -141,6 +141,7 @@ export class i2cController {
     public resetDeviceTriggers(busId: number, deviceId: number) {
         let bus = this.buses.find(elem => elem.busId === busId);
         if (typeof bus !== 'undefined') bus.resetDeviceTriggers(deviceId);
+        else logger.error(`Could not find bus id ${busId}`);
     }
 
 }
@@ -335,7 +336,7 @@ export class i2cBus {
     public resetDeviceTriggers(deviceId: number) {
         let device = this.devices.find(elem => elem.device.id === deviceId);
         if (typeof device !== 'undefined') {
-            device.initTriggers();
+            device.resetTriggers();
         }
     }
 }
@@ -497,19 +498,19 @@ export class i2cDeviceBase implements IDevice {
             this.feeds.push(new Feed(f));
         }
     }
-    public initTriggers() {
-        let conns = [];
-        for (let i = 0; i < this.device.triggers.length; i++) {
-            let trigger = this.device.triggers.getItemByIndex(i);
-            if (typeof conns.find(elem => elem.id === trigger.sourceId) === 'undefined') conns.push(connBroker.findServer(trigger.sourceId));
-        }
-        //console.log(conns);
-
-        //this.triggers = [];
-        //for (let i = 0; i < this.device.triggers.length; i++) {
-        //    let f = this.device.triggers.getItemByIndex(i);
-        //    this.triggers.push(new Feed(f));
-        //}
+    public async resetTriggers() {
+        try {
+            // Get all the connections we are dealing with.
+            let conns: ServerConnection[] = [];
+            for (let i = 0; i < this.device.triggers.length; i++) {
+                let trigger = this.device.triggers.getItemByIndex(i);
+                if (typeof conns.find(elem => elem.connectionId === trigger.sourceId) === 'undefined') conns.push(connBroker.findServer(trigger.sourceId));
+            }
+            for (let i = 0; i < conns.length; i++) {
+                let conn = conns[i];
+                conn.resetDeviceTriggers(`i2c:${this.i2c.busId}:${this.device.id}`);
+            }
+        } catch (err) { return logger.error(`Error resetting trigger for device.`); }
     }
     public getValue(prop) {
         let replaceSymbols = /(?:\]\.|\[|\.)/g

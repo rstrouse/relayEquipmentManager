@@ -1206,9 +1206,12 @@ export class DataTrigger extends ConfigItem {
         return filter;
     }
     public makeExpression() { return DataTrigger._makeExpression(this.data, 'data'); }
+    public makeTriggerFunction() { return new Function('connection', 'trigger', 'data', DataTrigger._makeExpression(this.data, 'data')); }
     protected static _makeExpression(data, dataName) {
         let expression = '';
-        if ((typeof data.binding === 'undefined' || data.bindings.length == 0) && (typeof data.expression === 'undefined' || data.expression.length === 0)) return 'return true;';
+        if ((typeof data.bindings === 'undefined' || data.bindings.length == 0) && (typeof data.expression === 'undefined' || data.expression.length === 0)) {
+            return 'return true;';
+        }
         if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) {
             let n = 0;
             expression += 'if(!(';
@@ -1236,6 +1239,7 @@ export class DataTrigger extends ConfigItem {
             expression += ' {' + data.expression + '}';
         }
         else if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) { expression += ' else return true;'; }
+        logger.debug(`Created filter expression ${expression}`);
         return expression;
     }
 }
@@ -2010,11 +2014,11 @@ export class I2cBus extends ConfigItem {
     }
     public async setDeviceTrigger(data): Promise<DeviceTriggerCollection> {
         try {
-            if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Feed device address or id was not provided.`));
+            if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Trigger device address or id was not provided.`));
             let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
             let address = (typeof data.address !== 'undefined') ? parseInt(data.address, 10) : undefined;
             let dev: I2cDevice = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
-            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Trigger device has not been initialized`));
             await dev.setDeviceTrigger(data);
             i2c.resetDeviceTriggers(this.id, dev.id);
             return Promise.resolve(dev.triggers);
