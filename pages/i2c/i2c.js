@@ -496,12 +496,15 @@
                     typeof trig.trigger.state !== 'undefined' &&
                     typeof trig.device !== 'undefined' &&
                     typeof trig.device.deviceType !== 'undefined' &&
-                    typeof trig.device.deviceType.inputs !== 'undefined') templateBuilder.createObjectOptions(d, trig.device.deviceType.inputs.find(elem => elem.name === trig.trigger.state.name));
+                    typeof trig.device.deviceType.inputs !== 'undefined') {
+                    templateBuilder.createObjectOptions(d, trig.device.deviceType.inputs.find(elem => elem.name === trig.trigger.state.name));
+                }
                 dlg.find('div.pnl-trigger-params').each(function () {
                     var pnl = this;
-                    this.dataBind(trig.trigger);
+                    pnl.dataBind(trig.trigger);
                 });
                 dataBinder.bind(dlg, trig.trigger);
+                setTimeout(() => { dataBinder.bind(dlg, trig.trigger); }, 1);
             }
             dlg.css({ overflow: 'visible' });
             return dlg;

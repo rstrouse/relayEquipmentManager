@@ -528,6 +528,7 @@ export class i2cRelay extends i2cDeviceBase {
                 return Promise.reject(`${this.device.name} - Invalid Relay id: ${opts.id}`);
             }
             let newState = utils.makeBool(opts.state);
+
             // Make the relay command.
             switch (this.device.options.idType) {
                 case 'sequent8':
@@ -682,6 +683,12 @@ export class i2cRelay extends i2cDeviceBase {
                             if (seq.timeout) await utils.wait(seq.timeout);
                         }
                         this.readContinuous();
+                    }
+                    else {
+                        if (typeof data.state !== 'undefined') newState = utils.makeBool(data.state);
+                        else if (typeof data.isOn !== 'undefined') newState = utils.makeBool(data.isOn);
+                        else if (typeof data.isDiverted !== 'undefined') newState = utils.makeBool(data.isDiverted);
+                        else newState = false;
                     }
                     break;
                 default:
