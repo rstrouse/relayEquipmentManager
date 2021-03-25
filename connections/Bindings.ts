@@ -161,7 +161,7 @@ class SocketServerConnection extends ServerConnection {
                                 } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err}`); }
                             }
                             await device.setDeviceState(trig.binding, data);
-                        } catch (err) { logger.error(`Error processing MQTT topic ${evt.topic}: ${err}`); }
+                        } catch (err) { logger.error(`Error processing Socket event ${event}: ${err}`); }
                     })();
                     //if (trig.binding.startsWith('gpio')) device.setDeviceState({ state: trigger.state.val });
                     //else device.setDeviceState(trig.binding, data);

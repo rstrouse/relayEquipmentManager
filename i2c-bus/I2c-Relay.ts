@@ -456,7 +456,6 @@ export class i2cRelay extends i2cDeviceBase {
                     break;
             }
             if (typeof byte !== 'undefined') {
-                if (this.i2c.isMock) byte = relay.state;
                 let b = utils.makeBool(byte);
                 if (relay.invert === true) b = !b;
                 if (relay.state !== b) {
@@ -538,12 +537,12 @@ export class i2cRelay extends i2cDeviceBase {
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
                         for (let i = 0; i < this.relays.length; i++) {
                             let r = this.relays[i];
-                            let oldState = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
+                            let current = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
                             if (relay.id === r.id) {
                                 let target = r.invert === true ? !utils.makeBool(newState) : utils.makeBool(newState);
                                 if (target) byte |= (1 << (r.id - 1));
                             }
-                            else if (oldState)
+                            else if (current)
                                 byte |= (1 << (r.id - 1));
                         }
                         await this.sendCommand([0x01, this.encodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10])]);
@@ -561,12 +560,12 @@ export class i2cRelay extends i2cDeviceBase {
                         // Byte is the current data from the relay board and the relays are in the lower 4 bits.
                         for (let i = 0; i < this.relays.length; i++) {
                             let r = this.relays[i];
-                            let oldState = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
+                            let current = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
                             if (relay.id === r.id) {
                                 let target = r.invert === true ? !utils.makeBool(newState) : utils.makeBool(newState);
                                 if(target) byte |= (1 << (r.id - 1));
                             }
-                            else if (oldState)
+                            else if (current)
                                 byte |= (1 << (r.id - 1));
                         }
                         await this.sendCommand([0x01, this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10])]);
@@ -587,12 +586,12 @@ export class i2cRelay extends i2cDeviceBase {
                         let byte = 0x00;
                         for (let i = bmOrd * 8; i < this.relays.length && i < (bmOrd * 8) + 8; i++) {
                             let r = this.relays[i];
-                            let oldState = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
+                            let current = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
                             if (relay.id === r.id) {
                                 let target = r.invert === true ? !utils.makeBool(newState) : utils.makeBool(newState);
                                 if (target) byte |= (1 << (((r.id - (bmOrd * 8)) - 1)));
                             }
-                            else if (oldState) {
+                            else if (current) {
                                 byte |= (1 << (((r.id - (bmOrd * 8)) - 1)));
                             }
                         }
@@ -660,9 +659,13 @@ export class i2cRelay extends i2cDeviceBase {
                     break;
                 case 'string':
                     switch (data.toLowerCase()) {
+                        case 'tripped':
+                        case 'true':
                         case 'on':
                         case '1':
                             newState = true;
+                        case 'untripped':
+                        case 'false':
                         case '0':
                         case 'off':
                             newState = false;
@@ -686,7 +689,9 @@ export class i2cRelay extends i2cDeviceBase {
                     break;
             }
             let oldState = relay.state;
-            if (newState !== oldState) await this.setRelayState({ id: relayId, state: newState });
+            if (newState !== oldState) {
+                await this.setRelayState({ id: relayId, state: newState });
+            }
             if (latch > 0) {
                 this._latchTimers[ordId] = setTimeout(() => this.setRelayState({ id: relayId, state: !newState }), latch);
             }
