@@ -102,7 +102,7 @@ export class GpioController {
                             else {
                                 pinDef.state = value === 1;
                                 cont.gpio.emitFeeds(pin.pinId, pin.headerId);
-                                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pin.state });
+                                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pinDef.state });
                             }
                         });
                     }
