@@ -97,13 +97,16 @@ export class GpioController {
                     }
                     cont.gpio.setExported(pinout.gpioId);
                     if (dir === 'in') {
-                        pin.gpio.watch((err, value) => {
-                            if (err) logger.error(`Watch callback error GPIO Pin# ${pinDef.headerId}-${pinDef.id}`);
-                            else {
-                                pinDef.state = value === 1;
-                                cont.gpio.emitFeeds(pin.pinId, pin.headerId);
-                                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: value });
-                            }
+                        pin.gpio.read().then(result => {
+                            pinDef.state = result;
+                            pin.gpio.watch((err, value) => {
+                                if (err) logger.error(`Watch callback error GPIO Pin# ${pinDef.headerId}-${pinDef.id}`);
+                                else {
+                                    pinDef.state = value === 1;
+                                    cont.gpio.emitFeeds(pin.pinId, pin.headerId);
+                                    webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: value });
+                                }
+                            });
                         });
                     }
                 }
