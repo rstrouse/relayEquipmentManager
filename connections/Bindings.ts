@@ -295,11 +295,14 @@ class SocketServerConnection extends ServerConnection {
                 if (trigger.sourceId !== this.server.id) continue;
                 let val = typeof trig.filter === 'function' ? trig.filter(this.server.get(true), device.get(true), trigger.get(true), data) : true;
                 if (val === true) {
-                    if (trig.binding.startsWith('gpio')) (async () => {
-                        try {
-                            await device.setDeviceState({ state: trigger.state.val });
-                        } catch (err) { }
-                    })();
+                    if (trig.binding.startsWith('gpio')) {
+                        if (!device.isOutput) continue;
+                        (async () => {
+                            try {
+                                await device.setDeviceState({ state: trigger.state.val });
+                            } catch (err) { }
+                        })();
+                    }
                     else (async () => {
                         try {
 
@@ -649,11 +652,14 @@ class MqttConnection extends ServerConnection {
                 if (trigger.sourceId !== this.server.id) continue;
                 let val = typeof trig.filter === 'function' ? trig.filter(this.server.get(true), device.get(true), trigger.get(true), msg) : true;
                 if (val === true) {
-                    if (trig.binding.startsWith('gpio')) (async () => {
-                        try {
-                            await device.setDeviceState({ state: trigger.state.val });
-                        } catch (err) { }
-                    })();
+                    if (trig.binding.startsWith('gpio')) {
+                        if (!device.isOutput) continue;
+                        (async () => {
+                            try {
+                                await device.setDeviceState({ state: trigger.state.val });
+                            } catch (err) { }
+                        })();
+                    } 
                     else (async () => {
                         try {
                             if (typeof trigger.stateExpression !== 'undefined' && trigger.stateExpression.length > 0) {

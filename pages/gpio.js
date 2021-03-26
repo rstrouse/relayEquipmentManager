@@ -65,12 +65,17 @@
             var state = $('<div></div>').appendTo(outer).addClass('pin-state-panel').css({ display: 'inline-block' }).hide();
             $('<div></div>').appendTo(state).toggleButton({ id: 'btnPinState', labelText: 'Pin State' }).attr('data-gpioid', '')
                 .on('click', function (evt) {
-                    var pin = dataBinder.fromElement(pinDef);
-                    pin.state = evt.currentTarget.val();
-                    $.putLocalService('/state/setPinState', { gpioId: pin.gpioId, state: pin.state }, function (p, status, xhr) {
-                        console.log(p);
-                        evt.currentTarget.val(pin.state);
-                    });
+                    if (evt.currentTarget.disabled()) {
+                        evt.stopPropagation();
+                    }
+                    else {
+                        var pin = dataBinder.fromElement(pinDef);
+                        pin.state = evt.currentTarget.val();
+                        $.putLocalService('/state/setPinState', { gpioId: pin.gpioId, state: pin.state }, function (p, status, xhr) {
+                            console.log(p);
+                            evt.currentTarget.val(pin.state);
+                        });
+                    }
                 });
 
             $('<input type="hidden"></input>').appendTo(pin).attr('data-bind', 'header.id').attr('data-datatype', 'int');
@@ -90,14 +95,40 @@
                 required: true,
                 bindColumn: 0, displayColumn: 1, labelText: 'Direction', binding: 'direction',
                 columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Pin Direction', style: { width: '250px' } }],
-                items: o.pinDirections, inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '4.5rem' } }
+                items: o.pinDirections, inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '5rem' } }
+            }).on('selchanged', function (evt) {
+                // If we are an input we need to show the debounce stuff.
+                if (evt.newItem.name === 'input') {
+                    pin.find('div.pnl-input-params').show();
+                    el.find('div#tabsGpioPin').each(function () {
+                        this.showTab('tabPinTriggers', false);
+                        this.selectTabById('tabPinFeeds');
+                    });
+                }
+                else {
+                    pin.find('div.pnl-input-params').hide();
+                    el.find('div#tabsGpioPin').each(function () {
+                        this.showTab('tabPinTriggers', true);
+                    });
+                }
             });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Inverted', bind: 'isInverted' });
-            $('<hr></hr>').appendTo(el);
-            var trigs = $('<div></div>').appendTo(el);
-            $('<div></div>').appendTo(trigs).pnlPinTriggers().hide();
-            var feeds = $('<div></div>').appendTo(el);
-            $('<div></div>').appendTo(feeds).pnlPinFeeds().hide();
+            line = $('<div></div>').appendTo(pin).addClass('pnl-input-params').hide();
+            $('<div></div>').appendTo(line).valueSpinner({
+                required: true, canEdit: true, binding: 'debounceTimeout', labelText: 'Debounce', fmtMask: '#,##0', dataType: 'number', step: 1,
+                min: 0, max: 10000, units: `ms`, inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '5rem' } }
+            });
+            $('<hr></hr>').appendTo(outer);
+            // So lets set up a tabBar.
+            var tabs = $('<div></div>').appendTo(outer).tabBar({ id: 'tabsGpioPin' }).on('tabchange', function(evt) { evt.stopPropagation() });
+            $('<div></div>').appendTo(tabs[0].addTab({ id: 'tabPinTriggers', text: 'Triggers' })).pnlPinTriggers();
+            $('<div></div>').appendTo(tabs[0].addTab({ id: 'tabPinFeeds', text: 'Feeds' })).pnlPinFeeds();
+            tabs[0].selectTabById('tabPinTriggers');
+
+            //var trigs = $('<div></div>').appendTo(el);
+            //$('<div></div>').appendTo(trigs).pnlPinTriggers().hide();
+            //var feeds = $('<div></div>').appendTo(el);
+            //$('<div></div>').appendTo(feeds).pnlPinFeeds().hide();
             $('<div></div>').appendTo(el).addClass('select-pin-message').text('Select a pin from the displayed header(s) to edit its defintion');
             var btnPnl = $('<div class="btn-panel"></div>').appendTo(el).hide();
             $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Save Pin', icon: '<i class="fas fa-save"></i>' })
@@ -106,7 +137,6 @@
                     console.log(pin);
                     // Send this off to the service.
                     $.putLocalService('/config/pin/' + pin.header.id + '/' + pin.id, pin, 'Saving Pin Settings...', function (p, status, xhr) {
-                        console.log(p);
                         self.dataBind({ pin: p });
                     });
                 });
@@ -140,6 +170,17 @@
             }
             if (typeof data.pin.gpioId !== 'undefined') el.find('div#divGPIOIdLine').show();
             else el.find('div#divGPIOLine').hide();
+            console.log(data);
+            if (data.pin.isActive) el.find('div#btnPinState').show();
+            else el.find('div#btnPinState').hide();
+            el.find('div#btnPinState').each(function () {
+                this.disabled(data.pin.direction === 'input');
+            });
+            el.find('div#tabsGpioPin').each(function () {
+                this.showTab('tabPinTriggers', data.pin.direction !== 'input');
+                if (data.pin.direction === 'input') this.selectTabById('tabPinFeeds');
+            });
+
         }
     });
     $.widget('pic.pnlPinTriggers', {

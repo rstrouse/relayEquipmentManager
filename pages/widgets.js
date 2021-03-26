@@ -1086,13 +1086,23 @@ $.ui.position.fieldTip = {
             if (typeof o.id !== 'undefined') el.attr('id', o.id);
             //el.addClass('btn');
             el[0].val = function (val) { return self.val(val); };
+            el[0].disabled = function (val) { return self.disabled(val); }
             if (o.bind) el.attr('data-bind', o.bind);
             div.appendTo(el);
             $('<label></label>').appendTo(el).text(o.labelText);
             el.on('click', function (evt) {
-                self.val(!o.isOn);
+                if (!self.disabled()) self.val(!o.isOn);
             });
 
+        },
+        disabled: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val === 'undefined')
+                return el.hasClass('disabled');
+            else {
+                if (val) el.addClass('disabled');
+                else el.removeClass('disabled');
+            }
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
@@ -1629,6 +1639,7 @@ $.ui.position.fieldTip = {
         _create: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('picTabBar');
+            if (typeof o.id !== 'undefined') el.attr('id', o.id);
             $('<div class="picTabs"></div>').prependTo(el);
             $('<div class="picTabContents tab-contents"></div>').appendTo(el);
             el.find('div.picTabs:first').on('click', 'div.picTab', function (evt) {

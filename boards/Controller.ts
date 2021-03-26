@@ -747,6 +747,7 @@ export class Gpio extends ConfigItem {
         }
         return true;
     }
+    public isExported(gpioId: number) { return this.exported.indexOf(gpioId) >= 0; }
     public setUnexported(gpioId: number) {
         let ndx = this.data.exported.indexOf(gpioId);
         let bExported = false;
@@ -757,7 +758,7 @@ export class Gpio extends ConfigItem {
         }
         return bExported;
     }
-    public get exported(): number[] { return this.data.exported; }
+    public get exported(): number[] { if (typeof this.data.exported === 'undefined') this.data.exported = []; return this.data.exported; }
     public set exported(val: number[]) { this.data.exported.length = 0; this.data.exported.push.apply(this.data.exported, val); }
     public get pins(): GpioPinCollection { return new GpioPinCollection(this.data, 'pins'); }
     public getDeviceInputs(): any[] {
@@ -954,16 +955,28 @@ export class GpioPin extends ConfigItem {
     public set state(val) { this.setMapVal('state', val, vMaps.pinStates); }
     public get name(): string { return this.data.name = `Pin #${this.headerId}-${this.id}`; }
     public set name(val: string) { this.data.name = `Pin #${this.headerId}-${this.id}`; }
+    public get debounceTimeout(): number { return this.data.debounceTimeout; }
+    public set debounceTimeout(val: number) { this.setDataVal('debounceTimeout', val); }
     public get triggers(): GpioPinTriggerCollection { return new GpioPinTriggerCollection(this.data, 'triggers'); }
     public get feeds(): DeviceFeedCollection { return new DeviceFeedCollection(this.data, 'feeds'); }
     public async setPinAsync(data: any) {
-        return new Promise<GpioPin>((resolve, reject) => {
+        try {
             this.set(data);
-            resolve(this);
-        });
+            if (!this.isOutput) {
+                if (this.triggers.length > 0) {
+                    for (let i = this.triggers.length - 1; i >= 0; i--) {
+                        this.triggers.removeItemByIndex(i);
+                    }
+                    await gpioCont.resetPinTriggers(this.headerId, this.id);
+                }
+            }
+            gpioCont.initPin(this);
+            return this;
+        } catch (err) { return Promise.reject(new Error(`Error saving pin ${this.headerId}-${this.id}`)); }
     }
     public async jogPinAsync(data: any) {
         return new Promise<GpioPin>(async (resolve, reject) => {
+            if (!this.isOutput) return Promise.reject(new Error(`setDeviceState: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
             if (!this.isActive) {
                 logger.error(`GPIO Pin #${data.headerId} ${data.pinId} is not active.`);
                 reject(new Error(`GPIO Pin #${data.headerId} ${data.pinId} is not active.`));
@@ -985,6 +998,8 @@ export class GpioPin extends ConfigItem {
     }
     public async setPinStateAsync(state: string | boolean | number): Promise<GpioPin> {
         return new Promise<GpioPin>(async (resolve, reject) => {
+            if (!this.isOutput) return Promise.reject(new Error(`setDeviceState: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
+
             let mv = this.getMapVal(utils.makeBool(state) ? 'on' : 'off', vMaps.pinStates);
             if (typeof mv !== 'undefined') {
                 if (mv.gpio !== 'undefined' && this.isActive) {
@@ -1048,8 +1063,7 @@ export class GpioPin extends ConfigItem {
             // We need to know what relay we are referring to.
             // gpio:1:47 For GPIO the headerId is the busId and the Pin # is the deviceId.
             // Check to see if the pin is an output pin.  If it is an input only then we have us a problem
-            if (!this.isOutput)
-                return Promise.reject(new Error(`setDeviceState: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
+            if (!this.isOutput) return Promise.reject(new Error(`setDeviceState: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
             // At this point we have the current value.
             let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
             if (isNaN(latch))
@@ -1077,8 +1091,7 @@ export class GpioPin extends ConfigItem {
             // We need to know what relay we are referring to.
             // gpio:1:47 For GPIO the headerId is the busId and the Pin # is the deviceId.
             // Check to see if the pin is an output pin.  If it is an input only then we have us a problem
-            if (!this.isOutput)
-                return Promise.reject(new Error(`feedDeviceValue: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
+            if (!this.isOutput) return Promise.reject(new Error(`feedDeviceValue: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
             // At this point we have the current value.
             let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
             if (isNaN(latch))
@@ -1103,17 +1116,22 @@ export class GpioPin extends ConfigItem {
     public async deletePinTriggerAsync(triggerId: number): Promise<GpioPin> {
         return new Promise<GpioPin>((resolve, reject) => {
             this.triggers.removeItemById(triggerId);
+            gpioCont.resetPinTriggers(this.headerId, this.id);
             resolve(this);
         });
     }
     public async setPinTriggerAsync(data): Promise<GpioPinTrigger> {
-        let c = this.triggers.find(elem => elem.id === data.id);
-        if (typeof c === 'undefined') {
-            data.id = this.triggers.getMaxId(false, -1) + 1;
-            if (data.id === 0) data.id = 1;
-            c = this.triggers.getItemById(data.id, true);
-        }
-        return await c.setPinTriggerAsync(data);
+        try {
+            let c = this.triggers.find(elem => elem.id === data.id);
+            if (typeof c === 'undefined') {
+                data.id = this.triggers.getMaxId(false, -1) + 1;
+                if (data.id === 0) data.id = 1;
+                c = this.triggers.getItemById(data.id, true);
+            }
+            let trig = await c.setPinTriggerAsync(data);
+            gpioCont.resetPinTriggers(this.headerId, this.id);
+            return trig;
+        } catch(err) { return Promise.reject(new Error(`Error Setting pin trigger ${err.message}`)); }
     }
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
@@ -1208,11 +1226,10 @@ export class DataTrigger extends ConfigItem {
     public makeExpression() { return DataTrigger._makeExpression(this.data, 'data'); }
     public makeTriggerFunction() { return new Function('connection', 'trigger', 'data', DataTrigger._makeExpression(this.data, 'data')); }
     protected static _makeExpression(data, dataName) {
+        let bindingCount = (typeof data.bindings !== 'undefined') ? data.bindings.filter(elem => utils.makeBool(elem.isActive) === true).length : 0;
         let expression = '';
-        if ((typeof data.bindings === 'undefined' || data.bindings.length == 0) && (typeof data.expression === 'undefined' || data.expression.length === 0)) {
-            return 'return true;';
-        }
-        if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) {
+        if (bindingCount === 0 && (typeof data.expression === 'undefined' || data.expression.length === 0)) return 'return true;';
+        if (bindingCount > 0) {
             let n = 0;
             expression += 'if(!(';
             if (utils.makeBool(data.usePinId)) {
@@ -1221,8 +1238,7 @@ export class DataTrigger extends ConfigItem {
             }
             for (let i = 0; i < data.bindings.length; i++) {
                 let b = data.bindings[i];
-                if (!utils.makeBool(b.isActive))
-                    continue;
+                if (!utils.makeBool(b.isActive)) continue;
                 let op = vMaps.operators.transform(b.operator);
                 if (n !== 0)
                     expression += ' && ';
@@ -1238,7 +1254,7 @@ export class DataTrigger extends ConfigItem {
         if (typeof data.expression !== 'undefined' && data.expression !== '') {
             expression += ' {' + data.expression + '}';
         }
-        else if (typeof data.bindings !== 'undefined' && data.bindings.length > 0) { expression += ' else return true;'; }
+        else if (bindingCount > 0) { expression += ' else return true;'; }
         logger.debug(`Created filter expression ${expression}`);
         return expression;
     }

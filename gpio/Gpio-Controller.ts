@@ -7,12 +7,11 @@ import { setTimeout, clearTimeout } from "timers";
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { vMaps, valueMap, utils } from "../boards/Constants";
-import { cont, DeviceBinding } from "../boards/Controller";
+import { cont, DeviceBinding, GpioPin } from "../boards/Controller";
 import { IDevice, DeviceStatus } from "../devices/AnalogDevices";
 
 import { PinDefinitions } from "../pinouts/Pinouts";
-import { connBroker } from "../connections/Bindings";
-import { EPERM } from "constants";
+import { connBroker, ServerConnection } from "../connections/Bindings";
 const gp = require('onoff').Gpio;
 
 export class GpioController {
@@ -46,46 +45,115 @@ export class GpioController {
                 return direction;
         }
     }
+    public resetPinTriggers(headerId: number, pinId: number) {
+        let pin = this.pins.find(elem => elem.pinId === pinId && elem.headerId === headerId);
+        pin.resetTriggers();
+    }
+
+    public initPin(pinDef: GpioPin): gpioPinComms {
+        let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === pinDef.headerId);
+        let dir = pinDef.direction.gpio;
+        let opts = { activeLow: pinDef.isInverted, reconfigureDirection: false };
+        let pinoutHeader = cont.pinouts.headers.find(elem => elem.id === pinDef.headerId);
+        if (typeof pinoutHeader !== 'undefined') {
+            let pinout = pinoutHeader.pins.find(elem => elem.id === pinDef.id);
+            if (typeof pinout !== 'undefined') {
+                if (!pinDef.isActive) {
+                    if (cont.gpio.isExported(pinout.gpioId)) {
+                        let p;
+                        if (gp.accessible)
+                            p = new gp(pinout.gpioId, dir);
+                        else
+                            p = new MockGpio(pinout.gpioId, dir);
+                        p.unexport();
+                        cont.gpio.setUnexported(pinout.gpioId);
+                        if (typeof pin !== 'undefined') pin.gpio = undefined;
+                        let ndx = this.pins.findIndex(elem => elem.gpioId === pinout.gpioId);
+                        if (ndx !== -1) this.pins.splice(ndx, 1);
+                        logger.info(`Unexported Gpio pin#${pinDef.headerId}-${pinDef.id} ${pinout.gpioId}`);
+                    }
+                }
+                else {
+                    if (typeof pin === 'undefined') {
+                        pin = new gpioPinComms(pinDef.headerId, pinDef.id, pinout.gpioId);
+                        this.pins.push(pin);
+                    }
+                    else if (typeof pin.gpio !== 'undefined') {
+                        if (dir !== pin.gpio.direction()) {
+                            opts.reconfigureDirection = true;
+                        }
+                        pin.gpio.unwatchAll();
+                    }
+                    if (dir === 'in' && pinDef.debounceTimeout > 0) opts['debounceTimeout'] = pinDef.debounceTimeout;
+                    let stateDir = this.translateState(dir, pinDef.state.name);
+                    if (gp.accessible) {
+                        logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${stateDir} on Header ${pinDef.headerId} Edge: ${dir === 'in' ? 'both' : 'none'}. ${JSON.stringify(opts)}`);
+                        pin.gpio = new gp(pinout.gpioId, stateDir, dir === 'in' ? 'both' : 'none', opts);
+                        logger.info(`Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId} Configured.`);
+                    }
+                    else {
+                        logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId}:${stateDir} on Header ${pinDef.headerId} Edge: ${dir === 'in' ? 'both' : 'none'}. ${JSON.stringify(opts)}`);
+                        pin.gpio = new MockGpio(pinout.gpioId, stateDir, dir === 'in' ? 'both' : 'none', opts);
+                    }
+                    cont.gpio.setExported(pinout.gpioId);
+                    if (dir === 'in') {
+                        pin.gpio.watch((err, value) => {
+                            if (err) logger.error(`Watch callback error GPIO Pin# ${pinDef.headerId}-${pinDef.id}`);
+                            else {
+                                pinDef.state = value === 1;
+                                cont.gpio.emitFeeds(pin.pinId, pin.headerId);
+                                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pin.state });
+                            }
+                        });
+                    }
+                }
+            }
+            else logger.error(`Pin #${pinDef.id} does not exist on Header ${pinDef.headerId}.`)
+        }
+        else logger.error(`Cannot find Pin #${pinDef.id} on Header ${pinDef.headerId}.  Header does not exist on this board.`)
+        return pin;
+    }
     public initPins() {
         let pinouts = cont.pinouts;
         logger.info(`Initializing GPIO Pins ${cont.gpio.pins.length}`);
-        let prevExported = cont.gpio.exported;
+        let prevExported = [...cont.gpio.exported];
         let exported = [];
         let useGpio = gp.accessible;
         for (let i = 0; i < cont.gpio.pins.length; i++) {
             let pinDef = cont.gpio.pins.getItemByIndex(i);
-            if (!pinDef.isActive) continue;
-            let pinoutHeader = pinouts.headers.find(elem => elem.id === pinDef.headerId);
-            if (typeof pinoutHeader !== 'undefined') {
-                let pinout = pinoutHeader.pins.find(elem => elem.id === pinDef.id);
-                if (typeof pinout !== 'undefined') {
-                    let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === pinDef.headerId);
-                    if (typeof pin === 'undefined') {
-                        pin = new gpioPinComms(pinDef.headerId, pinDef.id, pinout.gpioId);
-                        this.pins.push(pin);
-                        if (useGpio) {
-                            logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId}.`);
-                            pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
-                            logger.info(`Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId} Configured.`);
-                        }
-                        else {
-                            logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId} on Header ${pinDef.headerId}.`);
-                            pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
-                        }
-                        cont.gpio.setExported(pinout.gpioId);
-
-                        exported.push(pinout.gpioId);
-                        pin.gpio.read().then((value) => {
-                            pin.state = value;
-                            webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pin.state });
-                        }).catch(err => logger.error(err));
-                    }
-                }
-                else
-                    logger.error(`Pin #${pinDef.id} does not exist on Header ${pinDef.headerId}.`)
-            }
-            else
-                logger.error(`Cannot find Pin #${pinDef.id} for Header ${pinDef.headerId}.  Header does not exist on this board.`)
+            let pin = this.initPin(pinDef);
+            if (typeof pin !== 'undefined' && pinDef.isActive) exported.push(pin.gpioId);
+            //if (!pinDef.isActive) continue;
+            //let pinoutHeader = pinouts.headers.find(elem => elem.id === pinDef.headerId);
+            //if (typeof pinoutHeader !== 'undefined') {
+            //    let pinout = pinoutHeader.pins.find(elem => elem.id === pinDef.id);
+            //    if (typeof pinout !== 'undefined') {
+            //        let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === pinDef.headerId);
+            //        if (typeof pin === 'undefined') {
+            //            pin = new gpioPinComms(pinDef.headerId, pinDef.id, pinout.gpioId);
+            //            this.pins.push(pin);
+            //            if (useGpio) {
+            //                logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId}.`);
+            //                pin.gpio = new gp(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+            //                logger.info(`Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId} Configured.`);
+            //            }
+            //            else {
+            //                logger.info(`Configuring Mock Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId}.`);
+            //                pin.gpio = new MockGpio(pinout.gpioId, this.translateState(pinDef.direction.gpio, pinDef.state.name), 'none', { activeLow: pinDef.isInverted, reconfigureDirection: false });
+            //            }
+            //            cont.gpio.setExported(pinout.gpioId);
+            //            exported.push(pinout.gpioId);
+            //            pin.gpio.read().then((value) => {
+            //                pin.state = value;
+            //                webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: pin.state });
+            //            }).catch(err => logger.error(err));
+            //        }
+            //    }
+            //    else
+            //        logger.error(`Pin #${pinDef.id} does not exist on Header ${pinDef.headerId}.`)
+            //}
+            //else
+            //    logger.error(`Cannot find Pin #${pinDef.id} for Header ${pinDef.headerId}.  Header does not exist on this board.`)
         }
         // Unexport any pins that we have previously been exported.
         for (let i = 0; i < prevExported.length; i++) {
@@ -163,6 +231,21 @@ export class gpioPinComms implements IDevice {
             return val;
         } catch (err) { this.hasFault = true; this.status = err.message; return Promise.reject(err); }
     }
+    public async resetTriggers() {
+        try {
+            // Get all the connections we are dealing with.
+            let conns: ServerConnection[] = [];
+            let pin = cont.gpio.pins.getPinById(this.headerId, this.pinId);
+            for (let i = 0; i < pin.triggers.length; i++) {
+                let trigger = pin.triggers.getItemByIndex(i);
+                if (typeof conns.find(elem => elem.connectionId === trigger.sourceId) === 'undefined') conns.push(connBroker.findServer(trigger.sourceId));
+            }
+            for (let i = 0; i < conns.length; i++) {
+                let conn = conns[i];
+                conn.resetDeviceTriggers(`gpio:${this.headerId || 0}:${this.pinId}`);
+            }
+        } catch (err) { return logger.error(`Error resetting trigger for device.`); }
+    }
     public async writePinAsync(val: number, latch?: number): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
             try {
@@ -176,7 +259,7 @@ export class gpioPinComms implements IDevice {
                     this._latchTimer = setTimeout(async () => {
                         try {
                             // await this.writePinAsync(val ? 0 : 1, -1);
-                            cont.gpio.setDeviceStateAsync(new DeviceBinding(`gpio:0:${this.pinId}`), val ? 0 : 1);
+                            cont.gpio.setDeviceStateAsync(new DeviceBinding(`gpio:${this.headerId || 0}:${ this.pinId }`), val ? 0 : 1);
                         }
                         catch (err) { logger.error(`Error unlatching GPIO Pin #${this.headerId}-${this.pinId}: ${err.message}`); }
                     }, latch);
@@ -293,6 +376,7 @@ class MockGpio {
         logger.info(`Get GPIO #${this._pinId} ActiveLow: ${this._opts.activeLow}`);
         return utils.makeBool(this._opts.activeLow);
     }
+    public direction() { return this._direction; }
     public setActiveLow(activeLow: boolean) { this._opts.activeLow = activeLow; }
     public unexport() {
         logger.info(`Unexported GPIO #${this._pinId}`);
