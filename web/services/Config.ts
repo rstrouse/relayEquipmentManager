@@ -10,14 +10,89 @@ import { ConnectionBindings } from "../../connections/Bindings";
 import { gpioCont } from "../../gpio/Gpio-Controller";
 import { SpiAdcChips } from "../../spi-adc/SpiAdcChips";
 export class ConfigRoute {
-    public static initRoutes(app: express.Application) {
-        app.get('/config/options/general', (req, res) => {
+    // GPIO Config services.
+    public static initGPIO(app: express.Application) {
+        app.get('/config/options/gpio/pin/feeds/:headerId/:pinId', (req, res) => {
+            let pin = cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10));
             let opts = {
-                controllerTypes: vMaps.controllerTypes.toArray(),
-                controller: cont.getExtended(),
-                logger: config.getSection('log')
+                pin: pin.getExtended(),
+                feeds: pin.feeds.toExtendedArray(),
+                connections: cont.connections.toExtendedArray()
+            }
+            opts.connections.unshift(cont.getInternalConnection().getExtended());
+            return res.status(200).send(opts);
+        });
+        app.put('/config/gpio/pin/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.gpio.setDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        })
+        app.delete('/config/gpio/pin/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.gpio.deleteDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+
+        app.get('/config/options/gpio/pin/:headerId/:pinId', (req, res) => {
+            let opts = {
+                pinDirections: vMaps.pinDirections.toArray(),
+                pinTypes: vMaps.pinTypes.toArray(),
+                triggerStates: vMaps.triggerStates.toArray(),
+                pin: cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10)).getExtended()
+            }
+            return res.status(200).send(opts);
+        });
+        app.get('/config/options/trigger/:headerId/:pinId/:triggerId', (req, res) => {
+            let pin = cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10));
+            let trigger = pin.triggers.getItemById(parseInt(req.params.triggerId, 10));
+            let opts = {
+                pinDirections: vMaps.pinDirections.toArray(),
+                pinTypes: vMaps.pinTypes.toArray(),
+                triggerStates: vMaps.triggerStates.toArray(),
+                pin: pin.getExtended(),
+                trigger: trigger.getExtended(),
+                connections: cont.connections.toExtendedArray()
             };
             return res.status(200).send(opts);
+        });
+        app.put('/config/gpio/pin/:headerId/:pinId', async (req, res, next) => {
+            try {
+                var headerId = parseInt(req.params.headerId, 10);
+                var pinId = parseInt(req.params.pinId, 10);
+                if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
+                if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
+                let pin = await cont.gpio.setPinAsync(headerId, pinId, req.body);
+                return res.status(200).send(pin.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/gpio/pin/trigger/:headerId/:pinId', async (req, res, next) => {
+            try {
+                let headerId = parseInt(req.params.headerId, 10);
+                let pinId = parseInt(req.params.pinId, 10);
+                if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
+                if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
+                let trig = await cont.gpio.setPinTriggerAsync(headerId, pinId, req.body);
+                return res.status(200).send(trig.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/gpio/pin/trigger/:headerId/:pinId/:triggerId', async (req, res, next) => {
+            try {
+                var headerId = parseInt(req.params.headerId, 10);
+                var pinId = parseInt(req.params.pinId, 10);
+                var triggerId = parseInt(req.params.triggerId, 10);
+                if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
+                if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
+                if (isNaN(triggerId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
+                let pin = await cont.gpio.deletePinTriggerAsync(headerId, pinId, triggerId);
+                return res.status(200).send(pin.getExtended());
+            }
+            catch (err) { next(err); }
         });
         app.get('/config/options/gpio', (req, res) => {
             let pinouts = cont.pinouts;
@@ -41,14 +116,23 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
-        app.get('/config/options/pin/:headerId/:pinId/feeds', (req, res) => {
+    }
+    public static initRoutes(app: express.Application) {
+        ConfigRoute.initGPIO(app);
+        app.get('/config/options/general', (req, res) => {
             let opts = {
-                pin: cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10)).getExtended(),
-                connections: cont.connections.toExtendedArray()
-            }
-            opts.connections.unshift(cont.getInternalConnection().getExtended());
+                controllerTypes: vMaps.controllerTypes.toArray(),
+                controller: cont.getExtended(),
+                logger: config.getSection('log')
+            };
             return res.status(200).send(opts);
         });
+        
+
+
+
+
+        //
         app.get('/config/options/spi/:controllerId', (req, res) => {
             let opts = {
                 adcChipTypes: cont.spiAdcChips,
@@ -200,28 +284,6 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
-        app.get('/config/options/pin/:headerId/:pinId', (req, res) => {
-            let opts = {
-                pinDirections: vMaps.pinDirections.toArray(),
-                pinTypes: vMaps.pinTypes.toArray(),
-                triggerStates: vMaps.triggerStates.toArray(),
-                pin: cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10)).getExtended()
-            }
-            return res.status(200).send(opts);
-        });
-        app.get('/config/options/trigger/:headerId/:pinId/:triggerId', (req, res) => {
-            let pin = cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10));
-            let trigger = pin.triggers.getItemById(parseInt(req.params.triggerId, 10));
-            let opts = {
-                pinDirections: vMaps.pinDirections.toArray(),
-                pinTypes: vMaps.pinTypes.toArray(),
-                triggerStates: vMaps.triggerStates.toArray(),
-                pin: pin.getExtended(),
-                trigger: trigger.getExtended(),
-                connections: cont.connections.toExtendedArray()
-            };
-            return res.status(200).send(opts);
-        });
 
         app.get('/config/options/connections/:connectionId', (req, res) => {
             let connection = (typeof req.params.connectionId !== 'undefined') ? cont.connections.getItemById(parseInt(req.params.connectionId, 10)).getExtended() : undefined;
@@ -260,55 +322,6 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
 
-        });
-        app.put('/config/pin/:headerId/:pinId', async (req, res, next) => {
-            try {
-                var headerId = parseInt(req.params.headerId, 10);
-                var pinId = parseInt(req.params.pinId, 10);
-                if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
-                if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
-                let pin = await cont.gpio.setPinAsync(headerId, pinId, req.body);
-                return res.status(200).send(pin.getExtended());
-            }
-            catch (err) { next(err); }
-        });
-        app.put('/config/pin/trigger/:headerId/:pinId', async (req, res, next) => {
-            try {
-                let headerId = parseInt(req.params.headerId, 10);
-                let pinId = parseInt(req.params.pinId, 10);
-                if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
-                if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
-                let trig = await cont.gpio.setPinTriggerAsync(headerId, pinId, req.body);
-                return res.status(200).send(trig.getExtended());
-            }
-            catch (err) { next(err); }
-        });
-        app.delete('/config/pin/trigger/:headerId/:pinId/:triggerId', async (req, res, next) => {
-            try {
-                var headerId = parseInt(req.params.headerId, 10);
-                var pinId = parseInt(req.params.pinId, 10);
-                var triggerId = parseInt(req.params.triggerId, 10);
-                if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
-                if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
-                if (isNaN(triggerId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
-                let pin = await cont.gpio.deletePinTriggerAsync(headerId, pinId, triggerId);
-                return res.status(200).send(pin.getExtended());
-            }
-            catch (err) { next(err); }
-        });
-        app.put('/config/pin/feed', async (req, res, next) => {
-            try {
-                let feeds = await cont.gpio.setDeviceFeed(req.body);
-                return res.status(200).send(feeds.toExtendedArray());
-            }
-            catch (err) { next(err); }
-        })
-        app.delete('/config/pin/feed', async (req, res, next) => {
-            try {
-                let feeds = await cont.gpio.deleteDeviceFeed(req.body);
-                return res.status(200).send(feeds.toExtendedArray());
-            }
-            catch (err) { next(err); }
         });
         app.search('/config/findServer', async (req, res, next) => {
             let prom = new Promise<void>((resolve, reject) => {

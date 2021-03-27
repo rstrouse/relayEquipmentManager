@@ -32,7 +32,7 @@
                 el.on('selchanged', 'div.pin-header', function (evt) {
                     // Bind up the gpio data from our set.
                     // Lets round trip to the server to get the data we need for the specific pin.
-                    $.getLocalService('/config/options/pin/' + evt.headerId + '/' + evt.newPinId, null, function (pin, status, xhr) {
+                    $.getLocalService('/config/options/gpio/pin/' + evt.headerId + '/' + evt.newPinId, null, function (pin, status, xhr) {
                         // Find the pin definition from the header.
                         console.log(pin);
                         el.find('div.pnl-pin-definition').each(function () { console.log(this); this.dataBind(pin); });
@@ -136,7 +136,7 @@
                     var pin = dataBinder.fromElement(pinDef);
                     console.log(pin);
                     // Send this off to the service.
-                    $.putLocalService('/config/pin/' + pin.header.id + '/' + pin.id, pin, 'Saving Pin Settings...', function (p, status, xhr) {
+                    $.putLocalService('/config/gpio/pin/' + pin.header.id + '/' + pin.id, pin, 'Saving Pin Settings...', function (p, status, xhr) {
                         self.dataBind({ pin: p });
                     });
                 });
@@ -204,7 +204,7 @@
                             var trigger = dataBinder.fromElement(dlg);
                             if (dataBinder.checkRequired(dlg, true)) {
                                 console.log(trigger);
-                                $.putLocalService('/config/pin/trigger/' + trig.pin.headerId + '/' + trig.pin.id, trigger, 'Saving Trigger...', function (t, status, xhr) {
+                                $.putLocalService('/config/gpio/pin/trigger/' + trig.pin.headerId + '/' + trig.pin.id, trigger, 'Saving Trigger...', function (t, status, xhr) {
                                     dataBinder.bind(dlg, t);
                                     self.reloadTriggers();
                                 });
@@ -284,7 +284,7 @@
                         text: 'Yes', icon: '<i class="fas fa-trash"></i>',
                         click: function () {
                             $.pic.modalDialog.closeDialog(this);
-                            $.deleteLocalService('/config/pin/trigger/' + p.pin.headerId + '/' + p.pin.id + '/' + evt.dataKey, {}, 'Deleting Trigger...', function (c, status, xhr) {
+                            $.deleteLocalService('/config/gpio/pin/trigger/' + p.pin.headerId + '/' + p.pin.id + '/' + evt.dataKey, {}, 'Deleting Trigger...', function (c, status, xhr) {
                                 self.loadTriggers(c.triggers);
                             });
                         }
@@ -309,7 +309,7 @@
         reloadTriggers: function () {
             var self = this, o = self.options, el = self.element;
             var p = dataBinder.fromElement(el);
-            $.getLocalService('/config/options/pin/' + p.pin.headerId + '/' + p.pin.id, null, function (opts, status, xhr) {
+            $.getLocalService('/config/options/gpio/pin/' + p.pin.headerId + '/' + p.pin.id, null, function (opts, status, xhr) {
                 self.loadTriggers(opts.pin.triggers);
             });
         },
@@ -640,13 +640,13 @@
                 columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
             })
                 .on('additem', function (evt) {
-                    $.getLocalService('/config/options/pin/' + o.headerId + '/' + o.pinId + '/feeds', null, function (feeds, status, xhr) {
+                    $.getLocalService('/config/options/gpio/pin/feeds/' + o.headerId + '/' + o.pinId, null, function (feeds, status, xhr) {
                         feeds.feed = { isActive: true };
                         self._createFeedDialog('dlgAddGPIOFeed', 'Add Feed to GPIO Device', feeds);
                     });
                 }).on('edititem', function (evt) {
-                    $.getLocalService('/config/options/pin/' + o.headerId + '/'+ o.pinId + '/'+ '/feeds', null, function (feeds, status, xhr) {
-                        feeds.feed = o.feeds.find(elem => elem.id == evt.dataKey);
+                    $.getLocalService('/config/options/gpio/pin/feeds/' + o.headerId + '/' + o.pinId, null, function (feeds, status, xhr) {
+                        feeds.feed = feeds.feeds.find(elem => elem.id == evt.dataKey);
                         self._createFeedDialog('dlgEditGPIOFeed', 'Edit GPIO Device Feed', feeds);
                     });
                 }).on('removeitem', function (evt) {
@@ -664,7 +664,7 @@
                                     pinId: o.pinId,
                                     id: evt.dataKey
                                 };
-                                $.deleteLocalService('/config/pin/feed', feed, function (feeds, status, xhr) {
+                                $.deleteLocalService('/config/gpio/pin/feed', feed, function (feeds, status, xhr) {
                                     $.pic.modalDialog.closeDialog(dlg);
                                     // self.dataBind(feeds)
                                     self.reloadFeeds();
@@ -722,7 +722,7 @@
                 items: f.connections, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
             })
                 .on('selchanged', function (evt) {
-                    dlg.find('div.pnl-i2c-feed-params').each(function () { this.setConnection(evt.newItem); });
+                    dlg.find('div.pnl-gpio-feed-params').each(function () { this.setConnection(evt.newItem); });
                 });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
             line = $('<div></div>').appendTo(dlg);
@@ -748,13 +748,10 @@
             }).hide();
 
             line = $('<div></div>').appendTo(dlg);
-            $('<div></div>').appendTo(dlg).pnlDeviceFeedParams({ device: f.device });
+            $('<div></div>').appendTo(dlg).pnlGpioFeedParams({ device: f.device });
             if (typeof f.feed.id !== 'undefined') {
                 conn[0].disabled(true);
-                dlg.find('div.pnl-gpio-feed-params').each(function () {
-                    var pnl = this;
-                    self.dataBind(f.feed);
-                });
+                dlg.find('div.pnl-gpio-feed-params').each(function () { this.dataBind(f.feed); });
                 dataBinder.bind(dlg, f.feed);
             }
             dlg.css({ overflow: 'visible' });
@@ -762,13 +759,13 @@
         },
         saveFeed: function (feed) {
             var self = this, o = self.options, el = self.element;
-            $.putLocalService('/config/pin/feed', feed, 'Saving Device Feed...', function (f, result, xhr) {
+            $.putLocalService('/config/gpio/pin/feed', feed, 'Saving Device Feed...', function (f, result, xhr) {
                 self.reloadFeeds();
             });
         },
         reloadFeeds: function() {
             var self = this, o = self.options, el = self.element;
-            $.getLocalService('/config/options/pin/' + o.headerId + '/' + o.pinId, null, function (pin, status, xhr) {
+            $.getLocalService('/config/options/gpio/pin/' + o.headerId + '/' + o.pinId, null, function (pin, status, xhr) {
                 // Find the pin definition from the header.
                 console.log(pin);
                 self.dataBind(pin);
@@ -788,7 +785,7 @@
             o.pinId = data.pin.id;
         }
     });
-    $.widget('pic.pnlDeviceFeedParams', {
+    $.widget('pic.pnlGpioFeedParams', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -813,6 +810,7 @@
                     if (fldEventName[0].val() !== data.eventName) {
                         fldEventName[0].val(data.eventName);
                         dataBinder.bind(el, data);
+                        console.log({ msg: 'Binding Feed', data: data });
                     }
                 }
                 else {
