@@ -1186,7 +1186,7 @@ export class AtlasEZOprs extends AtlasEZO {
             //this.options.status = await this.getStatus();
             this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
             await this.getUnits(),
-            await this.getDecPlaces()
+                await this.getDecPlaces()
             await this.getAlarm();
             return Promise.resolve(true);
         }
@@ -1300,7 +1300,7 @@ export class AtlasEZOprs extends AtlasEZO {
         catch (err) { this.logError(err); }
         finally { this.suspendPolling = false; }
     }
-    private transformUnits(code: string): { name: string, desc: string } { 
+    private transformUnits(code: string): { name: string, desc: string } {
         let units = { name: code, desc: 'Unknown' };
         switch (code) {
             case 'psi':
@@ -1327,7 +1327,7 @@ export class AtlasEZOprs extends AtlasEZO {
     public async setAlarm(enable: boolean, pressure?: number, tolerance?: number): Promise<boolean> {
         try {
             this.suspendPolling = true;
-            if (typeof this.options.alarm === 'undefined') this.options.alarm = {enable: false, pressure:0, tolerance: 0};
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, pressure: 0, tolerance: 0 };
             if (enable) {
                 if (typeof pressure === 'undefined' || typeof tolerance === 'undefined') return Promise.reject(new Error('Alarm must include a pressure setting and tolerance.'));
                 await this.execCommand(`Alarm,en,1`, 300);
@@ -1349,7 +1349,7 @@ export class AtlasEZOprs extends AtlasEZO {
     public async getAlarm(): Promise<boolean> {
         try {
             this.suspendPolling = true;
-            if (typeof this.options.alarm === 'undefined') this.options.alarm = {enable:false, pressure: 0, tolerance: 0};
+            if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, pressure: 0, tolerance: 0 };
             let result = await this.execCommand('Alarm,?', 300);
             let arrDims = result.split(',');
             this.options.alarm.enable = arrDims.length > 2;
@@ -1367,6 +1367,17 @@ export class AtlasEZOprs extends AtlasEZO {
             if (bind.params.length > 0 && typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
             return this.values.pressure;
         } catch (err) { return Promise.reject(err); }
+    }
+    public async calibrate(data): Promise<I2cDevice> {
+        try {
+            this.suspendPolling = true;
+            let value = data.calibration || 0;
+            await this.execCommand(`factorycal,${value}`, 900);
+            this.options.calPoint = Math.floor(value);
+            return this.device;
+        }
+        catch (err) { this.logError(err); }
+        finally { this.suspendPolling = false; }
     }
 }
 export class AtlasEZOrtd extends AtlasEZO {

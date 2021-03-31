@@ -338,6 +338,68 @@
               ]
             },
             {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Calibration",
+                "style": {
+                  "display": "inline-block",
+                  "verticalAlign": "top",
+                  "marginLeft": ".5rem"
+                },
+                "attrs": { "data-bindingcontext": "calibration" }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "21rem" },
+                    "html": "Calibrating the sensor sets the 0 point to the current pressure sensed by the probe.  Ensure the pressure is 0 and press the calibrate button.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "inline-block",
+                      "verticalAlign": "top"
+                    }
+                  },
+                  "options": [
+                    {
+                      "dataType": "panel",
+                      "field": {
+                        "type": "div",
+                        "attrs": { "data-bindingcontext": "calibrate" }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "actionButton",
+                            "text": "Calibrate",
+                            "icon": "<i class=\"fas fa-cogs\"></i>",
+                            "style": { "width": "7rem" }
+                          },
+                          "fieldEvents": {
+                            "click": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/calibrate`",
+                              "message": "Calibrating Sensor...",
+                              "callContext": "calibrate",
+                              "resultContext": "calibration"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
               "field": {
                 "type": "fieldset",
                 "legend": "High Pressure Alarm"
