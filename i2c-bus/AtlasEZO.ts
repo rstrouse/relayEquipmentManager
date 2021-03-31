@@ -1181,12 +1181,11 @@ export class AtlasEZOprs extends AtlasEZO {
             this.options.isProtoLocked = await this.isProtocolLocked();
             if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
             else this.device.name = this.options.name;
-
             await this.getLedEnabled();
-            //this.options.status = await this.getStatus();
+            this.options.status = await this.getStatus();
             this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
-            await this.getUnits(),
-                await this.getDecPlaces()
+            await this.getUnits();
+            await this.getDecPlaces();
             await this.getAlarm();
             return Promise.resolve(true);
         }
@@ -1195,6 +1194,16 @@ export class AtlasEZOprs extends AtlasEZO {
             setTimeout(() => { this.pollDeviceInformation() }, 3000);
             setTimeout(() => { this.pollReadings(); }, 5000);
         }
+    }
+    public async getName(): Promise<string> {
+        try {
+            this.suspendPolling = true;
+            let result = await this.execCommand('Name,?', 300);
+            let arrDims = result.split(',');
+            return Promise.resolve(arrDims[1] || '');
+        }
+        catch (err) { this.logError(err); }
+        finally { this.suspendPolling = false; }
     }
     public getValue(prop: string) {
         switch (prop) {
@@ -1243,8 +1252,7 @@ export class AtlasEZOprs extends AtlasEZO {
         try {
             this.suspendPolling = true;
             let result = '10.2';
-            if (!this.i2c.isMock)
-                result = await this.execCommand('R', 900);
+            if (!this.i2c.isMock) result = await this.execCommand('R', 900);
             let val = parseFloat(result);
             this.values.pressure = val;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
