@@ -1186,7 +1186,7 @@ export class AtlasEZOprs extends AtlasEZO {
             this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
             await this.getUnits();
             await this.getDecPlaces();
-            //await this.getAlarm();
+            await this.getAlarm();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
