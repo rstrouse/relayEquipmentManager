@@ -1229,12 +1229,12 @@ export class AtlasEZOprs extends AtlasEZO {
             if (typeof opts.isProtocolLocked !== 'undefined' && this.options.isProtocolLocked !== opts.isProtocolLocked) await this.lockProtocol(utils.makeBool(opts.isProtocolLocked));
             if (typeof opts.ledEnabled !== 'undefined' && this.options.ledEnabled !== opts.ledEnabled) await this.enableLed(utils.makeBool(opts.ledEnabled));
             if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, pressure: null, tolerance: null };
+            if (typeof opts.decPlaces !== 'undefined' && this.options.decPlaces !== opts.decPlaces) await this.setDecPlaces(opts.decPlaces);
+            if (typeof opts.units !== 'undefined' && typeof opts.units.name !== 'undefined' && this.options.units.name !== opts.units.name) await this.setUnits(opts.units.name);
             if (typeof opts.alarm !== 'undefined' &&
                 (this.options.alarm.enable !== opts.alarm.enable || this.options.alarm.pressure !== opts.alarm.pressure || this.options.alarm.tolerance !== opts.alarm.tolerance)) {
                 await this.setAlarm(utils.makeBool(opts.alarm.enable), opts.alarm.pressure, opts.alarm.tolerance);
             }
-            if (typeof opts.decPlaces !== 'undefined' && this.options.decPlaces !== opts.decPlaces) await this.setDecPlaces(opts.decPlaces);
-            if (typeof opts.units !== 'undefined' && typeof opts.units.name !== 'undefined' && this.options.units.name !== opts.units.name) await this.setUnits(opts.units.name);
             if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
         }
         catch (err) { this.logError(err); Promise.reject(err); }
@@ -1358,11 +1358,11 @@ export class AtlasEZOprs extends AtlasEZO {
         try {
             this.suspendPolling = true;
             if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, pressure: 0, tolerance: 0 };
-            let result = await this.execCommand('Alarm,?', 900);
+            let result = await this.execCommand('Alarm,?', 300);
             let arrDims = result.split(',');
-            this.options.alarm.enable = arrDims.length > 2;
-            this.options.alarm.pressure = parseInt(arrDims[1], 10);
-            this.options.alarm.tolerance = parseInt(arrDims[2], 10);
+            this.options.alarm.enable = arrDims.length > 2 ? utils.makeBool(arrDims[3]) : false;
+            this.options.alarm.pressure = parseFloat(arrDims[1]);
+            this.options.alarm.tolerance = parseFloat(arrDims[2]);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }

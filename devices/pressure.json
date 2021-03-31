@@ -344,8 +344,7 @@
                 "legend": "Calibration",
                 "style": {
                   "display": "inline-block",
-                  "verticalAlign": "top",
-                  "marginLeft": ".5rem"
+                  "verticalAlign": "top"
                 },
                 "attrs": { "data-bindingcontext": "calibration" }
               },
@@ -353,8 +352,8 @@
                 {
                   "field": {
                     "type": "div",
-                    "style": { "width": "21rem" },
-                    "html": "Calibrating the sensor sets the 0 point to the current pressure sensed by the probe.  Ensure the pressure is 0 and press the calibrate button.",
+                    "style": { "width": "15rem" },
+                    "html": "Calibrating the sensor sets the 0 point to the current pressure sensed by the probe.",
                     "cssClass": "script-advanced-instructions"
                   }
                 },
@@ -411,7 +410,7 @@
                     "style": {
                       "width": "15rem"
                     },
-                    "html": "These settings will trigger the alarm pin when the pressure is exceeded.  This trigger will not be identified in the REM although it could be wired to a GPIO pin to reflect the alarm state.<hr style=\"margin:2px\"></hr>Provide the max pressure as well as the tolerance for when the alarm will reset.",
+                    "html": "These settings will trigger the alarm pin when the pressure is exceeded.<hr style=\"margin:2px\"></hr>Provide the max pressure as well as the tolerance for when the alarm will reset.",
                     "cssClass": "script-advanced-instructions"
                   }
                 },
@@ -434,6 +433,8 @@
                     "labelText": "Pressure",
                     "min": 0,
                     "max": 1000,
+                    "canEdit": true,
+                    "fmtMask": "#,##0.###",
                     "style": {
                       "display": "block"
                     },
@@ -458,6 +459,8 @@
                     "labelText": "Tolerance",
                     "min": 0,
                     "max": 1000,
+                    "canEdit": true,
+                    "fmtMask": "#,##0.###",
                     "style": {
                       "display": "block"
                     },
