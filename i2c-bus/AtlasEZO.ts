@@ -49,38 +49,49 @@ export class AtlasEZO extends i2cDeviceBase {
             this.suspendPolling = true;
             this._tries++;
             let w = await this.i2c.writeCommand(this.device.address, command);
-            await new Promise((resolve, reject) => { setTimeout(() => resolve(), timeout); });
-            let value = await this.i2c.read(this.device.address, length);
-            switch (value.buffer[0]) {
-                case 0:
-                case 1:
-                    break;
-                case 254:
-                    if (this._tries < 3) {
-                        logger.warn(`${this.device.name} - Device not ready re-trying the command ${command} again: Retries ${this._tries - 1}.`)
-                        await new Promise((resolve, reject) => { setTimeout(() => resolve(), 600); });
-                        return await this.tryCommand(command, timeout, length);
-                    }
-                default:
-                    this.hasFault = true;
-                    return Promise.resolve({ response: value.buffer[0], error: this.createError(value.buffer[0], command) });
+            if (timeout > 0) {
+                await new Promise((resolve, reject) => { setTimeout(() => resolve(), timeout); });
+                let value = await this.i2c.read(this.device.address, length);
+                switch (value.buffer[0]) {
+                    case 0:
+                    case 1:
+                        break;
+                    case 254:
+                        if (this._tries < 3) {
+                            logger.warn(`${this.device.name} - Device not ready re-trying the command ${command} again: Retries ${this._tries - 1}.`)
+                            await new Promise((resolve, reject) => { setTimeout(() => resolve(), 600); });
+                            return await this.tryCommand(command, timeout, length);
+                        }
+                    default:
+                        this.hasFault = true;
+                        return Promise.resolve({ response: value.buffer[0], error: this.createError(value.buffer[0], command) });
+                }
+                let data = value.buffer.toString('utf8', 1).replace(/^[\s\uFEFF\xA0\0]+|[\s\uFEFF\xA0\0]+$/g, '');
+                logger.debug(`${this.device.name} command ${command} bytes written:${w} result:${data}`);
+                this.hasFault = false;
+                this.lastComm = new Date().getTime();
+                return Promise.resolve({ response: value.buffer[0], data: data });
             }
-            let data = value.buffer.toString('utf8', 1).replace(/^[\s\uFEFF\xA0\0]+|[\s\uFEFF\xA0\0]+$/g, '');
-            logger.debug(`${this.device.name} command ${command} bytes written:${w} result:${data}`);
-            this.hasFault = false;
-            this.lastComm = new Date().getTime();
-            return Promise.resolve({ response: value.buffer[0], data: data });
+            else {
+                logger.debug(`${this.device.name} command ${command} bytes written:${w} without response`);
+                this.hasFault = false;
+                this.lastComm = new Date().getTime();
+                return Promise.resolve({ response: 0, data: 'Reset' });
+            }
         }
         catch (err) { this.hasFault = true; return Promise.resolve({ response: -1, error: err }); }
         finally { this.suspendPolling = false; }
     }
     protected async execCommand(command: string, timeout: number, length: number = 31): Promise<string> {
         try {
+            // Wait until we get an open slot to start processing.  This will be indicated because the processing
+            // flag will drop to 0.  Below is designed to wait at least 1.5 seconds for other commands to finish
+            // before sending the command.
             while (this.processing > 0) {
                 if (this.processing++ > 10) {
                     return Promise.reject(new Error(`${this.device.name}: Device busy could not send command ${command}`))
                 }
-                logger.warn(`${this.device.name}: Node busy waiting to send command ${command}`);
+                logger.debug(`${this.device.name}: Node busy waiting to send command ${command}`);
                 await new Promise((resolve, reject) => { setTimeout(() => resolve(), 150); });
             }
             this.processing = 1;
@@ -144,6 +155,16 @@ export class AtlasEZO extends i2cDeviceBase {
         if (this._infoRead) clearTimeout(this._infoRead);
         this._timerRead = this._infoRead = null;
         this._suspendPolling = 0;
+    }
+    public async resetDevice(dev): Promise<any> {
+        try {
+            await this.execCommand('Factory', -1);
+            // Wait for 3 seconds then re-initialize
+            await new Promise((resolve, reject) => { setTimeout(() => resolve(), 3000); });
+            let dt = this.device.getDeviceType();
+            await this.initAsync(dt);
+            return this.device;
+        } catch (err) {}
     }
     public async setAddress(val: number): Promise<boolean> {
         try {

@@ -168,13 +168,42 @@
                 i2cDevice.device.busNumber = o.busNumber;
                 i2cDevice.device.address = o.address;
                 i2cDevice.device.busId = o.busId;
+                if (dt.hasReset) el.find('div#btnResetDevice').show();
+                else el.find('div#btnResetDevice').hide();
                 self.dataBind(i2cDevice.device);
             });
             var btnPnl = $('<div class="btn-panel"></div>').appendTo(outer);
+            $('<div></div>').appendTo(btnPnl).actionButton({ id: "btnResetDevice", text: 'Reset Device', icon: '<i class="fas fa-toilet"></i>' })
+                .on('click', function (evt) { self.resetDevice(); });
             $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Save Device', icon: '<i class="fas fa-save"></i>' })
                 .on('click', function (evt) { self.saveDevice(); });
             $('<div></div>').appendTo(btnPnl).actionButton({ id: "btnDeleteDevice", text: 'Delete Device', icon: '<i class="fas fa-trash"></i>' })
-                .on('click', function (evt) { self.deleteDevice(); });
+                .on('click', function (evt) { self.deleteDevice(); }).hide();
+
+        },
+        resetDevice: function () {
+            var self = this, o = self.options, el = self.element;
+            var dev = dataBinder.fromElement(el);
+            $.pic.modalDialog.createConfirm('dlgConfirmDeleteDevice', {
+                message: `Are you sure you want to reset device on address ${dev.address}?<hr></hr>This action will reset the device to the default or factory settings.`,
+                width: '350px',
+                height: 'auto',
+                title: 'Confirm Reset Device',
+                buttons: [{
+                    text: 'Yes', icon: '<i class="fas fa-toilet"></i>',
+                    click: function (evt) {
+                        $.putLocalService('/config/i2c/device/reset', dev, 'Resetting I2c Device...', function (i2cDev, status, xhr) {
+                            self.dataBind(i2cDev);
+                            el.parents('div.pnl-i2c-bus:first')[0].loadDevices(dev.address);
+                        });
+                        $.pic.modalDialog.closeDialog(this);
+                    }
+                },
+                {
+                    text: 'No', icon: '<i class="far fa-window-close"></i>',
+                    click: function () { $.pic.modalDialog.closeDialog(this); }
+                }]
+            });
         },
         saveDevice: function () {
             var self = this, o = self.options, el = self.element;
@@ -232,12 +261,17 @@
             if (typeof data.typeId !== 'number' || typeof dt === 'undefined') {
                 tabs.hide();
                 el.find('div.picActionButton#btnDeleteDevice').hide();
+                el.find('div.picActionButton#btnResetDevice').hide();
                 el.find('div.picPickList[data-bind="typeId"]').each(function () { this.disabled(false); });
             }
             else {
                 tabs.show();
                 el.find('div.picActionButton#btnDeleteDevice').show();
                 el.find('div.picPickList[data-bind="typeId"]').each(function () { this.disabled(true); });
+                if (dt.hasReset)
+                    el.find('div.picActionButton#btnResetDevice').show();
+                else
+                    el.find('div.picActionButton#btnResetDevice').hide();
             }
             var pnlOpts = el.find('div.i2cdevice-options');
             pnlOpts[0].setDeviceType(dt, data);

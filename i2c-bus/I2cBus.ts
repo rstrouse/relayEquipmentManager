@@ -483,6 +483,15 @@ export class i2cDeviceBase implements IDevice {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async resetDevice(device: any): Promise<any> {
+        try {
+            if (typeof device !== 'undefined') {
+                if (typeof device.options !== 'undefined') await this.setOptions(device.options);
+                if (typeof device.values !== 'undefined') await this.setValues(device.values);
+            }
+        }
+        catch (err) { logger.error(`Error resetting device: ${err.message}`); }
+    }
     public async setOptions(opts: any): Promise<any> {
         try {
             this.device.options = opts;

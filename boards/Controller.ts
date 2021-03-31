@@ -1637,6 +1637,27 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async resetDevice(dev): Promise<I2cDevice> {
+        try {
+            let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
+            let busNumber = (typeof dev.busNumber !== 'undefined') ? parseInt(dev.busNumber, 10) : undefined;
+            let bus: I2cBus;
+            if (typeof busId !== 'undefined') {
+                bus = this.buses.getItemById(busId);
+                if (typeof bus.busNumber === 'undefined') return Promise.reject(new Error(`An invalid I2c bus id was supplied ${dev.busId}`));
+            }
+            else if (typeof busNumber !== 'undefined') {
+                bus = this.buses.getItemByBusNumber(busNumber);
+                if (typeof bus.id === 'undefined') return Promise.reject(new Error(`An invalid I2c bus # was supplied ${dev.busNumber}`));
+            }
+            else {
+                return Promise.reject(new Error(`The specified I2c bus could not be found at busId:${dev.busId} or busNumber:${dev.busNumber}`));
+            }
+            let device = await bus.resetDevice(dev);
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
 
     public async setDevice(dev): Promise<I2cDevice> {
         try {
@@ -1967,6 +1988,75 @@ export class I2cBus extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async resetDevice(dev): Promise<I2cDevice> {
+        try {
+            let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
+            let address = typeof dev.address !== 'undefined' ? parseInt(dev.address, 10) : undefined;
+            let typeId = typeof dev.typeId !== 'undefined' ? parseInt(dev.typeId, 10) : undefined;
+            let device: I2cDevice;
+            let added = false;
+            if (typeof id === 'undefined') {
+                // We are adding a device.
+                if (typeof address === 'undefined' || isNaN(address) || address < 1) return Promise.reject(new Error(`An valid I2c device address was not supplied ${dev.address}`));
+                if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
+                if (typeof this.devices.find(elem => elem.address === address) !== 'undefined') return Promise.reject(`A device already exists at thes specified address ${address}`);
+                id = this.devices.getMaxId() + 1 || 1;
+                device = this.devices.getItemById(id, true);
+                device.address = address;
+                device.typeId = typeId;
+                device.options = dev.options || {};
+                added = true;
+            }
+            else {
+                if (typeof typeId !== 'undefined') { if (isNaN(typeId)) return Promise.reject(new Error(`An invalid deviceTypeId was supplied ${dev.deviceTypeId}`)); }
+                if (typeof address !== 'undefined') {
+                    if (isNaN(address) || address < 0) return Promise.reject(new Error(`An invalid I2c address was supplied ${dev.address}`));
+                    if (typeof this.devices.find(elem => elem.address === address && elem.id !== id) !== 'undefined') return Promise.reject(`A device already exists at thes specified address ${address}`);
+                }
+                if (typeof id !== 'undefined') {
+                    if (isNaN(id)) return Promise.reject(new Error(`An invalid device id was supplied ${dev.id}`));
+                    device = this.devices.getItemById(id);
+                }
+                else if (typeof address !== 'undefined') {
+                    device = this.devices.getItemByAddress(address);
+                }
+            }
+            // At this point we should have our device.
+            if (typeof dev.typeId !== 'undefined' && typeId !== device.typeId) {
+                // If the type has changed clear out the options;
+                device.typeId = typeId;
+                device.options = {};
+            }
+            if (typeof dev.address !== 'undefined' && address !== device.address) device.address = address;
+            if (typeof dev.sampling !== 'undefined' && !isNaN(parseInt(dev.sampling, 10))) device.sampling = parseInt(dev.sampling, 10);
+            if (typeof dev.isActive !== 'undefined') device.isActive = utils.makeBool(dev.isActive);
+            // Need to deal with the triggers and feeds.
+            //if (typeof dev.options !== 'undefined') {
+            //    let op = Object.getOwnPropertyNames(dev.options);
+            //    for (let i in op) {
+            //        let prop = op[i];
+            //        if (typeof this[prop] === 'function') continue;
+            //        if (typeof dev.options[prop] !== 'undefined') {
+            //            device.options[prop] = dev.options[prop];
+            //        }
+            //    }
+            //}
+            let dbus = i2c.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus !== 'undefined') {
+                let ddev = dbus.devices.find(elem => elem.device.id === device.id);
+                if (typeof ddev === 'undefined') {
+                    return Promise.reject(new Error(`The I2c device at ${dev.address} could not be found on the bus.`));
+                }
+                else 
+                    await ddev.resetDevice(dev);
+            }
+            let addr = this.addresses.find(elem => elem.address === device.address);
+            if (typeof addr !== 'undefined') addr.name = device.name;
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
     public async deleteDevice(dev): Promise<I2cDevice> {
         try {
             let id = parseInt(dev.id, 10);

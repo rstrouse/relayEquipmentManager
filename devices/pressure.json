@@ -17,6 +17,7 @@
       "name": "Altas EZO-PRS",
       "deviceClass": "AtlasEZOprs",
       "module": "./AtlasEZO",
+      "hasReset":  true,
       "readings": {
         "pressure": {
           "label": "Pressure",
