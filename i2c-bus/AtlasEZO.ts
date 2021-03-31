@@ -1185,8 +1185,8 @@ export class AtlasEZOprs extends AtlasEZO {
             this.options.status = await this.getStatus();
             this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
             await this.getUnits();
-            //await this.getDecPlaces();
-            await this.getAlarm();
+            await this.getDecPlaces();
+            //await this.getAlarm();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -1358,7 +1358,7 @@ export class AtlasEZOprs extends AtlasEZO {
         try {
             this.suspendPolling = true;
             if (typeof this.options.alarm === 'undefined') this.options.alarm = { enable: false, pressure: 0, tolerance: 0 };
-            let result = await this.execCommand('Alarm,?', 300);
+            let result = await this.execCommand('Alarm,?', 900);
             let arrDims = result.split(',');
             this.options.alarm.enable = arrDims.length > 2;
             this.options.alarm.pressure = parseInt(arrDims[1], 10);
