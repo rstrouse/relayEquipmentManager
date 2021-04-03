@@ -2069,10 +2069,10 @@ export class AtlasEZOhum extends AtlasEZO {
             if (typeof this.options.parameters === 'undefined') this.options.parameters = { humidity: false, temperature: false, dewpoint: false };
             if (typeof opts.parameters !== 'undefined') await this.setParameterInfo(opts.parameters);
             if (typeof opts.alarm !== 'undefined') {
-                if (opts.enableHumidity) {
+                if (opts.alarm.enableHumidity) {
                     await this.setAlarm(1, opts.alarm.humidity, opts.alarm.tolerance);
                 }
-                else if (opts.enableDewpoint) {
+                else if (opts.alarm.enableDewpoint) {
                     await this.setAlarm(2, opts.alarm.humidity, opts.alarm.tolerance);
                 }
                 else {
