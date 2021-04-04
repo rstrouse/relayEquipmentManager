@@ -102,7 +102,7 @@ export class GpioController {
                             pin.gpio.watch((err, value) => {
                                 if (err) logger.error(`Watch callback error GPIO Pin# ${pinDef.headerId}-${pinDef.id}`);
                                 else {
-                                    pinDef.state = value === 1;
+                                    pinDef.state = value;
                                     cont.gpio.emitFeeds(pin.pinId, pin.headerId);
                                     webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: value });
                                 }

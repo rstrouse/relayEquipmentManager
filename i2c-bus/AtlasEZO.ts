@@ -29,13 +29,13 @@ export class AtlasEZO extends i2cDeviceBase {
         let err: Error;
         switch (byte) {
             case 255:
-                err = new Error(`${this.device.address} ${command}. No I2c data to send`);
+                err = new Error(`${this.device.address} ${command} No I2c data to send`);
                 break;
             case 254:
-                err = new Error(`${this.device.address} ${command}. Still processing not ready`);
+                err = new Error(`${this.device.address} ${command} Still processing not ready`);
                 break;
             case 2:
-                err = new Error(`${this.device.address} ${command}. Syntax error`);
+                err = new Error(`${this.device.address} ${command} Syntax error`);
                 break;
         }
         return err;
@@ -122,7 +122,7 @@ export class AtlasEZO extends i2cDeviceBase {
         try {
             if (this._infoRead) clearTimeout(this._infoRead);
             this._infoRead = null;
-            if (!this.suspendPolling) {
+            if (!this.suspendPolling && this.device.isActive) {
                 this.getDeviceInformation();
             }
         }
@@ -133,7 +133,7 @@ export class AtlasEZO extends i2cDeviceBase {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             this._timerRead == null;
-            if (!this.suspendPolling) {
+            if (!this.suspendPolling && this.device.isActive) {
                 this.takeReadings();
             }
         }
@@ -2195,8 +2195,8 @@ export class AtlasEZOhum extends AtlasEZO {
                     (alarmType === 1 && level !== this.device.options.alarm.humidity) ||
                     (alarmType === 2 && level !== this.device.options.alarm.dewpoint)) {
                     await this.execCommand(`Auto,en,${alarmType}`, 300);
-                    await this.execCommand(`Auto,${level}`, 300);
-                    await this.execCommand(`Auto,tol,${tolerance}`, 300);
+                    await this.execCommand(`Auto,${level.toFixed(2)}`, 300);
+                    await this.execCommand(`Auto,tol,${tolerance.toFixed(2)}`, 300);
                     await this.getAlarm();
                 }
             }
