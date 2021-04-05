@@ -182,7 +182,10 @@
             });
             // Find the pin header and set the label.
             el.parents(`div.config-gpio`).find(`div.gpio-headers > div.pin-header[data-id=${data.pin.headerId}]`)
-                .each(function () { this.pinLabel(data.pin.id, data.pin.name); });
+                .each(function () {
+                    this.pinLabel(data.pin.id, data.pin.name);
+                    this.pinActive(data.pin.id, data.pin.isActive);
+                });
         }
     });
     $.widget('pic.pnlPinTriggers', {

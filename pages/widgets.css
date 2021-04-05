@@ -627,6 +627,9 @@ div.header-pin {
   display: inline-block;
   margin: 0px; }
 
+div.header-pin[data-active="false"] > label {
+  opacity: .5; }
+
 div.pin-header-name {
   padding-left: 4px;
   padding-right: 4px;
