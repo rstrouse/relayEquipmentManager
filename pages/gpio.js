@@ -87,9 +87,11 @@
             line = $('<div></div>').attr('id', 'divGPIOLine').appendTo(pin);
             $('<label></label>').appendTo(line).text('GPIO #').css({ width: '4.5rem', display: 'inline-block' });
             $('<span></span>').appendTo(line).attr('data-bind', 'gpioId').attr('data-datatype', 'int');
+            $('<label></label>').appendTo(line).text('Label').css({ marginLeft:'2.25rem', width: '3.5rem', display: 'inline-block' });
+            $('<span></span>').appendTo(line).attr('data-bind', 'pinoutName').attr('data-datatype', 'int');
+            
             line = $('<div></div>').appendTo(pin);
-            $('<label></label>').appendTo(line).text('Name').css({ width: '4.5rem', display: 'inline-block' });
-            $('<span></span>').appendTo(line).attr('data-bind', 'name');
+            $('<div><div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxlength: 24 }, labelAttrs: { style: { width: '5rem' } } });
             line = $('<div></div>').appendTo(pin);
             $('<div></div>').appendTo(line).pickList({
                 required: true,

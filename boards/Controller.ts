@@ -971,8 +971,8 @@ export class GpioPin extends ConfigItem {
     public set isInverted(val: boolean) { this.setDataVal('isInverted', val); }
     public get state() { return this.getMapVal(this.data.state || 'unknown', vMaps.pinStates); }
     public set state(val) { this.setMapVal('state', val, vMaps.pinStates); }
-    public get name(): string { return this.data.name = `Pin #${this.headerId}-${this.id}`; }
-    public set name(val: string) { this.data.name = `Pin #${this.headerId}-${this.id}`; }
+    public get name(): string { return typeof this.data.name === 'undefined' ? this.data.name = `Pin #${this.headerId}-${this.id}` : this.data.name; }
+    public set name(val: string) { this.setDataVal('name', val); }
     public get debounceTimeout(): number { return this.data.debounceTimeout; }
     public set debounceTimeout(val: number) { this.setDataVal('debounceTimeout', val); }
     public get triggers(): GpioPinTriggerCollection { return new GpioPinTriggerCollection(this.data, 'triggers'); }
@@ -1058,6 +1058,8 @@ export class GpioPin extends ConfigItem {
         pin.state = this.state;
         pin.isActive = this.isActive;
         pin.isExported = typeof cont.gpio.exported.find(elem => elem === pin.gpioId) !== 'undefined';
+        pin.name = this.name;
+        pin.pinoutName = pinout.name;
         for (let i = 0; i < this.triggers.length; i++) {
             pin.triggers.push(this.triggers.getItemByIndex(i).getExtended());
         }
@@ -1095,6 +1097,7 @@ export class GpioPin extends ConfigItem {
             this.setDataVal('state', vmState.name);
             return {
                 id: this.id,
+                headerId: this.headerId,
                 name: this.name,
                 enabled: this.isActive,
                 oldState: oldState > 0,
@@ -1123,6 +1126,7 @@ export class GpioPin extends ConfigItem {
             let pin = {
                 id: this.id,
                 name: this.name,
+                headerId: this.headerId,
                 enabled: this.isActive,
                 oldState: oldState > 0,
                 state: newState
