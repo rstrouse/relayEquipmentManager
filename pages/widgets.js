@@ -3472,9 +3472,9 @@ $.ui.position.fieldTip = {
             }
             el.attr('title', title);
             el.attr('data-active', (o.active === false) ? 'false' : 'true');
-            if (typeof o.state !== 'undefined') {
-                console.log({ msg: 'setting state', state: o.state, o: o });
-            }
+            //if (typeof o.state !== 'undefined') {
+            //    console.log({ msg: 'setting state', state: o.state, o: o });
+            //}
             self.state(o.state);
         },
         state: function (val) {
