@@ -25,7 +25,7 @@
                 
                 for (var ihead = 0; ihead < pinHeads.length; ihead++) {
                     var head = pinHeads[ihead];
-                    $('<div></div>').appendTo(headers).pinHeader({ header: head, overlays: overlays });
+                    $('<div></div>').appendTo(headers).pinHeader({ header: head, overlays: overlays, pins: data.controller.gpio.pins });
 
                 }
                 $('<div></div>').appendTo(el).pnlPinDefinition({ headers: headers, pinDirections: data.pinDirections });
@@ -166,13 +166,11 @@
                 el.find('div.pin-state-panel').hide().find('div.picToggleButton').attr('data-gpioid', '').val(false);
             }
             else {
-                console.log(data.pin.state);
                 var sval = makeBool(data.pin.state.name);
                 el.find('div.pin-state-panel').show().find('div.picToggleButton').attr('data-gpioid', data.pin.gpioId)[0].val(sval);
             }
             if (typeof data.pin.gpioId !== 'undefined') el.find('div#divGPIOIdLine').show();
             else el.find('div#divGPIOLine').hide();
-            console.log(data);
             if (data.pin.isActive) el.find('div#btnPinState').show();
             else el.find('div#btnPinState').hide();
             el.find('div#btnPinState').each(function () {
@@ -182,7 +180,9 @@
                 this.showTab('tabPinTriggers', data.pin.direction !== 'input');
                 if (data.pin.direction === 'input') this.selectTabById('tabPinFeeds');
             });
-
+            // Find the pin header and set the label.
+            el.parents(`div.config-gpio`).find(`div.gpio-headers > div.pin-header[data-id=${data.pin.headerId}]`)
+                .each(function () { this.pinLabel(data.pin.id, data.pin.name); });
         }
     });
     $.widget('pic.pnlPinTriggers', {

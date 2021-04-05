@@ -3358,6 +3358,7 @@ $.ui.position.fieldTip = {
             self._buildControls();
             el[0].selectedPin = function (val) { self.selectedPin(val); }
             el[0].state = function (val) { self.state(val); }
+            el[0].pinLabel = function (pinId, label) { return self.pinLabel(pinId, label); }
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
@@ -3382,6 +3383,11 @@ $.ui.position.fieldTip = {
                 var p = pins[ipin];
                 var over = opins.find(elem => p.id === elem.id);
                 var pin = $.extend(true, { sex: sex, align: (ipin + 1) % width === 0 && pin !== 1 ? 'right' : 'left' }, p, over);
+                if (typeof o.pins !== 'undefined') {
+                    var p = o.pins.find(elem => elem.headerId === header.id && elem.id === ipin + 1);
+                    if (typeof p !== 'undefined') pin.label = p.name;
+                }
+
                 $('<div></div>').appendTo(line).headerPin(pin);
                 if ((ipin + 1) % width === 0 && pin.id !== 1) line = $('<div></div>').appendTo(el).addClass('pin-row');
             }
@@ -3411,6 +3417,15 @@ $.ui.position.fieldTip = {
             else {
                 el.attr('data-state', val);
             }
+        },
+        pinLabel: function (id, label) {
+            var self = this, o = self.options, el = self.element;
+            // Find the pin
+            var lbl;
+            el.find(`div.header-pin[data-id=${id}]`).each(function () {
+                lbl = this.label(label);
+            });
+            return lbl;
         }
     });
     $.widget('pic.headerPin', {
@@ -3418,7 +3433,8 @@ $.ui.position.fieldTip = {
         _create: function () {
             var self = this, o = self.options, el = self.element;
             self._buildControls();
-            el[0].state = function (val) { self.state(val); }
+            el[0].state = function (val) { return self.state(val); }
+            el[0].label = function (val) { return self.label(val); }
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
@@ -3430,6 +3446,10 @@ $.ui.position.fieldTip = {
             if (o.align !== 'left') $('<label></label>').appendTo(el).text(o.id).css({ textAlign: 'left' });
             var title = o.name;
             if (typeof o.gpioId !== 'undefined') { title += '\r\nGPIO #' + o.gpioId; }
+            if (typeof o.label !== 'undefined') {
+                el.attr('data-label', o.label);
+                title += '\r\n' + o.label;
+            }
             el.attr('title', title);
             self.state(o.state);
         },
@@ -3437,6 +3457,17 @@ $.ui.position.fieldTip = {
             var self = this, o = self.options, el = self.element;
             if (typeof val !== 'undefined') {
                 el.attr('data-state', makeBool(val) ? 'on' : 'off');
+            }
+            else return el.attr('data-state');
+        },
+        label: function (val) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof val !== 'undefined') {
+                el.attr('data-label', val);
+                var title = o.name;
+                if (typeof o.gpioId !== 'undefined') { title += '\r\nGPIO #' + o.gpioId; }
+                if (typeof o.label !== 'undefined') title += '\r\n' + val;
+                el.attr('title', title);
             }
             else return el.attr('data-state');
         }

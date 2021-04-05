@@ -84,7 +84,8 @@ export class GpioController {
                         }
                         pin.gpio.unwatchAll();
                     }
-                    if (dir === 'in' && pinDef.debounceTimeout > 0) opts['debounceTimeout'] = pinDef.debounceTimeout;
+                    pin.label = pinDef.name;
+                   if (dir === 'in' && pinDef.debounceTimeout > 0) opts['debounceTimeout'] = pinDef.debounceTimeout;
                     let stateDir = this.translateState(dir, pinDef.state.name);
                     if (gp.accessible) {
                         logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${stateDir} on Header ${pinDef.headerId} Edge: ${dir === 'in' ? 'both' : 'none'}. ${JSON.stringify(opts)}`);
@@ -104,7 +105,7 @@ export class GpioController {
                                 else {
                                     pinDef.state = value;
                                     cont.gpio.emitFeeds(pin.pinId, pin.headerId);
-                                    webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: value });
+                                    webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: value, label: pin.label });
                                 }
                             });
                         });
@@ -217,6 +218,7 @@ export class gpioPinComms implements IDevice {
     private _latchTimer: NodeJS.Timeout;
     public lastComm: number;
     public status: string;
+    public label: string;
     public hasFault: boolean = false;
     public headerId: number;
     public pinId: number;
@@ -273,7 +275,7 @@ export class gpioPinComms implements IDevice {
                 this.state = val;
                 cont.gpio.emitFeeds(this.pinId, this.headerId);
                 // logger.info(`writePinAsync with val: ${val}, latch: ${latch}`)
-                webApp.emitToClients('gpioPin', { pinId: this.pinId, headerId: this.headerId, gpioId: this.gpioId, state: val });
+                webApp.emitToClients('gpioPin', { pinId: this.pinId, headerId: this.headerId, gpioId: this.gpioId, state: val, label: this.label });
                 resolve();
             }
             catch (err) { this.hasFault = true; this.status = err.message; reject(err); }
