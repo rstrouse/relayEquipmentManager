@@ -2097,6 +2097,7 @@ export class AtlasEZOhum extends AtlasEZO {
             if (!['C', 'F'].includes(value.toUpperCase())) return Promise.reject(new Error(`Cannot set units to ${value}`));
             let units = this.values.units || 'C';
             this.values.units = value.toUpperCase();
+            this.options.units = units.toUpperCase();
             this.values.temperature = typeof this.values.temperature === 'number' ? utils.convert.temperature.convertUnits(this.values.temperature, units, value) : null;
             this.values.dewpoint = typeof this.values.dewpoint === 'number' ? utils.convert.temperature.convertUnits(this.values.dewpoint, units, value) : null;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
