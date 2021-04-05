@@ -474,6 +474,8 @@ export class Controller extends ConfigItem {
                 await spi1.resetAsync(this.spi1);
                 await i2c.resetAsync(this.i2c);
                 await this.sleep(2000);
+                logger.info(`REM Devices Reset`);
+                resolve();
             }
             catch (err) { reject(err); }
         });
