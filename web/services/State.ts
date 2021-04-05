@@ -18,7 +18,7 @@ export class StateRoute {
             let devices = [];
             for (let i = 0; i < cont.gpio.pins.length; i++) {
                 let pin = cont.gpio.pins.getItemByIndex(i);
-                devices.push({ type: 'gpio', isActive: pin.isActive, name: `GPIO Pin #${pin.headerId}-${pin.id}`, binding: `gpio:${pin.headerId}:${pin.id}`, category:'GPIO Pins' });
+                devices.push({ type: 'gpio', isActive: pin.isActive, name: pin.name || `GPIO Pin #${pin.headerId}-${pin.id}`, binding: `gpio:${pin.headerId}:${pin.id}`, category:'GPIO Pins' });
             }
             for (let i = 0; i < cont.spi0.channels.length; i++) {
                 let chan = cont.spi0.channels.getItemByIndex(i);
