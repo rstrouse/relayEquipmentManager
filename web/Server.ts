@@ -267,7 +267,7 @@ export class SsdpServer extends ProtoServer {
             let self = this;
 
             logger.info('Starting up SSDP server');
-            var udn = 'uuid:47bb9628-362e-4dd9-8f8B-' + webApp.mac();
+            var udn = 'uuid:47bb9628-362e-4dd9-8f8F-' + webApp.mac();
             // todo: should probably check if http/https is enabled at this point
             var port = config.getSection('web').servers.http.port || 8080;
             //console.log(port);
@@ -279,7 +279,7 @@ export class SsdpServer extends ProtoServer {
                 location: location,
                 sourcePort: 1900
             });
-            this.server.addUSN('urn:schemas-upnp-org:device:PoolController:1');
+            this.server.addUSN('urn:schemas-upnp-org:device:REMController:1');
 
             // start the server
             this.server.start()

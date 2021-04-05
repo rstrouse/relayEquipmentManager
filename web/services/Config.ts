@@ -6,7 +6,7 @@ import { utils, vMaps } from "../../boards/Constants";
 import { cont, ConfigItem } from "../../boards/Controller";
 import { PinDefinitions } from "../../pinouts/Pinouts";
 import { Client } from "node-ssdp";
-import { ConnectionBindings } from "../../connections/Bindings";
+import { connBroker, ConnectionBindings } from "../../connections/Bindings";
 import { gpioCont } from "../../gpio/Gpio-Controller";
 import { SpiAdcChips } from "../../spi-adc/SpiAdcChips";
 export class ConfigRoute {
@@ -127,7 +127,7 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
-        
+
 
 
 
@@ -184,8 +184,8 @@ export class ConfigRoute {
         });
 
         app.get('/config/options/i2c/:busId', (req, res) => {
-                let opts = { bus: cont.i2c.buses.getItemById(parseInt(req.params.busId, 10)).getExtended() };
-                return res.status(200).send(opts);
+            let opts = { bus: cont.i2c.buses.getItemById(parseInt(req.params.busId, 10)).getExtended() };
+            return res.status(200).send(opts);
         });
         app.get('/config/options/i2c', (req, res) => {
             let opts = {
@@ -328,7 +328,21 @@ export class ConfigRoute {
                 return res.status(200).send(conn.getExtended());
             }
             catch (err) { next(err); }
-
+        });
+        app.put('/config/checkconnection', async (req, res, next) => {
+            try {
+                let conn = await cont.checkConnectionAsync(req.body);
+                return res.status(200).send(conn.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/checkemit', (req, res, next) => {
+            try {
+                let server = connBroker.findServer(parseInt(req.body.connectionId,10));
+                server.send(req.body);
+                return res.status(200).send('Ok');
+            }
+            catch (err) { next(err); }
         });
         app.search('/config/findServer', async (req, res, next) => {
             let prom = new Promise<void>((resolve, reject) => {

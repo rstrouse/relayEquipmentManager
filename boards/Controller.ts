@@ -381,6 +381,23 @@ export class Controller extends ConfigItem {
     }
     public resetSpiAdcChips() { this._spiAdcChips = undefined; }
     public resetAnalogDevices() { this._analogDevices = undefined; }
+    public async checkConnectionAsync(data): Promise<ConnectionSource> {
+        // check for connection by type and ip
+        let allCons = this.connections.toArray();
+        let conns = allCons.filter(elem => elem.type.name === data.type);
+
+        let c: ConnectionSource;
+        for (let i = 0; i < conns.length; i++){
+            if (conns[i].ipAddress === data.ipAddress && conns[i].port === data.port || conns[i].ipAddress === '127.0.0.1') c = conns[i] as ConnectionSource;
+        }
+        // if connection is undefined; or address/port do not match, and server is not localhost; set data and reset server
+        if (typeof c === 'undefined' || ((c.ipAddress !== data.ipAddress || c.port !== data.port) && c.ipAddress !== '127.0.0.1')) {
+            c = await this.setConnectionAsync(data);
+            setTimeout(async() => {await cont.reset()},200); // reset server after req is returned
+        };
+   
+        return c;
+    }
     public async setConnectionAsync(data): Promise<ConnectionSource> {
         let c = this.connections.find(elem => elem.id === data.id);
         if (typeof c === 'undefined') {
@@ -388,6 +405,7 @@ export class Controller extends ConfigItem {
             if (data.id === 0) data.id = 1;
         }
         return new Promise<ConnectionSource>((resolve, reject) => {
+            if (typeof data.ipAddress === 'undefined' || typeof data.port === 'undefined') return reject(new Error(`setConnectionAsync: Invalid address or port: ${data}`));
             let conn = this.connections.getItemById(data.id, true);
             conn.set(data);
             resolve(conn);
@@ -446,7 +464,7 @@ export class Controller extends ConfigItem {
         });
     }
 
-
+    private sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     public async reset(): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
             try {
@@ -455,7 +473,7 @@ export class Controller extends ConfigItem {
                 await spi0.resetAsync(this.spi0);
                 await spi1.resetAsync(this.spi1);
                 await i2c.resetAsync(this.i2c);
-                resolve();
+                await this.sleep(2000);
             }
             catch (err) { reject(err); }
         });

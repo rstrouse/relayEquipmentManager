@@ -214,8 +214,9 @@
                             else
                                 $('<div></div>').addClass('body-text').css({ textAlign: 'center' }).appendTo(divSelection).append('<i class="fas fa-server" style="font-size:30pt;color:lightseagreen;vertical-align:middle;"></i>').append('<span style="vertical-align:middle;"> ' + server.desc + '</span>');
                             $('<div></div>').css({ textAlign: 'center', marginLeft: '1rem', marginRight: '1rem' }).appendTo(divSelection).text(srv.origin);
-                            divSelection.data('server');
+                            divSelection.data('server', srv);
                             divSelection.on('click', function (e) {
+                                var srv = $(e.currentTarget).data('server');
                                 console.log(srv);
                                 pnl.find('div[data-bind="ipAddress"]').each(function () { this.val(srv.hostname); });
                                 pnl.find('div[data-bind="protocol"]').each(function () { this.val(srv.protocol) });

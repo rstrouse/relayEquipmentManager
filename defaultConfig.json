@@ -19,7 +19,7 @@
         "sslCertFile": ""
       },
       "mdns": { "enabled": false },
-      "sspd": { "enabled": false },
+      "ssdp": { "enabled": true },
       "services": {}
     }
   },

@@ -42,7 +42,7 @@
     "jquery-ui-touch-punch-c": "^1.4.0",
     "mqtt": "^4.2.1",
     "multicast-dns": "^7.2.0",
-    "node-ssdp": "^4.0.0",
+    "node-ssdp": "^4.0.1",
     "onoff": "^6.0.0",
     "prismjs": "^1.21.0",
     "socket.io": "^2.4.1",
