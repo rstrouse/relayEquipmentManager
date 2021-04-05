@@ -3387,9 +3387,9 @@ $.ui.position.fieldTip = {
                 if (typeof o.pins !== 'undefined') {
                     var p = o.pins.find(elem => elem.headerId === header.id && elem.id === ipin + 1);
                     if (typeof p !== 'undefined') {
-                        console.log(p);
                         pin.label = p.name;
                         pin.active = p.isActive;
+                        pin.state = p.state;
                     }
                     else if(typeof over === 'undefined' && pin.type === 'gpio') pin.active = false;
                 }
@@ -3472,7 +3472,9 @@ $.ui.position.fieldTip = {
             }
             el.attr('title', title);
             el.attr('data-active', (o.active === false) ? 'false' : 'true');
-            console.log(o.state);
+            if (typeof o.state !== 'undefined') {
+                console.log({ msg: 'setting state', state: o.state, o: o });
+            }
             self.state(o.state);
         },
         state: function (val) {
