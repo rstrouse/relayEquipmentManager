@@ -158,13 +158,14 @@ export class AtlasEZO extends i2cDeviceBase {
     }
     public async resetDevice(dev): Promise<any> {
         try {
+            this.stopPolling();
             await this.execCommand('Factory', -1);
-            // Wait for 3 seconds then re-initialize
+            // Wait for 5 seconds then re-initialize
             await new Promise((resolve, reject) => { setTimeout(() => resolve(), 5000); });
             let dt = this.device.getDeviceType();
             await this.initAsync(dt);
             return this.device;
-        } catch (err) {}
+        } catch (err) { }
     }
     public async setAddress(val: number): Promise<boolean> {
         try {
