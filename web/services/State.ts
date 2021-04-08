@@ -18,7 +18,7 @@ export class StateRoute {
             let devices = [];
             for (let i = 0; i < cont.gpio.pins.length; i++) {
                 let pin = cont.gpio.pins.getItemByIndex(i);
-                devices.push({ type: 'gpio', isActive: pin.isActive, name: pin.name || `GPIO Pin #${pin.headerId}-${pin.id}`, binding: `gpio:${pin.headerId}:${pin.id}`, category:'GPIO Pins' });
+                devices.push({ type: 'gpio', isActive: pin.isActive, name: pin.name || `GPIO Pin #${pin.headerId}-${pin.id}`, binding: `gpio:${pin.headerId}:${pin.id}`, category:'GPIO Pins', feeds: pin.feeds.get() });
             }
             for (let i = 0; i < cont.spi0.channels.length; i++) {
                 let chan = cont.spi0.channels.getItemByIndex(i);
@@ -28,7 +28,7 @@ export class StateRoute {
             for (let i = 0; i < cont.spi1.channels.length; i++) {
                 let chan = cont.spi1.channels.getItemByIndex(i);
                 let dev = devs.find(elem => elem.id === chan.deviceId);
-                devices.push({ type: 'spi', isActive: chan.isActive, name: `${typeof dev !== 'undefined' ? dev.name : 'Channel #1-' + chan.id}`, binding: `spi:1:${chan.id}`, category: typeof dev !== 'undefined' ? dev.category : 'Unknown SPI' });
+                devices.push({ type: 'spi', isActive: chan.isActive, name: `${typeof dev !== 'undefined' ? dev.name : 'Channel #1-' + chan.id}`, binding: `spi:1:${chan.id}`, category: typeof dev !== 'undefined' ? dev.category : 'Unknown SPI', feeds: dev.feeds.get() });
             }
             for (let i = 0; i < cont.i2c.buses.length; i++) {
                 let bus = cont.i2c.buses.getItemByIndex(i);
@@ -38,13 +38,13 @@ export class StateRoute {
                     let dev = devs.find(elem => elem.id === device.typeId);
                     let i2cdevice = typeof i2cbus !== 'undefined' ? i2cbus.devices.find(elem => elem.device.id === device.id) : undefined;
                     if (typeof i2cdevice !== 'undefined') devices.push(...i2cdevice.getDeviceDescriptions(dev));
-                    else devices.push({ type: 'i2c', isActive: device.isActive, name: device.name, binding: `i2c:${bus.id}:${device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown'  });
+                    else devices.push({ type: 'i2c', isActive: device.isActive, name: device.name, binding: `i2c:${bus.id}:${device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown', feeds: device.feeds.get()  });
                 }
             }
             for (let i = 0; i < cont.genericDevices.devices.length; i++) {
                 let genericDevice = cont.genericDevices.devices.getItemByIndex(i);
                 let deviceType = devs.find(elem => elem.id === genericDevice.typeId);
-                devices.push({ type: 'generic', isActive: genericDevice.isActive, name: typeof genericDevice.options.name !== 'undefined' ? genericDevice.options.name : deviceType.name, binding: `generic:${genericDevice.typeId}:${genericDevice.id}`, category: typeof deviceType !== 'undefined' ? deviceType.category : 'Unknown Generic Device' });
+                devices.push({ type: 'generic', isActive: genericDevice.isActive, name: typeof genericDevice.options.name !== 'undefined' ? genericDevice.options.name : deviceType.name, binding: `generic:${genericDevice.typeId}:${genericDevice.id}`, category: typeof deviceType !== 'undefined' ? deviceType.category : 'Unknown Generic Device', feeds: genericDevice.feeds.get() });
             }
             return res.status(200).send(devices);
         });

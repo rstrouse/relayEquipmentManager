@@ -637,6 +637,31 @@ export class Controller extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async setDeviceFeed(obj:any){
+        let dev = this.getDeviceByBinding(obj.deviceBinding);
+        let srv = connBroker.findServer(obj.connectionId);
+        let type = obj.deviceBinding.split(':')[0];
+        let feed;
+        switch (type){
+            case 'i2c':{
+                // feed = (dev as I2cDevice).getDeviceFeed(obj);
+                (dev as I2cDevice).setDeviceFeed(obj);   
+                break;
+            }
+            case 'gpio':{
+                (dev as GpioPin).setDeviceFeed(obj);   
+                break;
+            }
+            case 'spi':
+                {
+                    break;
+                }
+            case 'generic':
+            {
+                break;
+            }
+        }
+    }
 }
 
 export class DeviceFeedCollection extends ConfigItemCollection<DeviceFeed> {
@@ -1174,6 +1199,7 @@ export class GpioPin extends ConfigItem {
             }
             else {
                 // We are adding.
+                feed = this.getDeviceFeed(data); // try to find feed with matching props; useful if data sent from njsPC
                 feedId = (this.feeds.getMaxId() || 0) + 1;
                 connectionId = parseInt(data.connectionId, 10);
                 if (isNaN(connectionId))
@@ -1202,6 +1228,30 @@ export class GpioPin extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+   public getDeviceFeed(data): DeviceFeed {
+        try {
+            let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
+            if (isNaN(feedId)) return;
+            let feed: DeviceFeed;
+            if (feedId !== -1) {
+                // Search by feed id
+                return this.feeds.find(elem => elem.id === feedId);
+            }
+            else {
+                // Search by attributes
+                for (let i = 0; i < this.feeds.length; i++){
+                    feed = this.feeds.getItemByIndex(i);
+                    if (feed.connectionId === data.connectionId &&
+                        feed.sendValue === data.sendValue &&
+                        (feed.eventName === data.eventName || feed.eventName === 'all') &&
+                        feed.property === data.property){
+                            return feed; // what if multiple matching(?)
+                        }
+                }    
+            }
+        }
+        catch (err) { logger.error(`getDeviceFeed GPIO: ${err};`); }
+    } 
 }
 export class DataTrigger extends ConfigItem {
     constructor(data) { super(data); }
@@ -1742,7 +1792,7 @@ export class I2cController extends ConfigItem {
         }
         return devices;
     }
-    public getDeviceById(busId: number, deviceId: number) {
+    public getDeviceById(busId: number, deviceId: number):I2cDevice {
         let bus = this.buses.getItemById(busId);
         return bus.getDeviceById(deviceId);
     }
@@ -2248,6 +2298,7 @@ export class I2cDevice extends ConfigItem {
             }
             else {
                 // We are adding.
+                feed = this.getDeviceFeed(data); // try to find feed with matching data; useful if data is sent from njsPC
                 feedId = (this.feeds.getMaxId() || 0) + 1;
                 connectionId = parseInt(data.connectionId, 10);
                 if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
@@ -2275,6 +2326,30 @@ export class I2cDevice extends ConfigItem {
             return Promise.resolve(feed);
         }
         catch (err) { return Promise.reject(err); }
+    }
+     public getDeviceFeed(data): DeviceFeed {
+        try {
+            let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
+            if (isNaN(feedId)) return;
+            let feed: DeviceFeed;
+            if (feedId !== -1) {
+                // Search by feed id
+                return this.feeds.find(elem => elem.id === feedId);
+            }
+            else {
+                // Search by attributes
+                for (let i = 0; i < this.feeds.length; i++){
+                    feed = this.feeds.getItemByIndex(i);
+                    if (feed.connectionId === data.connectionId &&
+                        feed.sendValue === data.sendValue &&
+                        (feed.eventName === data.eventName) &&
+                        feed.property === data.property){
+                            return feed; // what if multiple matching(?)
+                        }
+                }    
+            }
+        }
+        catch (err) { logger.error(`getDeviceFeed GPIO: ${err};`); } 
     }
     public async setDeviceTrigger(data): Promise<DeviceTrigger> {
         try {
