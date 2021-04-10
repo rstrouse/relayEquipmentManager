@@ -97,7 +97,7 @@ export class ConfigItem {
         let props = [];
         let obj = this;
         let that = obj;
-        
+
         do {
             Object.getOwnPropertyNames(obj).forEach((prop) => {
                 try {
@@ -395,7 +395,7 @@ export class Controller extends ConfigItem {
             c = await this.setConnectionAsync(data);
             setTimeout(async() => {await cont.reset()},200); // reset server after req is returned
         };
-   
+
         return c;
     }
     public async setConnectionAsync(data): Promise<ConnectionSource> {
@@ -645,11 +645,11 @@ export class Controller extends ConfigItem {
         switch (type){
             case 'i2c':{
                 // feed = (dev as I2cDevice).getDeviceFeed(obj);
-                (dev as I2cDevice).setDeviceFeed(obj);   
+                (dev as I2cDevice).setDeviceFeed(obj);
                 break;
             }
             case 'gpio':{
-                (dev as GpioPin).setDeviceFeed(obj);   
+                (dev as GpioPin).setDeviceFeed(obj);
                 break;
             }
             case 'spi':
@@ -657,9 +657,9 @@ export class Controller extends ConfigItem {
                     break;
                 }
             case 'generic':
-            {
-                break;
-            }
+                {
+                    break;
+                }
         }
     }
 }
@@ -1228,7 +1228,7 @@ export class GpioPin extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-   public getDeviceFeed(data): DeviceFeed {
+    public getDeviceFeed(data): DeviceFeed {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
             if (isNaN(feedId)) return;
@@ -1245,13 +1245,13 @@ export class GpioPin extends ConfigItem {
                         feed.sendValue === data.sendValue &&
                         (feed.eventName === data.eventName || feed.eventName === 'all') &&
                         feed.property === data.property){
-                            return feed; // what if multiple matching(?)
-                        }
-                }    
+                        return feed; // what if multiple matching(?)
+                    }
+                }
             }
         }
         catch (err) { logger.error(`getDeviceFeed GPIO: ${err};`); }
-    } 
+    }
 }
 export class DataTrigger extends ConfigItem {
     constructor(data) { super(data); }
@@ -1441,7 +1441,7 @@ export class DeviceTrigger extends DataTrigger {
     public set options(val: any) { this.setDataVal('options', val || {}); }
     public get channelId(): number { return this.data.channelId; }
     public set channelId(val: number) { this.setDataVal('channelId', val); }
-    
+
     public get stateExpression(): string { return this.data.stateExpression; }
     public set stateExpression(val: string) { this.setDataVal('stateExpression', val); }
     public getExtended() {
@@ -2121,7 +2121,7 @@ export class I2cBus extends ConfigItem {
                 if (typeof ddev === 'undefined') {
                     return Promise.reject(new Error(`The I2c device at ${dev.address} could not be found on the bus.`));
                 }
-                else 
+                else
                     await ddev.resetDevice(dev);
             }
             let addr = this.addresses.find(elem => elem.address === device.address);
@@ -2290,7 +2290,12 @@ export class I2cDevice extends ConfigItem {
             let feed: DeviceFeed;
             let connectionId;
             let connection;
-            if (feedId !== -1) {
+            // search for existing feed; also acts as to not allow duplicate feeds
+            feed = this.getDeviceFeed(data); // try to find feed with matching data; useful if data is sent from njsPC
+            if (typeof feed !== 'undefined') {
+                connectionId = feed.connectionId
+            }
+            else if (feedId !== -1) {
                 // We are updating.
                 feed = this.feeds.find(elem => elem.id === feedId);
                 if (typeof feed === 'undefined') return Promise.reject(`Could not find a feed by id ${feedId}`);
@@ -2298,14 +2303,13 @@ export class I2cDevice extends ConfigItem {
             }
             else {
                 // We are adding.
-                feed = this.getDeviceFeed(data); // try to find feed with matching data; useful if data is sent from njsPC
                 feedId = (this.feeds.getMaxId() || 0) + 1;
                 connectionId = parseInt(data.connectionId, 10);
                 if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
             }
             connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
             if (connectionId !== -1 && typeof connection === 'undefined') return Promise.reject(`The feed connection was not found at id ${connectionId}`);
-            feed = this.feeds.getItemById(feedId, true);
+            if (typeof feed === 'undefined') feed = this.feeds.getItemById(feedId, true);
             feed.connectionId = connectionId;
             feed.set(data);
             feed.id = feedId;
@@ -2327,7 +2331,7 @@ export class I2cDevice extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-     public getDeviceFeed(data): DeviceFeed {
+    public getDeviceFeed(data): DeviceFeed {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
             if (isNaN(feedId)) return;
@@ -2338,18 +2342,18 @@ export class I2cDevice extends ConfigItem {
             }
             else {
                 // Search by attributes
-                for (let i = 0; i < this.feeds.length; i++){
+                for (let i = 0; i < this.feeds.length; i++) {
                     feed = this.feeds.getItemByIndex(i);
-                    if (feed.connectionId === data.connectionId &&
+                    if (feed.options.id === data.options.id &&
                         feed.sendValue === data.sendValue &&
                         (feed.eventName === data.eventName) &&
-                        feed.property === data.property){
-                            return feed; // what if multiple matching(?)
-                        }
-                }    
+                        feed.property === data.property) {
+                        return feed; // what if multiple matching(?)
+                    }
+                }
             }
         }
-        catch (err) { logger.error(`getDeviceFeed GPIO: ${err};`); } 
+        catch (err) { logger.error(`getDeviceFeed GPIO: ${err};`); }
     }
     public async setDeviceTrigger(data): Promise<DeviceTrigger> {
         try {
