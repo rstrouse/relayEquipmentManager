@@ -332,7 +332,7 @@ export class ConfigRoute {
         app.put('/config/checkconnection', async (req, res, next) => {
             try {
                 let conn = await cont.checkConnectionAsync(req.body);
-                return res.status(200).send(conn.getExtended());
+                return res.status(200).send(conn.getExtended()).destroy();
             }
             catch (err) { next(err); }
         });

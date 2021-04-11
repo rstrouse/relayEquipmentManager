@@ -50,7 +50,7 @@ export class AtlasEZO extends i2cDeviceBase {
             this._tries++;
             let w = await this.i2c.writeCommand(this.device.address, command);
             if (timeout > 0) {
-                await new Promise((resolve, reject) => { setTimeout(() => resolve(), timeout); });
+                await new Promise<void>((resolve, reject) => { setTimeout(() => resolve(), timeout); });
                 let value = await this.i2c.read(this.device.address, length);
                 switch (value.buffer[0]) {
                     case 0:
@@ -59,7 +59,7 @@ export class AtlasEZO extends i2cDeviceBase {
                     case 254:
                         if (this._tries < 3) {
                             logger.warn(`${this.device.name} - Device not ready re-trying the command ${command} again: Retries ${this._tries - 1}.`)
-                            await new Promise((resolve, reject) => { setTimeout(() => resolve(), 600); });
+                            await new Promise<void>((resolve, reject) => { setTimeout(() => resolve(), 600); });
                             return await this.tryCommand(command, timeout, length);
                         }
                     default:
@@ -92,7 +92,7 @@ export class AtlasEZO extends i2cDeviceBase {
                     return Promise.reject(new Error(`${this.device.name}: Device busy could not send command ${command}`))
                 }
                 logger.debug(`${this.device.name}: Node busy waiting to send command ${command}`);
-                await new Promise((resolve, reject) => { setTimeout(() => resolve(), 150); });
+                await new Promise<void>((resolve, reject) => { setTimeout(() => resolve(), 150); });
             }
             this.processing = 1;
             this._tries = 0;
@@ -161,7 +161,7 @@ export class AtlasEZO extends i2cDeviceBase {
             this.stopPolling();
             await this.execCommand('Factory', -1);
             // Wait for 5 seconds then re-initialize
-            await new Promise((resolve, reject) => { setTimeout(() => resolve(), 5000); });
+            await new Promise<void>((resolve, reject) => { setTimeout(() => resolve(), 5000); });
             let dt = this.device.getDeviceType();
             await this.initAsync(dt);
             return this.device;
@@ -407,7 +407,8 @@ export class AtlasEZOorp extends AtlasEZO {
         try {
             this.suspendPolling = true;
             let result = await this.execCommand('R', 900);
-            let val = parseFloat(result);
+
+            let val = this.i2c.isMock ? 666.66 + (Math.floor(Math.random() * 10000) / 100): parseFloat(result);
             this.values.orp = val;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(val);

@@ -3,7 +3,8 @@ import * as fs from "fs";
 import express = require('express');
 import { config } from "../config/Config";
 import { logger } from "../logger/Logger";
-import socketio = require("socket.io");
+// import socketio = require("socket.io");
+import { Namespace, RemoteSocket, Server as SocketIoServer, Socket } from 'socket.io';
 import * as http2 from "http2";
 import * as http from "http";
 import * as https from "https";
@@ -123,59 +124,70 @@ export class Http2Server extends ProtoServer {
         }
     }
 }
+interface ClientToServerEvents {
+    noArg: () => void;
+    basicEmit: (a: number, b: string, c: number[]) => void;
+}
+
+interface ServerToClientEvents {
+    withAck: (d: string, cb: (e: number) => void) => void;
+}
 export class HttpServer extends ProtoServer {
     // Http protocol
     public app: express.Application;
     public server: http.Server;
-    public sockServer: socketio.Server;
-    //public parcel: parcelBundler;
-    private _sockets: socketio.Socket[] = [];
+    public sockServer: SocketIoServer<ClientToServerEvents, ServerToClientEvents>;
+    private _nameSpace: Namespace;
+    private _sockets: RemoteSocket<ServerToClientEvents>[] = [];
     public emitToClients(evt: string, ...data: any) {
         if (this.isRunning) {
-            // console.log(JSON.stringify({evt:evt, msg: 'Emitting...', data: data },null,2));
-            this.sockServer.emit(evt, ...data);
+            this._nameSpace.emit(evt, ...data);
         }
     }
     public emitToChannel(channel: string, evt: string, ...data: any) {
         //console.log(`Emitting to channel ${channel} - ${evt}`)
-        if (this.isRunning) this.sockServer.to(channel).emit(evt, ...data);
+        if (this.isRunning) {
+            let _nameSpace: Namespace = this.sockServer.of(channel);
+            _nameSpace.emit(evt, ...data);
+        }
     }
     private initSockets() {
-        this.sockServer = socketio(this.server, { cookie: false });
-
+        let options = {
+            allowEIO3: true, 
+                cors: {
+                    origin: true,
+                    methods: ["GET", "POST"],
+                    credentials: true
+                }
+        }
+        this.sockServer = new SocketIoServer(this.server, options);
+        this._nameSpace = this.sockServer.of('/');
         //this.sockServer.origins('*:*');
-        this.sockServer.on('error', (err) => {
-            logger.error('Socket server error %s', err.message);
-        });
-        this.sockServer.on('connect_error', (err) => {
-            logger.error('Socket connection error %s', err.message);
-        });
-        this.sockServer.on('reconnect_failed', (err) => {
-            logger.error('Failed to reconnect with socket %s', err.message);
-        });
-        this.sockServer.on('connection', (sock: socketio.Socket) => {
+
+        this.sockServer.on('connection', (sock: Socket) => {
             logger.info(`New socket client connected ${sock.id} -- ${sock.client.conn.remoteAddress}`);
             this.socketHandler(sock);
-            //this.sockServer.emit('controller', state.controllerState);
-            //sock.conn.emit('controller', state.controllerState);
+            sock.on('connect_error', (err) => {
+                logger.error('Socket server error %s', err.message);
+            });
+            sock.on('reconnect_failed', (err) => {
+                logger.error('Failed to reconnect with socket %s', err.message);
+            });
         });
         this.app.use('/socket.io-client', express.static(path.join(process.cwd(), '/node_modules/socket.io-client/dist/'), { maxAge: '60d' }));
     }
-    private socketHandler(sock: socketio.Socket) {
+    private socketHandler(sock: Socket) {
         let self = this;
-        this._sockets.push(sock);
+        setTimeout(async () => {
+            // refresh socket list with every new socket
+            self._sockets = await self.sockServer.fetchSockets();
+        }, 100)
         sock.on('error', (err) => {
             logger.error('Error with socket: %s', err);
         });
-        sock.on('close', (id) => {
-            for (let i = this._sockets.length - 1; i >= 0; i--) {
-                if (this._sockets[i].id === id) {
-                    let s = this._sockets[i];
-                    logger.info('Socket diconnecting %s', s.conn.remoteAddress);
-                    s.disconnect();
-                    this._sockets.splice(i, 1);
-                }
-            }
+        sock.on('close', async (id) => {
+            logger.info('Socket diconnecting %s', id);
+            self._sockets = await self.sockServer.fetchSockets();
         });
         sock.on('echo', (msg) => { sock.emit('echo', msg); });
     }
