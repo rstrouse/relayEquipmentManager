@@ -545,6 +545,7 @@ export class i2cDeviceBase implements IDevice {
             if (typeof values[i] === 'number') arr.push(values[i]);
         }
         if (arr.length > 0) {
+            console.log(arr);
             let mid = Math.floor(arr.length / 2);
             let nums = [...arr].sort((a, b) => a - b);
             return arr.length % 2 !== 0 ? nums[mid] : ((nums[mid - 1] + nums[mid]) / 2);
