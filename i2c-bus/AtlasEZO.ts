@@ -1405,9 +1405,9 @@ export class AtlasEZOrtd extends AtlasEZO {
     }
     public calcMedian(prop: string, values: any[]) {
         switch (prop.toLowerCase()) {
-            case 'tempK':
-            case 'tempC':
-            case 'tempF':
+            case 'tempk':
+            case 'tempc':
+            case 'tempf':
                 return super.calcMedian(prop, values);
             case 'all':
                 // Only the ORP reading is a median here.
@@ -1524,6 +1524,11 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async readProbe(): Promise<number> {
         try {
             let result = await this.execCommand('R', 600);
+            if (this.i2c.isMock) {
+                result = utils.convert.temperature.convertUnits(72 + (Math.round((5 * Math.random()) * 100) / 100), 'f', this.values.units).toString();
+            }
+            else 
+                result = await this.execCommand('R', 600);
             let val = parseFloat(result);
             this.values.temperature = val;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
