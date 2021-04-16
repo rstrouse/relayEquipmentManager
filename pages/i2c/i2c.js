@@ -41,8 +41,11 @@
                     key: 'address',
                     canCreate: false,
                     caption: 'Devices', itemName: 'Device',
-                    columns: [{ binding: 'addressName', text: 'Address', style: { width: '87px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' } },
-                    { binding: 'name', text: 'Name', style: { width: '197px' } }]
+                    columns: [{
+                        binding: 'addressName', text: 'Address', cellStyle: { verticalAlign: 'top'},
+                        style: { width: '87px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }
+                    },
+                    { binding: 'name', text: 'Name', style: { width: '177px' } }]
                 }).on('selected', function (evt) {
                     console.log(evt);
                     divDevice.empty();

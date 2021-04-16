@@ -6,6 +6,8 @@
       "id": 100,
       "name": "Atlas EZO-pH",
       "deviceClass": "AtlasEZOpH",
+      "module": "./AtlasEZO",
+      "hasReset": true,
       "readings": {
         "pH": {
           "label": "pH",
@@ -52,7 +54,6 @@
         }
 
       ],
-      "module": "./AtlasEZO",
       "options": [
         {
           "dataType": "panel",
@@ -524,7 +525,11 @@
               "type": "panel",
               "field": {
                 "type": "div",
-                "style": { "display": "inline-block", "verticalAlign": "top", "marginLeft": "1rem" }
+                "style": {
+                  "display": "inline-block",
+                  "verticalAlign": "top",
+                  "marginLeft": "1rem"
+                }
               },
               "options": [
                 {

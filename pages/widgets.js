@@ -2942,7 +2942,7 @@ $.ui.position.fieldTip = {
                 var td = $('<td></td>').appendTo(row);
                 var div = $('<div></div>').appendTo(td).attr('data-bind', col.binding).attr('data-fmttype', col.fmtType).attr('data-fmtMask', col.fmtMask);
                 if (typeof col.style !== 'undefined') div.css(col.style);
-                if (typeof col.cellStyle !== 'undefined') div.css(col.cellStyle);
+                if (typeof col.cellStyle !== 'undefined') td.css(col.cellStyle);
             }
             btn = $('<td></td>').addClass('btn-remove').appendTo(row);
             // Add in the buttons.
@@ -3124,7 +3124,7 @@ $.ui.position.fieldTip = {
                 var td = $('<td></td>').appendTo(row);
                 var div = $('<div></div>').appendTo(td).attr('data-bind', col.binding).attr('data-fmttype', col.fmtType).attr('data-fmtMask', col.fmtMask);
                 if (typeof col.style !== 'undefined') div.css(col.style);
-                if (typeof col.cellStyle !== 'undefined') div.css(col.cellStyle);
+                if (typeof col.cellStyle !== 'undefined') td.css(col.cellStyle);
             }
             //btn = $('<td></td>').appendTo(row);
             // Add in the buttons.
