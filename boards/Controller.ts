@@ -1539,20 +1539,6 @@ export class DeviceTrigger extends DataTrigger {
         catch (err) { return new Error(`${err} ${DeviceTrigger._makeExpression(data, 'data')}`); }
     }
     public makeTriggerFunction() { return new Function('connection', 'device', 'trigger', 'data', DeviceTrigger._makeExpression(this.data, 'data')); }
-    //public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
-    //    return new Promise<DeviceTrigger>((resolve, reject) => {
-    //        if (typeof data.bindings !== 'undefined' || typeof data.expression !== 'undefined' || data.expression !== '') {
-    //            let test = extend(true, this.get(true), data);
-    //            let err = DeviceTrigger.validateExpression(test);
-    //            if (typeof err !== 'undefined') {
-    //                logger.error(`Invalid Device #${this.id} Trigger Expression: ${err}`);
-    //                return reject(new Error(`Invalid Device #${this.id} Trigger Expression: ${err}`));
-    //            }
-    //        }
-    //        this.set(data);
-    //        resolve(this);
-    //    });
-    //}
 }
 export class DeviceTriggerBindingCollection extends ConfigItemCollection<DeviceTriggerBinding> {
     constructor(data: any, name?: string) { super(data, name || 'bindings'); }

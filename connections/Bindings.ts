@@ -1,5 +1,5 @@
 ﻿import { connect, MqttClient, Client } from 'mqtt';
-import { vMaps } from "../boards/Constants";
+import { vMaps, utils } from "../boards/Constants";
 import * as path from "path";
 import * as fs from "fs";
 import { cont, ConnectionSource, DeviceBinding, DataTrigger } from "../boards/Controller";
@@ -299,7 +299,9 @@ class SocketServerConnection extends ServerConnection {
                         if (!device.isOutput) continue;
                         (async () => {
                             try {
-                                await device.setDeviceState({ state: trigger.state.val });
+                                let val = trigger.state.val;
+                                if (trigger.state.val === 2) val = !utils.makeBool(device.state);
+                                await device.setDeviceState({ state: val });
                             } catch (err) { }
                         })();
                     }

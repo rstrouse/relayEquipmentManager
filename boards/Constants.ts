@@ -85,7 +85,8 @@ export class valueMaps {
     ]);
     public triggerStates: valueMap = new valueMap([
         [0, { name: 'off', desc: 'Off', inst: 'Trigger will turn the pin off.' }],
-        [1, { name: 'on', desc: 'On', inst: 'Trigger will turn the pin on.' }]
+        [1, { name: 'on', desc: 'On', inst: 'Trigger will turn the pin on.' }],
+        [2, { name: 'toggle', desc: 'Toggle', inst: 'Trigger will toggle the current state.'}]
     ]);
     public operators: valueMap = new valueMap([
         [0, { name: 'eq', op: '==', desc:'Equals' }],
