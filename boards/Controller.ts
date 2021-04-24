@@ -1049,11 +1049,12 @@ export class GpioPin extends ConfigItem {
             if (!this.isOutput) return Promise.reject(new Error(`runPinSequence: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
             let onv = this.getMapVal('on', vMaps.pinStates);
             let offv = this.getMapVal('off', vMaps.pinStates);
+            logger.debug(`Starting sequence: ${data.length}`);
             for (let i = 0; i < data.length; i++) {
                 let seq = data[i];
-                let mv = utils.makeBool(seq.state || seq.isOn) ? onv.gpio : offv.gpio;
+                let mv = utils.makeBool(seq.state || seq.isOn) ? onv : offv;
                 await gpioCont.writePinAsync(this.headerId, this.id, mv.gpio);
-                this.setDataVal('state', mv); // We may be too agressive here with the emits.
+                logger.debug(`Setting sequence val:${mv.gpio}`);
                 if (seq.timeout) await utils.wait(seq.timeout);
             }
             resolve(this);
