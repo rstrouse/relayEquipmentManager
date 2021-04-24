@@ -842,7 +842,7 @@ export class Gpio extends ConfigItem {
             }
         }
         if (typeof pin !== 'undefined' && pin.isActive) {
-            if (typeof data === 'object' && util.isArray(data) && data.length > 0) {
+            if (typeof data === 'object' && Array.isArray(data) && data.length > 0) {
                 return await pin.runPinSequenceAsync(data);
             }
             return await pin.setPinStateAsync(utils.makeBool(data.state) ? 'on' : 'off');
@@ -1138,7 +1138,13 @@ export class GpioPin extends ConfigItem {
 
             // Now that the state has been read lets set its state.
             let newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : typeof data !== 'undefined' ? utils.makeBool(data) : false;
-            await gpioCont.writePinAsync(this.headerId, this.id, newState ? 1 : 0, latch);
+            if (typeof data === 'object' && Array.isArray(data) && data.length > 0) {
+                await this.runPinSequenceAsync(data);
+                newState = await gpioCont.readPinAsync(this.headerId, this.id) ? true : false;
+            }
+            else {
+                await gpioCont.writePinAsync(this.headerId, this.id, newState ? 1 : 0, latch);
+            }
             let vmState = vMaps.pinStates.transform(newState ? 1 : 0);
             this.setDataVal('state', vmState.name);
             return {
