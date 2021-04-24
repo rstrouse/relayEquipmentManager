@@ -842,6 +842,9 @@ export class Gpio extends ConfigItem {
             }
         }
         if (typeof pin !== 'undefined' && pin.isActive) {
+            if (typeof data === 'object' && util.isArray(data) && data.length > 0) {
+                return await pin.runPinSequenceAsync(data);
+            }
             return await pin.setPinStateAsync(utils.makeBool(data.state) ? 'on' : 'off');
         }
         else return Promise.reject(new Error(`Cannot set pin state: Unidentified Pin # -- ${JSON.stringify(data)}`));
@@ -1040,6 +1043,22 @@ export class GpioPin extends ConfigItem {
                 times--;
             }
         });
+    }
+    public async runPinSequenceAsync(data: any[]): Promise<GpioPin> {
+        return new Promise<GpioPin>(async (resolve, reject) => {
+            if (!this.isOutput) return Promise.reject(new Error(`runPinSequence: GPIO Pin #${this.headerId} - ${this.id} is not an output pin`));
+            let onv = this.getMapVal('on', vMaps.pinStates);
+            let offv = this.getMapVal('off', vMaps.pinStates);
+            for (let i = 0; i < data.length; i++) {
+                let seq = data[i];
+                let mv = utils.makeBool(seq.state || seq.isOn) ? onv.gpio : offv.gpio;
+                await gpioCont.writePinAsync(this.headerId, this.id, mv.gpio);
+                this.setDataVal('state', mv); // We may be too agressive here with the emits.
+                if (seq.timeout) await utils.wait(seq.timeout);
+            }
+            resolve(this);
+        })
+
     }
     public async setPinStateAsync(state: string | boolean | number): Promise<GpioPin> {
         return new Promise<GpioPin>(async (resolve, reject) => {
