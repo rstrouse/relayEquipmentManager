@@ -241,8 +241,8 @@
             $('<div></div>').appendTo(line).pickList({
                 required: true,
                 bindColumn: 0, displayColumn: 1, labelText: 'Desired State', binding: 'state.name',
-                columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap', width: '77px' } }, { binding: 'desc', text: 'State', style: { minWidth: '77px' } }, { binding: 'inst', text: 'Description', style: { minWidth: '227px' } }],
-                items: trig.triggerStates, inputAttrs: { style: { width: '3rem' } }, labelAttrs: { style: { width: '7rem' } }
+                columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap', width: '77px' } }, { binding: 'desc', text: 'State', style: { minWidth: '77px' } }, { binding: 'inst', text: 'Description', style: { whiteSpace:'nowrap', minWidth: '227px' } }],
+                items: trig.triggerStates, inputAttrs: { style: { width: '5rem' } }, labelAttrs: { style: { width: '7rem' } }
             });
             $('<div></div>').appendTo(dlg).pnlTriggerParams({});
             if (typeof trig.trigger.id !== 'undefined') {

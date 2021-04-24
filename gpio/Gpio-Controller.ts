@@ -47,7 +47,7 @@ export class GpioController {
     }
     public resetPinTriggers(headerId: number, pinId: number) {
         let pin = this.pins.find(elem => elem.pinId === pinId && elem.headerId === headerId);
-        pin.resetTriggers();
+        if (typeof pin !== 'undefined') pin.resetTriggers();
     }
 
     public initPin(pinDef: GpioPin): gpioPinComms {

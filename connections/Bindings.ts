@@ -300,7 +300,9 @@ class SocketServerConnection extends ServerConnection {
                         (async () => {
                             try {
                                 let val = trigger.state.val;
-                                if (trigger.state.val === 2) val = !utils.makeBool(device.state);
+                                if (val === 2) {
+                                    val = !utils.makeBool(device.state.boolean); // Just in case we are unknown state.
+                                }
                                 await device.setDeviceState({ state: val });
                             } catch (err) { }
                         })();
