@@ -3622,6 +3622,12 @@ $.ui.position.fieldTip = {
                 inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { } }
             })
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Invert Output Signal', binding: 'invert' });
+            $('<hr></hr>').appendTo(dlg);
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).html(`Use the delay settings below to add a delay for relay on/off sequences.  This will insert an additional delay time to ensure the relay does not cycle too fast.`).addClass('script-advanced-instructions');
+            $('<div></div>').appendTo(line).valueSpinner({ canEdit: true, units: 'ms', labelText: 'On Delay', binding: 'sequenceOnDelay', min: 0, max: 5000, labelAttrs: { style: { width: '4.5rem' } }, inputAttrs: { maxLength: 5, style: { width: "5rem" } } });
+            $('<div></div>').appendTo(line).valueSpinner({ canEdit: true, units: 'ms', labelText: 'Off Delay', binding: 'sequenceOffDelay', min: 0, max: 5000, labelAttrs: { style: { width: '4.5rem' } }, inputAttrs: { maxLength: 5, style: { width: "5rem" } } });
+
             dataBinder.bind(dlg, relay);
             dlg.css({ overflow: 'visible' });
         },

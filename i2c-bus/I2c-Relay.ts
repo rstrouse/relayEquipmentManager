@@ -677,10 +677,14 @@ export class i2cRelay extends i2cDeviceBase {
                         this.stopReadContinuous();
                         // This is a sequence.
                         // [ { isOn: true, timeout: 1000}, {isOn: false, timeout: 1000}]
+                        let onDelay = relay.sequenceOnDelay || 0;
+                        let offDelay = relay.sequenceOffDelay || 0;
                         for (let i = 0; i < data.length; i++) {
                             let seq = data[i];
-                            await this.setRelayState({ id: relayId, state: utils.makeBool(seq.state || seq.isOn) });
-                            if (seq.timeout) await utils.wait(seq.timeout);
+                            let state = utils.makeBool(seq.state || seq.isOn);
+                            await this.setRelayState({ id: relayId, state: state });
+                            console.log(`relay: ${relay.name} state: ${state} delay: ${seq.timeout + (state ? onDelay : offDelay)}`);
+                            if (seq.timeout) await utils.wait(seq.timeout + (state ? onDelay : offDelay));
                         }
                         this.readContinuous();
                     }
