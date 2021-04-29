@@ -2076,6 +2076,18 @@ export class AtlasEZOhum extends AtlasEZO {
         switch (prop) {
         }
     }
+    public async changeAddress(newAddress: number): Promise<boolean> {
+        try {
+            this.suspendPolling = true;
+            // First lets look for any other device at the new address.
+            await this.execCommand(`12C,${newAddress}`, -1);
+            await utils.wait(15000);
+            this.device.address = newAddress;
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
     public async setOptions(opts): Promise<any> {
         try {
             this.suspendPolling = true;
