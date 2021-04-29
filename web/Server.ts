@@ -264,7 +264,12 @@ export class HttpServer extends ProtoServer {
                 logger.error(error);
                 if (!res.headersSent) {
                     let httpCode = error.httpCode || 500;
-                    res.status(httpCode).send(error);
+                    if (typeof error !== 'undefined' && typeof error.message !== 'undefined')
+                        res.status(httpCode).send(error);
+                    else {
+                        let err = { httpCode: httpCode, message: error };
+                        res.status(httpCode).send(err);
+                    }
                 }
             });
 

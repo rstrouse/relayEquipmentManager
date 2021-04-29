@@ -332,9 +332,9 @@ jQuery.each(['get', 'put', 'delete', 'post', 'search'], function (i, method) {
             }
         };
         var cbShowError = function (jqXHR, status, error) {
-            var err = { httpCode: jqXHR.status, status: status, error: jqXHR.responseJSON };
+            var err = { httpCode: jqXHR.status, status: status, error: jqXHR.responseJSON || error };
             if (err.httpCode >= 299) {
-                console.log(error);
+                console.log(err);
                 $.pic.modalDialog.createApiError($.extend(true, { url: serviceUrl, data: data }, err));
             }
         };

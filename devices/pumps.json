@@ -7,6 +7,8 @@
       "name": "Atlas EZO-PMP",
       "deviceClass": "AtlasEZOpmp",
       "module": "./AtlasEZO",
+      "hasReset": true,
+      "hasChangeAddress": true,
       "readings": {
         "dispensed": {
           "label": "Dispensed Volume",
@@ -21,7 +23,7 @@
         {
           "name": "dispensing",
           "desc": "Indicates whether the pump is dispensing",
-          "maxSamples":  1
+          "maxSamples": 1
         },
         {
           "name": "mode",
@@ -625,7 +627,10 @@
                         "type": "checkbox",
                         "labelText": "Reverse",
                         "bind": "dispense.reverse",
-                        "style": { "width": "7rem", "margin": ".1rem" }
+                        "style": {
+                          "width": "7rem",
+                          "margin": ".1rem"
+                        }
                       }
                     },
                     {

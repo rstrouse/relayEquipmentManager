@@ -8,6 +8,7 @@
       "deviceClass": "AtlasEZOorp",
       "module": "./AtlasEZO",
       "hasReset": true,
+      "hasChangeAddress": true,
       "readings": {
         "orp": {
           "label": "ORP",
@@ -22,12 +23,12 @@
         {
           "name": "orp",
           "desc": "ORP value in mV",
-          "maxSamples":  50
+          "maxSamples": 50
         },
         {
           "name": "all",
           "desc": "All values",
-          "maxSamples":  50
+          "maxSamples": 50
         }
 
       ],
@@ -105,7 +106,7 @@
                     "labelAttrs": {
                       "style": { "width": "5rem" }
                     },
-                    "cssClass":  "i2cDeviceInformation"
+                    "cssClass": "i2cDeviceInformation"
                   }
                 },
                 {

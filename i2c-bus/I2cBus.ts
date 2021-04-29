@@ -186,11 +186,12 @@ export class i2cBus {
                 let addr = bus.addresses.find(elem => elem.address === d.address);
                 if (typeof addr === 'undefined') {
                     logger.info(`Adding I2C device that could not be scanned 0x${d.address.toString(16)}`);
-                    bus.addresses.push({ address: d.address, manufacturer: 0, product: 0, name: d.name || 'Unknown' });
+                    devs.push({ address: d.address, manufacturer: 0, product: 0, name: d.name || 'Unknown' });
                 }
             }
-            bus.addresses.sort((a, b) => { return a.address - b.address });
-            return Promise.resolve(devs);
+            devs.sort((a, b) => { return a.address - b.address })
+            bus.addresses = devs;
+            return devs;
         }
         catch (err) { logger.error(`Error Scanning i2c Bus #${this.busNumber}: ${err}`); }
     }
@@ -282,7 +283,7 @@ export class i2cBus {
                 if (typeof length === 'undefined') length = command.length;
                 ret = await this._i2cBus.i2cWrite(address, length, command);
             }
-            else {
+            else { 
                 let err = new Error(`Error writing I2c ${command}.  Invalid type for command.`);
                 logger.error(err);
                 return Promise.reject(err);

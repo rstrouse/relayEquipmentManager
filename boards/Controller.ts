@@ -1744,6 +1744,27 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async changeAddress(dev): Promise<I2cDevice> {
+        try {
+            let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
+            let busNumber = (typeof dev.busNumber !== 'undefined') ? parseInt(dev.busNumber, 10) : undefined;
+            let bus: I2cBus;
+            if (typeof busId !== 'undefined') {
+                bus = this.buses.getItemById(busId);
+                if (typeof bus.busNumber === 'undefined') return Promise.reject(new Error(`An invalid I2c bus id was supplied ${dev.busId}`));
+            }
+            else if (typeof busNumber !== 'undefined') {
+                bus = this.buses.getItemByBusNumber(busNumber);
+                if (typeof bus.id === 'undefined') return Promise.reject(new Error(`An invalid I2c bus # was supplied ${dev.busNumber}`));
+            }
+            else {
+                return Promise.reject(new Error(`The specified I2c bus could not be found at busId:${dev.busId} or busNumber:${dev.busNumber}`));
+            }
+            let device = await bus.changeDeviceAddress(dev);
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
 
     public async setDevice(dev): Promise<I2cDevice> {
         try {
@@ -2141,6 +2162,43 @@ export class I2cBus extends ConfigItem {
             return Promise.resolve(device);
         }
         catch (err) { return Promise.reject(err); }
+    }
+    public async changeDeviceAddress(dev): Promise<I2cDevice> {
+        try {
+            let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
+            let newAddress = typeof dev.newAddress !== 'undefined' ? parseInt(dev.newAddress, 10) : undefined;
+            let dbus = i2c.buses.find(elem => elem.busNumber === this.busNumber);
+            let ddev;
+            let device: I2cDevice;
+            if (typeof newAddress === 'undefined' || newAddress < 1 || newAddress > 127 || isNaN(newAddress)) return Promise.reject(new Error(`A valid new address was not supplied. ${dev.newAddress}`));
+            if (typeof id === 'undefined') {
+                // You cannot change the address of a device we have not added or are not in control of.
+                return Promise.reject(new Error(`You may not change the address of a device that has not been added ${dev.address}`));
+            }
+            else {
+                device = this.devices.getItemById(id);
+                if (typeof dbus !== 'undefined') {
+                    ddev = dbus.devices.find(elem => elem.device.id === id);
+                    if (typeof ddev === 'undefined') {
+                        return Promise.reject(new Error(`The I2c device id ${id} could not be found on the bus.`));
+                    }
+                }
+                else
+                    return Promise.reject(new Error(`The I2c bus at ${this.busNumber} could not be found.`));
+
+                let address = device.address;
+                if (isNaN(address) || address < 0) return Promise.reject(new Error(`An invalid I2c address was supplied ${dev.address}`));
+                if (typeof this.devices.find(elem => elem.address === address && elem.id !== id) !== 'undefined') return Promise.reject(`A device already exists at this specified address ${address}`);
+                // Check to see if there is another address at the new address.
+                if (typeof this.devices.find(elem => elem.address === newAddress && elem.id !== id) !== 'undefined') return Promise.reject(`A device already exists at the new specified address ${newAddress}`);
+                if (typeof ddev.changeAddress !== 'function') return Promise.reject(`This device does not support changing the address via software`);
+                await ddev.changeAddress(newAddress);
+                // Remove the old address and add in the new one.
+                await this.scanBus();
+            }
+            return device;
+        }
+        catch (err) { logger.error(err.message); return Promise.reject(err); }
     }
 
     public async deleteDevice(dev): Promise<I2cDevice> {

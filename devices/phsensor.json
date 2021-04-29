@@ -8,6 +8,7 @@
       "deviceClass": "AtlasEZOpH",
       "module": "./AtlasEZO",
       "hasReset": true,
+      "hasChangeAddress": true,
       "readings": {
         "pH": {
           "label": "pH",

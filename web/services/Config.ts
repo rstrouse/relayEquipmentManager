@@ -200,6 +200,13 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+        app.put('/config/i2c/device/changeAddress', async (req, res, next) => {
+            try {
+                let dev = await cont.i2c.changeAddress(req.body);
+                return res.status(200).send(dev.getExtended());
+            }
+            catch (err) { next(err); }
+        });
         app.put('/config/i2c/device/reset', async (req, res, next) => {
             try {
                 let dev = await cont.i2c.resetDevice(req.body);

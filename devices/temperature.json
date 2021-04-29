@@ -311,6 +311,8 @@
       "name": "Atlas EZO-RTD",
       "deviceClass": "AtlasEZOrtd",
       "module": "./AtlasEZO",
+      "hasReset": true,
+      "hasChangeAddress": true,
       "readings": {
         "temperature": {
           "label": "temperature",
@@ -325,7 +327,7 @@
         {
           "name": "tempF",
           "desc": "Degrees Fahrenheit",
-          "maxSamples":  50
+          "maxSamples": 50
         },
         {
           "name": "tempC",
@@ -665,7 +667,7 @@
                     "type": "actionButton",
                     "text": "Clear",
                     "icon": "<i class=\"fas fa-broom\"></i>",
-                    "style": {"width": "7rem"}
+                    "style": { "width": "7rem" }
                   },
                   "fieldEvents": {
                     "click": {

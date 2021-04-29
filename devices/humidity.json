@@ -1,5 +1,5 @@
 ﻿{
-  "category": "Chemistry Sensors",
+  "category": "Weather Sensors",
   "predefined": true,
   "devices": [
     {
@@ -7,6 +7,8 @@
       "name": "Atlas EZO-HUM",
       "deviceClass": "AtlasEZOhum",
       "module": "./AtlasEZO",
+      "hasReset": true,
+      "hasChangeAddress": true,
       "readings": {
         "humidity": {
           "label": "Humidity",

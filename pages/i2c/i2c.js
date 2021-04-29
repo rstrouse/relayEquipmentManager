@@ -64,16 +64,16 @@
         },
         dataBind: function (data, selAddr) {
             var self = this, o = self.options, el = self.element;
-
             var addrs = data.bus.addresses.slice();
             for (var i = 0; i < data.bus.devices.length; i++) {
                 var dev = data.bus.devices[i];
                 var addr = addrs.find(elem => elem.address === dev.address);
                 if (typeof addr === 'undefined') {
-                    addrs.push({ address: dev.address, id: dev.id, manufacturer: 0, product: 0, name: 'Unknown' });
+                    console.log(`Adding device name ${dev.address} - ${dev.name || 'Unknown'}`);
+                    addrs.push({ address: dev.address, id: dev.id, manufacturer: 0, product: 0, name: dev.name || 'Unknown' });
                 }
             }
-            addrs.sort((a, b) => { return a.address - b.ddress });
+            addrs.sort((a, b) => { return a.address - b.address });
             el.find('div#i2cAddresses').each(function () {
                 this.clear();
                 for (var n = 0; n < addrs.length; n++) {
@@ -138,7 +138,7 @@
             el.attr('data-address', o.address);
             var outer = $('<div></div>').appendTo(el).addClass('control-panel');
             var head = $('<div></div>').appendTo(outer).addClass('pnl-settings-header').addClass('control-panel-title');
-            $('<span></span>').appendTo(head).addClass('header-text').html(`I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Device Definition for Address ${o.address} - 0x${o.address.toString(16).padStart(2, '0')}`);
+            $('<span></span>').appendTo(head).addClass('header-text').html(`I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Device Definition for Address <span class="i2cpnl-address">${o.address} - 0x${o.address.toString(16).padStart(2, '0')}</span>`);
             var pnl = $('<div></div>').appendTo(outer);
             $.getLocalService('/config/options/i2c/' + o.busId + '/' + o.address, null, function (i2cDevice, status, xhr) {
                 console.log(i2cDevice);
@@ -173,9 +173,13 @@
                 i2cDevice.device.busId = o.busId;
                 if (dt.hasReset) el.find('div#btnResetDevice').show();
                 else el.find('div#btnResetDevice').hide();
+                if (dt.hasChangeAddress) el.find('div#btnChangeAddress').show();
+                else el.find('div#btnChangeAddress').hide();
                 self.dataBind(i2cDevice.device);
             });
             var btnPnl = $('<div class="btn-panel"></div>').appendTo(outer);
+            $('<div></div>').appendTo(btnPnl).actionButton({ id: "btnChangeAddress", text: 'Change Address', icon: '<i class="fas fa-at"></i>' })
+                .on('click', function (evt) { self.changeDeviceAddress(); });
             $('<div></div>').appendTo(btnPnl).actionButton({ id: "btnResetDevice", text: 'Reset Device', icon: '<i class="fas fa-toilet"></i>' })
                 .on('click', function (evt) { self.resetDevice(); });
             $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Save Device', icon: '<i class="fas fa-save"></i>' })
@@ -187,7 +191,7 @@
         resetDevice: function () {
             var self = this, o = self.options, el = self.element;
             var dev = dataBinder.fromElement(el);
-            $.pic.modalDialog.createConfirm('dlgConfirmDeleteDevice', {
+            $.pic.modalDialog.createConfirm('dlgConfirmResetDevice', {
                 message: `Are you sure you want to reset device on address ${dev.address}?<hr></hr>This action will reset the device to the default or factory settings.`,
                 width: '350px',
                 height: 'auto',
@@ -208,6 +212,40 @@
                 }]
             });
         },
+        changeDeviceAddress: function () {
+            var self = this, o = self.options, el = self.element;
+            var dev = dataBinder.fromElement(el);
+            var dlg = $.pic.modalDialog.createDialog('dlgConfirmChangeAddress', {
+                width: '377px',
+                height: 'auto',
+                title: 'Confirm Change Device Address',
+                buttons: [{
+                    text: 'Yes', icon: '<i class="fas fa-at"></i>',
+                    click: function (evt) {
+                        var a = dataBinder.fromElement(dlg);
+                        a.id = dev.id;
+                        a.address = dev.address;
+                        a.busNumber = dev.busNumber;
+                        console.log(a);
+                        $.putLocalService('/config/i2c/device/changeAddress', a, 'Changing I2c Device Address...', function (i2cDev, status, xhr) {
+                            self.dataBind(i2cDev);
+                            el.parents('div.pnl-i2c-bus:first')[0].loadDevices(a.newAddress);
+                        });
+                        $.pic.modalDialog.closeDialog(this);
+                    }
+                },
+                {
+                    text: 'No', icon: '<i class="far fa-window-close"></i>',
+                    click: function () { $.pic.modalDialog.closeDialog(this); }
+                }]
+            });
+            $('<div></div>').appendTo(dlg).html(`Are you sure you want to change the device address from ${dev.address} to another address?`)
+            $('<hr></hr>').appendTo(dlg);
+            $('<div></div>').appendTo(dlg).addClass('script-advanced-instructions').html(`This action will send the proper commands to reset the device address then reload the device.  Enter a new unique address in decimal for the device below.`);
+            var line = $('<div></div>').appendTo(dlg);
+            $('<div></div').appendTo(line).valueSpinner({ canEdit: true, fmtMask: '#', dataType: 'int', binding: 'newAddress', min: 3, max: 127, labelText: 'New Address', labelAttrs: { style: {marginRight:'.25rem'} }, inputAttrs: { maxLength: 4 } });
+        },
+
         saveDevice: function () {
             var self = this, o = self.options, el = self.element;
             if (dataBinder.checkRequired(el)) {
@@ -278,6 +316,9 @@
             }
             var pnlOpts = el.find('div.i2cdevice-options');
             pnlOpts[0].setDeviceType(dt, data);
+            $('span.i2cpnl-address').each(function () {
+                $(this).text(`${data.address} - 0x${data.address.toString(16).padStart(2, '0')}`);
+            });
             console.log(data);
             dataBinder.bind(el, data);
         },

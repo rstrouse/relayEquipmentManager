@@ -161,7 +161,7 @@ export class AtlasEZO extends i2cDeviceBase {
             this.stopPolling();
             await this.execCommand('Factory', -1);
             // Wait for 5 seconds then re-initialize
-            await new Promise<void>((resolve, reject) => { setTimeout(() => resolve(), 7000); });
+            await new Promise<void>((resolve, reject) => { setTimeout(() => resolve(), 10000); });
             let dt = this.device.getDeviceType();
             await this.initAsync(dt);
             return this.device;
@@ -225,6 +225,18 @@ export class AtlasEZO extends i2cDeviceBase {
             let result = await this.execCommand('L,?', 300);
             let arrDims = result.split(',');
             this.options.ledEnabled = utils.makeBool(arrDims[1]);
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
+    public async changeAddress(newAddress: number): Promise<boolean> {
+        try {
+            this.suspendPolling = true;
+            // First lets look for any other device at the new address.
+            await this.execCommand(`12C,${newAddress}`, 300);
+            await utils.wait(15000);
+            this.device.address = newAddress;
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.reject(err); }
