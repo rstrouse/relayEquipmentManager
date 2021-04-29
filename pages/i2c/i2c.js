@@ -179,9 +179,9 @@
             });
             var btnPnl = $('<div class="btn-panel"></div>').appendTo(outer);
             $('<div></div>').appendTo(btnPnl).actionButton({ id: "btnChangeAddress", text: 'Change Address', icon: '<i class="fas fa-at"></i>' })
-                .on('click', function (evt) { self.changeDeviceAddress(); });
+                .on('click', function (evt) { self.changeDeviceAddress(); }).hide();
             $('<div></div>').appendTo(btnPnl).actionButton({ id: "btnResetDevice", text: 'Reset Device', icon: '<i class="fas fa-toilet"></i>' })
-                .on('click', function (evt) { self.resetDevice(); });
+                .on('click', function (evt) { self.resetDevice(); }).hide();
             $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Save Device', icon: '<i class="fas fa-save"></i>' })
                 .on('click', function (evt) { self.saveDevice(); });
             $('<div></div>').appendTo(btnPnl).actionButton({ id: "btnDeleteDevice", text: 'Delete Device', icon: '<i class="fas fa-trash"></i>' })
