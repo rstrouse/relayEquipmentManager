@@ -683,7 +683,7 @@ export class i2cRelay extends i2cDeviceBase {
                             let seq = data[i];
                             let state = utils.makeBool(seq.state || seq.isOn);
                             await this.setRelayState({ id: relayId, state: state });
-                            console.log(`relay: ${relay.name} state: ${state} delay: ${seq.timeout + (state ? onDelay : offDelay)}`);
+                            logger.info(`Sequencing relay: ${ relay.name } state: ${ state } delay: ${ seq.timeout + (state ? onDelay : offDelay) }`)
                             if (seq.timeout) await utils.wait(seq.timeout + (state ? onDelay : offDelay));
                         }
                         this.readContinuous();
@@ -704,6 +704,8 @@ export class i2cRelay extends i2cDeviceBase {
                 await this.setRelayState({ id: relayId, state: newState });
             }
             if (latch > 0) {
+                let _lt = this._latchTimers[ordId];
+                if (typeof _lt !== 'undefined') clearTimeout(_lt);
                 this._latchTimers[ordId] = setTimeout(() => {
                     this.setRelayState({ id: relayId, state: !newState });
                     logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);

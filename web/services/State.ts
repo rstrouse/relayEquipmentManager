@@ -50,7 +50,7 @@ export class StateRoute {
         });
         app.put('/state/device/:binding', async (req, res, next) => {
             try {
-                console.log(`setDeviceState: ${req.params.binding} - ${JSON.stringify(req.body)}`);
+                //console.log(`setDeviceState: ${req.params.binding} - ${JSON.stringify(req.body)}`);
                 let ret = await cont.setDeviceState(req.params.binding, req.body);
                 return res.status(200).send(ret);
             }
