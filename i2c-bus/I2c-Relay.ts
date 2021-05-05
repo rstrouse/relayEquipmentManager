@@ -704,7 +704,10 @@ export class i2cRelay extends i2cDeviceBase {
                 await this.setRelayState({ id: relayId, state: newState });
             }
             if (latch > 0) {
-                this._latchTimers[ordId] = setTimeout(() => this.setRelayState({ id: relayId, state: !newState }), latch);
+                this._latchTimers[ordId] = setTimeout(() => {
+                    this.setRelayState({ id: relayId, state: !newState });
+                    logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
+                }, latch);
             }
             return extend(true, {}, relay, { oldState: oldState, latchDuration: new Date().getTime() - relay.tripTime });
         } catch (err) { return Promise.reject(err); }

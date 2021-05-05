@@ -49,7 +49,7 @@ export class AnalogDevices {
                     for (let j = 0; j < objs.devices.length; j++) {
                         let obj = extend(true, { category: objs.category, predefined: objs.predefined }, objs.devices[j]);
                         if (typeof filter === 'undefined' || obj.interfaces === 'undefined' || obj.interfaces.indexOf(filter) !== -1)
-                            defs.push(obj);
+                            if(obj.enabled !== false) defs.push(obj);
                     }
                 }
                 // Add in the maps.

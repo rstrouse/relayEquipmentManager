@@ -265,6 +265,7 @@ export class gpioPinComms implements IDevice {
                         try {
                             // await this.writePinAsync(val ? 0 : 1, -1);
                             cont.gpio.setDeviceStateAsync(new DeviceBinding(`gpio:${this.headerId || 0}:${ this.pinId }`), val ? 0 : 1);
+                            logger.warn(`GPIO latch expired ${this.label} ${this.headerId}:${this.pinId} - ${latch}ms`);
                         }
                         catch (err) { logger.error(`Error unlatching GPIO Pin #${this.headerId}-${this.pinId}: ${err.message}`); }
                     }, latch);

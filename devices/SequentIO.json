@@ -1,0 +1,460 @@
+﻿{
+  "category": "I/O Boards",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 901,
+      "enabled": false,
+      "name": "Sequent MEGA-IND",
+      "deviceClass": "SequentMegaIND",
+      "module": "./SequentIO",
+      "hasReset": false,
+      "hasChangeAddress": false,
+      "readings": {
+        "out4_20": {
+          "label": "4-20mA output",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "outputs": [],
+      "inputs": [],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "tabBar",
+            "style": { "display": "inline-block" }
+          },
+          "tabs": [
+            {
+              "field": {
+                "text": "General",
+                "id": "tabGeneral"
+              },
+              "options": [
+                {
+                  "dataType": "string",
+                  "default": "",
+                  "field": {
+                    "type": "inputField",
+                    "required": false,
+                    "bind": "options.name",
+                    "labelText": "Name",
+                    "inputAttrs": {
+                      "maxLength": 16,
+                      "style": { "width": "16rem" }
+                    },
+                    "style": { "display": "block" }
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Device Info",
+                    "style": {
+                      "display": "block",
+                      "verticalAlign": "top"
+                    },
+                    "cssClass": "i2cDeviceInformation"
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Firmware",
+                        "binding": "info.firmware",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Input Voltage",
+                        "binding": "info.inputVolts",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0##",
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.2em",
+                            "textAlign": "right"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        },
+                        "units": "volts"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Pi Voltage",
+                        "binding": "info.raspiVolts",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0##",
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.2em",
+                            "textAlign": "right"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        },
+                        "units": "volts"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "CPU Temp",
+                        "binding": "info.cpuTemp",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0##",
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.2em",
+                            "textAlign": "right"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        },
+                        "units": "&deg;C"
+                      }
+                    },
+
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "WDT Restarts",
+                        "binding": "info.watchdogRestarts",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0##",
+                        "inputAttrs": {
+                          "style": {
+                            "width": "2.2em",
+                            "textAlign": "right"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Inputs",
+                "id": "tabInputs"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "tabBar",
+                    "style": { "display": "inline-block" }
+                  },
+                  "tabs": [
+                    {
+                      "field": {
+                        "text": "Digital",
+                        "id": "tabDigitalIn"
+                      },
+                      "options": [
+                        {
+                          "dataType": "panel",
+                          "field": {
+                            "type": "fieldset",
+                            "legend": "Current Values",
+                            "style": {
+                              "verticalAlign": "top"
+                            },
+                            "cssClass": "pnl-digital-input-values"
+                          },
+                          "options": [
+                            {
+                              "dataType": "panel",
+                              "field": {
+                                "type": "templateRepeater",
+                                "binding": "values.inputs.digital[%%index%%].",
+                                "style": { "display": "inline-block" },
+                                "rowCount":  4,
+                                "template": [
+                                  {
+                                    "field": {
+                                      "type": "span",
+                                      "binding": "name"
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "field": {
+                        "text": "0-10v",
+                        "id": "tab010In"
+                      }
+                    },
+                    {
+                      "field": {
+                        "text": "4-20mA",
+                        "id": "tab420In"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Outputs",
+                "id": "tabOutputs"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "tabBar",
+                    "style": { "display": "inline-block" }
+                  },
+                  "tabs": [
+                    {
+                      "field": {
+                        "text": "Open Drain",
+                        "id": "tabOpenDrainOut"
+                      }
+                    },
+                    {
+                      "field": {
+                        "text": "0-10v",
+                        "id": "tab010Out"
+                      }
+                    },
+                    {
+                      "field": {
+                        "text": "4-20mA",
+                        "id": "tab420Out"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "RS-485",
+                "id": "tabRS485"
+              },
+              "options": [
+                {
+                  "dataType": "int",
+                  "default": false,
+                  "field": {
+                    "bindColumn": 0,
+                    "displayColumn": 2,
+                    "type": "pickList",
+                    "bind": "options.rs485Mode",
+                    "labelText": "Port Mode",
+                    "columns": [
+                      {
+                        "binding": "val",
+                        "text": "mode",
+                        "hidden": true
+                      },
+                      {
+                        "binding": "desc",
+                        "text": "name",
+                        "hidden": true
+                      },
+                      {
+                        "binding": "desc",
+                        "text": "Mode",
+                        "style": { "whiteSpace": "nowrap" }
+                      }
+                    ],
+                    "items": [
+                      {
+                        "val": 0,
+                        "name": "passThru",
+                        "desc": "RS485 Pass Thru"
+                      },
+                      {
+                        "val": 1,
+                        "name": "slave",
+                        "desc": "Modbus RTU (slave)"
+                      }
+                    ],
+                    "inputAttrs": { "style": { "width": "10rem" } }
+                  },
+                  "fieldEvents": {
+                    "selchanged": "var pnl = $(evt.currentTarget).parents('.picTabContent:first'); if(evt.newItem.val > 0) { pnl.find('fieldset.pnl-port-settings').show(); } else { pnl.find('fieldset.pnl-port-settings').hide(); }"
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Modbus Port Settings",
+                    "style": {
+                      "display": "none",
+                      "verticalAlign": "top"
+                    },
+                    "cssClass": "pnl-port-settings"
+                  },
+                  "options": [
+                    {
+                      "dataType": "number",
+                      "default": "",
+                      "field": {
+                        "type": "inputField",
+                        "required": false,
+                        "bind": "options.rs485.baud",
+                        "value": 19200,
+                        "dataType": "int",
+                        "fmtMask": "#,###",
+                        "emptyMask": "",
+                        "labelText": "Baud Rate",
+                        "inputAttrs": {
+                          "maxLength": 7,
+                          "style": {
+                            "width": "7rem",
+                            "textAlign": "right"
+                          }
+                        },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" },
+                        "units": "baud"
+                      }
+                    },
+                    {
+                      "dataType": "int",
+                      "default": false,
+                      "field": {
+                        "bindColumn": 0,
+                        "displayColumn": 2,
+                        "type": "pickList",
+                        "bind": "options.rs485.parity",
+                        "labelText": "Parity",
+                        "value": 1,
+                        "columns": [
+                          {
+                            "binding": "val",
+                            "text": "parity",
+                            "hidden": true
+                          },
+                          {
+                            "binding": "desc",
+                            "text": "name",
+                            "hidden": true
+                          },
+                          {
+                            "binding": "desc",
+                            "text": "Parity",
+                            "style": { "whiteSpace": "nowrap" }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "val": 0,
+                            "name": "none",
+                            "desc": "None"
+                          },
+                          {
+                            "val": 1,
+                            "name": "even",
+                            "desc": "Even"
+                          },
+                          {
+                            "val": 2,
+                            "name": "odd",
+                            "desc": "Odd"
+                          }
+                        ],
+                        "inputAttrs": { "style": { "width": "5rem" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "dataType": "int",
+                      "default": false,
+                      "field": {
+                        "type": "valueSpinner",
+                        "bind": "options.rs485.stopBits",
+                        "labelText": "Stop Bits",
+                        "min": 1,
+                        "max": 2,
+                        "inputAttrs": { "style": { "width": "3rem" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "dataType": "int",
+                      "field": {
+                        "type": "valueSpinner",
+                        "bind": "options.rs485.modbusAddress",
+                        "labelText": "Address",
+                        "min": 1,
+                        "max": 255,
+                        "canEdit": true,
+                        "inputAttrs": { "style": { "width": "3rem" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Watchdog",
+                "id":  "tabWatchdog"
+              }
+            }
+          ]
+        }
+      ],
+      "interfaces": [ "i2c" ]
+    }
+  ]
+}

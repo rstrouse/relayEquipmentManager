@@ -858,7 +858,6 @@ var dataBinder = {
         }
         return v;
     }
-
 };
 var templateBuilder = {
     createControlOptions: function (pnl, opt, binding) {
@@ -933,6 +932,9 @@ var templateBuilder = {
                 }
                 if (typeof opt.options !== 'undefined') self.createObjectOptions(fld, opt, binding + prop);
                 break;
+            case 'templateRepeater':
+                fld = $(`<div></div>`).appendTo(pnl).templateRepeater(opt.field);
+                break;
             case 'panel':
                 fld = $('<div></div>').appendTo(pnl)[`${opt.field.class}`](opt.field);
                 if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
@@ -942,12 +944,28 @@ var templateBuilder = {
                     for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
                 }
                 break;
+            case 'tabBar':
+            case 'tabbar':
+                fld = $('<div></div>').appendTo(pnl).tabBar(opt.field);
+                // Now we need to deal with all of the tabs.
+                if (typeof opt.tabs !== 'undefined') {
+                    for (var tabIndex = 0; tabIndex < opt.tabs.length; tabIndex++) {
+                        var tab = opt.tabs[tabIndex]
+                        var pane = fld[0].addTab(tab.field);
+                        if (typeof tab.options !== 'undefined') self.createControlOptions(pane, tab.options, binding + prop);
+
+                    }
+                }
+                fld[0].selectFirstVisibleTab();
+                break;
             default:
-                fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                fld = $(`<${opt.field.type || 'div'}></${opt.field.type || 'div'}>`).appendTo(pnl);
                 if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
                 if (typeof opt.field.html !== 'undefined') fld.html(opt.field.html);
                 if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
-                if (typeof opt.field.binding !== 'undefined') fld.attr('data-bind', opt.field.binding);
+                if (typeof opt.field.bind !== 'undefined') fld.attr('data-bind', binding + opt.field.bind);
+                if (typeof opt.field.binding !== 'undefined') fld.attr('data-bind', binding + opt.field.binding);
+               
                 if (typeof opt.field.attrs !== 'undefined') {
                     for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
                 }
@@ -1653,6 +1671,7 @@ $.ui.position.fieldTip = {
             el[0].showTab = function (tabId, show) { return self.showTab(tabId, show); }
             el[0].addTab = function (tabObj) { return self.addTab(tabObj); };
             el[0].removeTab = function (tabId) { return self.removeTab(tabId); }
+            el[0].selectFirstVisibleTab = function () { return self.selectFirstVisibleTab(); }
             var evt = $.Event('initTabs');
             evt.contents = function () { return self.contents(); };
             el.trigger(evt);
@@ -1674,6 +1693,20 @@ $.ui.position.fieldTip = {
             var tab = el.find('div.picTabs:first').children('div.picTab[data-tabid="' + tabId + '"]').remove();
             self.contents().find('div.picTabContent[data-tabid=' + tabId + ']').remove();
         },
+        selectFirstVisibleTab: function () {
+            var self = this, o = self.options, el = self.element;
+            var evt = $.Event('tabchange');
+            var tabId = '';
+            el.find('div.picTabs:first').children('div.picTab').each(function () {
+                if ($(this).css('display') !== 'none') {
+                    tabId = $(this).attr('data-tabId');
+                    self.selectTabById(tabId);
+                    return false;
+                }
+            });
+            return tabId;
+        },
+
         selectTabById: function (tabId) {
             var self = this, o = self.options, el = self.element;
             var evt = $.Event('tabchange');
@@ -2239,6 +2272,8 @@ $.ui.position.fieldTip = {
             self.val(o.value);
             el.attr('data-bind', o.binding);
             el.attr('data-datatype', o.dataType);
+            el.attr('data-fmtmask', o.fmtMask);
+            el.attr('data-emptyMask', o.emptyMask);
             self._applyStyles();
             el[0].label = function () { return el.find('label:first'); };
             el[0].field = function () { return el.find('.picInputField-value:first'); };
@@ -2248,7 +2283,8 @@ $.ui.position.fieldTip = {
             el[0].isEmpty = function () { return self.isEmpty(); };
             el[0].required = function (val) { return self.required(val); };
             if (o.required === true) self.required(true);
-
+            el.on('change', '.picInputField-value', function (evt) { self.formatField(); });
+            if (typeof o.value !== 'undefined') self.val(o.value);
         },
         _applyStyles: function () {
             var self = this, o = self.options, el = self.element;
@@ -2296,16 +2332,35 @@ $.ui.position.fieldTip = {
             var val = self.val();
             return typeof val === 'undefined' || val.toString() === '';
         },
+        formatField: function () {
+            var self = this, o = self.options, el = self.element;
+            var dataType = el.attr('data-datatype') || 'string';
+            if (dataType !== 'string') {
+                var v = self.val();
+                self.val(v);
+            }
+        },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
             //if (typeof val === 'undefined') console.log({ msg: 'Getting field value', val: el.find('input.picInputField-value:first').val(val) });
-            if (el.attr('data-datatype') === 'int' && typeof val === 'undefined') {
-                var v = el.find('.picInputField-value:first').val();
-                var match = v.match(/(\d+)/g);
-                return (match) ? parseInt(match.join(''), 10) : undefined;
-            }
-            return typeof val !== 'undefined' ? el.find('.picInputField-value:first').val(val) : el.find('.picInputField-value:first').val();
+            var dataType = el.attr('data-datatype') || 'string';
+            var fld = el.find('.picInputField-value:first');
+            if (typeof val === 'undefined')
+                return dataBinder.parseValue(fld.val(), dataType);
+            else
+                fld.val(dataBinder.formatValue(val, dataType, el.attr('data-fmtmask'), el.attr('data-emptymask')));
         },
+
+        //val: function (val) {
+        //    var self = this, o = self.options, el = self.element;
+        //    //if (typeof val === 'undefined') console.log({ msg: 'Getting field value', val: el.find('input.picInputField-value:first').val(val) });
+        //    if (el.attr('data-datatype') === 'int' && typeof val === 'undefined') {
+        //        var v = el.find('.picInputField-value:first').val();
+        //        var match = v.match(/(\d+)/g);
+        //        return (match) ? parseInt(match.join(''), 10) : undefined;
+        //    }
+        //    return typeof val !== 'undefined' ? el.find('.picInputField-value:first').val(val) : el.find('.picInputField-value:first').val();
+        //},
         disabled: function (val) {
             var self = this, o = self.options, el = self.element;
             var fld = el.find('.picInputField-value:first');
@@ -4143,7 +4198,32 @@ $.ui.position.fieldTip = {
             else return o.channels;
         }
     });
+    $.widget('pic.templateRepeater', {
+        options: { rowCount: 1, binding:'' },
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].val = function (val) { return self.val(val); };
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            el.addClass('template-repeater');
+            for (var i = 0; i < o.rowCount; i++) {
+                self.addRow(i, o.template);
+            }
+        },
+        addRow: function (ndx, template) {
+            var self = this, o = self.options, el = self.element;
+            var divOuter = $('<div></div>').appendTo(el).addClass('template-repeater-row');
+            divOuter.attr('data-rowindex', ndx);
+            var binding = o.binding.replace(/%%index%%/g, ndx);
+            binding = o.binding.replace(/%%ordinal%%/g, ndx + 1);
+            for (var i = 0; i < o.template.length; i++) {
+                templateBuilder.createControlOptions(divOuter, o.template[i], binding);
+            }
+        }
 
+    });
 })(jQuery);
 $.pic.modalDialog.createDialog = function (id, options) {
     var opt = typeof options !== 'undefined' && options !== null ? options : {

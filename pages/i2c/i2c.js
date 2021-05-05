@@ -355,7 +355,6 @@
             var self = this, o = self.options, el = self.element;
             var fld = null;
             var prop = '';
-
             switch (opt.field.type) {
                 case 'hidden':
                     fld = $('<input type="hidden"></input>');
@@ -436,8 +435,24 @@
                         for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
                     }
                     break;
+                case 'tabbar':
+                case 'tabBar':
+                    fld = $('<div></div>').appendTo(pnl).tabBar(opt.field);
+                    // Now we need to deal with all of the tabs.
+                    if (typeof opt.tabs !== 'undefined') {
+                        for (var tabIndex = 0; tabIndex < opt.tabs.length; tabIndex++) {
+                            var tab = opt.tabs[tabIndex]
+                            var pane = fld[0].addTab(tab.field);
+                            if (typeof tab.options !== 'undefined') self._createControlOptions(pane, tab, binding + prop);
+                        }
+                    }
+                    fld[0].selectFirstVisibleTab();
+                    break;
+                case 'templateRepeater':
+                    fld = $(`<div></div>`).appendTo(pnl).templateRepeater(opt.field);
+                    break;
                 default:
-                    fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                    fld = $(`<${opt.field.type || 'div'}></${opt.field.type || 'div'}>`).appendTo(pnl);
                     if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
                     if (typeof opt.field.html !== 'undefined') fld.html(opt.field.html);
                     if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
