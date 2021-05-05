@@ -261,6 +261,9 @@ export class gpioPinComms implements IDevice {
                 logger.debug(`Writing Pin #${this.headerId}:${this.pinId} -> GPIO #${this.gpioId} to ${val}`);
                 await this.gpio.write(val);
                 if (latch > 0) {
+                    // Do this again because the call may have called since we wrote the pin.  We only want
+                    // one timer at a time.
+                    if (typeof this._latchTimer !== 'undefined') clearTimeout(this._latchTimer);
                     this._latchTimer = setTimeout(async () => {
                         try {
                             // await this.writePinAsync(val ? 0 : 1, -1);
