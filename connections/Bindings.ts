@@ -43,11 +43,13 @@ export class ConnectionBroker {
         this.freeConnections();
         this.init();
     }
-    public freeConnections() {
-        for (let i = this.listeners.length - 1; i >= 0; i--) {
-            this.listeners[i].disconnect();
-            this.listeners.splice(i, 1);
-        }
+    public async freeConnections() {
+        try {
+            for (let i = this.listeners.length - 1; i >= 0; i--) {
+                await this.listeners[i].disconnect();
+                this.listeners.splice(i, 1);
+            }
+        } catch (err) { logger.error(`Error closing connections: ${err.message}`); }
     }
     public deleteConnection(id: number) {
         for (let i = this.listeners.length - 1; i >= 0; i--) {
@@ -102,7 +104,7 @@ export class ServerConnection {
     public connectionId: number;
     constructor(server: ConnectionSource) { this.server = server; this.connectionId = server.id; }
     public isOpen = false;
-    public disconnect() {
+    public async disconnect() {
         if (!this.isOpen) return;
     }
     public connect() {
@@ -142,10 +144,14 @@ class SocketServerConnection extends ServerConnection {
     private _sock;
     constructor(server: ConnectionSource) { super(server); }
     public events = [];
-    public disconnect() {
-        if (typeof this._sock !== 'undefined') this._sock.removeAllListeners();
-        this._sock.disconnect();
-        super.disconnect();
+    public async disconnect() {
+        try {
+            if (typeof this._sock !== 'undefined') {
+                this._sock.removeAllListeners();
+                this._sock.disconnect();
+            }
+            super.disconnect();
+        } catch (err) { logger.error(`Error disconnecting sockets for ${this.server.name}`); }
     }
     public async deleteDeviceTrigger(binding, trigger?: DataTrigger) {
         try {
@@ -282,6 +288,7 @@ class SocketServerConnection extends ServerConnection {
     }
     public processEvent(event, data) {
         // Find the event.
+        if (!this.isOpen) return;
         var evt = this.events.find(elem => elem.name === event);
         logger.info(`Processing socket event ${event}`);
         if (typeof evt !== 'undefined') {
@@ -422,11 +429,13 @@ class MqttConnection extends ServerConnection {
     public events = [];
     public subscribed = false;
     constructor(server: ConnectionSource) { super(server); }
-    public disconnect() {
-        if (typeof this._mqtt !== 'undefined') this._mqtt.removeAllListeners();
-        this._mqtt.end(false);
-        this.isOpen = false;
-        super.disconnect();
+    public async disconnect() {
+        try {
+            if (typeof this._mqtt !== 'undefined') this._mqtt.removeAllListeners();
+            this._mqtt.end(false);
+            this.isOpen = false;
+            super.disconnect();
+        } catch (err) { logger.error(`Error disconnecting MQTT ${this.server.name}`); }
     }
     public async deleteDeviceTrigger(binding, trigger?: DataTrigger) {
         try {

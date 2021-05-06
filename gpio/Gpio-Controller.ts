@@ -8,7 +8,7 @@ import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { vMaps, valueMap, utils } from "../boards/Constants";
 import { cont, DeviceBinding, GpioPin } from "../boards/Controller";
-import { IDevice, DeviceStatus } from "../devices/AnalogDevices";
+import { IDevice, DeviceStatus, LatchTimer } from "../devices/AnalogDevices";
 
 import { PinDefinitions } from "../pinouts/Pinouts";
 import { connBroker, ServerConnection } from "../connections/Bindings";
@@ -23,11 +23,14 @@ export class GpioController {
     }
     public async stopAsync() {
         logger.info(`Stopping GPIO Controller`);
-        for (let i = this.pins.length - 1; i >= 0; i--) {
-            //this.pins[i].gpio.unexport();
-            this.pins.splice(i, 1);
-        }
-        return this;
+        try {
+            for (let i = this.pins.length - 1; i >= 0; i--) {
+                await this.pins[i].closeAsync();
+                //this.pins[i].gpio.unexport();
+                this.pins.splice(i, 1);
+            }
+            return this;
+        } catch (err) { logger.error(`Error stopping GPIO controller :${err.message}`); }
     }
     public reset() {
         this.stopAsync();
@@ -110,6 +113,7 @@ export class GpioController {
                             });
                         });
                     }
+                    pin.initialized = true;
                 }
             }
             else logger.error(`Pin #${pinDef.id} does not exist on Header ${pinDef.headerId}.`)
@@ -214,8 +218,9 @@ export class gpioPinComms implements IDevice {
         this.headerId = headerId;
         this.pinId = pinId;
         this.gpioId = gpioId;
+        this._latchTimer = new LatchTimer(`${this.headerId}-${this.pinId}`);
     }
-    private _latchTimer: NodeJS.Timeout;
+    private _latchTimer: LatchTimer;
     public lastComm: number;
     public status: string;
     public label: string;
@@ -224,8 +229,15 @@ export class gpioPinComms implements IDevice {
     public pinId: number;
     public gpioId: number;
     public state: number;
+    public initialized: boolean = false;
     public gpio;
     public get deviceStatus(): DeviceStatus { return { name: `GPIO Pin #${this.headerId}-${this.pinId}`, category: 'GPIO Pin', hasFault: utils.makeBool(this.hasFault), status: this.status, lastComm: this.lastComm, protocol: 'gpio', busNumber: this.headerId, address: this.gpioId }; }
+    public async closeAsync() {
+        try {
+            this.initialized = false;
+            await this._latchTimer.unlatch(true);
+        } catch (err) { logger.error(`Error closing GPIO ${this.headerId} - ${this.pinId}`); }
+    }
     public async readPinAsync(): Promise<number> {
         try {
             let val = await this.gpio.read();
@@ -254,20 +266,16 @@ export class gpioPinComms implements IDevice {
     public async writePinAsync(val: number, latch?: number): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
             try {
-                if (typeof latch !== 'undefined') {
-                    if (typeof this._latchTimer !== 'undefined') clearTimeout(this._latchTimer);
-                    this._latchTimer = undefined;
-                }
+                this._latchTimer.unlatch(false);
                 logger.debug(`Writing Pin #${this.headerId}:${this.pinId} -> GPIO #${this.gpioId} to ${val}`);
                 await this.gpio.write(val);
                 if (latch > 0) {
                     // Do this again because the call may have called since we wrote the pin.  We only want
                     // one timer at a time.
-                    if (typeof this._latchTimer !== 'undefined') clearTimeout(this._latchTimer);
-                    this._latchTimer = setTimeout(async () => {
+                    this._latchTimer.latch(async () => {
                         try {
                             // await this.writePinAsync(val ? 0 : 1, -1);
-                            cont.gpio.setDeviceStateAsync(new DeviceBinding(`gpio:${this.headerId || 0}:${ this.pinId }`), val ? 0 : 1);
+                            await cont.gpio.setDeviceStateAsync(new DeviceBinding(`gpio:${this.headerId || 0}:${ this.pinId }`), val ? 0 : 1);
                             logger.warn(`GPIO latch expired ${this.label} ${this.headerId}:${this.pinId} - ${latch}ms`);
                         }
                         catch (err) { logger.error(`Error unlatching GPIO Pin #${this.headerId}-${this.pinId}: ${err.message}`); }

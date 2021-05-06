@@ -166,12 +166,76 @@ export class UnitsConverter {
             typeof this.converters[fromUnits.toLowerCase()][toUnits.toLowerCase] === 'function' ? this.converters[fromUnits.toLowerCase()][toUnits.toLowerCase()](value) : undefined;
     }
 }
+export class LatchTimers extends Array<LatchTimer> {
+    public clearLatch(id: number, process: boolean = false) {
+        for (let i = this.length - 1; i >= 0; i--) {
+            if (this[i].id === id) {
+                this[i].unlatch(process);
+                this.splice(i, 1);
+            }
+        }
+    }
+    public setLatch(id: number, callback: (...args: any[]) => void, timeout: number, ...args:any[]) {
+        // Find any existing latch timer.
+        let timers = this.filter(elem => elem.id === id);
+        if (typeof timers !== 'undefined' && timers.length > 0) {
+            for (let i = 0; i < timers.length; i++) {
+                let lt = timers[i];
+                lt.latch(callback, timeout, ...args);
+            }
+        }
+        else {
+            let lt = new LatchTimer(id);
+            this.push(lt);
+            lt.latch(callback, timeout, ...args);
+        }
+    }
+    public async close(process: boolean = false) {
+        try {
+            for (let i = this.length - 1; i >= 0; i--) {
+                let lt = this[i];
+                try { lt.unlatch(); } catch (err) { console.log(`Error closing latch timer ${lt.id}: ${err.message}`); }
+            }
+            this.length = 0;
+        } catch (err) { console.log(`Error closing latch timers`); }
+    }
+}
+export class LatchTimer {
+    public id: any;
+    public latched: Date;
+    public timer: NodeJS.Timeout;
+    public latchTime: number;
+    public fn;
+    public args: any[] = [];
+    constructor(id: any) {
+        this.id = id;
+    }
+    public latch(fn, timeout, ...args: any[]) {
+        if (typeof this.timer !== 'undefined') {
+            clearTimeout(this.timer);
+        }
+        this.args = args;
+        this.fn = fn;
+        this.latchTime = timeout;
+        this.timer = setTimeout(async () => { try { this.unlatch(); } catch (err) { logger.error(`Error unlatching timer`); } }, timeout);
+    }
+    public async unlatch(process: boolean = true) {
+        try {
+            if (typeof this.timer !== 'undefined') {
+                clearTimeout(this.timer);
+                this.timer = undefined;
+                if(process) await this.fn(...this.args);
+            }
+        } catch (err) { logger.error(`Error unlatching latch timer #${this.id}: ${err.message}`); console.log(this); }
+    }
+}
 export class AnalogDevice {
     public category: string;
     public name: string;
 }
 export interface IDevice {
-    deviceStatus: DeviceStatus
+    initialized: boolean;
+    deviceStatus: DeviceStatus;
 }
 export class DeviceStatus {
     public name: string;

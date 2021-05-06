@@ -7,6 +7,7 @@ import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";
 import { I2cDevice, DeviceBinding } from "../boards/Controller";
 import { isArray } from "util";
+import { LatchTimers } from "../devices/AnalogDevices";
 
 export class i2cRelay extends i2cDeviceBase {
     protected static commandBytes = {
@@ -71,6 +72,7 @@ export class i2cRelay extends i2cDeviceBase {
         seeed: { read: [0x06], write: [0x06], config: [] }
     };
     protected _latchTimers = {};
+    protected latches = new LatchTimers();
     protected _relayBitmask1 = 0;
     protected _relayBitMask2 = 0;
     public get relays() { return typeof this.values.relays === 'undefined' ? this.values.relays = [] : this.values.relays; }
@@ -495,12 +497,13 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { logger.error(err); Promise.reject(err); }
     }
-
     public async closeAsync(): Promise<void> {
         try {
+            this.initialized = false;
             await this.stopReadContinuous();
+            await this.latches.close(true);
             await super.closeAsync();
-            return Promise.resolve();
+            return;
         }
         catch (err) { return Promise.reject(err); }
     }
@@ -528,7 +531,6 @@ export class i2cRelay extends i2cDeviceBase {
                 return Promise.reject(`${this.device.name} - Invalid Relay id: ${opts.id}`);
             }
             let newState = utils.makeBool(opts.state);
-
             // Make the relay command.
             switch (this.device.options.idType) {
                 case 'sequent8':
@@ -641,12 +643,7 @@ export class i2cRelay extends i2cDeviceBase {
             if (!relay.enabled) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] is not enabled.`));
             let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
             if (isNaN(latch)) return Promise.reject(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`);
-            let ordId = `r${relayId}`;
-            let _lt = this._latchTimers[ordId];
-            if (typeof _lt !== 'undefined') {
-                clearTimeout(_lt);
-                this._latchTimers[ordId] = undefined;
-            }
+            this.latches.clearLatch(relayId);
             await this.readRelayState(relay);
             // Now that the relay has been read lets set its state.
             let newState;
@@ -704,12 +701,17 @@ export class i2cRelay extends i2cDeviceBase {
                 await this.setRelayState({ id: relayId, state: newState });
             }
             if (latch > 0) {
-                let _lt = this._latchTimers[ordId];
-                if (typeof _lt !== 'undefined') clearTimeout(_lt);
-                this._latchTimers[ordId] = setTimeout(() => {
-                    this.setRelayState({ id: relayId, state: !newState });
-                    logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
+                this.latches.setLatch(relayId, async () => {
+                    try {
+                        await this.setRelayState({ id: relayId, state: !newState })
+                        logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
+                    } catch (err) { logger.error(`Error processing latch timer`); }
                 }, latch);
+                //let _lt = this._latchTimers[ordId];
+                //if (typeof _lt !== 'undefined') clearTimeout(_lt);
+                //this._latchTimers[ordId] = setTimeout(() => {
+                //    this.setRelayState({ id: relayId, state: !newState });
+                //}, latch);
             }
             return extend(true, {}, relay, { oldState: oldState, latchDuration: new Date().getTime() - relay.tripTime });
         } catch (err) { return Promise.reject(err); }
