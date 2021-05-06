@@ -295,7 +295,7 @@ export class Controller extends ConfigItem {
     }
     public persist() {
         this._isDirty = false;
-        logger.debug('Persisting Configuration data...');
+        logger.debug(`Persisting Configuration data... ${this.cfgPath}`);
         // Don't overwrite the configuration if we failed during the initialization.
         Promise.resolve()
             .then(() => { fs.writeFileSync(this.cfgPath, JSON.stringify(this.data, undefined, 2)); })

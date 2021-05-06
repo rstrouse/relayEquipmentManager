@@ -37,6 +37,7 @@ class Logger {
     private _logger: winston.Logger;
     public init() {
         this.cfg = config.getSection('log');
+        if(typeof logger._logger !== 'undefined') logger._logger.close();
         logger._logger = winston.createLogger({
             format: winston.format.combine(winston.format.colorize(), winston.format.splat(), winston.format.simple()),
             transports: [this.transports.console]
@@ -53,7 +54,11 @@ class Logger {
         }
 
     }
-    public async stopAsync() { }
+    public async stopAsync() {
+        try {
+            if (typeof logger._logger !== 'undefined') logger._logger.close();
+        } catch (err) { console.log(`Error closing logger: ${err.message}`); }
+    }
     public get options(): any { return this.cfg; }
     public info(...args: any[]) { logger._logger.info.apply(logger._logger, arguments); }
     public debug(...args: any[]) { logger._logger.debug.apply(logger._logger, arguments); }

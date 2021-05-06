@@ -21,17 +21,33 @@ class Config {
             this._isInitialized = true;
             this.update((err) => {
                 if (typeof err === 'undefined') {
-                    fs.watch(this.cfgPath, (event, fileName) => {
+                    fs.watch(self.cfgPath, (event, fileName) => {
                         if (fileName && event === 'change') {
                             if (self._isLoading) return; // Need a debounce here.  We will use a semaphore to cause it not to load more than once.
-                            const stats = fs.statSync(self.cfgPath);
-                            if (stats.mtime.valueOf() === self._fileTime.valueOf()) return;
-                            this._cfg = fs.existsSync(this.cfgPath) ? JSON.parse(fs.readFileSync(this.cfgPath, "utf8")) : {};
-                            this._cfg = extend(true, {}, def, this._cfg, { appVersion: packageJson.version });
-                            logger.init(); // only reload logger for now; possibly expand to other areas of app
+                            if (fs.existsSync(self.cfgPath)) {
+                                self._isLoading = true;
+                                try {
+                                    const stats = fs.statSync(self.cfgPath);
+                                    if (stats.mtime.valueOf() === self._fileTime.valueOf()) {
+                                        self._isLoading = false;
+                                        return;
+                                    }
+                                    logger.info(`Configuration file ${self.cfgPath} changed.`);
+                                    let data = fs.readFileSync(self.cfgPath, "utf8");
+                                    if (typeof data === 'undefined' || data === '') self._cfg = {};
+                                    else self._cfg = JSON.parse(data);
+                                    self._fileTime = new Date(stats.mtime.valueOf());
+                                } catch (err) { logger.error(`Error reading App Configuration ${self.cfgPath}: ${err.message}`); }
+                            }
+                            else self._cfg = {};
+                            //this._cfg = fs.existsSync(this.cfgPath) ? JSON.parse(fs.readFileSync(this.cfgPath, "utf8")) : {};
+                            self._cfg = extend(true, {}, def, self._cfg, { appVersion: packageJson.version });
                             logger.info(`Reloading app config: ${fileName}`);
+                            logger.init(); // only reload logger for now; possibly expand to other areas of app
+                            self._isLoading = false;
                         }
                     });
+                    //self._fileTime = new Date(stats.mtime.valueOf());
                 }
                 else throw err;
             });
