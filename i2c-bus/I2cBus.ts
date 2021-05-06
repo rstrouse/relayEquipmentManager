@@ -164,7 +164,7 @@ export class i2cBus {
     public async scanBus(start: number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
-            let addrs = await this._i2cBus.scan(start, end);
+            let addrs = this._i2cBus.scanSync(start, end);
             let devs = [];
             let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown' };
             let bus = cont.i2c.buses.getItemByBusNumber(this.busNumber);
@@ -417,6 +417,7 @@ class mockI2cBus {
     public bus() { return {}; }
     public close(): Promise<void> { return Promise.resolve(); }
     public i2cFuncs(): Promise<mockI2cFuncs> { return Promise.resolve(this.funcs); }
+    public scanSync(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([15 + this.busNumber, 19 + this.busNumber, 97 + this.busNumber, 98 + this.busNumber, 99 + this.busNumber, 100 + this.busNumber, 101 + this.busNumber, 102 + this.busNumber, 105 + this.busNumber]); }
     public scan(startAddr: number = 3, endAddr: number = 115): Promise<number[]> { return Promise.resolve([15 + this.busNumber, 19 + this.busNumber, 97 + this.busNumber, 98 + this.busNumber, 99 + this.busNumber, 100 + this.busNumber, 101 + this.busNumber, 102 + this.busNumber, 105 + this.busNumber]); }
     public deviceId(addr: number): Promise<{ manufacturer: number, product: number, name: string }> { return Promise.resolve({ manufacturer: 0, product: 0, name: 'Mock product' }); }
     public i2cRead(addr: number, length: number, buffer: Buffer): Promise<{ bytesRead: number, buffer: Buffer }> { return Promise.resolve({ bytesRead: length, buffer: buffer }); }
