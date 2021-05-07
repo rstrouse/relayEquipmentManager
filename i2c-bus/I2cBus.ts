@@ -164,7 +164,7 @@ export class i2cBus {
     public async scanBus(start: number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
-            let addrs = this._i2cBus.scanSync(start, end);
+            let addrs = await this._i2cBus.scan(start, end);
             let devs = [];
             let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown' };
             let bus = cont.i2c.buses.getItemByBusNumber(this.busNumber);
