@@ -165,6 +165,7 @@ export class i2cBus {
         try {
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
             let addrs = await this._i2cBus.scan(start, end);
+            console.log(addrs);
             let devs = [];
             let cdev = { address: 0, manufacturer: 0, product: 0, name: 'Unknown' };
             let bus = cont.i2c.buses.getItemByBusNumber(this.busNumber);
