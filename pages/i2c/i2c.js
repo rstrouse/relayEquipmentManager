@@ -39,10 +39,11 @@
                 $('<div></div>').appendTo(divList).selectList({
                     id: 'i2cAddresses',
                     key: 'address',
-                    canCreate: false,
+                    canCreate: true,
+                    actions: { canCreate: true },
                     caption: 'Devices', itemName: 'Device',
                     columns: [{
-                        binding: 'addressName', text: 'Address', cellStyle: { verticalAlign: 'top'},
+                        binding: 'addressName', text: 'Address', cellStyle: { verticalAlign: 'top' },
                         style: { width: '87px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }
                     },
                     { binding: 'name', text: 'Name', style: { width: '177px' } }]
@@ -50,11 +51,52 @@
                     console.log(evt);
                     divDevice.empty();
                     $('<div></div>').appendTo(divDevice).pnlI2cDevice({ busId: o.busId, busNumber: i2cBus.bus.busNumber, address: evt.dataKey });
+                }).on('additem', function (evt) {
+                    self._openAddAddressDialog(o.busId);
                 });
                 //.css({ fontSize: '8pt' });
                 self.dataBind(i2cBus);
             });
 
+        },
+        _openAddAddressDialog: function (busId) {
+            var self = this, o = self.options, el = self.element;
+            var dlg = $.pic.modalDialog.createDialog('dlgAddAddress', {
+                width: '377px',
+                height: 'auto',
+                title: 'Add I2c Address',
+                buttons: [{
+                    text: 'Add Address', icon: '<i class="fas fa-at"></i>',
+                    click: function (evt) {
+                        var a = dataBinder.fromElement(dlg);
+                        console.log(a);
+                        a.busNumber = busId;
+                        $.putLocalService('/config/i2c/addAddress', a, 'Adding I2c Bus Addresses...', function (i2cBus, status, xhr) {
+                            self.dataBind(i2cBus);
+                            $.pic.modalDialog.closeDialog(dlg);
+                        });
+                    }
+                },
+                {
+                    text: 'Re-scan', icon: '<i class="fas fa-eye"></i>',
+                    click: function (evt) {
+                        $.putLocalService('/config/i2c/scanBus', { busNumber: busId }, 'Scanning I2c Bus Addresses...', function (i2cBus, status, xhr) {
+                            console.log(i2cBus);
+                            self.dataBind(i2cBus);
+                            $.pic.modalDialog.closeDialog(dlg);
+                        });
+                    }
+                },
+                {
+                    text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                    click: function () { $.pic.modalDialog.closeDialog(this); }
+                }]
+            });
+            $('<div></div>').appendTo(dlg).html(`Provide a known address for any device that could not be detected?`)
+            $('<hr></hr>').appendTo(dlg);
+            $('<div></div>').appendTo(dlg).addClass('script-advanced-instructions').html(`This action will allow you to configure the device without detection.  However, if you do not define the device or activate it, this address will be removed from the i2c list when devices are queried again.<hr style="margin:3px"></hr>If you would like REM to attempt to rescan the bus press the Re-scan button.`);
+            var line = $('<div></div>').appendTo(dlg);
+            $('<div></div').appendTo(line).valueSpinner({ canEdit: true, fmtMask: '#', dataType: 'int', binding: 'newAddress', min: 3, max: 127, labelText: 'New Address', labelAttrs: { style: { marginRight: '.25rem' } }, inputAttrs: { maxLength: 4 } });
         },
         loadDevices: function (selAddr) {
             var self = this, o = self.options, el = self.element;
@@ -243,7 +285,7 @@
             $('<hr></hr>').appendTo(dlg);
             $('<div></div>').appendTo(dlg).addClass('script-advanced-instructions').html(`This action will send the proper commands to reset the device address then reload the device.  Enter a new unique address in decimal for the device below.`);
             var line = $('<div></div>').appendTo(dlg);
-            $('<div></div').appendTo(line).valueSpinner({ canEdit: true, fmtMask: '#', dataType: 'int', binding: 'newAddress', min: 3, max: 127, labelText: 'New Address', labelAttrs: { style: {marginRight:'.25rem'} }, inputAttrs: { maxLength: 4 } });
+            $('<div></div').appendTo(line).valueSpinner({ canEdit: true, fmtMask: '#', dataType: 'int', binding: 'newAddress', min: 3, max: 127, labelText: 'New Address', labelAttrs: { style: { marginRight: '.25rem' } }, inputAttrs: { maxLength: 4 } });
         },
 
         saveDevice: function () {
@@ -611,8 +653,8 @@
                 key: 'id',
                 caption: 'Device Triggers', itemName: 'Device Triggers',
                 columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } },
-                    { binding: 'eventName', text: 'Event', style: { width: '127px' } },
-                    { binding: 'filter', text: 'Filter', style: { width: '247px' }, cellStyle: { fontSize: '8pt', whiteSpace: 'nowrap' } }]
+                { binding: 'eventName', text: 'Event', style: { width: '127px' } },
+                { binding: 'filter', text: 'Filter', style: { width: '247px' }, cellStyle: { fontSize: '8pt', whiteSpace: 'nowrap' } }]
             }).css({ width: '100%' })
                 .on('additem', function (evt) {
                     $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/trigger/0', null, function (triggers, status, xhr) {
@@ -1004,7 +1046,7 @@
                     });
                 }).on('edititem', function (evt) {
                     $.getLocalService('/config/options/i2c/' + o.busId + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
-                        feeds.feed = o.feeds.find(elem => elem.id ==  evt.dataKey);
+                        feeds.feed = o.feeds.find(elem => elem.id == evt.dataKey);
                         self._createFeedDialog('dlgEditI2cFeed', 'Edit I2C Device Feed', feeds);
                     });
                 }).on('removeitem', function (evt) {
@@ -1265,7 +1307,7 @@
                     binding: 'property', labelText: 'Input',
                     bindColumn: 0, displayColumn: 0,
                     columns: [{ binding: 'name', text: 'Input', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Description', style: { whiteSpace: 'nowrap' } }],
-                    items: typeof feed !== 'undefined' ? feed.bindings: [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+                    items: typeof feed !== 'undefined' ? feed.bindings : [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
                 });
             }
             else {

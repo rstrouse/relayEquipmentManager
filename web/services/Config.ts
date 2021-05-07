@@ -207,6 +207,37 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+        app.put('/config/i2c/scanBus', async (req, res, next) => {
+            try {
+                let busId = parseInt(req.body.busNumber, 10);
+                if (isNaN(busId)) next(new Error(`Cannot scan bus because the bus id ${req.body.busNumber} is invalid.`));
+                else {
+                    let bus = cont.i2c.buses.find(elem => elem.id === busId);
+                    if (typeof bus === 'undefined') next(new Error(`Cannot scan bus because the bus ${req.body.busNumber} cannot be found.`));
+                    else {
+                        await bus.scanBus();
+                        let opts = { bus: bus.getExtended() };
+                        return res.status(200).send(opts);
+                    }
+                }
+            } catch(err) { next(err); }
+        });
+        app.put('/config/i2c/addAddress', async (req, res, next) => {
+            try {
+                let busId = parseInt(req.body.busNumber, 10);
+                if (isNaN(busId)) next(new Error(`Cannot add address because the bus id ${req.body.busNumber} is invalid.`));
+                else {
+                    let bus = cont.i2c.buses.find(elem => elem.id === busId);
+                    if (typeof bus === 'undefined') next(new Error(`Cannot scan bus because the bus ${req.body.busNumber} cannot be found.`));
+                    else {
+                        await bus.addAddress(req.body);
+                        let opts = { bus: bus.getExtended() };
+                        return res.status(200).send(opts);
+                    }
+                }
+            } catch (err) { next(err); }
+        });
+
         app.put('/config/i2c/device/reset', async (req, res, next) => {
             try {
                 let dev = await cont.i2c.resetDevice(req.body);

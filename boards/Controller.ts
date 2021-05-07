@@ -1969,6 +1969,18 @@ export class I2cBus extends ConfigItem {
             if(typeof dbus !== 'undefined') this.addresses = await dbus.scanBus();
         } catch (err) { return Promise.reject(err); }
     }
+    public async addAddress(obj) {
+        try {
+            let dbus = i2c.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus === 'undefined') return Promise.reject(`Cannot add address bus ${this.id} is not initialized.`);
+            let addr = parseInt(obj.newAddress, 10);
+            if (isNaN(addr)) return Promise.reject(new Error(`Cannot add invalid address ${obj.newAddress}`));
+            let cdev = this.addresses.find(elem => elem.address === addr);
+            if (typeof cdev !== 'undefined') return Promise.reject(`Address ${cdev.address} aready exists for device ${cdev.name}`);
+            this.addresses.push({ address: addr, name: 'Unknown', product: 0, manufacturer: 0 });
+            this.addresses.sort((a, b) => { return a.address - b.address });
+        } catch (err) { return Promise.reject(err); }
+    }
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             logger.info(`Setting device state ${binding}`);

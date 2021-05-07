@@ -172,7 +172,7 @@ export class i2cBus {
             for (let i = 0; i < addrs.length; i++) {
                 try {
                     let d = bus.devices.getItemByAddress(addrs[i]);
-                    logger.info(`Found I2C device ${d.name || 'Unknown'} at address: 0x${addrs[i].toString(16)}`);
+                    logger.info(`Found I2C device ${d.name || 'Unknown'} at address: ${addrs[i]} - (0x${addrs[i].toString(16)})`);
                     cdev = { address: addrs[i], manufacturer: 0, product: 0, name: d.name || 'Unkown' };
                     devs.push(cdev);
                     //let o = await this._i2cBus.deviceId(addrs[i]);
@@ -184,9 +184,9 @@ export class i2cBus {
             }
             for (let i = 0; i < bus.devices.length; i++) {
                 let d = bus.devices.getItemByIndex(i);
-                let addr = bus.addresses.find(elem => elem.address === d.address);
+                let addr = devs.find(elem => elem.address === d.address);
                 if (typeof addr === 'undefined') {
-                    logger.info(`Adding I2C device that could not be scanned 0x${d.address.toString(16)}`);
+                    logger.info(`Adding I2C device that could not be scanned ${d.address} - (0x${d.address.toString(16)})`);
                     devs.push({ address: d.address, manufacturer: 0, product: 0, name: d.name || 'Unknown' });
                 }
             }
