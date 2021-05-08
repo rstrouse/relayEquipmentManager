@@ -273,8 +273,31 @@ export class SequentMegaIND extends SequentIO {
         try {
             let ret: { bytesRead: number, buffer: Buffer } = await this.i2c.readI2cBlock(this.device.address, 65, 8);
             console.log(ret);
+            //{ bytesRead: 8, buffer: <Buffer 00 96 00 41 01 00 01 01> }
+            // This should be
+            // mode: 1
+            // baud: 38400
+            // stopBits: 1
+            // parity: 0
+            // address: 1
+            // It is returned from the buffer in packed bits.
+            //typedef struct
+            //__attribute__((packed))
+            //{
+            //    unsigned int mbBaud: 24;
+            //    unsigned int mbType: 4;
+            //    unsigned int mbParity: 2;
+            //    unsigned int mbStopB: 2;
+            //    unsigned int add: 8;
+            //} ModbusSetingsType;
+            // Sequent folks are braindead here in that they bit encoded
+            // this on uneven boundaries.
+            let encoded = ret.buffer.readUInt32LE(0);
+            this.rs485.baud = encoded & 0x00FFFFFF;
+            console.log(`LE:${ret.buffer.readUInt32LE(0)} BE:${ret.buffer.readUInt32BE(0)}`);
+
+
             this.rs485.mode = ret.buffer.readUInt8(0);
-            this.rs485.baud = ret.buffer.readUInt32BE(1);
             this.rs485.stopBits = ret.buffer.readUInt8(5);
             this.rs485.parity = ret.buffer.readUInt8(6);
             this.rs485.address = ret.buffer.readUInt8(7);
