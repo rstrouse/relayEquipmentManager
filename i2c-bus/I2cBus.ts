@@ -563,6 +563,7 @@ export class i2cDeviceBase implements IDevice {
     }
     public get values() { return this.device.values; }
     public get options() { return this.device.options; }
+    public get info() { return this.device.info; }
     public getDeviceDescriptions(dev) {
         let desc = [];
         desc.push({ type: 'i2c', isActive: this.device.isActive, name: this.device.name, binding: `i2c:${this.i2c.busId}:${this.device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown', feeds: this.device.feeds.get() });
