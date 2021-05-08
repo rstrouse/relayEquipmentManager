@@ -272,6 +272,7 @@ export class SequentMegaIND extends SequentIO {
     protected async getRS485Mode() {
         try {
             let ret: { bytesRead: number, buffer: Buffer } = this.i2c.readI2cBlock(this.device.address, 65, 8);
+            console.log(ret);
             this.rs485.mode = ret.buffer.readUInt8(0);
             this.rs485.baud = ret.buffer.readUInt32BE(1);
             this.rs485.stopBits = ret.buffer.readUInt8(5);
