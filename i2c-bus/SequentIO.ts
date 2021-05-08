@@ -273,7 +273,7 @@ export class SequentMegaIND extends SequentIO {
         try {
             let ret: { bytesRead: number, buffer: Buffer } = await this.i2c.readI2cBlock(this.device.address, 65, 5);
             console.log(ret);
-            //{ bytesRead: 8, buffer: <Buffer 00 96 00 41 01 00 01 01> }
+            //{ bytesRead: 5, buffer: <Buffer 00 96 00 41 01 > }
             // This should be
             // mode: 1
             // baud: 38400
@@ -294,13 +294,14 @@ export class SequentMegaIND extends SequentIO {
             // this on uneven boundaries.
             let encoded = ret.buffer.readUInt32LE(0);
             this.rs485.baud = encoded & 0x00FFFFFF;
-            console.log(`LE:${ret.buffer.readUInt32LE(0)} BE:${ret.buffer.readUInt32BE(0)}`);
+            console.log(`32 LE:${ret.buffer.readUInt32LE(0)} BE:${ret.buffer.readUInt32BE(0)}`);
+            console.log(`16 LE:${ret.buffer.readUInt16LE(0)} BE:${ret.buffer.readUInt16BE(0)}`);
+            //LE:1090557440 BE:9830465
 
-
-            this.rs485.mode = ret.buffer.readUInt8(0);
-            this.rs485.stopBits = ret.buffer.readUInt8(5);
-            this.rs485.parity = ret.buffer.readUInt8(6);
-            this.rs485.address = ret.buffer.readUInt8(7);
+            //this.rs485.mode = ret.buffer.readUInt8(0);
+            //this.rs485.stopBits = ret.buffer.readUInt8(5);
+            //this.rs485.parity = ret.buffer.readUInt8(6);
+            //this.rs485.address = ret.buffer.readUInt8(7);
         } catch (err) { logger.error(`${this.device.name} error getting RS485 port settings: ${err.message}`); }
     }
 
