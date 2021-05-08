@@ -36,13 +36,15 @@ export class SequentIO extends i2cDeviceBase {
 
     public get relays() { return typeof this.values.relays === 'undefined' ? this.values.relays = [] : this.values.relays; }
     public set relays(val) { this.values.relays = val; }
+    public get inputs(): any { return typeof this.values.inputs === 'undefined' ? this.values.inputs = {} : this.values.inputs; }
+    public get outputs(): any { return typeof this.values.outputs === 'undefined' ? this.values.outputs = {} : this.values.outputs; }
     public get rs485() { return typeof this.options.rs485 === 'undefined' ? this.options.rs485 = { mode: 0, baud: 1200, stopBits: 1, parity: 0, address: 0 } : this.options.rs485; }
-    public get in4_20() { return typeof this.values.inputs === 'undefined' ? this.values.inputs = { in4_20: [] } : typeof this.values.inputs.in4_20 === 'undefined' ? this.values.inputs.in4_20 = [] : this.values.inputs.in4_20; }
-    public get in0_10() { return typeof this.values.inputs === 'undefined' ? this.values.inputs = { in0_10: [] } : typeof this.values.inputs.in0_10 === 'undefined' ? this.values.inputs.in0_10 = [] : this.values.inputs.in0_10; }
-    public get inOpt() { return typeof this.values.inputs === 'undefined' ? this.values.inputs = { inOpt: [] } : typeof this.values.inputs.inOpt === 'undefined' ? this.values.inputs.inOpt = [] : this.values.inputs.inOpt; }
-    public get out4_20() { return typeof this.values.outputs === 'undefined' ? this.values.outputs = { out4_20: [] } : typeof this.values.outputs.out4_20 === 'undefined' ? this.values.outputs.out4_20 = [] : this.values.outputs.out4_20; }
-    public get out0_10() { return typeof this.values.outputs === 'undefined' ? this.values.outputs = { out0_10: [] } : typeof this.values.outputs.out0_10 === 'undefined' ? this.values.outputs.out0_10 = [] : this.values.outputs.out0_10; }
-    public get outDrain() { return typeof this.values.outputs === 'undefined' ? this.values.outputs = { outDrain: [] } : typeof this.values.outputs.outDrain === 'undefined' ? this.values.outputs.outDrain = [] : this.values.outputs.outDrain; }
+    public get in4_20(): any[] { return typeof this.inputs.in4_20 === 'undefined' ? this.inputs.in4_20 = [] : this.inputs.in4_20; }
+    public get in0_10(): any[] { return typeof this.inputs.in0_10 === 'undefined' ? this.inputs.in0_10 = [] : this.inputs.in0_10; }
+    public get inOpt(): any[] { return typeof this.inputs.inOpt === 'undefined' ? this.inputs.inOpt = [] : this.inputs.inOpt; }
+    public get out4_20(): any[] { return typeof this.outputs.out4_20 === 'undefined' ? this.outputs.out4_20 = [] : this.outputs.out4_20; }
+    public get out0_10(): any[] { return typeof this.outputs.out0_10 === 'undefined' ? this.outputs.out0_10 = [] : this.outputs.out0_10; }
+    public get outDrain(): any[] { return typeof this.outputs.outDrain === 'undefined' ? this.outputs.outDrain = [] : this.outputs.outDrain; }
     protected pollDeviceInformation() {
         try {
             if (this._infoRead) clearTimeout(this._infoRead);
@@ -114,12 +116,14 @@ export class SequentIO extends i2cDeviceBase {
     public setValue(prop: string, value) { }
 }
 export class SequentMegaIND extends SequentIO {
-    protected ensureIOChannels(arr, count) {
-        for (let i = 1; i <= count; i++) {
-            if (typeof arr.find(elem => elem.id === i) === 'undefined') arr.push({ id: i, name: `Channel #${i}`, isActive: false });
-        }
-        arr.sort((a, b) => { return a.id - b.id });
-        arr.length = count;
+    protected ensureIOChannels(label, arr, count) {
+        try {
+            for (let i = 1; i <= count; i++) {
+                if (typeof arr.find(elem => elem.id === i) === 'undefined') arr.push({ id: i, name: `Channel #${i}`, isActive: false });
+            }
+            arr.sort((a, b) => { return a.id - b.id });
+            arr.length = count;
+        } catch (err) { logger.error(`${this.device.name} error setting up I/O channels`)}
     }
     public async initAsync(deviceType): Promise<boolean> {
         try {
@@ -130,12 +134,12 @@ export class SequentMegaIND extends SequentIO {
             this.device.info.firmware = await this.getFwVer();
             await this.getInfo();
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
-            this.ensureIOChannels(this.in0_10, 4);
-            this.ensureIOChannels(this.out0_10, 4);
-            this.ensureIOChannels(this.in4_20, 4);
-            this.ensureIOChannels(this.out4_20, 4);
-            this.ensureIOChannels(this.inOpt, 4);
-            this.ensureIOChannels(this.outDrain, 4);
+            this.ensureIOChannels('IN 0-10', this.in0_10, 4);
+            this.ensureIOChannels('OUT 0-10', this.out0_10, 4);
+            this.ensureIOChannels('IN 4-20', this.in4_20, 4);
+            this.ensureIOChannels('OUT 4-20', this.out4_20, 4);
+            this.ensureIOChannels('IN Optical', this.inOpt, 4);
+            this.ensureIOChannels('OUT Open Drain', this.outDrain, 4);
             await this.getRS485Mode();
             return Promise.resolve(true);
         }
