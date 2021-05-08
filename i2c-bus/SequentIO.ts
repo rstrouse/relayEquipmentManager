@@ -295,8 +295,8 @@ export class SequentMegaIND extends SequentIO {
             this.rs485.baud = ret.buffer.readUInt16LE(0) + (ret.buffer.readUInt8(0) << 24);
             let byte = ret.buffer.readUInt8(3);
             this.rs485.mode = byte & 0x0F;
-            this.rs485.parity = (byte & 0x30) >> 5;
-            this.rs485.stopBits = (byte & 0xC0) >> 7;
+            this.rs485.parity = (byte & 0x30) >> 4;
+            this.rs485.stopBits = (byte & 0xC0) >> 6;
             this.rs485.address = ret.buffer.readUInt8(4);
         } catch (err) { logger.error(`${this.device.name} error getting RS485 port settings: ${err.message}`); }
     }
