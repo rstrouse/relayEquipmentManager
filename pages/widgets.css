@@ -1019,6 +1019,59 @@ div.relay-module-name > span {
   font-size: .8rem;
   color: white; }
 
+div.io-channel {
+  display: inline-block;
+  padding: 4px;
+  overflow: hidden;
+  width: 7rem;
+  height: 4rem;
+  border: solid 1px black;
+  border-radius: 5px;
+  margin-right: .15rem;
+  margin-bottom: 0px;
+  background-color: #2a2a72;
+  background-image: linear-gradient(315deg, #2a2a72 0%, #009ffd 100%);
+  cursor: pointer;
+  user-select: none; }
+
+div.io-channel.disabled {
+  opacity: .7; }
+
+div.io-channel.disabled .io-channel-indicator,
+div.io-channel[ioType="analog"] .io-channel-indicator {
+  visibility: hidden; }
+
+span.io-channel-value, span.io-channel-value-units {
+  color: white;
+  font-size: .7em;
+  display: inline-block;
+  line-height: 1; }
+
+.io-channel-configure {
+  float: right;
+  color: lightsteelblue; }
+
+.io-channel-indicator {
+  border: solid 2px gray;
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: white; }
+
+div.io-channel[data-state=true] .io-channel-indicator {
+  background: lawngreen; }
+
+div.io-channel[data-state=false] .io-channel-indicator {
+  background: gainsboro; }
+
+div.io-channel-name {
+  text-align: center; }
+
+div.io-channel-name > span {
+  font-size: .8rem;
+  color: white; }
+
 .ui-widget input {
   font-size: 1rem; }
 

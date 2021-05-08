@@ -106,4 +106,15 @@ div.relay-module:not(.disabled):hover {
     color: white;
     @include hover_background();
 }
+div.io-channel[data-direction="out"]:not(.disabled):active {
+    color: white;
+    @include active_background();
+}
+div.io-channel[data-direction="out"]:not(.disabled):hover {
+    color: white;
+    @include hover_background();
+}
+div.io-channel[data-direction="in"] {
+    cursor:no-drop;
+}
 

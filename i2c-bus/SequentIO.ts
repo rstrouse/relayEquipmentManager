@@ -84,12 +84,7 @@ export class SequentIO extends i2cDeviceBase {
     }
     public async getStatus(): Promise<boolean> {
         try {
-            //this.suspendPolling = true;
-            //let result = await this.execCommand('Status', 300);
-            //if (this.i2c.isMock) return Promise.resolve(true);
-            //let arrDims = result.split(',');
-            //this.device.info.vcc = parseFloat(arrDims[2] || '0');
-            //this.device.info.lastRestart = this.transformRestart((arrDims[1] || 'U').toUpperCase());
+            // Not sure what we wanto to poll here but I assume wdt and rtc when we get around to it.
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err, `Error getting device status:`); return Promise.reject(err); }
@@ -119,7 +114,7 @@ export class SequentMegaIND extends SequentIO {
     protected ensureIOChannels(label, arr, count) {
         try {
             for (let i = 1; i <= count; i++) {
-                if (typeof arr.find(elem => elem.id === i) === 'undefined') arr.push({ id: i, name: `${label} #${i}`, isActive: false });
+                if (typeof arr.find(elem => elem.id === i) === 'undefined') arr.push({ id: i, name: `${label} #${i}`, enabled: false });
             }
             arr.sort((a, b) => { return a.id - b.id });
             arr.length = count;
@@ -164,7 +159,7 @@ export class SequentMegaIND extends SequentIO {
         try {
             for (let i = 0; i < arr.length; i++) {
                 try {
-                    if (arr[i].isActive !== true) continue; // Don't read inactive channels.
+                    if (arr[i].enabled !== true) continue; // Don't read inactive channels.
                     await fn.call(this, arr[i].id);
                 } catch (err) { }
             }
@@ -173,6 +168,7 @@ export class SequentMegaIND extends SequentIO {
     public async takeReadings(): Promise<boolean> {
         try {
             // Read all the active inputs and outputs.
+            await this.readDigitalInput();
             await this.readIOChannels(this.in0_10, this.get0_10Input);
             await this.readIOChannels(this.out0_10, this.get0_10Output);
             await this.readIOChannels(this.in4_20, this.get4_20Input);
@@ -193,87 +189,149 @@ export class SequentMegaIND extends SequentIO {
     */
     protected async getCpuTemp() {
         try {
-            this.info.cpuTemp = await this.i2c.readWord(this.device.address, 114) / 1000;
+            this.info.cpuTemp = (this.i2c.isMock) ? 24.123 : await this.i2c.readWord(this.device.address, 114) / 1000;
         } catch (err) { logger.error(`${this.device.name} error getting cpu temp: ${err.message}`); }
     }
     protected async getSourceVolts() {
         try {
-            this.info.volts = await this.i2c.readWord(this.device.address, 115) / 1000;
+            this.info.volts = (this.i2c.isMock) ? 5.123 : await this.i2c.readWord(this.device.address, 115) / 1000;
         } catch (err) { logger.error(`${this.device.name} error getting source voltage: ${err.message}`); }
     }
     protected async getRaspVolts() {
         try {
-            this.info.raspiVolts = await this.i2c.readWord(this.device.address, 117) / 1000;
+            this.info.raspiVolts = (this.i2c.isMock) ? 5.023 : await this.i2c.readWord(this.device.address, 117) / 1000;
         } catch (err) { logger.error(`${this.device.name} error getting Raspberry Pi voltage: ${err.message}`); }
     }
     protected async getFwVer() {
         try {
-            let major = await this.i2c.readByte(this.device.address, 120);
-            let minor = await this.i2c.readByte(this.device.address, 121);
-            this.info.fwVersion = `${major + minor / 100.0}`;
+            if (this.i2c.isMock) {
+                this.info.fwVersion = `1.0 Mock`;
+            }
+            else {
+                let major = await this.i2c.readByte(this.device.address, 120);
+                let minor = await this.i2c.readByte(this.device.address, 121);
+                this.info.fwVersion = `${major + minor / 100.0}`;
+            }
         } catch (err) { logger.error(`${this.device.name} error getting firmware version: ${err.message}`); }
+    }
+    protected async readDigitalInput() {
+        try {
+            // These are a bitmask so the shoudl be read in one shot.
+            let val = (this.i2c.isMock) ? 255 * Math.random() : await this.i2c.readByte(this.device.address, 3);
+            // Set all the state values
+            let ch = this.inOpt;
+            for (let i = 0; i < ch.length; i++) {
+                ch[i].value = (1 << i) & val;
+            }
+        } catch (err) { logger.error(`${this.device.name} error getting digital inputs: ${err.message}`); }
     }
     protected async get0_10Input(id) {
         try {
-            let val = await this.i2c.readWord(this.device.address, 28 + (2 * (id - 1))) / 1000;
-            this.in0_10[id - 1].value = val;
+            let val = (this.i2c.isMock) ? (10 * Math.random()) : await this.i2c.readWord(this.device.address, 28 + (2 * (id - 1))) / 1000;
+            let io = this.in0_10[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { in0_10: [io] } } });
+            }
+
         } catch (err) { logger.error(`${this.device.name} error getting 0-10 input ${id}: ${err.message}`); }
     }
     protected async get0_10Output(id) {
         try {
-            let val = await this.i2c.readWord(this.device.address, 4 + (2 * (id - 1))) / 1000;
-            this.out0_10[id - 1].value = val;
+            let val = (this.i2c.isMock) ? this.out0_10[id - 1].value || 0 : await this.i2c.readWord(this.device.address, 4 + (2 * (id - 1))) / 1000;
+            let io = this.out0_10[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out0_10: [io] } } });
+            }
+
         } catch (err) { logger.error(`${this.device.name} error getting 0-10 output ${id}: ${err.message}`); }
     }
     protected async get0_10pmInput(id) {
         try {
-            let val = await this.i2c.readWord(this.device.address, 36 + (2 * (id - 1))) / 1000 - 10;
+            let val = (this.i2c.isMock) ? (20 * Math.random()) - 10 : await this.i2c.readWord(this.device.address, 36 + (2 * (id - 1))) / 1000 - 10;
         } catch (err) { logger.error(`${this.device.name} error getting 0-10 output ${id}: ${err.message}`); }
     }
     protected async getDrainOutput(id) {
         try {
-            let val = await this.i2c.readWord(this.device.address, 36 + (2 * (id - 1))) / 100;
-            this.outDrain[id - 1].value = val;
+            let val = (this.i2c.isMock) ? (this.outDrain[id - 1].value || 0) : await this.i2c.readWord(this.device.address, 36 + (2 * (id - 1))) / 100;
+            let io = this.outDrain[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { outDrain: [io] } } });
+            }
+
         } catch (err) { logger.error(`${this.device.name} error getting open drain output ${id}: ${err.message}`); }
     }
     protected async set0_10Output(id, val) {
         try {
             if (val < 0 || val > 10) throw new Error(`Value must be between 0 and 10`);
-            await this.i2c.writeWord(this.device.address, 4 + (2 * (id - 1)), val * 1000);
+            if(!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 4 + (2 * (id - 1)), val * 1000);
             this.out0_10[id - 1].value = val;
+            let io = this.out0_10[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out0_10: [io] } } });
+            }
         } catch (err) { logger.error(`${this.device.name} error setting 0-10 output ${id}: ${err.message}`); }
     }
     protected async get4_20Input(id) {
         try {
-            let val = await this.i2c.readWord(this.device.address, 44 + (2 * (id - 1))) / 1000;
-            this.in4_20[id - 1].value = val;
-        } catch (err) { logger.error(`${this.device.name} error setting 4-20 output ${id}: ${err.message}`); }
+            let val = (this.i2c.isMock) ? 20 * Math.random() : await this.i2c.readWord(this.device.address, 44 + (2 * (id - 1))) / 1000;
+            let io = this.in4_20[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { in4_20: [io] } } });
+            }
+
+        } catch (err) { logger.error(`${this.device.name} error getting 4-20 input ${id}: ${err.message}`); }
     }
     protected async get4_20Output(id) {
         try {
-            let val = await this.i2c.readWord(this.device.address, 12 + (2 * (id - 1))) / 1000;
-            this.out4_20[id - 1].value = val;
+            let val = (this.i2c.isMock) ? this.out4_20[id - 1].value || 0 : await this.i2c.readWord(this.device.address, 12 + (2 * (id - 1))) / 1000;
+            let io = this.out4_20[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out4_20: [io] } } });
+            }
         } catch (err) { logger.error(`${this.device.name} error getting 4-20 output ${id}: ${err.message}`); }
     }
     protected async set4_20Input(id, val) {
         try {
             if (val < 4 || val > 20) throw new Error(`Value must be between 4 and 20`);
-            await this.i2c.writeWord(this.device.address, 44 + (2 * (id - 1)), val * 1000);
+            if(!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 44 + (2 * (id - 1)), val * 1000);
             this.in4_20[id - 1].value = val;
+            let io = this.in4_20[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { in4_20: [io] } } });
+            }
         } catch (err) { logger.error(`${this.device.name} error setting 4-20 input ${id}: ${err.message}`); }
     }
     protected async set4_20Output(id, val) {
         try {
             if (val < 4 || val > 20) throw new Error(`Value must be between 4 and 20`);
-            await this.i2c.writeWord(this.device.address, 12 + (2 * (id - 1)), val * 1000);
-            this.out4_20[id - 1].value = val;
+            if(!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 12 + (2 * (id - 1)), val * 1000);
+            let io = this.out4_20[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out4_20: [io] } } });
+            }
         } catch (err) { logger.error(`${this.device.name} error setting 4-20 input ${id}: ${err.message}`); }
+    }
+    protected packRS485Port(port): Buffer {
+        let buffer = Buffer.from([0, 0, 0, 0, 0]);
+        buffer.writeUInt16LE(port.baud & 0x00FFFF, 0);
+        buffer.writeUInt8((port.baud & 0xFF00000) >> 24, 2);
+        buffer.writeUInt8(((port.stopBits & 0x0F) << 6) + ((port.parity & 0x0F) << 4) + (port.mode & 0xFF), 3);
+        buffer.writeUInt8(port.address, 4);
+        console.log(buffer);
+        return buffer
     }
     protected async getRS485Port() {
         try {
-            let ret: { bytesRead: number, buffer: Buffer } = await this.i2c.readI2cBlock(this.device.address, 65, 5);
+            let ret: { bytesRead: number, buffer: Buffer } = this.i2c.isMock ? this.packRS485Port(extend(true, { mode: 0, baud: 38400, stopBits: 1, parity: 0, address: 1 }, this.rs485)) : await this.i2c.readI2cBlock(this.device.address, 65, 5);
             //{ bytesRead: 5, buffer: <Buffer 00 96 00 41 01 > }
-            //<Buffer 00 96 00 01 01>
             // [0, 150, 0, 65, 1]
             // This should be
             // mode: 1
@@ -299,7 +357,6 @@ export class SequentMegaIND extends SequentIO {
             this.rs485.parity = (byte & 0x30) >> 4;
             this.rs485.stopBits = (byte & 0xC0) >> 6;
             this.rs485.address = ret.buffer.readUInt8(4);
-            await this.setRS485Port(this.rs485);
         } catch (err) { logger.error(`${this.device.name} error getting RS485 port settings: ${err.message}`); }
     }
 
@@ -322,26 +379,82 @@ export class SequentMegaIND extends SequentIO {
                 logger.error(`${this.device.name} cannot set rs485 port mode to ${p.mode} [0 = pass thru, 1 = MODBUS RTU (slave)]`); return;
             }
             // Now we have to put together a buffer.  Just use brute force packing no need for a library.
-            let buffer = Buffer.from([0, 0, 0, 0, 0]);
-            buffer.writeUInt16LE(p.baud & 0x00FFFF, 0);
-            buffer.writeUInt8((p.baud & 0xFF00000) >> 24, 2);
-            buffer.writeUInt8(((p.stopBits & 0x0F) << 6) + ((p.parity & 0x0F) << 4) + (p.mode & 0xFF), 3);
-            buffer.writeUInt8(p.address, 4);
-            console.log(buffer);
-            //await this.i2c.writeI2cBlock(this.device.address, 65, 5, buffer);
-
+            let buffer = this.packRS485Port(p);
+            if (!this.i2c.isMock) await this.i2c.writeI2cBlock(this.device.address, 65, 5, buffer);
+            this.rs485.mode = p.mode;
+            this.rs485.baud = p.baud;
+            this.rs485.stopBits = p.stopBits;
+            this.rs485.parity = p.parity;
+            this.rs485.address = p.address;
         } catch (err) { logger.error(`${this.device.name} error setting RS485 port: ${err.message}`); }
     }
-
+    protected checkDiff(source, target) {
+        if (typeof source !== typeof target) return true;
+        if (Array.isArray(source)) {
+            if (!Array.isArray(target)) return true;
+            if (source.length !== target.length) return true;
+            for (let i = 0; i < source.length; i++) {
+                if(this.checkDiff(source[i], target[i])) return true;
+            }
+        }
+        switch ((typeof source).toLowerCase()) {
+            case 'bigint':
+            case 'null':
+            case 'symbol':
+            case 'number':
+            case 'string':
+                return source !== target;
+            case 'boolean':
+                return utils.makeBool(source) != utils.makeBool(target);
+            case 'object':
+                for (let s in source) {
+                    let val = source[s];
+                    let tval = target[s];
+                    if (typeof val === 'undefined') return true;
+                    if (this.checkDiff(val, tval)) return true;
+                }
+                return false;
+        }
+    }
+    protected async setIOChannelOptions(arr, target) {
+        try {
+            for (let i = 0; i < arr.length; i++) {
+                let t = target.find(elem => elem.id == arr[i].id);
+                if (typeof t !== 'undefined') {
+                    utils.setObjectProperties(arr[i], t);
+                }
+            }
+        } catch (err) { return Promise.reject(err); }
+    }
     public async setOptions(opts): Promise<any> {
         try {
             this.suspendPolling = true;
+            if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
+            if (typeof opts.rs485 !== 'undefined' && this.checkDiff(this.rs485, opts.rs485)) this.setRS485Port(opts.rs485);
             return Promise.resolve(this.options);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }
     }
-    
+    public async setValues(vals): Promise<any> {
+        try {
+            this.suspendPolling = true;
+            if (typeof vals.inputs !== 'undefined') {
+                if (typeof vals.inputs.in0_10 !== 'undefined') await this.setIOChannelOptions(vals.inputs.in0_10, this.in0_10);
+                if (typeof vals.inputs.in4_20 !== 'undefined') await this.setIOChannelOptions(vals.inputs.in4_20, this.in4_20);
+                if (typeof vals.inputs.inOpt !== 'undefined') await this.setIOChannelOptions(vals.inputs.inOpt, this.inOpt);
+            }
+            if (typeof vals.outputs !== 'undefined') {
+                if (typeof vals.outputs.out0_10 !== 'undefined') await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
+                if (typeof vals.outputs.out4_10 !== 'undefined') await this.setIOChannelOptions(vals.outputs.out4_20, this.out4_20);
+                if (typeof vals.outputs.outDrain !== 'undefined') await this.setIOChannelOptions(vals.outputs.outDrain, this.outDrain);
+            }
+            return Promise.resolve(this.options);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+
+    }
     public getValue(prop: string) {
         //switch (prop.toLowerCase()) {
         //    case 'phlevel': 

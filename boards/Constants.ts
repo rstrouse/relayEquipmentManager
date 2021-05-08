@@ -234,6 +234,31 @@ export class Utils {
             }
         }
     }
+    public getObjectProperties(obj): string[] {
+        let props = [];
+        do {
+            Object.getOwnPropertyNames(obj).forEach((prop) => {
+                try {
+                    if (props.indexOf(prop) === -1 && typeof obj[prop] !== 'function') props.push(prop);
+                } catch (err) { }
+
+            });
+        } while (obj = Object.getPrototypeOf(obj));
+        return props;
+    }
+    public setObjectProperties(source, target) {
+        let op = this.getObjectProperties(source);
+        for (let i in op) {
+            let prop = op[i];
+            if (typeof this[prop] === 'function') continue;
+            if (prop.startsWith('_')) continue;
+            if (typeof source[prop] !== 'undefined') {
+                if (typeof source[prop] === null) continue;
+                target[prop] = source[prop];
+            }
+        }
+
+    }
 }
 export const vMaps = new valueMaps();
 export const utils = new Utils();
