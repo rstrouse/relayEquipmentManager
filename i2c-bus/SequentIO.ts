@@ -272,7 +272,6 @@ export class SequentMegaIND extends SequentIO {
     protected async getRS485Mode() {
         try {
             let ret: { bytesRead: number, buffer: Buffer } = await this.i2c.readI2cBlock(this.device.address, 65, 5);
-            console.log(ret);
             //{ bytesRead: 5, buffer: <Buffer 00 96 00 41 01 > }
             // [0, 150, 0, 65, 1]
             // This should be
@@ -294,11 +293,10 @@ export class SequentMegaIND extends SequentIO {
             //    unsigned int add: 8;
             //} ModbusSetingsType;
             this.rs485.baud = ret.buffer.readUInt16LE(0) + (ret.buffer.readUInt8(0) << 24);
-            console.log(`16 LE:${ret.buffer.readUInt16LE(0)} BE:${ret.buffer.readUInt16BE(0)} BYTE: ${ret.buffer.readUInt8(1)}`);
             let byte = ret.buffer.readUInt8(3);
             this.rs485.mode = byte & 0x0F;
-            this.rs485.parity = byte & 0x30;
-            this.rs485.stopBits = byte & 0xC0;
+            this.rs485.parity = (byte & 0x30) >> 5;
+            this.rs485.stopBits = (byte & 0xC0) >> 7;
             this.rs485.address = ret.buffer.readUInt8(4);
         } catch (err) { logger.error(`${this.device.name} error getting RS485 port settings: ${err.message}`); }
     }
