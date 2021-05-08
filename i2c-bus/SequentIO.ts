@@ -271,7 +271,7 @@ export class SequentMegaIND extends SequentIO {
     }
     protected async getRS485Mode() {
         try {
-            let ret: { bytesRead: number, buffer: Buffer } = await this.i2c.readI2cBlock(this.device.address, 65, 8);
+            let ret: { bytesRead: number, buffer: Buffer } = await this.i2c.readI2cBlock(this.device.address, 65, 5);
             console.log(ret);
             //{ bytesRead: 8, buffer: <Buffer 00 96 00 41 01 00 01 01> }
             // This should be
