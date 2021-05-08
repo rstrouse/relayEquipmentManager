@@ -119,7 +119,7 @@ export class SequentMegaIND extends SequentIO {
     protected ensureIOChannels(label, arr, count) {
         try {
             for (let i = 1; i <= count; i++) {
-                if (typeof arr.find(elem => elem.id === i) === 'undefined') arr.push({ id: i, name: `Channel #${i}`, isActive: false });
+                if (typeof arr.find(elem => elem.id === i) === 'undefined') arr.push({ id: i, name: `${label} #${i}`, isActive: false });
             }
             arr.sort((a, b) => { return a.id - b.id });
             arr.length = count;
@@ -273,6 +273,7 @@ export class SequentMegaIND extends SequentIO {
         try {
             let ret: { bytesRead: number, buffer: Buffer } = await this.i2c.readI2cBlock(this.device.address, 65, 5);
             //{ bytesRead: 5, buffer: <Buffer 00 96 00 41 01 > }
+            //<Buffer 00 96 00 01 01>
             // [0, 150, 0, 65, 1]
             // This should be
             // mode: 1
@@ -304,26 +305,30 @@ export class SequentMegaIND extends SequentIO {
 
     protected async setRS485Port(port) {
         try {
-            let p = extend(true, {}, this.rs485, port);
+            let p = extend(true, { mode: 1, baud: 38400, parity: 0, stopBits: 1, address: 1 }, this.rs485, port);
             if (p.baud > 920600 || p.baud < 1200) {
-                logger.error(`${this.device.name} cannot set rs485 port baud rate to ${p.baud}`); return;
+                logger.error(`${this.device.name} cannot set rs485 port baud rate to ${p.baud} [1200, 920600]`); return;
             }
             if (p.stopBits < 1 || p.stopBits > 2) {
                 logger.error(`${this.device.name} cannot set rs485 port stop bits to ${p.stopBits} [1,2]`); return;
             }
-            if (p.parity > 2) {
+            if (p.parity > 2 || p.parity < 0) {
                 logger.error(`${this.device.name} cannot set rs485 port parity to ${p.stopBits} [0=none,1=even,2=odd]`); return;
             }
             if (p.address < 1 || p.address > 255) {
                 logger.error(`${this.device.name} cannot set MODBUS address to ${p.address} [1,255]`); return;
             }
+            if (p.mode > 1 || p.mode < 0) {
+                logger.error(`${this.device.name} cannot set rs485 port mode to ${p.mode} [0 = pass thru, 1 = MODBUS RTU (slave)]`); return;
+            }
             // Now we have to put together a buffer.  Just use brute force packing no need for a library.
             let buffer = Buffer.from([0, 0, 0, 0, 0]);
             buffer.writeUInt16LE(p.baud & 0x00FFFF, 0);
             buffer.writeUInt8((p.baud & 0xFF00000) >> 24, 2);
-            buffer.writeUInt8((p.stopBits & 0xC0 << 6) + (p.parity & 0x30 << 4) + (p.mode), 3);
+            buffer.writeUInt8(((p.stopBits & 0x0F) << 6) + ((p.parity & 0x0F) << 4) + (p.mode & 0xFF), 3);
             buffer.writeUInt8(p.address, 4);
             console.log(buffer);
+            //await this.i2c.writeI2cBlock(this.device.address, 65, 5, buffer);
 
         } catch (err) { logger.error(`${this.device.name} error setting RS485 port: ${err.message}`); }
     }
