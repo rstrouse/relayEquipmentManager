@@ -109,6 +109,16 @@ export class SequentIO extends i2cDeviceBase {
     }
     public getValue(prop: string) { }
     public setValue(prop: string, value) { }
+    public async readWord(register: number): Promise<number> {
+        try {
+            let ret: { bytesRead: number, buffer: Buffer } = this.i2c.isMock ? {
+                bytesRead: 2,
+                buffer: Buffer.from([Math.round(256 * Math.random()), Math.round(256 * Math.random())])
+            } : await this.i2c.readI2cBlock(this.device.address, register, 2);
+            if (ret.bytesRead !== 2) return Promise.reject(`${this.device.name} error reading word from register ${register} bytes: ${ret.bytesRead}`);
+            return ret.buffer.readUInt8(0) + 256 * ret.buffer.readUInt8(1);
+        } catch (err) { }
+    }
 }
 export class SequentMegaIND extends SequentIO {
     protected ensureIOChannels(label, arr, count) {
@@ -181,11 +191,13 @@ export class SequentMegaIND extends SequentIO {
     }
 
     /*
+      44:W = in4-20 Start
       114:B = CPU Temp
       115:W = Source mV
       117:W = Raspberry Pi mV
       120:B = Firmware major
       121:B = Firmware minor
+
     */
     protected async getCpuTemp() {
         try {
@@ -277,7 +289,11 @@ export class SequentMegaIND extends SequentIO {
     }
     protected async get4_20Input(id) {
         try {
-            let val = (this.i2c.isMock) ? 20 * Math.random() : await this.i2c.readWord(this.device.address, 44 + (2 * (id - 1))) / 1000;
+            // Ch1: 44
+            // Ch2: 46
+            // Ch3: 48
+            // Ch4: 50
+            let val = await this.readWord(44 + (2 * (id - 1))) / 1000;
             let io = this.in4_20[id - 1];
             if (io.value !== val) {
                 io.value = val;
@@ -288,6 +304,7 @@ export class SequentMegaIND extends SequentIO {
     }
     protected async get4_20Output(id) {
         try {
+
             let val = (this.i2c.isMock) ? this.out4_20[id - 1].value || 0 : await this.i2c.readWord(this.device.address, 12 + (2 * (id - 1))) / 1000;
             let io = this.out4_20[id - 1];
             if (io.value !== val) {
@@ -330,7 +347,8 @@ export class SequentMegaIND extends SequentIO {
     }
     protected async getRS485Port() {
         try {
-            let ret: { bytesRead: number, buffer: Buffer } = this.i2c.isMock ? this.packRS485Port(extend(true, { mode: 0, baud: 38400, stopBits: 1, parity: 0, address: 1 }, this.rs485)) : await this.i2c.readI2cBlock(this.device.address, 65, 5);
+            let ret: { bytesRead: number, buffer: Buffer } = this.i2c.isMock ?
+                { bytesRead: 5, buffer: this.packRS485Port(extend(true, { mode: 0, baud: 38400, stopBits: 1, parity: 0, address: 1 }, this.rs485)) } : await this.i2c.readI2cBlock(this.device.address, 65, 5);
             //{ bytesRead: 5, buffer: <Buffer 00 96 00 41 01 > }
             // [0, 150, 0, 65, 1]
             // This should be
