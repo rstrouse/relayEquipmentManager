@@ -4296,6 +4296,12 @@ $.ui.position.fieldTip = {
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Enabled', binding: 'enabled' });
             line = $('<div></div>').appendTo(dlg);
             $('<hr></hr>').appendTo(line).css({ margin: '3px' });
+            // Add in the template.
+            if (typeof o.configTemplate !== 'undefined') {
+                var divOpts = $('<div></div>').appendTo(dlg);
+                console.log(o.configTemplate);
+                templateBuilder.createControlOptions(divOpts, o.configTemplate, '');
+            }
             dataBinder.bind(dlg, channel);
             dlg.css({ overflow: 'visible' });
         },

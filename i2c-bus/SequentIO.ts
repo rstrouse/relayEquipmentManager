@@ -41,10 +41,11 @@ export class SequentIO extends i2cDeviceBase {
     public get rs485() { return typeof this.options.rs485 === 'undefined' ? this.options.rs485 = { mode: 0, baud: 1200, stopBits: 1, parity: 0, address: 0 } : this.options.rs485; }
     public get in4_20(): any[] { return typeof this.inputs.in4_20 === 'undefined' ? this.inputs.in4_20 = [] : this.inputs.in4_20; }
     public get in0_10(): any[] { return typeof this.inputs.in0_10 === 'undefined' ? this.inputs.in0_10 = [] : this.inputs.in0_10; }
-    public get inOpt(): any[] { return typeof this.inputs.inOpt === 'undefined' ? this.inputs.inOpt = [] : this.inputs.inOpt; }
+    public get inDigital(): any[] { return typeof this.inputs.inDigital === 'undefined' ? this.inputs.inDigital = [] : this.inputs.inDigital; }
     public get out4_20(): any[] { return typeof this.outputs.out4_20 === 'undefined' ? this.outputs.out4_20 = [] : this.outputs.out4_20; }
     public get out0_10(): any[] { return typeof this.outputs.out0_10 === 'undefined' ? this.outputs.out0_10 = [] : this.outputs.out0_10; }
     public get outDrain(): any[] { return typeof this.outputs.outDrain === 'undefined' ? this.outputs.outDrain = [] : this.outputs.outDrain; }
+    public get calibration(): any { return typeof this.calibration === 'undefined' ? this.info.calibration = {} : this.info.calibration; }
     protected pollDeviceInformation() {
         try {
             if (this._infoRead) clearTimeout(this._infoRead);
@@ -121,6 +122,13 @@ export class SequentIO extends i2cDeviceBase {
     }
 }
 export class SequentMegaIND extends SequentIO {
+    protected calDefinitions = {
+        in0_10: { name: '0-10v input', idOffset: 9 },
+        out0_10: { name: '0-10v output', idOffset: 1 },
+        in4_20: { name: '4-20mA input', idOffset: 17 },
+        out4_20: { name: '4-20mA output', idOffset: 5 },
+        in0_10pm: { name: '+- 10v input', idOffset: 13 }
+    }
     protected ensureIOChannels(label, arr, count) {
         try {
             for (let i = 1; i <= count; i++) {
@@ -143,7 +151,7 @@ export class SequentMegaIND extends SequentIO {
             this.ensureIOChannels('OUT 0-10', this.out0_10, 4);
             this.ensureIOChannels('IN 4-20', this.in4_20, 4);
             this.ensureIOChannels('OUT 4-20', this.out4_20, 4);
-            this.ensureIOChannels('IN Optical', this.inOpt, 4);
+            this.ensureIOChannels('IN Digital', this.inDigital, 4);
             this.ensureIOChannels('OUT Open Drain', this.outDrain, 4);
             await this.getRS485Port();
             return Promise.resolve(true);
@@ -185,6 +193,7 @@ export class SequentMegaIND extends SequentIO {
             await this.readIOChannels(this.out4_20, this.get4_20Output);
             await this.readIOChannels(this.outDrain, this.getDrainOutput);
             // Read all the digital inputs.
+            this.emitFeeds();
             return true;
         }
         catch (err) { this.logError(err, 'Error taking device readings'); }
@@ -226,12 +235,123 @@ export class SequentMegaIND extends SequentIO {
             }
         } catch (err) { logger.error(`${this.device.name} error getting firmware version: ${err.message}`); }
     }
+    protected async getCalibrationStatus(): Promise<number> {
+        try {
+            this.suspendPolling = true;
+            // Sequent is really dissapointing with this.  They made this about a million times harder to determine which registers
+            // map to which value.  Unless I decided to rebuild their repo and dump the values, I have to decipher there header file... booo!
+            //CALIBRATION_KEY = 0xAA = 170
+            //RESET_CALIBRATION_KEY = 0x55 = 85
+            //60w: I2C_MEM_CALIB_VALUE = 60,
+            //62w: I2C_MEM_CALIB_CHANNEL = I2C_MEM_CALIB_VALUE + 2, //0-10V out [1,4]; 0-10V in [5, 12]; R 1K in [13, 20]; R 10K in [21, 28]
+            //63b: I2C_MEM_CALIB_KEY, //set calib point 0xaa; reset calibration on the channel 0x55
+            //64b: I2C_MEM_CALIB_STATUS,
+            let val = (this.i2c.isMock) ? (typeof this.calibration.status !== 'undefined' ? this.calibration.status.val : 1) : this.i2c.readByte(this.device.address, 171);
+            switch (val) {
+                case 0:
+                    this.calibration.status = { val: val, name: 'cal', desc: 'Calibration in progress' };
+                    break;
+                case 1:
+                    this.calibration.status = { val: val, name: 'complete', desc: 'Calibration complete' };
+                    break;
+                case 2:
+                    this.calibration.status = { val: val, name: 'error', desc: 'Calibration Error' };
+                    break;
+                default:
+                    this.calibration.status = { val: val, name: 'unknown', desc: 'Unknown calibration status' };
+                    break;
+            }
+            return val;
+        } catch (err) { return Promise.reject(`${this.device.name} error getting calibration status: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async resetCal0_10Input(id) {
+        try {
+            this.suspendPolling = true;
+            let io = this.in0_10[id - 1];
+            await this.resetCalibration(io, io.plusMinus === true ? this.calDefinitions.in0_10pm : this.calDefinitions.in0_10);
+        } catch (err) { logger.error(`${this.device.name} error resetting calibration 0-10v input: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async resetCal0_10Output(id) {
+        try {
+            this.suspendPolling = true;
+            await this.resetCalibration(this.out0_10[id - 1], this.calDefinitions.out0_10);
+        } catch (err) { logger.error(`${this.device.name} error resetting calibration 0-10v input: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async resetCal4_20Input(id) {
+        try {
+            this.suspendPolling = true;
+            await this.resetCalibration(this.in4_20[id - 1], this.calDefinitions.in4_20);
+        } catch (err) { logger.error(`${this.device.name} error resetting calibration 4-20mA input: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async resetCal4_20Output(id) {
+        try {
+            this.suspendPolling = true;
+            await this.resetCalibration(this.out4_20[id - 1], this.calDefinitions.out4_20);
+        } catch (err) { logger.error(`${this.device.name} error resetting calibration 4-20mA output: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+
+    protected async calibrate0_10Output(id, val) {
+        try {
+            this.suspendPolling = true;
+            await this.calibrateChannel(this.out0_10[id - 1], this.calDefinitions.out0_10, val);
+        } catch (err) { logger.error(`${this.device.name} error calibrating 0-10v output: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async calibrate0_10Input(id, val) {
+        try {
+            this.suspendPolling = true;
+            let io = this.in0_10[id - 1];
+            await this.calibrateChannel(io, io.plusMinus === true ? this.calDefinitions.in0_10pm : this.calDefinitions.in0_10, val);
+        } catch (err) { logger.error(`${this.device.name} error calibrating 0-10v input: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async calibrate4_20Input(id, val) {
+        try {
+            this.suspendPolling = true;
+            await this.calibrateChannel(this.in4_20[id - 1], this.calDefinitions.in4_20, val);
+        } catch (err) { logger.error(`${this.device.name} error calibrating 4-20mA input: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async calibrate4_20Output(id, val) {
+        try {
+            this.suspendPolling = true;
+            await this.calibrateChannel(this.out4_20[id - 1], this.calDefinitions.out4_20, val);
+        } catch (err) { logger.error(`${this.device.name} error calibrating 4-20mA input: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async calibrateChannel(channel, cal, val) {
+        try {
+            this.suspendPolling = true;
+            let v = Math.ceil(cal * 1000);
+            let buff = Buffer.from([Math.floor(v / 256), cal - Math.floor(v / 256), channel.id + cal.idOffset, 170]);
+            await this.i2c.writeI2cBlock(this.device.address, 60, buff, 4);
+            await utils.wait(100); // Wait for 100ms to let our write take effect.
+            await this.getCalibrationStatus();
+        } catch (err) { logger.error(`${this.device.name} error calibrating ${cal.name}: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async resetCalibration(channel, cal) {
+        try {
+            this.suspendPolling = true;
+            let buff = Buffer.from([0, 0, channel.id + cal.idOffset, 85]);
+            await this.i2c.writeI2cBlock(this.device.address, 60, buff, 4);
+            await utils.wait(100); // Wait for 100ms to let our write take effect.
+            await this.getCalibrationStatus();
+        } catch (err) { logger.error(`${this.device.name} error resetting calibration ${cal.name}: ${err.message}`); }
+        finally { this.suspendPolling = false; }
+
+    }
     protected async readDigitalInput() {
         try {
             // These are a bitmask so the shoudl be read in one shot.
             let val = (this.i2c.isMock) ? 255 * Math.random() : await this.i2c.readByte(this.device.address, 3);
             // Set all the state values
-            let ch = this.inOpt;
+            let ch = this.inDigital;
             for (let i = 0; i < ch.length; i++) {
                 ch[i].value = (1 << i) & val;
             }
@@ -239,13 +359,23 @@ export class SequentMegaIND extends SequentIO {
     }
     protected async get0_10Input(id) {
         try {
-            let val = (this.i2c.isMock) ? (10 * Math.random()) : await this.i2c.readWord(this.device.address, 28 + (2 * (id - 1))) / 1000;
+            // 0-10v
+            // Ch1: 28
+            // Ch2: 30
+            // Ch3: 32
+            // Ch4: 34
+            // +-10v
+            // Ch1: 36
+            // Ch2: 38
+            // Ch3: 40
+            // Ch4: 42
             let io = this.in0_10[id - 1];
+            let val = await this.readWord(((io.plusMinus === true) ? 28 : 36) + (2 * (id - 1))) / 1000;
+            if (io.plusMinus === true) val -= 10;
             if (io.value !== val) {
                 io.value = val;
                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { in0_10: [io] } } });
             }
-
         } catch (err) { logger.error(`${this.device.name} error getting 0-10 input ${id}: ${err.message}`); }
     }
     protected async get0_10Output(id) {
@@ -256,27 +386,39 @@ export class SequentMegaIND extends SequentIO {
                 io.value = val;
                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out0_10: [io] } } });
             }
-
-        } catch (err) { logger.error(`${this.device.name} error getting 0-10 output ${id}: ${err.message}`); }
-    }
-    protected async get0_10pmInput(id) {
-        try {
-            let val = (this.i2c.isMock) ? (20 * Math.random()) - 10 : await this.i2c.readWord(this.device.address, 36 + (2 * (id - 1))) / 1000 - 10;
         } catch (err) { logger.error(`${this.device.name} error getting 0-10 output ${id}: ${err.message}`); }
     }
     protected async getDrainOutput(id) {
         try {
-            let val = (this.i2c.isMock) ? (this.outDrain[id - 1].value || 0) : await this.i2c.readWord(this.device.address, 36 + (2 * (id - 1))) / 100;
+            // Ch1: 20
+            // Ch2: 22
+            // Ch3: 24
+            // Ch4: 26
+            let val = await this.readWord(20 + (2 * (id - 1))) / 100;
             let io = this.outDrain[id - 1];
             if (io.value !== val) {
                 io.value = val;
                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { outDrain: [io] } } });
             }
-
         } catch (err) { logger.error(`${this.device.name} error getting open drain output ${id}: ${err.message}`); }
+    }
+    protected async setDrainOutput(id, val) {
+        try {
+            // Ch1: 20
+            // Ch2: 22
+            // Ch3: 24
+            // Ch4: 26
+            if (val < 0 || val > 100) throw new Error('Value must be between 0 and 100');
+            if (!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 20 + (2 * (id - 1)), val);
+        } catch (err) { logger.error(`${this.device.name} error writing Open Drain output ${id}: ${err.message}`); }
+
     }
     protected async set0_10Output(id, val) {
         try {
+            // Ch1: 4
+            // Ch2: 6
+            // Ch3: 8
+            // Ch4: 10
             if (val < 0 || val > 10) throw new Error(`Value must be between 0 and 10`);
             if(!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 4 + (2 * (id - 1)), val * 1000);
             this.out0_10[id - 1].value = val;
@@ -304,8 +446,11 @@ export class SequentMegaIND extends SequentIO {
     }
     protected async get4_20Output(id) {
         try {
-
-            let val = (this.i2c.isMock) ? this.out4_20[id - 1].value || 0 : await this.i2c.readWord(this.device.address, 12 + (2 * (id - 1))) / 1000;
+            // Ch1: 12
+            // Ch2: 14
+            // Ch3: 16
+            // Ch4: 18
+            let val = await this.readWord(12 + (2 * (id - 1))) / 1000;
             let io = this.out4_20[id - 1];
             if (io.value !== val) {
                 io.value = val;
@@ -460,11 +605,11 @@ export class SequentMegaIND extends SequentIO {
             if (typeof vals.inputs !== 'undefined') {
                 if (typeof vals.inputs.in0_10 !== 'undefined') await this.setIOChannelOptions(vals.inputs.in0_10, this.in0_10);
                 if (typeof vals.inputs.in4_20 !== 'undefined') await this.setIOChannelOptions(vals.inputs.in4_20, this.in4_20);
-                if (typeof vals.inputs.inOpt !== 'undefined') await this.setIOChannelOptions(vals.inputs.inOpt, this.inOpt);
+                if (typeof vals.inputs.inDigital !== 'undefined') await this.setIOChannelOptions(vals.inputs.inDigital, this.inDigital);
             }
             if (typeof vals.outputs !== 'undefined') {
                 if (typeof vals.outputs.out0_10 !== 'undefined') await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
-                if (typeof vals.outputs.out4_10 !== 'undefined') await this.setIOChannelOptions(vals.outputs.out4_20, this.out4_20);
+                if (typeof vals.outputs.out4_20 !== 'undefined') await this.setIOChannelOptions(vals.outputs.out4_20, this.out4_20);
                 if (typeof vals.outputs.outDrain !== 'undefined') await this.setIOChannelOptions(vals.outputs.outDrain, this.outDrain);
             }
             return Promise.resolve(this.options);

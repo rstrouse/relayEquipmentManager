@@ -619,8 +619,7 @@
             }).on('selchanged', (evt) => {
                 var dsp = dlg.find('div.pnl-state-params');
                 dsp.empty();
-                if (typeof evt.newItem.options !== 'undefined');
-                templateBuilder.createObjectOptions(dsp, evt.newItem);
+                if (typeof evt.newItem.options !== 'undefined') templateBuilder.createObjectOptions(dsp, evt.newItem);
             });
             line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).addClass('pnl-state-params');

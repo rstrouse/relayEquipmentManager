@@ -20,8 +20,90 @@
           }
         }
       },
-      "outputs": [],
-      "inputs": [],
+      "outputs": [
+        {
+          "name": "in0_101",
+          "desc": "0-10v in #1",
+          "maxSamples": 50
+        },
+        {
+          "name": "in0_102",
+          "desc": "0-10v in #2",
+          "maxSamples": 50
+        },
+        {
+          "name": "in0_103",
+          "desc": "0-10v in #3",
+          "maxSamples": 50
+        },
+        {
+          "name": "in0_104",
+          "desc": "0-10v in #4",
+          "maxSamples": 50
+        },
+        {
+          "name": "in4_201",
+          "desc": "4-20mA in #1",
+          "maxSamples": 50
+        },
+        {
+          "name": "in4_202",
+          "desc": "4-20mA in #2",
+          "maxSamples": 50
+        },
+        {
+          "name": "in4_203",
+          "desc": "4-20mA in #3",
+          "maxSamples": 50
+        },
+        {
+          "name": "in4_204",
+          "desc": "4-20mA in #4",
+          "maxSamples": 50
+        }
+      ],
+      "inputs": [
+        {
+          "name": "out0_101",
+          "desc": "0-10v out #1",
+          "dataType":  "number"
+        },
+        {
+          "name": "out0_102",
+          "desc": "0-10v out #2",
+          "dataType": "number"
+        },
+        {
+          "name": "out0_103",
+          "desc": "0-10v out #3",
+          "dataType": "number"
+        },
+        {
+          "name": "out0_104",
+          "desc": "0-10v out #4",
+          "dataType": "number"
+        },
+        {
+          "name": "out4_201",
+          "desc": "4-20mA out #1",
+          "dataType": "number"
+        },
+        {
+          "name": "out4_202",
+          "desc": "4-20mA out #2",
+          "dataType": "number"
+        },
+        {
+          "name": "out4_203",
+          "desc": "4-20mA out #3",
+          "dataType": "number"
+        },
+        {
+          "name": "out4_204",
+          "desc": "4-20mA out #4",
+          "dataType": "number"
+        }
+      ],
       "options": [
         {
           "dataType": "panel",
@@ -204,7 +286,7 @@
                             "direction": "in",
                             "total": 4,
                             "ioType": "digital",
-                            "binding": "values.inputs.inOpt"
+                            "binding": "values.inputs.inDigital"
 
                           }
                         }
@@ -224,8 +306,14 @@
                             "total": 4,
                             "units": "v",
                             "ioType": "analog",
-                            "binding": "values.inputs.in0_10"
-
+                            "binding": "values.inputs.in0_10",
+                            "configTemplate": {
+                              "field": {
+                                "type": "checkbox",
+                                "bind": "plusMinus",
+                                "labelText": "Use +/- 10v Scale"
+                              }
+                            }
                           }
                         }
                       ]
@@ -278,7 +366,7 @@
                             "class": "ioChannels",
                             "direction": "out",
                             "total": 4,
-                            "units": "v",
+                            "units": "%",
                             "ioType": "analog",
                             "binding": "values.outputs.outDrain"
                           }
