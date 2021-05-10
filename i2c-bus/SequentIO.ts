@@ -141,7 +141,8 @@ export class SequentMegaIND extends SequentIO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            if (typeof this.options.readInterval === 'undefined' || this.options.readInterval < 1000) this.options.readInterval = 5000;
+            if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 3000;
+            this.options.readInterval = Math.max(500, this.options.readInterval);
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
             this.device.info.firmware = await this.getFwVer();
@@ -619,36 +620,88 @@ export class SequentMegaIND extends SequentIO {
 
     }
     public getValue(prop: string) {
-        //switch (prop.toLowerCase()) {
-        //    case 'phlevel': 
-        //    case 'ph': { return this.values.pH; }
-        //    case 'all': { return this.values; }
-        //}
+        // Steps to getting to our value.
+        // 1. Determine whether input or output.
+        // 2. Determine which array we are coming from.
+        // 3. Map the IO number to the value.
+        let p = prop.toLowerCase();
+        switch (p) {
+            case 'cputempc':
+                return this.info.cpuTemp;
+            case 'cputempf':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'F');
+            case 'cputempk':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
+            case 'inputvoltage':
+                return this.info.volts;
+            case 'pivoltage':
+                return this.info.rapsiVolts;
+            case 'fwversion':
+                return this.info.fwVersion;
+            default:
+                let iarr;
+                if (p.startsWith('out4_20')) iarr = this.out4_20;
+                else if (p.startsWith('in4_20')) iarr = this.in4_20;
+                else if (p.startsWith('out0_10')) iarr = this.out0_10;
+                else if (p.startsWith('in0_10')) iarr = this.in0_10;
+                else if (p.startsWith('inDigital')) iarr = this.inDigital;
+                else if (p.startsWith('outDrain')) iarr = this.outDrain;
+                if (typeof iarr === 'undefined') {
+                    logger.error(`${this.device.name} error getting I/O channel ${prop}`);
+                    return;
+                }
+                let sord = p[p.length - 1];
+                let ord = parseInt(sord, 10);
+                if (isNaN(ord) || ord <= 0 || ord >= 4) {
+                    logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
+                    return;
+                }
+                return iarr[ord];
+        }
     }
     public setValue(prop: string, value) {
-        //switch (prop) {
-        //    case 'tempC':
-        //    case 'tempF':
-        //    case 'tempK':
-        //        let temp = utils.convert.temperature.convertUnits(value, prop.substring(4), 'c');
-        //        if (typeof temp === 'number') this.setTempCompensation(temp);
-        //        break;
-        //}
+        let p = prop.toLowerCase();
+        switch (p) {
+            default:
+                let sord = p[p.length - 1];
+                let ord = parseInt(sord, 10);
+                if (isNaN(ord) || ord <= 0 || ord >= 4) {
+                    logger.error(`${this.device.name} error setting I/O ${prop} channel ${sord} out of range.`);
+                    return;
+                }
+                if (p.startsWith('out4_20')) this.set4_20Output(ord, value);
+                else if (p.startsWith('out0_10')) this.set0_10Output(ord, value);
+                else if (p.startsWith('outDrain')) this.setDrainOutput(ord, value);
+                else logger.error(`${this.device.name} error setting I/O channel ${prop} invalid I/O type.`);
+                break;
+        }
     }
     public calcMedian(prop: string, values: any[]) {
-        //switch (prop.toLowerCase()) {
-        //    case 'phlevel':
-        //    case 'ph':
-        //        return super.calcMedian(prop, values);
-        //    case 'all':
-        //        // Only the ORP reading is a median here.
-        //        let arrPh = [];
-        //        let arrTemp = [];
-        //        for (let i = 0; i < values.length; i++) {
-        //            arrPh.push(values[i].pH); arrTemp.push(values[i].temperature);
-        //        }
-        //        return extend(true, {}, this.values, { pH: super.calcMedian(prop, arrPh), temperature: super.calcMedian(prop, arrTemp) });
-        //}
+        let p = prop.toLowerCase();
+        switch (p) {
+            case 'cputempc':
+            case 'cputempf':
+            case 'cputempk':
+            case 'inputvoltage':
+            case 'pivoltage':
+                return super.calcMedian(prop, values);
+            case 'fwversion':
+                return this.info.fwVersion;
+            default:
+                // Determine whether this is an object.
+                if (p.startsWith('in') || p.startsWith('out')) {
+                    if (values.length > 0 && typeof values[0] === 'object') {
+                        let io = this.getValue(prop);
+                        if (typeof io !== 'undefined') {
+                            let vals = [];
+                            for (let i = 0; i < values.length; i++) vals.push(values[i].value);
+                            return extend(true, {}, io, { value: super.calcMedian(prop, vals) })
+                        }
+                    }
+                    else return super.calcMedian(prop, values);
+                }
+                else logger.error(`${this.device.name} error calculating median value for ${prop}.`);
+        }
     }
     public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
         try {

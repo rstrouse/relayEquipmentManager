@@ -261,12 +261,32 @@ export class i2cRelay extends i2cDeviceBase {
         try {
             let bytes: number[] = [];
             let orig: number[] = [];
-            switch (this.device.options.idType) {
+            switch (this.options.idType) {
                 case 'sequent8':
-                    orig.push(this.decodeSequent(await this.readCommand(0x00), [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]));
+                    // 8relind-rpi -- sequent8IND
+                    //relayMaskRemap = [0x01, 0x04, 0x40, 0x10, 0x20, 0x80, 0x08, 0x02]
+                    //relayChRemap = [0, 2, 6, 4, 5, 7, 3, 1]
+
+                    // 8relay-rpi -- sequent8v3
+                    //relayMaskRemap = [0x01, 0x04, 0x02, 0x08, 0x40, 0x10, 0x20, 0x80]
+                    //relayChRemap = [0, 2, 1, 3, 6, 4, 5, 7]
+
+                    // relay8-rpi -- sequent8 
+                    //relayMaskRemap = [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]
+                    //relayChRemap = [0, 1, 2, 3, 7, 6, 5, 4]
+                    let map = [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10];
+                    switch (this.options.controllerType) {
+                        case 'sequent8v3':
+                            map = [0x01, 0x04, 0x02, 0x08, 0x40, 0x10, 0x20, 0x80];
+                            break;
+                        case 'sequent8IND':
+                            map = [0x01, 0x04, 0x40, 0x10, 0x20, 0x80, 0x08, 0x02];
+                            break;
+                    }
+                    orig.push(this.decodeSequent(await this.readCommand(0x00), map));
                     bytes = this.makeStartupBitmasks(orig);
-                    await this.sendCommand([0x01, this.encodeSequent(bytes[0], [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10])]);
-                    if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(bytes[0], [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]);
+                    await this.sendCommand([0x01, this.encodeSequent(bytes[0], map)]);
+                    if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(bytes[0], map);
                     break;
                 case 'sequent4':
                     orig.push(this.decodeSequent(await this.readCommand(0x00), [0x80, 0x40, 0x20, 0x10]));
@@ -366,8 +386,18 @@ export class i2cRelay extends i2cDeviceBase {
                             await this.sendCommand([0x01, 0x00]);
                         }
                         byte = await this.readCommand(0x00);
+                        let map = [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10];
+                        switch (this.options.controllerType) {
+                            case 'sequent8v3':
+                                map = [0x01, 0x04, 0x02, 0x08, 0x40, 0x10, 0x20, 0x80];
+                                break;
+                            case 'sequent8IND':
+                                map = [0x01, 0x04, 0x40, 0x10, 0x20, 0x80, 0x08, 0x02];
+                                break;
+                        }
+
                         if (this.i2c.isMock) byte = this._relayBitmask1;
-                        byte = this.decodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]);
+                        byte = this.decodeSequent(byte, map);
                         this.relays.sort((a, b) => { return a.id - b.id; });
                         for (let i = 0; i < this.relays.length; i++) {
                             let relay = this.relays[i];
@@ -417,7 +447,7 @@ export class i2cRelay extends i2cDeviceBase {
         let byte: number;
         let cmdByte = relay.id;
         try {
-            switch (this.device.options.idType) {
+            switch (this.options.idType) {
                 case 'sequent4':
                     {
                         let byte = await this.readCommand(0x03);
@@ -434,6 +464,15 @@ export class i2cRelay extends i2cDeviceBase {
                     break;
                 case 'sequent8':
                     {
+                        let map = [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10];
+                        switch (this.options.controllerType) {
+                            case 'sequent8v3':
+                                map = [0x01, 0x04, 0x02, 0x08, 0x40, 0x10, 0x20, 0x80];
+                                break;
+                            case 'sequent8IND':
+                                map = [0x01, 0x04, 0x40, 0x10, 0x20, 0x80, 0x08, 0x02];
+                                break;
+                        }
                         let byte = await this.readCommand(0x03);
                         if (byte !== 0) {
                             await this.sendCommand([0x03, 0x00]);
@@ -442,7 +481,7 @@ export class i2cRelay extends i2cDeviceBase {
                         // These come in the high nibble. Shift them to the low nibble.
                         byte = await this.readCommand(0x00);
                         if (this.i2c.isMock) byte = this._relayBitmask1;
-                        byte = this.decodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]);
+                        byte = this.decodeSequent(byte, map);
                         byte = byte & (1 << (relay.id - 1));
                     }
                     break;
@@ -532,7 +571,7 @@ export class i2cRelay extends i2cDeviceBase {
             }
             let newState = utils.makeBool(opts.state);
             // Make the relay command.
-            switch (this.device.options.idType) {
+            switch (this.options.idType) {
                 case 'sequent8':
                     {
                         await this.readAllRelayStates();
@@ -548,8 +587,17 @@ export class i2cRelay extends i2cDeviceBase {
                             else if (current)
                                 byte |= (1 << (r.id - 1));
                         }
-                        await this.sendCommand([0x01, this.encodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10])]);
-                        if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(byte, [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10]);
+                        let map = [0x01, 0x02, 0x04, 0x08, 0x80, 0x40, 0x20, 0x10];
+                        switch (this.options.controllerType) {
+                            case 'sequent8v3':
+                                map = [0x01, 0x04, 0x02, 0x08, 0x40, 0x10, 0x20, 0x80];
+                                break;
+                            case 'sequent8IND':
+                                map = [0x01, 0x04, 0x40, 0x10, 0x20, 0x80, 0x08, 0x02];
+                                break;
+                        }
+                        await this.sendCommand([0x01, this.encodeSequent(byte, map)]);
+                        if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(byte, map);
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();

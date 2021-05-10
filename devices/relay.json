@@ -345,7 +345,7 @@
                   },
                   {
                     "name": "sequent4",
-                    "desc": "Sequent 4 Relay",
+                    "desc": "Sequent 4",
                     "options": {
                       "idType": "sequent4",
                       "maxRelays": 4
@@ -353,12 +353,29 @@
                   },
                   {
                     "name": "sequent8",
-                    "desc": "Sequent 8 Relay",
+                    "desc": "Sequent 8 v2.x",
+                    "options": {
+                      "idType": "sequent8",
+                      "maxRelays": 8
+                    }
+                  },
+                  {
+                    "name": "sequent8v3",
+                    "desc": "Sequent 8 v3.0+",
+                    "options": {
+                      "idType": "sequent8",
+                      "maxRelays": 8
+                    }
+                  },
+                  {
+                    "name": "sequent8IND",
+                    "desc": "Sequent 8 IND",
                     "options": {
                       "idType": "sequent8",
                       "maxRelays": 8
                     }
                   }
+
 
                 ]
               }
