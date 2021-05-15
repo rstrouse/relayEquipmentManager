@@ -59,7 +59,10 @@
           }
         }
       },
-      "interfaces": [ "spi", "i2cAdc" ]
+      "interfaces": [
+        "spi",
+        "i2cAdc"
+      ]
     },
     {
       "id": 2,
@@ -723,7 +726,386 @@
         }
       ],
       "interfaces": [ "i2c" ]
+    },
+    {
+      "id": 5,
+      "name": "10k Temperature Probe",
+      "input": "ohms",
+      "precision": 2,
+      "convertValue": "device.values.inputUnits = device.options.inputType === 'raw' ? '' : device.options.inputType === 'volt' ? 'volts' : 'ohms'; device.values.units = device.options.units; device.values.maxVal = (device.options.inputType === 'raw') ? (1 << device.options.inputBitness) : device.options.inputType === 'volt' ? device.options.vccRef : 10000; device.values.resistance = (device.options.inputType === 'ohms') ? device.values.adcValue : (10000 * device.values.adcValue) / (device.values.maxVal - device.values.adcValue); device.values.temperature = (Math.round(maps.thermistor10k.interpolate(device.values.resistance, device.values.units || 'F') * 100)/100) + (device.options.calibration || 0);",
+      "inputs": [
+        {
+          "name": "adcValue",
+          "desc": "ADC Value",
+          "dataType": "number"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "tempC",
+          "desc": "Temperature C",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempF",
+          "desc": "Temperature F",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempK",
+          "desc": "Temperature K",
+          "maxSamples": 50
+        },
+        {
+          "name": "all",
+          "desc": "All Values",
+          "maxSamples": 50
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "div",
+            "style": { "display": "inline-block" }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "labelAttrs": { "style": { "width": "4rem" } },
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": {
+                    "width": "16rem"
+                  }
+                },
+                "style": {
+                  "display": "block"
+                }
+              }
+            },
+            {
+              "field": {
+                "type": "pickList",
+                "labelText": "Units",
+                "binding": "options.units",
+                "value": "F",
+                "required": true,
+                "canEdit": false,
+                "inputAttrs": { "style": { "width": "2rem" } },
+                "labelAttrs": { "style": { "width": "4rem" } },
+                "columns": [
+                  {
+                    "binding": "val",
+                    "hidden": true,
+                    "text": "Units",
+                    "style": { "whiteSpace": "nowrap" }
+                  },
+                  {
+                    "binding": "name",
+                    "text": "",
+                    "style": { "whiteSpace": "nowrap" }
+                  },
+                  {
+                    "binding": "desc",
+                    "text": "Temp Units",
+                    "style": { "whiteSpace": "nowrap" }
+                  }
+                ],
+                "items": [
+                  {
+                    "val": "F",
+                    "name": "F",
+                    "desc": "Fahrenheit"
+                  },
+                  {
+                    "val": "C",
+                    "name": "C",
+                    "desc": "Celsius"
+                  }
+                ]
+              }
+            },
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "genericReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Input Value",
+                    "binding": "values.adcValue",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.####",
+                    "style": {
+                      "fontSize": ".77em",
+                      "display": "block"
+                    },
+                    "unitsBinding": "values.inputUnits",
+                    "labelAttrs": { "style": { "width": "7em" } }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Resistance",
+                    "binding": "values.resistance",
+                    "units": "ohms",
+                    "dataType": "number",
+                    "fmtMask": "#,##0.####",
+                    "style": {
+                      "fontSize": ".77em",
+                      "display": "block"
+                    },
+                    "labelAttrs": { "style": { "width": "7em" } }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "fontSize": ".77em" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Temperature",
+                        "binding": "values.temperature",
+                        "units": "&deg;",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "style": {},
+                        "labelAttrs": { "style": { "width": "7em" } }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "span",
+                        "binding": "values.units"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Input Value",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "pickList",
+                    "labelText": "Input Type",
+                    "binding": "options.inputType",
+                    "value": "raw",
+                    "required": true,
+                    "canEdit": false,
+                    "inputAttrs": { "style": { "width": "7rem" } },
+                    "labelAttrs": { "style": { "width": "5rem" } },
+                    "style": { "display": "block" },
+                    "columns": [
+                      {
+                        "binding": "val",
+                        "hidden": true,
+                        "text": "Val",
+                        "style": { "whiteSpace": "nowrap" }
+                      },
+                      {
+                        "binding": "name",
+                        "text": "Type",
+                        "style": { "whiteSpace": "nowrap" }
+                      },
+                      {
+                        "binding": "desc",
+                        "text": "ADC Value",
+                        "style": { "whiteSpace": "nowrap" }
+                      }
+                    ],
+                    "items": [
+                      {
+                        "val": "raw",
+                        "name": "Raw Value",
+                        "desc": "Raw ADC Value"
+                      },
+                      {
+                        "val": "volt",
+                        "name": "Voltage",
+                        "desc": "ADC Voltage"
+                      },
+                      {
+                        "val": "ohms",
+                        "name": "Resistance",
+                        "desc": "Resistance in ohms"
+                      }
+                    ]
+                  },
+                  "fieldEvents": {
+                    "selchanged": "console.log(evt.newItem); var pnl = $(evt.currentTarget).parents('fieldset:first'); pnl.children('div.pnl-input-options').not('.pnl-' + evt.newItem.val + 'input-options').hide(); pnl.children('.pnl-' + evt.newItem.val + 'input-options').show();"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "display": "none" },
+                    "cssClass": "pnl-voltinput-options pnl-input-options"
+
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "valueSpinner",
+                        "labelText": "Vcc Ref",
+                        "binding": "options.vccRef",
+                        "canEdit": "true",
+                        "value": 3.3,
+                        "min": 0,
+                        "max": 12,
+                        "step": 0.1,
+                        "dataType": "number",
+                        "fmtMask": "0.0###",
+                        "emptyMask": "-.-",
+                        "units": "volts",
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "inputAttrs": { "style": { "width": "4rem" } }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "cssClass": "pnl-rawinput-options pnl-input-options",
+                    "style": { "display": "block" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "pickList",
+                        "labelText": "Bitness",
+                        "binding": "options.inputBitness",
+                        "value": 10,
+                        "required": true,
+                        "canEdit": false,
+                        "inputAttrs": { "style": { "width": "7rem" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" },
+                        "columns": [
+                          {
+                            "binding": "val",
+                            "hidden": true,
+                            "text": "Val",
+                            "style": { "whiteSpace": "nowrap" }
+                          },
+                          {
+                            "binding": "name",
+                            "text": "Bits",
+                            "style": { "whiteSpace": "nowrap" }
+                          },
+                          {
+                            "binding": "desc",
+                            "text": "ADC Value",
+                            "style": { "whiteSpace": "nowrap" }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "val": 8,
+                            "name": "8-bit Input",
+                            "desc": "8-bit ADC Value"
+                          },
+                          {
+                            "val": 10,
+                            "name": "10-bit Input",
+                            "desc": "10-bit ADC Value"
+                          },
+                          {
+                            "val": 12,
+                            "name": "12-bit Input",
+                            "desc": "12-bit ADC Value"
+                          },
+                          {
+                            "val": 16,
+                            "name": "16-bit Input",
+                            "desc": "16-bit ADC Value"
+                          },
+                          {
+                            "val": 32,
+                            "name": "32-bit Input",
+                            "desc": "32-bit ADC Value"
+                          }
+                        ]
+                      }
+                    }
+
+                  ]
+                }
+              ]
+
+            },
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Calibration",
+                "cssClass": "pnl-calibration"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "valueSpinner",
+                    "labelText": "+/- Degrees",
+                    "binding": "options.calibration",
+                    "canEdit": "true",
+                    "value": 0,
+                    "min": -100,
+                    "max": 100,
+                    "step": 0.1,
+                    "dataType": "number",
+                    "fmtMask": "0.0###",
+                    "emptyMask": "-.-",
+                    "units": "&deg;",
+                    "labelAttrs": { "style": { "width": "5.5rem" } },
+                    "inputAttrs": { "style": { "width": "4rem" } }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [ "generic" ]
     }
+
   ],
   "maps": [
     {

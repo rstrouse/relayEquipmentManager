@@ -525,13 +525,15 @@ export class i2cDeviceBase implements IDevice {
         } catch (err) { return logger.error(`Error resetting trigger for device.`); }
     }
     public getValue(prop) {
-        let replaceSymbols = /(?:\]\.|\[|\.)/g
-        let _prop = prop.replace(replaceSymbols, ',').split(',');
-        let val = this.device.values;
-        for (let i = 0; i < _prop.length; i++) {
-            val = val[_prop[i]];
-        }
-        return val;
+        try {
+            let replaceSymbols = /(?:\]\.|\[|\.)/g
+            let _prop = prop.replace(replaceSymbols, ',').split(',');
+            let val = this.device.values;
+            for (let i = 0; i < _prop.length; i++) {
+                val = val[_prop[i]];
+            }
+            return val;
+        } catch (err) { logger.error(`${this.device.name} error getting device value ${prop}: ${err.message}`); }
     }
     public setValue(prop, value) { 
         let replaceSymbols = /(?:\]\.|\[|\.)/g

@@ -2933,8 +2933,8 @@ export class GenericDevice extends ConfigItem {
         let ad = cont.analogDevices.find(elem => elem.id === this.typeId);
         let self = this;
         if (typeof ad.convertValue !== 'undefined') {
-            let fn = new Function("device", ad.convertValue);
-            fn(self);
+            let fn = new Function("maps", "device", ad.convertValue);
+            fn(AnalogDevices.maps, self);
         }
         else if (typeof ad.module !== 'undefined') {
             // load/store/do something with the module

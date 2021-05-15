@@ -864,6 +864,7 @@ var templateBuilder = {
         var self = this;
         var fld = null;
         var prop = '';
+        if (typeof binding === 'undefined') binding = '';
         switch (opt.field.type) {
             case 'hidden':
                 fld = $('<input type="hidden"></input>');
@@ -943,6 +944,7 @@ var templateBuilder = {
                 if (typeof opt.field.attrs !== 'undefined') {
                     for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
                 }
+                if (typeof opt.options !== 'undefined') self.createObjectOptions(fld, opt, binding + prop);
                 break;
             case 'tabBar':
             case 'tabbar':
@@ -965,10 +967,7 @@ var templateBuilder = {
                 if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
                 if (typeof opt.field.bind !== 'undefined') fld.attr('data-bind', binding + opt.field.bind);
                 if (typeof opt.field.binding !== 'undefined') fld.attr('data-bind', binding + opt.field.binding);
-               
-                if (typeof opt.field.attrs !== 'undefined') {
-                    for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
-                }
+                if (typeof opt.field.attrs !== 'undefined') { for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]); }
                 if (typeof opt.options !== 'undefined') self.createObjectOptions(fld, opt, binding + prop);
                 break;
         }

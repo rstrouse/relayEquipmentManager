@@ -10,10 +10,46 @@
       "module": "./ads1x15",
       "outputs": [
         {
-          "name": "channels[3].voltage",
+          "name": "ch1.voltage",
           "desc": "Voltage",
           "maxSamples": 50
         },
+        {
+          "name": "ch2.voltage",
+          "desc": "Voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "ch3.voltage",
+          "desc": "Voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "ch4.voltage",
+          "desc": "Voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "ch1.value",
+          "desc": "ADC Value",
+          "maxSamples": 50
+        },
+        {
+          "name": "ch2.value",
+          "desc": "ADC Value",
+          "maxSamples": 50
+        },
+        {
+          "name": "ch3.value",
+          "desc": "ADC Value",
+          "maxSamples": 50
+        },
+        {
+          "name": "ch4.value",
+          "desc": "ADC Value",
+          "maxSamples": 50
+        },
+
         {
           "name": "all",
           "desc": "All values",
@@ -232,31 +268,6 @@
                       }
                     },
                     "units": "v"
-                  }
-                },
-                {
-                  "field": {
-                    "type": "checkbox",
-                    "labelText": "Enabled",
-                    "binding": "options.channels[3].enabled",
-                    "disabled": true,
-                    "style": {
-                      "display": "block",
-                      "marginLeft": "1rem",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    },
-                    "labelAttrs": {
-                      "style": {
-                        "width": "4.5rem"
-                      }
-                    },
-                    "inputAttrs": {
-                      "style": {
-                        "width": "2.5rem",
-                        "textAlign": "right"
-                      }
-                    }
                   }
                 }
               ]

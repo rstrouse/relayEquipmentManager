@@ -1,4 +1,4 @@
-﻿import { vMaps } from "../boards/Constants";
+﻿import { vMaps, utils } from "../boards/Constants";
 import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../logger/Logger";
@@ -138,7 +138,10 @@ export class ConversionMap {
         if (typeof range === 'undefined' || typeof range.low === 'undefined' || range.high === 'undefined') return typeof range.low !== 'undefined' ? range.low.output : undefined;
         let diff = (range.high.input - range.low.input) / input;
         let value = range.low.value + ((range.high.value - range.low.value) * diff);
-        if (typeof units !== 'undefined' && units.toLocaleLowerCase() !== this.units.toLocaleLowerCase()) value = UnitsConverter.convertValue(value, this.units, units);
+        if (typeof units !== 'undefined' && units.toLowerCase() !== this.units.toLowerCase()) {
+            console.log(`converting units ${this.units} -> ${units}`)
+            value = utils.convert.temperature.convertUnits(value, this.units, units);
+        }
         return value;
     }
     public firstValue(input, units?:string): number {
