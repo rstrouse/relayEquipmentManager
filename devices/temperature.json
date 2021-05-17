@@ -732,6 +732,8 @@
       "name": "10k Temperature Probe",
       "input": "ohms",
       "precision": 2,
+      "deviceClass": "GenericDeviceBase",
+      "module": "./genericDevices",
       "convertValue": "device.values.inputUnits = device.options.inputType === 'raw' ? '' : device.options.inputType === 'volt' ? 'volts' : 'ohms'; device.values.units = device.options.units; device.values.maxVal = (device.options.inputType === 'raw') ? (1 << device.options.inputBitness) : device.options.inputType === 'volt' ? device.options.vccRef : 10000; device.values.resistance = (device.options.inputType === 'ohms') ? device.values.adcValue : (10000 * device.values.adcValue) / (device.values.maxVal - device.values.adcValue); device.values.temperature = (Math.round(maps.thermistor10k.interpolate(device.values.resistance, device.values.units || 'F') * 100)/100) + (device.options.calibration || 0);",
       "inputs": [
         {
@@ -742,18 +744,18 @@
       ],
       "outputs": [
         {
-          "name": "tempC",
-          "desc": "Temperature C",
+          "name": "temperature",
+          "desc": "Temperature",
           "maxSamples": 50
         },
         {
-          "name": "tempF",
-          "desc": "Temperature F",
+          "name": "resistance",
+          "desc": "Resistance (ohms)",
           "maxSamples": 50
         },
         {
-          "name": "tempK",
-          "desc": "Temperature K",
+          "name": "units",
+          "desc": "Temperature Units",
           "maxSamples": 50
         },
         {

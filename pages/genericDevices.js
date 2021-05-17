@@ -15,6 +15,7 @@
                 $('<span></span>').appendTo(head).addClass('header-text').text('Manage Generic Devices');
                 $('<br></br>').appendTo(outer);
                 var devices = $('<div></div>').appendTo(outer).pnlDevices();
+
                 // o.deviceTypes = data.deviceTypes;
                 devices[0].dataBind(data.genericDevices.devices);
             });
@@ -191,7 +192,7 @@
             var tabBar = $('<div></div>').appendTo(pnl).tabBar().on('tabchange', function (evt) {
                 evt.stopPropagation();
             });
-
+            o.deviceId = o.id;
             $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabOptions', text: 'Device Options' })).pnlDeviceDetails(o)
             $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabTriggers', text: 'Triggers' })).pnlDeviceTriggers(o)[0].dataBind(o.triggers);
             $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabFeeds', text: 'Feeds' })).pnlDeviceFeeds(o)[0].dataBind(o.feeds);
@@ -271,6 +272,7 @@
                 }
             }
             console.log(o);
+            el.parents('div.control-panel:first').find('div.control-panel-title').text(`Edit ${o.deviceType.name}`);
             templateBuilder.createObjectOptions(el, o.deviceType);
             dataBinder.bind(el, o);
             el.attr('data-typeId', o.deviceType.id);
@@ -359,26 +361,29 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-genericdevice-feeds');
+            el.addClass('pnl-genericdevice-feeds').css({ maxWidth: '37rem' });
             $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Feeds send values from the device via a connection to other software.  The defined connection determines the format, protocol, and potential data that is sent.');
             $('<div></div>').appendTo(el).crudList({
                 id: 'crudFeeds' + o.deviceId, actions: { canCreate: true, canEdit: true, canRemove: true },
                 key: 'id',
                 caption: 'Device Value Feeds', itemName: 'Value Feeds',
+                //columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
                 columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
             }).css({ width: '100%' })
                 .on('additem', function (evt) {
-                    $.getLocalService('/config/options/genericDevices/' + o.busNumber + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
+                    console.log(o);
+                    $.getLocalService('/config/options/generic/' + o.id + '/feeds', null, function (feeds, status, xhr) {
                         feeds.feed = { isActive: true };
-                        self._createFeedDialog('dlgAddI2cFeed', 'Add Feed to I2c Device', feeds);
+                        self._createFeedDialog('dlgAddGenericFeed', 'Add Feed to Generic Device', feeds);
                     });
                 }).on('edititem', function (evt) {
-                    $.getLocalService('/config/options/genericDevices/' + o.busId + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
+                    $.getLocalService('/config/options/generic/' + o.id + '/feeds', null, function (feeds, status, xhr) {
                         feeds.feed = o.feeds.find(elem => elem.id == evt.dataKey);
-                        self._createFeedDialog('dlgEditI2cFeed', 'Edit I2C Device Feed', feeds);
+                        
+                        self._createFeedDialog('dlgEditGenericFeed', 'Edit Generic Device Feed', feeds);
                     });
                 }).on('removeitem', function (evt) {
-                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteI2cFeed', {
+                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteGenericFeed', {
                         message: 'Are you sure you want to delete Feed?',
                         width: '350px',
                         height: 'auto',
@@ -392,7 +397,7 @@
                                 feed.deviceId = o.deviceId;
                                 feed.address = o.address;
                                 feed.id = evt.dataKey;
-                                $.deleteLocalService('/config/i2c/device/feed', feed, function (feeds, status, xhr) {
+                                $.deleteLocalService('/config/generic/device/feed', feed, function (feeds, status, xhr) {
                                     $.pic.modalDialog.closeDialog(dlg);
                                     self.dataBind(feeds)
                                 });
@@ -424,11 +429,7 @@
                             var feed = dataBinder.fromElement(dlg);
                             if (dataBinder.checkRequired(dlg, true)) {
                                 feed.connection = dlg.find('div[data-bind="connectionId"]')[0].selectedItem();
-                                feed.busId = o.busId;
-                                feed.busNumber = o.busNumber;
                                 feed.deviceId = o.deviceId;
-                                feed.address = o.address;
-                                ///feed.device = dlg.find('div[data-bind="deviceBinding"]')[0].selectedItem();
                                 self.saveFeed(feed);
                                 $.pic.modalDialog.closeDialog(this);
                             }
@@ -491,7 +492,7 @@
         },
         saveFeed: function (feed) {
             var self = this, o = self.options, el = self.element;
-            $.putLocalService('/config/i2c/device/feed', feed, 'Saving Device Feed...', function (f, result, xhr) {
+            $.putLocalService('/config/generic/device/feed', feed, 'Saving Device Feed...', function (f, result, xhr) {
                 self.dataBind(f);
             });
         },

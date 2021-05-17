@@ -454,6 +454,31 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
+        app.get('/config/options/generic/:id/feeds', (req, res) => {
+            // let bus = cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
+            let dev = cont.genericDevices.devices.getItemById(parseInt(req.params.id, 10));
+            let opts = {
+                connections: cont.connections.toExtendedArray(),
+                device: dev.getExtended()
+            }
+            opts.connections.unshift(cont.getInternalConnection().getExtended());
+            return res.status(200).send(opts);
+        });
+        app.put('/config/generic/device/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.genericDevices.setDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/generic/device/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.genericDevices.deleteDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+
         app.put('/config/genericDevices/device', async (req, res, next) => {
             try {
                 let dev = await cont.genericDevices.setDevice(req.body);

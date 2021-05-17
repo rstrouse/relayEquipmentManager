@@ -1,0 +1,246 @@
+﻿import { logger } from "../logger/Logger";
+import { GenericDeviceController, cont, GenericDevice, DeviceBinding, Feed } from "../boards/Controller";
+import { setTimeout, clearTimeout } from "timers";
+import { AnalogDevices, IDevice, DeviceStatus } from "../devices/AnalogDevices";
+import { utils } from "../boards/Constants";
+import { webApp } from "../web/Server";
+import { PromisifiedBus } from "i2c-bus";
+import { GenericDeviceFactory } from "./GenericFactory";
+import { connBroker, ServerConnection } from "../connections/Bindings";
+import * as extend from "extend";
+import { Buffer } from "buffer";
+import * as path from 'path';
+import * as fs from 'fs';
+
+export class genericController {
+    constructor() { }
+    public devices: GenericDeviceBase[] = [];
+    //private _opts;
+    public setCommSuccess(address: number) {
+        let dev = this.devices.find(elem => elem.device.address === address);
+        if (typeof dev !== 'undefined') { dev.lastComm = new Date().getTime(); dev.hasFault = false; dev.status = '' }
+    }
+    public setCommFailure(address: number, err: Error) {
+        let dev = this.devices.find(elem => elem.device.address === address);
+        if (typeof dev !== 'undefined') { dev.hasFault = true; dev.status = `Comm failure: ${typeof err !== 'undefined' ? err.message : 'Unspecified error'}` }
+    }
+    public async addDevice(dev: GenericDevice) {
+        try {
+            let dt = dev.getDeviceType();
+            let device = await GenericDeviceBase.factoryCreate(this, dev);
+            if (typeof device !== 'undefined') this.devices.push(device);
+            else logger.error(`Factory error creating device for ${dev.name}`);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async initAsync(dc: GenericDeviceController) {
+        try {
+            logger.info(`Initializing Generic Devices`);
+            for (let i = 0; i < dc.devices.length; i++) {
+                let dev = dc.devices.getItemByIndex(i);
+                await this.addDevice(dev).catch(err => { logger.error(err); });
+            }
+            logger.info(`Generic Devices Initialized`);
+        } catch (err) { logger.error(err); }
+    }
+    public async resetAsync(bus): Promise<void> {
+        try {
+            await this.closeAsync();
+            await this.initAsync(bus);
+            return Promise.resolve();
+        } catch (err) { logger.error(err); }
+    }
+    public async closeAsync(): Promise<void> {
+        try {
+            logger.info(`Closing ${this.devices.length} devices.`);
+            for (let i = 0; i < this.devices.length; i++) {
+                await this.devices[i].closeAsync();
+            }
+            this.devices.length = 0;
+            logger.info(`Closed Generic Devices`);
+            return Promise.resolve();
+        } catch (err) { logger.error(err); }
+    }
+    public setDeviceValue(deviceId: number, prop: string, value) {
+        let device = this.devices.find(elem => elem.device.id === deviceId);
+        if (typeof device !== 'undefined') device.setValue(prop, value);
+    }
+    public resetDeviceFeeds(deviceId: number) {
+        let device = this.devices.find(elem => elem.device.id === deviceId);
+        if (typeof device !== 'undefined') device.initFeeds();
+    }
+    public resetDeviceTriggers(deviceId: number) {
+        let device = this.devices.find(elem => elem.device.id === deviceId);
+        if (typeof device !== 'undefined') {
+            device.resetTriggers();
+        }
+    }
+}
+export class GenericDeviceBase implements IDevice {
+    public static async factoryCreate(gdc: genericController, dev: GenericDevice): Promise<GenericDeviceBase> {
+        try {
+            let dt = dev.getDeviceType();
+            if (typeof dt === 'undefined') return Promise.reject(new Error(`Cannot initialize Generic device id${dev.id}: Device type not found ${dev.typeId}`));
+            let d = await GenericDeviceFactory.createDevice(dt.module, dt.deviceClass, gdc, dev);
+            if (typeof d !== 'undefined') {
+                d.category = dt.category;
+                d.initialized = false;
+                webApp.emitToClients('genericDeviceStatus', { id: dev.id, status: d.status, intialized: d.initialized, device: dev.getExtended() });
+                if (await d.initAsync(dt)) {
+                    d.initialized = true;
+                    logger.info(`Device ${dt.name} initialized for generic device ${dev.id} - ${dev.name}`);
+                    webApp.emitToClients('genericDeviceStatus', { id: dev.id, status: d.status, intialized: d.initialized, device: dev.getExtended() });
+                }
+            }
+            return Promise.resolve(d);
+        }
+        catch (err) { logger.error(err); }
+    }
+    constructor(gdc: genericController, dev: GenericDevice) {
+        this.device = dev;
+        this.initFeeds();
+    }
+    public feeds: Feed[] = [];
+    public readable: boolean = false;
+    public writable: boolean = false;
+    public status: string;
+    public category: string;
+    public initialized: boolean = false;
+    public hasFault: boolean = false;
+    public i2c;
+    public device: GenericDevice;
+    public lastComm: number;
+    public get deviceStatus(): DeviceStatus { return { name: this.device.name, category: this.category, hasFault: utils.makeBool(this.hasFault), status: this.status, lastComm: this.lastComm, protocol: 'generic', busNumber: 1, address: undefined } }
+    public async closeAsync(): Promise<void> {
+        try {
+            logger.info(`Stopped Generic Device ${this.device.name}`);
+        }
+        catch (err) { logger.error(err); return Promise.resolve(); }
+    }
+    public async initAsync(deviceType: any): Promise<boolean> { this.category = deviceType.category; return Promise.resolve(true); }
+    public async callCommand(cmd: any): Promise<any> {
+        try {
+            if (typeof cmd.name !== 'string') return Promise.reject(new Error(`Invalid command ${cmd.name}`));
+            if (typeof this[cmd.name] !== 'function') return Promise.reject(new Error(`Command function not found ${cmd.name}`));
+            let res = await this[cmd.name].apply(this, cmd.params);
+            return Promise.resolve(res);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async resetDevice(device: any): Promise<any> {
+        try {
+            if (typeof device !== 'undefined') {
+                if (typeof device.options !== 'undefined') await this.setOptions(device.options);
+                if (typeof device.values !== 'undefined') await this.setValues(device.values);
+            }
+        }
+        catch (err) { logger.error(`Error resetting device: ${err.message}`); }
+    }
+    public async setOptions(opts: any): Promise<any> {
+        try {
+            this.device.options = opts;
+            return Promise.resolve(this);
+        }
+        catch (err) { logger.error(err); }
+    }
+    public async setValues(vals: any): Promise<any> { return Promise.resolve(this); }
+    public initFeeds() {
+        this.feeds = [];
+        for (let i = 0; i < this.device.feeds.length; i++) {
+            let f = this.device.feeds.getItemByIndex(i);
+            this.feeds.push(new Feed(f));
+        }
+    }
+    public async resetTriggers() {
+        try {
+            // Get all the connections we are dealing with.
+            let conns: ServerConnection[] = [];
+            for (let i = 0; i < this.device.triggers.length; i++) {
+                let trigger = this.device.triggers.getItemByIndex(i);
+                if (typeof conns.find(elem => elem.connectionId === trigger.sourceId) === 'undefined') conns.push(connBroker.findServer(trigger.sourceId));
+            }
+            for (let i = 0; i < conns.length; i++) {
+                let conn = conns[i];
+                conn.resetDeviceTriggers(`generic:1:${this.device.id}`);
+            }
+        } catch (err) { return logger.error(`Error resetting trigger for device.`); }
+    }
+    public getValue(prop) {
+        try {
+            let replaceSymbols = /(?:\]\.|\[|\.)/g
+            let _prop = prop.replace(replaceSymbols, ',').split(',');
+            let val = this.device.values;
+            for (let i = 0; i < _prop.length; i++) {
+                val = val[_prop[i]];
+            }
+            return val;
+        } catch (err) { logger.error(`${this.device.name} error getting device value ${prop}: ${err.message}`); }
+    }
+    public setValue(prop, value) {
+        let replaceSymbols = /(?:\]\.|\[|\.)/g
+        let _prop = prop.replace(replaceSymbols, ',').split(',');
+        let obj = this.device.values;
+        for (let i = 0; i < _prop.length - 1; i++) {
+            obj = obj[_prop[i]];
+        }
+        obj[_prop[_prop.length - 1]] = value;
+        // Execute a function, load a module, or ...
+        let dt = this.device.getDeviceType();
+        if (typeof dt.convertValue !== 'undefined') {
+            let fn = new Function("maps", "device", dt.convertValue);
+            fn(AnalogDevices.maps, this.device);
+        }
+        webApp.emitToClients('genericDataValues', { id: this.device.id, typeId: this.device.typeId, values: this.values });
+        this.emitFeeds();
+    }
+    public calcMedian(prop, values: any[]) {
+        let arr = [];
+        for (let i = 0; i < values.length; i++) {
+            if (typeof values[i] === 'number') arr.push(values[i]);
+        }
+        if (arr.length > 0) {
+            let mid = Math.floor(arr.length / 2);
+            let nums = [...arr].sort((a, b) => a - b);
+            return arr.length % 2 !== 0 ? nums[mid] : ((nums[mid - 1] + nums[mid]) / 2);
+        }
+        return arr[0];
+    }
+    public async emitFeeds() {
+        try {
+            for (let i = 0; i < this.feeds.length; i++) {
+                await this.feeds[i].send(this);
+            }
+        } catch (err) { logger.error(err); }
+    }
+    public get values() { return this.device.values; }
+    public get options() { return this.device.options; }
+    public get info() { return this.device.info; }
+    public getDeviceDescriptions(dev) {
+        let desc = [];
+        desc.push({ type: 'i2c', isActive: this.device.isActive, name: this.device.name, binding: `i2c:${this.i2c.busId}:${this.device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown', feeds: this.device.feeds.get() });
+        return desc;
+    }
+    public async feedDeviceValue(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            let props = Object.getOwnPropertyNames(data);
+            for (let i = 0; i < props.length; i++) {
+                await this.setValue(props[i], data[props[i]]);
+            }
+            return this.values;
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            return this.getDeviceState(bind);
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            return this.values;
+        } catch (err) { return Promise.reject(err); }
+    }
+}
+export let gdc = new genericController();

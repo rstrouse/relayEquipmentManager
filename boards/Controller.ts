@@ -6,6 +6,7 @@ import * as util from 'util';
 
 import { connBroker, ConnectionBindings, ServerConnection } from '../connections/Bindings';
 import { AnalogDevices, DeviceStatus } from '../devices/AnalogDevices';
+import { gdc } from '../generic/genericDevices';
 import { gpioCont } from '../gpio/Gpio-Controller';
 import { i2c } from '../i2c-bus/I2cBus';
 import { logger } from '../logger/Logger';
@@ -744,8 +745,12 @@ export class Feed {
                 return;
             if (this.feed.sampling > 1) {
                 this.sampling.push(JSON.parse(JSON.stringify(value)));
+                
+                console.log(`${this.feed.sendValue} - ${this.sampling.length} of ${this.feed.sampling}`);
                 if (this.sampling.length >= this.feed.sampling) {
+                    console.log(this.sampling);
                     value = dev.calcMedian(this.feed.sendValue, this.sampling);
+                    let v = typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value;
                     await this.server.send({
                         eventName: this.feed.eventName,
                         property: this.feed.property,
@@ -754,21 +759,25 @@ export class Feed {
                         options: this.feed.options
                     });
                     // Reset the sampling and start over.
+                    logger.verbose(`Feed sending ${this.feed.property}: ${JSON.stringify(v)} samples ${JSON.stringify(this.sampling)}`);
                     this.sampling.length = 0;
                 }
             }
             else {
                 if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
+                    let v = typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value;
                     await this.server.send({
                         eventName: this.feed.eventName,
                         property: this.feed.property,
-                        value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
+                        value: v,
                         deviceBinding: this.feed.deviceBinding,
                         options: this.feed.options
                     });
+                    logger.verbose(`Feed sending ${this.feed.property}: ${ JSON.stringify(v) }`);
+
                 }
             }
-        } catch (err) { logger.error(err); }
+        } catch (err) { logger.error(`Error sending device feed: ${err.message}`); }
     }
     public closeAsync() { }
 }
@@ -1087,7 +1096,6 @@ export class GpioPin extends ConfigItem {
     }
     public async emitFeeds() {
         try {
-            this.initFeeds();
             for (let i = 0; i < this._feeds.length; i++) {
                 await this._feeds[i].send(this);
             }
@@ -2405,8 +2413,6 @@ export class I2cDevice extends ConfigItem {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
             if (isNaN(feedId)) return Promise.reject(`The feed identifier is not valid.`);
             let feed: DeviceFeed;
-            let connectionId;
-            let connection;
             feed = this.feeds.getItemById(feedId);
             this.feeds.removeItemById(feedId);
             return Promise.resolve(feed);
@@ -2435,7 +2441,7 @@ export class I2cDevice extends ConfigItem {
                 }
             }
         }
-        catch (err) { logger.error(`getDeviceFeed GPIO: ${err};`); }
+        catch (err) { logger.error(`getDeviceFeed I2c: ${err};`); }
     }
     public async setDeviceTrigger(data): Promise<DeviceTrigger> {
         try {
@@ -2622,11 +2628,11 @@ export class GenericDeviceController extends ConfigItem {
         c.devices = this.devices.toExtendedArray();
         return c;
     }
-    public async setDeviceValue(typeId: number, id: number, prop: string, value: any) {
-        // generic:typeId:id
-        let device = this.devices.find(elem => elem.id === id && elem.typeId === typeId);
-        if (typeof device !== 'undefined') device.setValue(prop, value);
-    }
+    //public async setDeviceValue(typeId: number, id: number, prop: string, value: any) {
+    //    // generic:typeId:id
+    //    let device = this.devices.find(elem => elem.id === id && elem.typeId === typeId);
+    //    if (typeof device !== 'undefined') device.setValue(prop, value);
+    //}
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -2757,46 +2763,28 @@ export class GenericDeviceController extends ConfigItem {
                     return bus.getDeviceById(deviceId); 
         } */
     public async setDeviceFeed(data): Promise<DeviceFeedCollection> {
-        if (typeof data.busNumber === 'undefined' && typeof data.busId === 'undefined') return Promise.reject(new Error(`A valid i2c bus identifier was not provided`));
         try {
-            /*             let busId;
-                        let busNumber;
-                        let bus;
-                        if (typeof data.busId !== 'undefined') {
-                            busId = parseInt(data.busId, 10);
-                            if (isNaN(busId)) return Promise.reject(new Error(`A valid i2c bus id was not provided ${data.busId}`));
-                        }
-                        if (typeof data.busNumber !== 'undefined') {
-                            busNumber = parseInt(data.busNumber, 10);
-                            if (isNaN(busNumber)) return Promise.reject(new Error(`A valid i2c bus # was not provided ${data.busNumber}`));
-                        }
-                        if (!isNaN(busId)) bus = this.devices.getItemById(busId);
-                        else if (!isNaN(busNumber)) bus = this.devices.getItemByBusNumber(busNumber);
-                        else return Promise.reject(new Error(`A valid i2c bus identifier was not provided`));
-                        return await bus.setDeviceFeed(data); */
+            if (typeof data.deviceId === 'undefined') return Promise.reject(new Error(`Feed device id was not provided.`));
+            let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
+            let dev = this.devices.getItemById(devId);
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
+            await dev.setDeviceFeed(data);
+            //i2c.resetDeviceFeeds(this.id, dev.id);
+            return Promise.resolve(dev.feeds);
         }
         catch (err) { return Promise.reject(err); }
     }
     public async deleteDeviceFeed(data): Promise<DeviceFeedCollection> {
-        if (typeof data.busNumber === 'undefined' && typeof data.busId === 'undefined') return Promise.reject(new Error(`A valid i2c bus identifier was not provided`));
-        /* try {
-            let busId;
-            let busNumber;
-            let bus;
-            if (typeof data.busId !== 'undefined') {
-                busId = parseInt(data.busId, 10);
-                if (isNaN(busId)) return Promise.reject(new Error(`A valid i2c bus id was not provided ${data.busId}`));
-            }
-            if (typeof data.busNumber !== 'undefined') {
-                busNumber = parseInt(data.busNumber, 10);
-                if (isNaN(busNumber)) return Promise.reject(new Error(`A valid i2c bus # was not provided ${data.busNumber}`));
-            }
-            if (!isNaN(busId)) bus = this.devices.getItemById(busId);
-            else if (!isNaN(busNumber)) bus = this.devices.getItemByBusNumber(busNumber);
-            else return Promise.reject(new Error(`A valid i2c bus identifier was not provided`));
-            return await bus.deleteDeviceFeed(data);
+        try {
+            if (typeof data.deviceId === 'undefined') return Promise.reject(new Error(`Feed device id was not provided.`));
+            let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
+            let dev = this.devices.getItemById(devId);
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
+            await dev.deleteDeviceFeed(data);
+            //i2c.resetDeviceFeeds(this.id, dev.id);
+            return Promise.resolve(dev.feeds);
         }
-        catch (err) { return Promise.reject(err); } */
+        catch (err) { return Promise.reject(err); }
     }
 }
 export class GenericDeviceCollection extends ConfigItemCollection<GenericDevice> {
@@ -2811,12 +2799,16 @@ export class GenericDeviceCollection extends ConfigItemCollection<GenericDevice>
     }
 }
 export class GenericDevice extends ConfigItem {
-    constructor(data) { super(data); }
+    constructor(data) {
+        super(data);
+    }
+    protected _feeds:Feed[] = [];
     public initData(data?: any) {
         if (typeof this.data.values === 'undefined') this.values = {};
         if (typeof this.data.options === 'undefined') this.options = {};
         if (typeof this.data.info === 'undefined') this.info = {};
     }
+    //protected get _feeds(): Feed[] { return typeof this.data._feeds === 'undefined' ? this.data._feeds = [] : this.data._feeds }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get name(): string { return this.data.name; }
@@ -2827,6 +2819,7 @@ export class GenericDevice extends ConfigItem {
     public set typeId(val: number) { this.setDataVal('typeId', val); }
     public get address(): number { return this.data.address; }
     public set address(val: number) { this.setDataVal('address', val); }
+    public get triggers(): DeviceTriggerCollection { return new DeviceTriggerCollection(this.data, 'triggers'); }
     public get feeds(): DeviceFeedCollection { return new DeviceFeedCollection(this.data, 'feeds'); }
     public get options(): any { return typeof this.data.options === 'undefined' ? this.data.options = {} : this.data.options; }
     public set options(val: any) { this.setDataVal('options', val || {}); }
@@ -2857,10 +2850,10 @@ export class GenericDevice extends ConfigItem {
         desc.push({ type: 'generic', isActive: this.isActive, name: `${typeof this.options.name !== 'undefined' ? this.options.name : dev.name}, binding: generic:${this.typeId}:${this.id}`, category });
         return desc;
     }
-    public setValue(prop: string, value) {
-        this.values[prop] = value;
-        this.doStuff();
-    }
+    //public setValue(prop: string, value) {
+    //    this.values[prop] = value;
+    //    this.doStuff();
+    //}
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -2886,7 +2879,7 @@ export class GenericDevice extends ConfigItem {
             feed.connectionId = connectionId;
             feed.set(data);
             feed.id = feedId;
-            // Set this on the bus.
+            gdc.resetDeviceFeeds(this.id);
             return Promise.resolve(feed);
         }
         catch (err) { return Promise.reject(err); }
@@ -2896,52 +2889,49 @@ export class GenericDevice extends ConfigItem {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
             if (isNaN(feedId)) return Promise.reject(`The feed identifier is not valid.`);
             let feed: DeviceFeed;
-            let connectionId;
-            let connection;
             feed = this.feeds.getItemById(feedId);
             this.feeds.removeItemById(feedId);
+            await gdc.resetDeviceFeeds(this.id);
             return Promise.resolve(feed);
         }
         catch (err) { return Promise.reject(err); }
     }
     public async setDeviceState(binding: string | DeviceBinding, data: any) {
         try {
-            // let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
-            // if (this.isActive === false) return Promise.reject(new Error(`setDeviceState: i2c Device ${this.name} not active - ${bind.binding}`));
-            // let bus = i2c.buses.find(elem => elem.busId === bind.busId);
-            // if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
-            // let dev = bus.devices.find(elem => elem.device.id === this.id);
-            // if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
-            // return await dev.setDeviceState(bind, data);
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (this.isActive === false) return Promise.reject(new Error(`setDeviceState: Generic Device ${this.name} not active - ${bind.binding}`));
+            let dev = gdc.devices.find(elem => elem.device.id === this.id);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`setDeviceState: Generic Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
+            return await dev.setDeviceState(bind, data);
         }
-        catch (err) { return Promise.reject(new Error(`setDeviceState: Error setting device state ${err}`)) }
+        catch (err) { return Promise.reject(new Error(`setDeviceState: Generic Error setting device state ${err}`)) }
     }
     public async feedDeviceValue(binding: string | DeviceBinding, data: any) {
         try {
-            // let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
-            // if (this.isActive === false) return Promise.reject(new Error(`feedDeviceValue: i2c Device ${this.name} not active - ${bind.binding}`));
-            // let bus = i2c.buses.find(elem => elem.busId === bind.busId);
-            // if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
-            // let dev = bus.devices.find(elem => elem.device.id === this.id);
-            // if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
-            // return await dev.feedDeviceValue(bind, data);
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (this.isActive === false) return Promise.reject(new Error(`feedDeviceValue: Generic Device ${this.name} not active - ${bind.binding}`));
+            let dev = gdc.devices.find(elem => elem.device.id === this.id);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`feedDeviceValue: Generic Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
+            return await dev.feedDeviceValue(bind, data);
         }
         catch (err) { return Promise.reject(new Error(`feedDeviceValue: Error setting device value ${err}`)) }
     }
-    public doStuff() {
-        // Execute a function, load a module, or ...
-        let ad = cont.analogDevices.find(elem => elem.id === this.typeId);
-        let self = this;
-        if (typeof ad.convertValue !== 'undefined') {
-            let fn = new Function("maps", "device", ad.convertValue);
-            fn(AnalogDevices.maps, self);
-        }
-        else if (typeof ad.module !== 'undefined') {
-            // load/store/do something with the module
-        }
-        webApp.emitToClients('genericDataValues', { id: this.id, typeId: this.typeId, values: this.values });
-        this.emitFeeds();
-    }
+
+    //public doStuff() {
+    //    // Execute a function, load a module, or ...
+    //    let ad = cont.analogDevices.find(elem => elem.id === this.typeId);
+    //    let self = this;
+    //    if (typeof ad.convertValue !== 'undefined') {
+    //        let fn = new Function("maps", "device", ad.convertValue);
+    //        fn(AnalogDevices.maps, self);
+    //    }
+    //    else if (typeof ad.module !== 'undefined') {
+    //        // load/store/do something with the module
+    //    }
+    //    webApp.emitToClients('genericDataValues', { id: this.id, typeId: this.typeId, values: this.values });
+     
+    //    //this.emitFeeds();
+    //}
     public getValue(prop: string) {
         switch (prop) {
             case 'all': { return this.values; }
@@ -2959,12 +2949,12 @@ export class GenericDevice extends ConfigItem {
             return Promise.resolve(this.values[prop]);
         } catch (err) { return Promise.reject(err); }
     }
-    public async emitFeeds() {
-        try {
-            for (let i = 0; i < this.feeds.length; i++) {
-                await this.feeds[i].send(this);
-            }
-        } catch (err) { logger.error(err); }
-    }
+    //public async emitFeeds() {
+    //    try {
+    //        for (let i = 0; i < this._feeds.length; i++) {
+    //            await this._feeds[i].send(this);
+    //        }
+    //    } catch (err) { logger.error(`${this.name} error emitting feed: ${err.message}`); }
+    //}
 }
 export let cont = new Controller({});

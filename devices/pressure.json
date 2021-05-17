@@ -490,6 +490,8 @@
     {
       "id": 202,
       "name": "Pressure Transducer",
+      "deviceClass": "GenericDeviceBase",
+      "module": "./genericDevices",
       "_deviceClass": "Transducer",
       "convertValue": "device.values.psi = parseFloat(Math.max(0, ((device.values.voltage - device.options.inducerOffset) * device.options.psiPerVolt)).toFixed(2));",
       "inputs": [

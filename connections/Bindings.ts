@@ -6,6 +6,7 @@ import { cont, ConnectionSource, DeviceBinding, DataTrigger } from "../boards/Co
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { i2c } from "../i2c-bus/I2cBus";
+import { gdc } from "../generic/genericDevices";
 import * as extend from "extend";
 const io = require('socket.io-client');
 //import io from "socket.io-client";
@@ -134,7 +135,7 @@ class InternalConnection extends ServerConnection {
                 }
                 else if (arr[0] === 'generic'){
                     // generic:typeId:id
-                    await cont.genericDevices.setDeviceValue(parseInt(arr[1], 10), parseInt(arr[2], 10), opts.property, opts.value);
+                    await gdc.setDeviceValue(parseInt(arr[2], 10), opts.property, opts.value);
                 }
             }
         } catch (err) { logger.error(`Error sending on internal connection ${opts.deviceBinding}: ${err.message}`); }
