@@ -15,15 +15,6 @@ import * as fs from 'fs';
 export class genericController {
     constructor() { }
     public devices: GenericDeviceBase[] = [];
-    //private _opts;
-    public setCommSuccess(address: number) {
-        let dev = this.devices.find(elem => elem.device.address === address);
-        if (typeof dev !== 'undefined') { dev.lastComm = new Date().getTime(); dev.hasFault = false; dev.status = '' }
-    }
-    public setCommFailure(address: number, err: Error) {
-        let dev = this.devices.find(elem => elem.device.address === address);
-        if (typeof dev !== 'undefined') { dev.hasFault = true; dev.status = `Comm failure: ${typeof err !== 'undefined' ? err.message : 'Unspecified error'}` }
-    }
     public async addDevice(dev: GenericDevice) {
         try {
             let dt = dev.getDeviceType();
@@ -32,6 +23,15 @@ export class genericController {
             else logger.error(`Factory error creating device for ${dev.name}`);
         }
         catch (err) { return Promise.reject(err); }
+    }
+    public async removeDevice(id: number) {
+        try {
+            for (let i = this.devices.length - 1; i >= 0; i--) {
+                let dev = this.devices[i];
+                await dev.closeAsync();
+                this.devices.splice(i, 1);
+            }
+        } catch (err) { logger.error(`Error removing generic device: ${err.message}`); return Promise.reject(err); }
     }
     public async initAsync(dc: GenericDeviceController) {
         try {
@@ -107,7 +107,6 @@ export class GenericDeviceBase implements IDevice {
     public category: string;
     public initialized: boolean = false;
     public hasFault: boolean = false;
-    public i2c;
     public device: GenericDevice;
     public lastComm: number;
     public get deviceStatus(): DeviceStatus { return { name: this.device.name, category: this.category, hasFault: utils.makeBool(this.hasFault), status: this.status, lastComm: this.lastComm, protocol: 'generic', busNumber: 1, address: undefined } }
@@ -117,6 +116,7 @@ export class GenericDeviceBase implements IDevice {
         }
         catch (err) { logger.error(err); return Promise.resolve(); }
     }
+    public get id(): number { return typeof this.device !== 'undefined' ? this.device.id : undefined; }
     public async initAsync(deviceType: any): Promise<boolean> { this.category = deviceType.category; return Promise.resolve(true); }
     public async callCommand(cmd: any): Promise<any> {
         try {
@@ -217,7 +217,7 @@ export class GenericDeviceBase implements IDevice {
     public get info() { return this.device.info; }
     public getDeviceDescriptions(dev) {
         let desc = [];
-        desc.push({ type: 'i2c', isActive: this.device.isActive, name: this.device.name, binding: `i2c:${this.i2c.busId}:${this.device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown', feeds: this.device.feeds.get() });
+        desc.push({ type: 'generic', isActive: this.device.isActive, name: this.device.name, binding: `generic:${this.device.typeId}:${this.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown', feeds: this.device.feeds.get() });
         return desc;
     }
     public async feedDeviceValue(binding: string | DeviceBinding, data: any): Promise<any> {

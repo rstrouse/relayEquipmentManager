@@ -244,10 +244,15 @@ export class ads1x15 extends i2cDeviceBase {
                 if (channels[i].enabled) {
                     await this.sendInit(channels[i]);
                     let r: number[];
-                    if (this.i2c.isMock) r = [Math.round(Math.random() * (this.device.options.adcType === 'ads1105'? 15 : 50)), Math.round(Math.random() * 256)];
+                    if (this.i2c.isMock) r = [Math.round(Math.random() * (this.device.options.adcType === 'ads1105'? 15 : 127)), Math.round(Math.random() * 256)];
                     else r = await this.readCommand(ads1x15.registers['CONVERT'])
                     let value = this.convertValue(r);
                     // voltage = value / max * pga = e.g. 29475 / 65355 * 1024
+
+                    // 21,265 = value
+                    // 65355 = max
+                    // 4.096 = pga
+                    // 21,265 / 32,767 * 4.096
                     let voltage = this.getVoltageFromValue(value, channels[i].pga);
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
                     if (typeof valElem !== 'undefined') {

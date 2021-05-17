@@ -108,7 +108,7 @@ export class SequentIO extends i2cDeviceBase {
         }
         catch (err) { return this.logError(err); }
     }
-    public getValue(prop: string) { }
+    public getValue(prop: string, val?: any) { return super.getValue(prop, val); }
     public setValue(prop: string, value) { }
     public async readWord(register: number): Promise<number> {
         try {
@@ -371,7 +371,7 @@ export class SequentMegaIND extends SequentIO {
             // Ch3: 40
             // Ch4: 42
             let io = this.in0_10[id - 1];
-            let val = await this.readWord(((io.plusMinus === true) ? 28 : 36) + (2 * (id - 1))) / 1000;
+            let val = (this.i2c.isMock) ? 10 * Math.random() : await this.readWord(((io.plusMinus === true) ? 28 : 36) + (2 * (id - 1))) / 1000;
             if (io.plusMinus === true) val -= 10;
             if (io.value !== val) {
                 io.value = val;
@@ -650,13 +650,17 @@ export class SequentMegaIND extends SequentIO {
                     logger.error(`${this.device.name} error getting I/O channel ${prop}`);
                     return;
                 }
-                let sord = p[p.length - 1];
+                let parr = p.split('.');
+
+                let sord = p[parr[0].length - 1];
                 let ord = parseInt(sord, 10);
                 if (isNaN(ord) || ord <= 0 || ord >= 4) {
                     logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
                     return;
                 }
-                return iarr[ord];
+                let chan = iarr[ord - 1];
+                console.log(parr);
+                return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
         }
     }
     public setValue(prop: string, value) {

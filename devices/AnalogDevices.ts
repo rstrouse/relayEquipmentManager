@@ -134,12 +134,17 @@ export class ConversionMap {
     }
     public interpolate(input, units?: string): number {
         let range = this.mapRange(input);
-        //logger.info(`Interpolating map ${this.name} ${JSON.stringify(range)}`);
+        logger.debug(`Interpolating map ${this.name} input: ${input} ${JSON.stringify(range)}`);
+        // RKS: Changed this to use linear interpolation instead of percentage mapping.  Throughout the range the changes on the map reflect better this way.
+        //info: Interpolating map thermistor10k input: 2578.6163522012575 {"low":{"input":2538,"value":139},"high":{"input":2642,"value":137}}
         if (typeof range === 'undefined' || typeof range.low === 'undefined' || range.high === 'undefined') return typeof range.low !== 'undefined' ? range.low.output : undefined;
-        let diff = (range.high.input - range.low.input) / input;
-        let value = range.low.value + ((range.high.value - range.low.value) * diff);
+        let slope = (range.low.value - range.high.value) / (range.low.input - range.high.input);
+        // slope = (139 - 137) / (2538 - 2642) = 2/-104 = .0192307692307692
+        let value = range.high.value + (slope * (input - range.high.input));
+        // value = 137 + (.0192307692307692 *(2578.6163522012575 - 2642)) = 137 + (.0192307692307692 * -63.383647798743)) = 137 + 1.218916303821981 = 138.218916303822
+        //let diff = (range.high.input - range.low.input) / input;
+        //let value = range.low.value + ((range.high.value - range.low.value) * diff);
         if (typeof units !== 'undefined' && units.toLowerCase() !== this.units.toLowerCase()) {
-            console.log(`converting units ${this.units} -> ${units}`)
             value = utils.convert.temperature.convertUnits(value, this.units, units);
         }
         return value;

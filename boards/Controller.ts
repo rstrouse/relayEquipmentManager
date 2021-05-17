@@ -745,10 +745,8 @@ export class Feed {
                 return;
             if (this.feed.sampling > 1) {
                 this.sampling.push(JSON.parse(JSON.stringify(value)));
-                
-                console.log(`${this.feed.sendValue} - ${this.sampling.length} of ${this.feed.sampling}`);
+                //console.log(`${this.feed.sendValue} - ${this.sampling.length} of ${this.feed.sampling}`);
                 if (this.sampling.length >= this.feed.sampling) {
-                    console.log(this.sampling);
                     value = dev.calcMedian(this.feed.sendValue, this.sampling);
                     let v = typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value;
                     await this.server.send({
@@ -2628,11 +2626,6 @@ export class GenericDeviceController extends ConfigItem {
         c.devices = this.devices.toExtendedArray();
         return c;
     }
-    //public async setDeviceValue(typeId: number, id: number, prop: string, value: any) {
-    //    // generic:typeId:id
-    //    let device = this.devices.find(elem => elem.id === id && elem.typeId === typeId);
-    //    if (typeof device !== 'undefined') device.setValue(prop, value);
-    //}
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -2664,7 +2657,7 @@ export class GenericDeviceController extends ConfigItem {
             // A valid device binding for generic includes generic:<typeId>:<deviceId>.
             if (isNaN(bind.typeId)) return Promise.reject(new Error(`getDevice: Invalid generic device type id ${bind.typeId} - ${bind.binding}`));
             let dev = this.devices.find(elem => elem.id === bind.id && elem.typeId === bind.typeId);
-            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDevice: generic bus not found ${bind.busId} - ${bind.binding}`));
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDevice: generic device not found ${bind.busId} - ${bind.binding}`));
             // At this point we know the protocol and we know the bus so forward this to our bus.
             return Promise.resolve(this.devices.getItemById(bind.id));
         }
@@ -2693,56 +2686,36 @@ export class GenericDeviceController extends ConfigItem {
     }
     public async setDevice(dev): Promise<GenericDevice> {
         try {
-            /*             let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
-                        let busNumber = (typeof dev.busNumber !== 'undefined') ? parseInt(dev.busNumber, 10) : undefined;
-                        let bus: I2cBus;
-                        if (typeof busId !== 'undefined') {
-                            bus = this.devices.getItemById(busId);
-                            if (typeof bus.busNumber === 'undefined') return Promise.reject(new Error(`An invalid I2c bus id was supplied ${dev.busId}`));
-                        }
-                        else if (typeof busNumber !== 'undefined') {
-                            bus = this.devices.getItemByBusNumber(busNumber);
-                            if (typeof bus.id === 'undefined') return Promise.reject(new Error(`An invalid I2c bus # was supplied ${dev.busNumber}`));
-                        }
-                        else {
-                            return Promise.reject(new Error(`The specified I2c bus could not be found at busId:${dev.busId} or busNumber:${dev.busNumber}`));
-                        }
-                        let device = await bus.setDevice(dev);
-                        return Promise.resolve(device); */
-
             logger.info(`received ${JSON.stringify(dev)}`);
             let id = parseInt(dev.id, 10);
-            if (isNaN(id)) id = this.devices.length + 1; // if devices get deleted, need to make sure we pick a new id.
+            if (isNaN(id)) id = this.devices.getMaxId(false, 0) + 1; // if devices get deleted, need to make sure we pick a new id.
+            let device = this.devices.getItemById(id, true, { id: id });
             dev.id = id;
-            let device = this.devices.getItemById(dev.id, true);
             device.set(dev);
+            if (typeof gdc.devices.find(elem => elem.id === device.id) === 'undefined') gdc.addDevice(device);
             if (typeof dev.options.name !== 'undefined') device.name = dev.options.name;
             return Promise.resolve(device);
-
-
         }
         catch (err) { return Promise.reject(err); }
     }
-    /*     public async runDeviceCommand(busNumber: number, address: number, command: string, options: any): Promise<any> {
-            try {
-                let dbus = i2c.devices.find(elem => elem.busNumber === busNumber);
-                if (typeof dbus === 'undefined') return Promise.reject(`Cannot execute command Bus #${busNumber} could not be found`);
-                let ddevice = dbus.devices.find(elem => elem.device.address === address);
-                if (typeof ddevice === 'undefined') { return Promise.reject(`Cannot execute command Bus #${busNumber} Address ${address} could not be found`); }
-                let result = await ddevice.callCommand({ name: command, params: [options] });
-                return Promise.resolve(result);
-            }
-            catch (err) { return Promise.reject(err); }
-        } */
+    public async runDeviceCommand(id: number, command: string, options: any): Promise<any> {
+        try {
+            let ddevice = gdc.devices.find(elem => elem.id === id);
+            if (typeof ddevice === 'undefined') { return Promise.reject(`Cannot execute command on generic #${id} device could not be found`); }
+            let result = await ddevice.callCommand({ name: command, params: [options] });
+            return Promise.resolve(result);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
     public async deleteDevice(dev): Promise<GenericDevice> {
         try {
             if (typeof dev.id === 'undefined') return Promise.reject(`Could not find generic device ith id id ${dev.id}`);
             let device = await this.devices.removeItemById(dev.id);
+            gdc.removeDevice(dev.id);
             return Promise.resolve(device[0]);  // err, why am I getting back an array here instead of a single device.  
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public getDeviceInputs(): any[] {
         let devices = [];
         let ad = cont.analogDevices;
@@ -2755,13 +2728,8 @@ export class GenericDeviceController extends ConfigItem {
                 devices.push({ uid: `generic:${dev.id}:${device.id}`, id: device.id, name: device.name, deviceId: dev.id, type: 'generic', bindings: dev.inputs });
             }
         }
-        //console.log(devices);
         return devices;
     }
-    /*     public getDeviceById(busId: number, deviceId: number) {
-                     let bus = this.devices.getItemById(busId);
-                    return bus.getDeviceById(deviceId); 
-        } */
     public async setDeviceFeed(data): Promise<DeviceFeedCollection> {
         try {
             if (typeof data.deviceId === 'undefined') return Promise.reject(new Error(`Feed device id was not provided.`));
@@ -2769,7 +2737,6 @@ export class GenericDeviceController extends ConfigItem {
             let dev = this.devices.getItemById(devId);
             if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
             await dev.setDeviceFeed(data);
-            //i2c.resetDeviceFeeds(this.id, dev.id);
             return Promise.resolve(dev.feeds);
         }
         catch (err) { return Promise.reject(err); }
@@ -2781,7 +2748,6 @@ export class GenericDeviceController extends ConfigItem {
             let dev = this.devices.getItemById(devId);
             if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
             await dev.deleteDeviceFeed(data);
-            //i2c.resetDeviceFeeds(this.id, dev.id);
             return Promise.resolve(dev.feeds);
         }
         catch (err) { return Promise.reject(err); }
@@ -2790,13 +2756,6 @@ export class GenericDeviceController extends ConfigItem {
 export class GenericDeviceCollection extends ConfigItemCollection<GenericDevice> {
     constructor(data: any, name?: string) { super(data, name || 'devices') }
     public createItem(data: any): GenericDevice { return new GenericDevice(data); }
-    public getItemByAddress(address: number | string, add?: boolean, data?: any): GenericDevice {
-        let itm = this.find(elem => elem.address === address && typeof elem.address !== 'undefined');
-        if (typeof itm !== 'undefined') return itm;
-        let id = this.getMaxId() + 1 || 1;
-        if (typeof add !== 'undefined' && add) return this.add(data || { id: id, address: address });
-        return this.createItem(data || { address: address });
-    }
 }
 export class GenericDevice extends ConfigItem {
     constructor(data) {
@@ -2808,7 +2767,6 @@ export class GenericDevice extends ConfigItem {
         if (typeof this.data.options === 'undefined') this.options = {};
         if (typeof this.data.info === 'undefined') this.info = {};
     }
-    //protected get _feeds(): Feed[] { return typeof this.data._feeds === 'undefined' ? this.data._feeds = [] : this.data._feeds }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get name(): string { return this.data.name; }
@@ -2850,10 +2808,6 @@ export class GenericDevice extends ConfigItem {
         desc.push({ type: 'generic', isActive: this.isActive, name: `${typeof this.options.name !== 'undefined' ? this.options.name : dev.name}, binding: generic:${this.typeId}:${this.id}`, category });
         return desc;
     }
-    //public setValue(prop: string, value) {
-    //    this.values[prop] = value;
-    //    this.doStuff();
-    //}
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -2916,22 +2870,6 @@ export class GenericDevice extends ConfigItem {
         }
         catch (err) { return Promise.reject(new Error(`feedDeviceValue: Error setting device value ${err}`)) }
     }
-
-    //public doStuff() {
-    //    // Execute a function, load a module, or ...
-    //    let ad = cont.analogDevices.find(elem => elem.id === this.typeId);
-    //    let self = this;
-    //    if (typeof ad.convertValue !== 'undefined') {
-    //        let fn = new Function("maps", "device", ad.convertValue);
-    //        fn(AnalogDevices.maps, self);
-    //    }
-    //    else if (typeof ad.module !== 'undefined') {
-    //        // load/store/do something with the module
-    //    }
-    //    webApp.emitToClients('genericDataValues', { id: this.id, typeId: this.typeId, values: this.values });
-     
-    //    //this.emitFeeds();
-    //}
     public getValue(prop: string) {
         switch (prop) {
             case 'all': { return this.values; }
@@ -2949,12 +2887,5 @@ export class GenericDevice extends ConfigItem {
             return Promise.resolve(this.values[prop]);
         } catch (err) { return Promise.reject(err); }
     }
-    //public async emitFeeds() {
-    //    try {
-    //        for (let i = 0; i < this._feeds.length; i++) {
-    //            await this._feeds[i].send(this);
-    //        }
-    //    } catch (err) { logger.error(`${this.name} error emitting feed: ${err.message}`); }
-    //}
 }
 export let cont = new Controller({});

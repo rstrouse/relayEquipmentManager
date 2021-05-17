@@ -72,6 +72,26 @@
           "maxSamples": 50
         },
         {
+          "name": "in0_101.value",
+          "desc": "0-10v in #1 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "in0_102.value",
+          "desc": "0-10v in #2 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "in0_103.value",
+          "desc": "0-10v in #3 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "in0_104.value",
+          "desc": "0-10v in #4 voltage",
+          "maxSamples": 50
+        },
+        {
           "name": "in4_201",
           "desc": "4-20mA in #1",
           "maxSamples": 50
@@ -92,6 +112,26 @@
           "maxSamples": 50
         },
         {
+          "name": "in4_201.value",
+          "desc": "4-20mA in #1 current",
+          "maxSamples": 50
+        },
+        {
+          "name": "in4_202.value",
+          "desc": "4-20mA in #2 current",
+          "maxSamples": 50
+        },
+        {
+          "name": "in4_203.value",
+          "desc": "4-20mA in #3 current",
+          "maxSamples": 50
+        },
+        {
+          "name": "in4_204.value",
+          "desc": "4-20mA in #4 current",
+          "maxSamples": 50
+        },
+        {
           "name": "inDigital1",
           "desc": "Digital in #1",
           "maxSamples": 50
@@ -109,6 +149,26 @@
         {
           "name": "inDigital4",
           "desc": "Digital in #4",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital1.value",
+          "desc": "Digital in #1 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital2.value",
+          "desc": "Digital in #2 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital3.value",
+          "desc": "Digital in #3 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital4.value",
+          "desc": "Digital in #4 state",
           "maxSamples": 50
         },
         {
