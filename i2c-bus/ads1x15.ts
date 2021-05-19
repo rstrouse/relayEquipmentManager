@@ -257,11 +257,11 @@ export class ads1x15 extends i2cDeviceBase {
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
                     if (typeof valElem !== 'undefined') {
                         valElem.value = value;
-                        valElem.voltage = parseFloat(voltage.toFixed(2));
+                        valElem.voltage = voltage;
                         valElem.maxValue = this.device.options.adcType === 'ads1105' ? 1 << 12 : 1 << 16;
                     }
                     else {
-                        let res = { id: channels[i].id, value: value, voltage: parseFloat(voltage.toFixed(2)), maxValue: this.device.options.adcType === 'ads1105' ? 1 << 12 : 1 << 16 };
+                        let res = { id: channels[i].id, value: value, voltage: voltage, maxValue: this.device.options.adcType === 'ads1105' ? 1 << 12 : 1 << 16 };
                         this.device.values.channels.push(res);
                     }
                     this.device.values.channels.sort((a, b) => { return a.id - b.id; });

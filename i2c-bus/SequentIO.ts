@@ -488,7 +488,6 @@ export class SequentMegaIND extends SequentIO {
         buffer.writeUInt8((port.baud & 0xFF00000) >> 24, 2);
         buffer.writeUInt8(((port.stopBits & 0x0F) << 6) + ((port.parity & 0x0F) << 4) + (port.mode & 0xFF), 3);
         buffer.writeUInt8(port.address, 4);
-        console.log(buffer);
         return buffer
     }
     protected async getRS485Port() {
@@ -659,7 +658,6 @@ export class SequentMegaIND extends SequentIO {
                     return;
                 }
                 let chan = iarr[ord - 1];
-                console.log(parr);
                 return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
         }
     }

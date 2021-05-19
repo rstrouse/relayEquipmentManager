@@ -325,7 +325,6 @@ export class Controller extends ConfigItem {
     protected onchange = (obj, fn) => {
         const handler = {
             get(target, property, receiver) {
-                // console.log(`getting prop: ${property} -- dataName? ${target.length}`)
                 const val = Reflect.get(target, property, receiver);
                 if (typeof val === 'function') return val.bind(receiver);
                 if (typeof val === 'object' && val !== null) {
@@ -745,7 +744,6 @@ export class Feed {
                 return;
             if (this.feed.sampling > 1) {
                 this.sampling.push(JSON.parse(JSON.stringify(value)));
-                //console.log(`${this.feed.sendValue} - ${this.sampling.length} of ${this.feed.sampling}`);
                 if (this.sampling.length >= this.feed.sampling) {
                     value = dev.calcMedian(this.feed.sendValue, this.sampling);
                     let v = typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value;
