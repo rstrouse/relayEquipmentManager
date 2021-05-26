@@ -626,6 +626,7 @@ export class AtlasEZOpH extends AtlasEZO {
             let result = await this.execCommand('T,?', 300);
             let arrDims = result.split(',');
             this.values.temperature = parseFloat(arrDims[1] || '25');
+            this.values.tempUnits = 'C';
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }
