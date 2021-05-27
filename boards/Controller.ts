@@ -1025,7 +1025,7 @@ export class GpioPin extends ConfigItem {
             }
             gpioCont.initPin(this);
             return this;
-        } catch (err) { return Promise.reject(new Error(`Error saving pin ${this.headerId}-${this.id}`)); }
+        } catch (err) { return Promise.reject(new Error(`Error saving pin ${this.headerId}-${this.id}: ${err.message}`)); }
     }
     public async jogPinAsync(data: any) {
         return new Promise<GpioPin>(async (resolve, reject) => {
