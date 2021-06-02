@@ -26,7 +26,7 @@ export class ads1x15 extends i2cDeviceBase {
 
     }
     protected static spsToMilliseconds = {
-        ads1105: {
+        ads1015: {
             128: 1000 / 128,
             250: 1000 / 250,
             490: 1000 / 490,
@@ -86,7 +86,7 @@ export class ads1x15 extends i2cDeviceBase {
     }
 
     private static sps = {
-        ads1105: {
+        ads1015: {
             128: 0x0000, // 128 samples per second
             250: 0x0020, // 250 samples per second
             490: 0x0040, // 490 samples per second
@@ -126,7 +126,7 @@ export class ads1x15 extends i2cDeviceBase {
         'NONE': 0x0003, // Disable the comparator and put ALERT/RDY in high state (default)
     }
     private static thresholdValues = {
-        'ads1105': 2048.0,  // 2^(12-1) // 12bit, -2048 to 2047
+        'ads1015': 2048.0,  // 2^(12-1) // 12bit, -2048 to 2047
         'ads1115': 32768.0  // 2^(16-1) // 16bit, -32768 to 32767
     }
     private static CONFIG_DEFAULT = 0x8583;  // Stop/Reset continuous readings
@@ -244,7 +244,7 @@ export class ads1x15 extends i2cDeviceBase {
                 if (channels[i].enabled) {
                     await this.sendInit(channels[i]);
                     let r: number[];
-                    if (this.i2c.isMock) r = [Math.round(Math.random() * (this.device.options.adcType === 'ads1105'? 15 : 127)), Math.round(Math.random() * 256)];
+                    if (this.i2c.isMock) r = [Math.round(Math.random() * (this.device.options.adcType === 'ads1015'? 15 : 127)), Math.round(Math.random() * 256)];
                     else r = await this.readCommand(ads1x15.registers['CONVERT'])
                     let value = this.convertValue(r);
                     // voltage = value / max * pga = e.g. 29475 / 65355 * 1024
@@ -258,10 +258,10 @@ export class ads1x15 extends i2cDeviceBase {
                     if (typeof valElem !== 'undefined') {
                         valElem.value = value;
                         valElem.voltage = voltage;
-                        valElem.maxValue = this.device.options.adcType === 'ads1105' ? 1 << 12 : 1 << 16;
+                        valElem.maxValue = this.device.options.adcType === 'ads1015' ? 1 << 12 : 1 << 16;
                     }
                     else {
-                        let res = { id: channels[i].id, value: value, voltage: voltage, maxValue: this.device.options.adcType === 'ads1105' ? 1 << 12 : 1 << 16 };
+                        let res = { id: channels[i].id, value: value, voltage: voltage, maxValue: this.device.options.adcType === 'ads1015' ? 1 << 12 : 1 << 16 };
                         this.device.values.channels.push(res);
                     }
                     this.device.values.channels.sort((a, b) => { return a.id - b.id; });
@@ -310,7 +310,7 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
             if (typeof opts.adcType !== 'undefined') {
                 this.device.options.adcType = opts.adcType;
-                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1105' ? 1600 : 32];
+                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1015' ? 1600 : 32];
             }
             if (typeof opts.channels !== 'undefined') this.device.options.channels = opts.channels;
             for (let c of opts.channels) {

@@ -313,8 +313,8 @@
                     }
                   },
                   {
-                    "name": "ads1105",
-                    "desc": "ADS1105 12-bit",
+                    "name": "ads1015",
+                    "desc": "ADS1015 12-bit",
                     "options": {
                       "maxChannels": 4
                     }
