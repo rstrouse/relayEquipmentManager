@@ -113,6 +113,7 @@ export class GpioController {
                             });
                         });
                     }
+                    cont.gpio.emitFeeds(pin.pinId, pin.headerId);
                     pin.initialized = true;
                 }
             }

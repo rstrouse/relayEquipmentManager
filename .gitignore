@@ -270,3 +270,4 @@ data/
 # ignore dist, it is for production files created by npm scripts
 dist/
 uploads/
+.DS_Store

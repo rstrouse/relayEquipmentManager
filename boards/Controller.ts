@@ -936,7 +936,7 @@ export class Gpio extends ConfigItem {
             let pinId = (typeof data.pinId !== 'undefined') ? parseInt(data.pinId, 10) : undefined;
             let dev = this.pins.getItemById(pinId);
             await dev.setDeviceFeed(data);
-            dev.initFeeds();
+            // dev.initFeeds();
             return Promise.resolve(dev.feeds);
         }
         catch (err) { return Promise.reject(err); }
@@ -948,7 +948,7 @@ export class Gpio extends ConfigItem {
             let devId = (typeof data.pinId !== 'undefined') ? parseInt(data.pinId, 10) : undefined;
             let dev = this.pins.getItemById(devId);
             await dev.deleteDeviceFeed(data);
-            dev.initFeeds();
+            // dev.initFeeds();
             return Promise.resolve(dev.feeds);
         }
         catch (err) { return Promise.reject(err); }
@@ -1082,19 +1082,23 @@ export class GpioPin extends ConfigItem {
             resolve(this);
         })
     }
-    public _feeds: Feed[] = [];
+/*     public _feeds: Feed[] = [];
     public initFeeds() {
         this._feeds = [];
         for (let i = 0; i < this.feeds.length; i++) {
             let f = this.feeds.getItemByIndex(i);
             this._feeds.push(new Feed(f));
         }
-    }
+    } */
     public async emitFeeds() {
         try {
-            for (let i = 0; i < this._feeds.length; i++) {
-                await this._feeds[i].send(this);
+            for (let i = 0; i < this.feeds.length; i++) {
+                let feed = new Feed(this.feeds.getItemByIndex(i));
+                await feed.send(this);
             }
+            // for (let i = 0; i < this._feeds.length; i++) {
+            //     await this._feeds[i].send(this);
+            // }
         } catch (err) { logger.error(err); }
     }
     public getExtended() {
