@@ -179,11 +179,12 @@ export class GenericDeviceBase implements IDevice {
     public setValue(prop, value) {
         let replaceSymbols = /(?:\]\.|\[|\.)/g
         let _prop = prop.replace(replaceSymbols, ',').split(',');
-        let obj = this.device.values;
-        for (let i = 0; i < _prop.length - 1; i++) {
-            obj = obj[_prop[i]];
-        }
-        obj[_prop[_prop.length - 1]] = value;
+        //let obj = this.device.values;
+        // for (let i = 0; i < _prop.length; i++) {
+        //     obj = obj[_prop[i]];
+        // }
+        // obj = value;
+        this.device.values[_prop] = value;
         // Execute a function, load a module, or ...
         let dt = this.device.getDeviceType();
         if (typeof dt.convertValue !== 'undefined') {
@@ -233,6 +234,11 @@ export class GenericDeviceBase implements IDevice {
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            if (typeof data === 'object'){
+                for (var key in data){
+                    this.setValue(key, data[key]);
+                }
+            }
             return this.getDeviceState(bind);
         } catch (err) { return Promise.reject(err); }
     }
