@@ -221,6 +221,7 @@ export class LatchTimer {
     public latch(fn, timeout, ...args: any[]) {
         if (typeof this.timer !== 'undefined') {
             clearTimeout(this.timer);
+            this.timer = undefined;
         }
         this.args = args;
         this.fn = fn;

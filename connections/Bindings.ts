@@ -289,7 +289,9 @@ class SocketServerConnection extends ServerConnection {
     }
     public processEvent(event, data) {
         // Find the event.
-        if (!this.isOpen) return;
+        if (!this.isOpen) {
+            return;
+        }
         var evt = this.events.find(elem => elem.name === event);
         logger.info(`Processing socket event ${event}`);
         if (typeof evt !== 'undefined') {
@@ -337,7 +339,7 @@ class SocketServerConnection extends ServerConnection {
         let url = this.server.url;
         this._sock = io(url, { reconnectionDelay: 2000, reconnection: true, reconnectionDelayMax: 20000 });
         this._sock.on('connect_error', (err) => { logger.error(`Error connecting to ${this.server.name} ${url}: ${err}`); });
-        this._sock.on('close', (sock) => { logger.info(`Socket ${this.server.name} ${url} closed`); });
+        this._sock.on('close', (sock) => { this.isOpen = false; logger.info(`Socket ${this.server.name} ${url} closed`); });
         this._sock.on('reconnecting', (sock) => { logger.info(`Reconnecting to ${this.server.name} : ${url}`); });
         this._sock.on('connect', (sock) => {
             logger.info(`Connected to ${this.server.name} : ${url}`);
@@ -388,6 +390,7 @@ class SocketServerConnection extends ServerConnection {
                     }
                 }
             }
+            this.isOpen = true;
             //let bindings = ConnectionBindings.loadBindingsByConnectionType(this.server.type);
             //// Go through each of the sockets and add them in.
             //for (let i = 0; i < cont.gpio.pins.length; i++) {
