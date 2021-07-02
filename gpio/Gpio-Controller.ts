@@ -63,12 +63,15 @@ export class GpioController {
             if (typeof pinout !== 'undefined') {
                 if (!pinDef.isActive) {
                     if (cont.gpio.isExported(pinout.gpioId)) {
-                        let p;
-                        if (gp.accessible)
-                            p = new gp(pinout.gpioId, dir);
-                        else
-                            p = new MockGpio(pinout.gpioId, dir);
-                        p.unexport();
+                        try {
+                            let p;
+                            if (gp.accessible)
+                                p = new gp(pinout.gpioId, dir);
+                            else
+                                p = new MockGpio(pinout.gpioId, dir);
+                            p.unexport();
+                        }
+                        catch (err) { logger.error(`Unable to unexport pin ${pinDef.headerId}-${pinDef.id}: ${err.message}`); }
                         cont.gpio.setUnexported(pinout.gpioId);
                         if (typeof pin !== 'undefined') pin.gpio = undefined;
                         let ndx = this.pins.findIndex(elem => elem.gpioId === pinout.gpioId);
