@@ -12,7 +12,7 @@ export class SequentIO extends i2cDeviceBase {
     protected _timerRead: NodeJS.Timeout;
     protected _infoRead: NodeJS.Timeout;
     protected _suspendPolling: number = 0;
-    protected _pollInformationInterval = 30000;
+    protected _pollInformationInterval = 3000;
     protected logError(err, msg?: string) { logger.error(`${this.device.name} ${typeof msg !== 'undefined' ? msg + ' ' : ''}${typeof err !== 'undefined' ? err.message : ''}`); }
     protected createError(byte, command): Error {
         let err: Error;
@@ -95,7 +95,7 @@ export class SequentIO extends i2cDeviceBase {
         try {
             this.suspendPolling = true;
             await this.getStatus();
-            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, options: { deviceInfo: this.device.info } });
+            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: this.device.info });
         }
         catch (err) { logger.error(`Error retrieving device status: ${typeof err !== 'undefined' ? err.message : ''}`); return Promise.reject(err); }
         finally { this.suspendPolling = false; }
@@ -211,17 +211,17 @@ export class SequentMegaIND extends SequentIO {
     */
     protected async getCpuTemp() {
         try {
-            this.info.cpuTemp = (this.i2c.isMock) ? 24.123 : await this.i2c.readWord(this.device.address, 114) / 1000;
+            this.info.cpuTemp = (this.i2c.isMock) ? 19.0 + Math.random() : await this.i2c.readWord(this.device.address, 114) / 1000;
         } catch (err) { logger.error(`${this.device.name} error getting cpu temp: ${err.message}`); }
     }
     protected async getSourceVolts() {
         try {
-            this.info.volts = (this.i2c.isMock) ? 5.123 : await this.i2c.readWord(this.device.address, 115) / 1000;
+            this.info.volts = (this.i2c.isMock) ? 24.0 + Math.random() : await this.i2c.readWord(this.device.address, 115) / 1000;
         } catch (err) { logger.error(`${this.device.name} error getting source voltage: ${err.message}`); }
     }
     protected async getRaspVolts() {
         try {
-            this.info.raspiVolts = (this.i2c.isMock) ? 5.023 : await this.i2c.readWord(this.device.address, 117) / 1000;
+            this.info.raspiVolts = (this.i2c.isMock) ? 5.0 + Math.random() : await this.i2c.readWord(this.device.address, 117) / 1000;
         } catch (err) { logger.error(`${this.device.name} error getting Raspberry Pi voltage: ${err.message}`); }
     }
     protected async getFwVer() {
