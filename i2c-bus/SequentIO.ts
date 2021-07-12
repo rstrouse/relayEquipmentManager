@@ -186,7 +186,7 @@ export class SequentIO extends i2cDeviceBase {
     }
     protected async getCpuTemp() {
         try {
-            this.info.cpuTemp = (this.i2c.isMock) ? 19.0 + Math.random() : await this.i2c.readWord(this.device.address, this.regs.cpuTemp) / 1000;
+            this.info.cpuTemp = (this.i2c.isMock) ? Math.round(19.0 + Math.random()) : await this.i2c.readByte(this.device.address, this.regs.cpuTemp);
         } catch (err) { logger.error(`${this.device.name} error getting cpu temp: ${err.message}`); }
     }
     protected async getSourceVolts() {
