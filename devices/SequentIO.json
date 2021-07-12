@@ -410,7 +410,7 @@
                           "lineHeight": "1.2"
                         },
                         "dataType": "number",
-                        "fmtMask": "#,##0.0##",
+                        "fmtMask": "#,##0.###",
                         "inputAttrs": {
                           "style": {
                             "width": "4.5em",
@@ -1046,7 +1046,7 @@
                           "lineHeight": "1.2"
                         },
                         "dataType": "number",
-                        "fmtMask": "#,##0.0##",
+                        "fmtMask": "#,##0.###",
                         "inputAttrs": {
                           "style": {
                             "width": "4.5em",
@@ -1102,7 +1102,7 @@
                   "tabs": [
                     {
                       "field": {
-                        "text": "0-10v/Temp",
+                        "text": "0-10v/Thermistor",
                         "id": "tab010In"
                       },
                       "options": [
