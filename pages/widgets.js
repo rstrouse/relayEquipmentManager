@@ -4304,6 +4304,21 @@ $.ui.position.fieldTip = {
             dataBinder.bind(dlg, channel);
             dlg.css({ overflow: 'visible' });
         },
+        convertUnitsText: function (channel) {
+            var self = this, o = self.options, el = self.element;
+            if (typeof channel.units === 'undefined' || channel.units === '') return o.units;
+            switch (channel.units) {
+                case 'volts':
+                    return 'v';
+                case 'kohm':
+                    return 'k&#8486';
+                case 'ohm':
+                    return '&#8486;';
+                default:
+                    return channel.units;
+            }
+            return '';
+        },
         createChannelElem: function (channel) {
             var self = this, o = self.options, el = self.element;
             var module = $('<div></div>').addClass('io-channel');
@@ -4312,7 +4327,7 @@ $.ui.position.fieldTip = {
             if (ioType === 'digital') $('<span></span>').addClass('io-channel-indicator').appendTo(header);
             else {
                 $('<span></span>').addClass('io-channel-value').appendTo(header);
-                $('<span></span>').addClass('io-channel-value-units').appendTo(header).text(channel.units || o.units);
+                $('<span></span>').addClass('io-channel-value-units').appendTo(header).html(self.convertUnitsText(channel));
             }
             $('<i class="fas fa-cogs"></i>').appendTo($('<span></span>').addClass('io-channel-configure').addClass('header-icon-btn').appendTo(header));
             module.attr('data-channelid', channel.id);
@@ -4326,6 +4341,7 @@ $.ui.position.fieldTip = {
         addChannel: function (channel) {
             var self = this, o = self.options, el = self.element;
             var before;
+            console.log(`Adding channel ${channel.id} ${channel.units}`)
             el.children('div.io-channel').each(function () {
                 if (parseInt($(this).attr('data-channelid'), 10) > channel.id) {
                     before = $(this);
@@ -4348,10 +4364,8 @@ $.ui.position.fieldTip = {
                 if (typeof channel.name === 'undefined') channel.name(`Chan #${channel.id}`);
                 self.addChannel(channel);
             }
-            else {
-                for (var prop in channel) {
-                    if (prop !== 'id') c[prop] = channel[prop];
-                }
+            for (var prop in channel) {
+                if (prop !== 'id' && prop !== 'type') c[prop] = channel[prop];
             }
             var elemChannel = el.find(`div.io-channel[data-channelid="${channel.id}"]`);
             if (typeof channel.state !== 'undefined') elemChannel.attr('data-state', makeBool(channel.state));
@@ -4368,7 +4382,13 @@ $.ui.position.fieldTip = {
             elemChannel.attr('data-value', c.value);
             if (ioType === 'digital') elemChannel.attr('data-state', makeBool(channel.state || channel.value));
             else {
-                if (c.enabled) elemChannel.find('span.io-channel-value').text(dataBinder.formatValue(channel.state || channel.value, 'number', '#,##0.0##', '--.-'));
+                if (c.enabled) {
+                    elemChannel.find('span.io-channel-value').text(dataBinder.formatValue(channel.state || channel.value, 'number', '#,##0.0##', '--.-'));
+                    if (typeof channel.units !== 'undefined') {
+                        elemChannel.find('span.io-channel-value-units').html(self.convertUnitsText(channel));
+                        //console.log(elemChannel.find('span.io-channel-value-units'));
+                    }
+                }
                 else elemChannel.find('span.io-channel-value').text('--.-');
             }
 
@@ -4379,6 +4399,15 @@ $.ui.position.fieldTip = {
             evt.channel = channel;
             el.trigger(evt);
             if (!evt.isDefaultPrevented()) {
+                var c = o.channels.find(elem => elem.id === channel.id);
+                if (typeof c === 'undefined') {
+                    c.enabled = makeBool(channel.enabled);
+                    if (typeof channel.name === 'undefined') channel.name(`Chan #${channel.id}`);
+                    self.addChannel(channel);
+                }
+                for (var prop in channel) {
+                    if (prop !== 'id') c[prop] = channel[prop];
+                }
                 self.setChannel(evt.channel);
             }
         },

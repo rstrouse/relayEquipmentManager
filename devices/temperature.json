@@ -734,7 +734,7 @@
       "precision": 2,
       "deviceClass": "GenericDeviceBase",
       "module": "./genericDevices",
-      "convertValue": "device.values.inputUnits = device.options.inputType === 'raw' ? '' : device.options.inputType === 'volt' ? 'volts' : 'ohms'; device.values.units = device.options.units; device.values.maxVal = (device.options.inputType === 'raw') ? (1 << device.options.inputBitness) : device.options.inputType === 'volt' ? device.options.vccRef : 10000; device.values.resistance = (device.options.inputType === 'ohms') ? device.values.adcValue : (10000 * device.values.adcValue) / (device.values.maxVal - device.values.adcValue); device.values.temperature = (Math.round(maps.thermistor10k.interpolate(device.values.resistance, device.values.units || 'F') * 100)/100) + (device.options.calibration || 0);",
+      "convertValue": "device.values.inputUnits = device.options.inputType === 'raw' ? '' : device.options.inputType === 'volt' ? 'volts' : device.options.inputResistanceUnits === 1000 ? 'kOhms': 'ohms'; device.values.units = device.options.units; device.values.maxVal = (device.options.inputType === 'raw') ? (1 << device.options.inputBitness) : device.options.inputType === 'volt' ? device.options.vccRef : 10000; device.values.resistance = (device.options.inputType === 'ohms') ? device.values.adcValue * device.options.inputResistanceUnits : (10000 * device.values.adcValue) / (device.values.maxVal - device.values.adcValue); device.values.temperature = (Math.round(maps.thermistor10k.interpolate(device.values.resistance, device.values.units || 'F') * 100)/100) + (device.options.calibration || 0);",
       "inputs": [
         {
           "name": "adcValue",
@@ -1071,9 +1071,62 @@
                     }
 
                   ]
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "cssClass": "pnl-ohmsinput-options pnl-input-options",
+                    "style": { "display": "none" }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "pickList",
+                        "labelText": "Units",
+                        "binding": "options.inputResistanceUnits",
+                        "value": 1,
+                        "required": true,
+                        "canEdit": false,
+                        "inputAttrs": { "style": { "width": "7rem" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" },
+                        "columns": [
+                          {
+                            "binding": "val",
+                            "hidden": true,
+                            "text": "Val",
+                            "style": { "whiteSpace": "nowrap" }
+                          },
+                          {
+                            "binding": "name",
+                            "hidden": true,
+                            "text": "Units",
+                            "style": { "whiteSpace": "nowrap" }
+                          },
+                          {
+                            "binding": "desc",
+                            "text": "Input Units",
+                            "style": { "whiteSpace": "nowrap" }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "val": 1,
+                            "name": "ohm",
+                            "desc": "Ohms"
+                          },
+                          {
+                            "val": 1000,
+                            "name": "kohm",
+                            "desc": "Kiloohms"
+                          }
+                        ]
+                      }
+                    }
+
+                  ]
                 }
               ]
-
             },
             {
               "field": {
