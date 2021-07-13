@@ -23,7 +23,7 @@ export class AtlasEZO extends i2cDeviceBase {
     protected _timerRead: NodeJS.Timeout;
     protected _infoRead: NodeJS.Timeout;
     protected _suspendPolling: number = 0;
-    protected _pollInformationInterval = 30000;
+    protected _pollInformationInterval = 7000;
     protected logError(err, msg?: string) { logger.error(`${this.device.name} ${typeof msg !== 'undefined' ? msg + ' ' : ''}${typeof err !== 'undefined' ? err.message : ''}`); }
     protected createError(byte, command): Error {
         let err: Error;
