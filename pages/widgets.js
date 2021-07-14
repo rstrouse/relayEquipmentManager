@@ -4241,7 +4241,6 @@ $.ui.position.fieldTip = {
             el.on('click', 'span.io-channel-configure', function (e) {
                 var evt = $.Event('configureChannel');
                 var elemChannel = $(e.currentTarget).parents('div.io-channel:first');
-                console.log(o);
                 var id = parseInt(elemChannel.attr('data-channelid'), 10);
                 evt.channel = o.channels.find(elem => elem.id === id) || { id: id, name: `Chan #${id}`, enabled: false };
                 el.trigger(evt);
@@ -4301,6 +4300,7 @@ $.ui.position.fieldTip = {
                 console.log(o.configTemplate);
                 templateBuilder.createControlOptions(divOpts, o.configTemplate, '');
             }
+            console.log(channel);
             dataBinder.bind(dlg, channel);
             dlg.css({ overflow: 'visible' });
         },
@@ -4365,7 +4365,10 @@ $.ui.position.fieldTip = {
                 self.addChannel(channel);
             }
             for (var prop in channel) {
-                if (prop !== 'id' && prop !== 'type') c[prop] = channel[prop];
+                if (prop === 'type') {
+                    if (typeof c[prop] === 'undefined') c[prop] = channel[prop];
+                }
+                else if (prop !== 'id') c[prop] = channel[prop];
             }
             var elemChannel = el.find(`div.io-channel[data-channelid="${channel.id}"]`);
             if (typeof channel.state !== 'undefined') elemChannel.attr('data-state', makeBool(channel.state));
