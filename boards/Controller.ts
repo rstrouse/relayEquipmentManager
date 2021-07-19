@@ -740,40 +740,36 @@ export class Feed {
         try {
             let value = dev.getValue(this.feed.sendValue);
             if (typeof value === 'undefined') value = '';
-            if (!this.feed.isActive || typeof this.server === 'undefined')
-                return;
+            if (!this.feed.isActive || typeof this.server === 'undefined') return;
             if (this.feed.sampling > 1) {
-                this.sampling.push(JSON.parse(JSON.stringify(value)));
+                this.sampling.push(JSON.parse(JSON.stringify(value))); // This simply makes a copy of the data.
                 if (this.sampling.length >= this.feed.sampling) {
                     value = dev.calcMedian(this.feed.sendValue, this.sampling);
-                    let v = typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value;
-                    await this.server.send({
-                        eventName: this.feed.eventName,
-                        property: this.feed.property,
-                        value: typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value,
-                        deviceBinding: this.feed.deviceBinding,
-                        options: this.feed.options
-                    });
                     // Reset the sampling and start over.
-                    logger.verbose(`Feed sending ${this.feed.property}: ${JSON.stringify(v)} samples ${JSON.stringify(this.sampling)}`);
+                    logger.verbose(`Feed evaluating ${this.feed.property}: ${JSON.stringify(value)} samples ${JSON.stringify(this.sampling)}`);
                     this.sampling.length = 0;
                 }
+                else
+                    return;
             }
-            else {
-                if (!this.feed.changesOnly || (typeof value === 'object') ? this.lastSent !== JSON.stringify(value) : value !== this.lastSent) {
-                    let v = typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value;
-                    await this.server.send({
-                        eventName: this.feed.eventName,
-                        property: this.feed.property,
-                        value: v,
-                        deviceBinding: this.feed.deviceBinding,
-                        options: this.feed.options
-                    });
-                    logger.verbose(`Feed sending ${this.feed.property}: ${ JSON.stringify(v) }`);
-
-                }
+            let v = typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value;
+            // Really all that is going on below is verifying the differences between what we sent previously
+            // and what the current value is.
+            if (!this.feed.changesOnly ||
+                (typeof v === 'undefined' && typeof this.lastSent !== 'undefined') ||
+                (typeof v === 'object' ? JSON.stringify(this.lastSent) !== JSON.stringify(v) : v !== this.lastSent)) {
+                await this.server.send({
+                    eventName: this.feed.eventName,
+                    property: this.feed.property,
+                    value: v,
+                    deviceBinding: this.feed.deviceBinding,
+                    options: this.feed.options
+                });
+                this.lastSent = v;
+                logger.verbose(`Feed sending ${this.feed.property}: ${JSON.stringify(v)}`);
             }
-        } catch (err) { logger.error(`Error sending device feed: ${err.message}`); }
+        }
+        catch (err) { logger.error(`Error sending device feed: ${err.message}`); }
     }
     public closeAsync() { }
 }
