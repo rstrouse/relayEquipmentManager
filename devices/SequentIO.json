@@ -730,7 +730,7 @@
                             "saveIOChannel": {
                               "type": "putservice",
                               "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
-                              "message": "Saving 0-10v Output...",
+                              "message": "Saving 4-20v Output...",
                               "callContext": "io-channels"
                             }
                           }

@@ -635,7 +635,7 @@ export class SequentMegaIND extends SequentIO {
                 if (typeof vals.outputs.out4_20 !== 'undefined') {
                     await this.setIOChannelOptions(vals.outputs.out4_20, this.out4_20);
                     for (let i = 0; i < vals.outputs.out4_20.length; i++) {
-                        let ch = vals.outputs.out2_20[i];
+                        let ch = vals.outputs.out4_20[i];
                         if (ch.enabled) await this.set4_20Output(ch.id, ch.value || 4);
                     }
                 }
