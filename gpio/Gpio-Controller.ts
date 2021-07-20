@@ -7,11 +7,12 @@ import { setTimeout, clearTimeout } from "timers";
 import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { vMaps, valueMap, utils } from "../boards/Constants";
-import { cont, DeviceBinding, GpioPin } from "../boards/Controller";
+import { cont, DeviceBinding, GpioPin, Feed } from "../boards/Controller";
 import { IDevice, DeviceStatus, LatchTimer } from "../devices/AnalogDevices";
 
 import { PinDefinitions } from "../pinouts/Pinouts";
 import { connBroker, ServerConnection } from "../connections/Bindings";
+import { Gpio } from "onoff";
 const gp = require('onoff').Gpio;
 
 export class GpioController {
@@ -52,7 +53,10 @@ export class GpioController {
         let pin = this.pins.find(elem => elem.pinId === pinId && elem.headerId === headerId);
         if (typeof pin !== 'undefined') pin.resetTriggers();
     }
-
+    public resetDeviceFeeds(headerId: number, pinId: number) {
+        let pin = this.pins.find(elem => elem.pinId === pinId && elem.headerId === headerId);
+        if (typeof pin !== 'undefined') pin.resetFeeds();
+    }
     public initPin(pinDef: GpioPin): gpioPinComms {
         let pin = this.pins.find(elem => elem.pinId === pinDef.id && elem.headerId === pinDef.headerId);
         let dir = pinDef.direction.gpio;
@@ -91,7 +95,7 @@ export class GpioController {
                         pin.gpio.unwatchAll();
                     }
                     pin.label = pinDef.name;
-                   if (dir === 'in' && pinDef.debounceTimeout > 0) opts['debounceTimeout'] = pinDef.debounceTimeout;
+                    if (dir === 'in' && pinDef.debounceTimeout > 0) opts['debounceTimeout'] = pinDef.debounceTimeout;
                     let stateDir = this.translateState(dir, pinDef.state.name);
                     if (gp.accessible) {
                         logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${stateDir} on Header ${pinDef.headerId} Edge: ${dir === 'in' ? 'both' : 'none'}. ${JSON.stringify(opts)}`);
@@ -103,6 +107,7 @@ export class GpioController {
                         pin.gpio = new MockGpio(pinout.gpioId, stateDir, dir === 'in' ? 'both' : 'none', opts);
                     }
                     cont.gpio.setExported(pinout.gpioId);
+                    pin.initFeeds();
                     if (dir === 'in') {
                         pin.gpio.read().then(result => {
                             pinDef.state = result;
@@ -110,13 +115,13 @@ export class GpioController {
                                 if (err) logger.error(`Watch callback error GPIO Pin# ${pinDef.headerId}-${pinDef.id}`);
                                 else {
                                     pinDef.state = value;
-                                    cont.gpio.emitFeeds(pin.pinId, pin.headerId);
+                                    cont.gpio.emitFeeds(pin.headerId, pin.pinId);
                                     webApp.emitToClients('gpioPin', { pinId: pin.pinId, headerId: pin.headerId, gpioId: pin.gpioId, state: value, label: pin.label });
                                 }
                             });
                         });
                     }
-                    cont.gpio.emitFeeds(pin.pinId, pin.headerId);
+                    cont.gpio.emitFeeds(pin.headerId, pin.pinId);
                     pin.initialized = true;
                 }
             }
@@ -234,6 +239,7 @@ export class gpioPinComms implements IDevice {
     public gpioId: number;
     public state: number;
     public initialized: boolean = false;
+    public feeds: Feed[] = [];
     public gpio;
     public get deviceStatus(): DeviceStatus { return { name: `GPIO Pin #${this.headerId}-${this.pinId}`, category: 'GPIO Pin', hasFault: utils.makeBool(this.hasFault), status: this.status, lastComm: this.lastComm, protocol: 'gpio', busNumber: this.headerId, address: this.gpioId }; }
     public async closeAsync() {
@@ -267,6 +273,29 @@ export class gpioPinComms implements IDevice {
             }
         } catch (err) { return logger.error(`Error resetting trigger for device.`); }
     }
+    public async initFeeds() {
+        try {
+            this.feeds.length = 0;
+            let pin = cont.gpio.pins.getPinById(this.headerId, this.pinId);
+            for (let i = 0; i < pin.feeds.length; i++) {
+                this.feeds.push(new Feed(pin.feeds.getItemByIndex(i)));
+            }
+        } catch (err) { return logger.error(`Error resetting feed for device: ${err.message}.`); }
+    }
+    public async resetFeeds() {
+        try {
+            this.initFeeds();
+        } catch (err) { return logger.error(`Error resetting trigger for device.`); }
+    }
+    public async emitFeeds(pinDef: GpioPin) {
+        for (let i = 0; i < this.feeds.length; i++) {
+            let feed = this.feeds[i];
+            try {
+                await feed.send(pinDef);
+            }
+            catch (err) { logger.error(`Error sending feed ${feed.feed.property} from pin #${this.headerId}-${this.pinId}`); }
+        }
+    }
     public async writePinAsync(val: number, latch?: number): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
             try {
@@ -289,7 +318,7 @@ export class gpioPinComms implements IDevice {
                 this.hasFault = false;
                 this.status = undefined;
                 this.state = val;
-                cont.gpio.emitFeeds(this.pinId, this.headerId);
+                cont.gpio.emitFeeds(this.headerId, this.pinId);
                 // logger.info(`writePinAsync with val: ${val}, latch: ${latch}`)
                 webApp.emitToClients('gpioPin', { pinId: this.pinId, headerId: this.headerId, gpioId: this.gpioId, state: val, label: this.label });
                 resolve();

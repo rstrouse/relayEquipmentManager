@@ -949,8 +949,8 @@ export class Gpio extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-    public emitFeeds(pinId, headerId) {
-        let dev = this.pins.getItemById(pinId);
+    public emitFeeds(headerId, pinId) {
+        let dev = this.pins.getPinById(headerId, pinId);
         setTimeout(() => { dev.emitFeeds(); }, 250);
     }
 }
@@ -1078,23 +1078,14 @@ export class GpioPin extends ConfigItem {
             resolve(this);
         })
     }
-/*     public _feeds: Feed[] = [];
-    public initFeeds() {
-        this._feeds = [];
-        for (let i = 0; i < this.feeds.length; i++) {
-            let f = this.feeds.getItemByIndex(i);
-            this._feeds.push(new Feed(f));
-        }
-    } */
     public async emitFeeds() {
         try {
-            for (let i = 0; i < this.feeds.length; i++) {
-                let feed = new Feed(this.feeds.getItemByIndex(i));
-                await feed.send(this);
+            let pin = gpioCont.pins.find(elem => elem.headerId === this.headerId && elem.pinId === this.id);
+            if (typeof pin === 'undefined') {
+                logger.error(`Cannot find pin comms object for pin #${this.headerId}:${this.id}`);
             }
-            // for (let i = 0; i < this._feeds.length; i++) {
-            //     await this._feeds[i].send(this);
-            // }
+            else
+                pin.emitFeeds(this);
         } catch (err) { logger.error(err); }
     }
     public getExtended() {
@@ -1242,6 +1233,7 @@ export class GpioPin extends ConfigItem {
             feed.connectionId = connectionId;
             feed.set(data);
             feed.id = feedId;
+            await gpioCont.resetDeviceFeeds(this.headerId, this.id);
             return Promise.resolve(feed);
         }
         catch (err) { return Promise.reject(err); }
@@ -1254,6 +1246,7 @@ export class GpioPin extends ConfigItem {
             let feed: DeviceFeed;
             feed = this.feeds.getItemById(feedId);
             this.feeds.removeItemById(feedId);
+            await gpioCont.resetDeviceFeeds(this.headerId, this.id);
             return Promise.resolve(feed);
         }
         catch (err) { return Promise.reject(err); }
