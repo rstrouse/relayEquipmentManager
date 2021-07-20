@@ -1264,11 +1264,14 @@ export class GpioPin extends ConfigItem {
                 // Search by attributes
                 for (let i = 0; i < this.feeds.length; i++){
                     feed = this.feeds.getItemByIndex(i);
+                    let bOptions = false;
+                    if (typeof feed.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && feed.options.id === data.options.id) bOptions = true;
                     if (feed.connectionId === data.connectionId &&
+                        bOptions &&
                         feed.sendValue === data.sendValue &&
-                        (feed.eventName === data.eventName || feed.eventName === 'all') &&
+                        feed.eventName === data.eventName &&
                         feed.property === data.property){
-                        return feed; // what if multiple matching(?)
+                        return feed; 
                     }
                 }
             }
@@ -2421,11 +2424,14 @@ export class I2cDevice extends ConfigItem {
                 // Search by attributes
                 for (let i = 0; i < this.feeds.length; i++) {
                     feed = this.feeds.getItemByIndex(i);
-                    if (feed.options.id === data.options.id &&
+                    let bOptions = false;
+                    if (typeof feed.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && feed.options.id === data.options.id) bOptions = true;
+                    if (feed.connectionId === data.connectionId && 
+                        bOptions &&
                         feed.sendValue === data.sendValue &&
-                        (feed.eventName === data.eventName) &&
+                        feed.eventName === data.eventName &&
                         feed.property === data.property) {
-                        return feed; // what if multiple matching(?)
+                        return feed; 
                     }
                 }
             }
