@@ -300,8 +300,17 @@ export class SequentIO extends i2cDeviceBase {
                 buffer: Buffer.from([Math.round(256 * Math.random()), Math.round(256 * Math.random())])
             } : await this.i2c.readI2cBlock(this.device.address, register, 2);
             if (ret.bytesRead !== 2) return Promise.reject(`${this.device.name} error reading word from register ${register} bytes: ${ret.bytesRead}`);
-            return ret.buffer.readUInt8(0) + 256 * ret.buffer.readUInt8(1);
+            return ret.buffer.readUInt8(0) + (256 * ret.buffer.readUInt8(1));
         } catch (err) { }
+    }
+    public async writeWord(register: number, value: number) {
+        try {
+            let buff = Buffer.from([Math.floor(value / 256), Math.floor(value % 256)]);
+            let ret: { bytesWritten: number, buffer: Buffer } = this.i2c.isMock ? {
+                bytesWritten: 2,
+                buffer: buff
+            } : await this.i2c.writeI2cBlock(this.device.address, register, 2, buff);
+        } catch (err) {}
     }
     protected async setIOChannelOptions(arr, target) {
         try {
@@ -516,7 +525,7 @@ export class SequentMegaIND extends SequentIO {
             // Ch3: 24
             // Ch4: 26
             if (val < 0 || val > 100) throw new Error('Value must be between 0 and 100');
-            if (!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 20 + (2 * (id - 1)), Math.round(val * 100));
+            if (!this.i2c.isMock) await this.writeWord(20 + (2 * (id - 1)), Math.round(val * 100));
             else { this.outDrain[id - 1].value = val; }
         } catch (err) { logger.error(`${this.device.name} error writing Open Drain output ${id}: ${err.message}`); }
 
@@ -528,7 +537,7 @@ export class SequentMegaIND extends SequentIO {
             // Ch3: 8
             // Ch4: 10
             if (val < 0 || val > 10) throw new Error(`Value must be between 0 and 10`);
-            if (!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 4 + (2 * (id - 1)), Math.round(val * 1000));
+            if (!this.i2c.isMock) await this.writeWord(4 + (2 * (id - 1)), Math.round(val * 1000));
             this.out0_10[id - 1].value = val;
             let io = this.out0_10[id - 1];
             if (io.value !== val) {
@@ -569,7 +578,7 @@ export class SequentMegaIND extends SequentIO {
     protected async set4_20Input(id, val) {
         try {
             if (val < 4 || val > 20) throw new Error(`Value must be between 4 and 20`);
-            if(!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 44 + (2 * (id - 1)), val * 1000);
+            if(!this.i2c.isMock) await this.writeWord(44 + (2 * (id - 1)), val * 1000);
             this.in4_20[id - 1].value = val;
             let io = this.in4_20[id - 1];
             if (io.value !== val) {
@@ -581,7 +590,7 @@ export class SequentMegaIND extends SequentIO {
     protected async set4_20Output(id, val) {
         try {
             if (val < 4 || val > 20) throw new Error(`Value must be between 4 and 20`);
-            if(!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 12 + (2 * (id - 1)), val * 1000);
+            if(!this.i2c.isMock) await this.writeWord(12 + (2 * (id - 1)), val * 1000);
             let io = this.out4_20[id - 1];
             if (io.value !== val) {
                 io.value = val;
