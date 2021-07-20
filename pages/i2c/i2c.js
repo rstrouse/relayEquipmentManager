@@ -169,6 +169,7 @@
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-i2c-device');
+            el.addClass('pnl-device-config');
             el.attr('data-busnumber', o.busNumber);
             el.attr('data-address', o.address);
             el.attr('data-bindingcontext', 'device');

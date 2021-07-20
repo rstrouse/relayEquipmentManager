@@ -4253,6 +4253,7 @@ $.ui.position.fieldTip = {
             el.on('click', 'div.io-channel', function (e) {
                 if (!$(e.currentTarget).hasClass('disabled')) {
                     var evt = $.Event('clickChannel');
+                    console.log(e);
                     var elemChannel = $(e.currentTarget);
                     var id = parseInt(elemChannel.attr('data-channelid'), 10);
                     evt.channel = o.channels.find(elem => elem.id === id) || { id: id, name: `Channel #${id}`, enabled: false };
@@ -4398,7 +4399,7 @@ $.ui.position.fieldTip = {
         },
         saveChannel: function (channel) {
             var self = this, o = self.options, el = self.element;
-            var evt = $.Event('saveChannel');
+            var evt = $.Event('setIOChannel');
             evt.channel = channel;
             el.trigger(evt);
             if (!evt.isDefaultPrevented()) {
@@ -4412,7 +4413,11 @@ $.ui.position.fieldTip = {
                     if (prop !== 'id') c[prop] = channel[prop];
                 }
                 self.setChannel(evt.channel);
+                evt = $.Event('saveIOChannel');
+                evt.channel = c;
+                el.trigger(evt);
             }
+           
         },
         removeChannel: function (channelId) {
             var self = this, o = self.options, el = self.element;

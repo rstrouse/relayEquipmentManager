@@ -478,7 +478,6 @@
                             "total": 4,
                             "ioType": "digital",
                             "binding": "values.inputs.inDigital"
-
                           }
                         }
                       ]
@@ -551,19 +550,22 @@
             {
               "field": {
                 "text": "Outputs",
-                "id": "tabOutputs"
+                "id": "tabOutputs",
+                "cssClass": "i2cReadingValues"
               },
               "options": [
                 {
                   "field": {
                     "type": "tabBar",
                     "style": { "display": "inline-block" }
+
                   },
                   "tabs": [
                     {
                       "field": {
                         "text": "Open Drain",
-                        "id": "tabOpenDrainOut"
+                        "id": "tabOpenDrainOut",
+                        "attrs": { "data-bindingcontext": "io-channels" }
                       },
                       "options": [
                         {
@@ -574,7 +576,45 @@
                             "total": 4,
                             "units": "%",
                             "ioType": "analog",
-                            "binding": "values.outputs.outDrain"
+                            "binding": "values.outputs.outDrain",
+                            "configTemplate": {
+                              "field": {
+                                "type": "div"
+                              },
+                              "options": [
+                                {
+                                  "field": {
+                                    "type": "div",
+                                    "cssClass": "script-advanced-instructions",
+                                    "html": "Set the current output for the channel."
+                                  }
+                                },
+                                {
+                                  "field": {
+                                    "type": "valueSpinner",
+                                    "binding": "value",
+                                    "canEdit":  true,
+                                    "labelText": "Output",
+                                    "min": 0,
+                                    "max": 100,
+                                    "fmtMask": "#.##",
+                                    "emptyMask": "0",
+                                    "dataType": "number",
+                                    "labelAttrs": { "style": { "width": "3.5rem" } },
+                                    "inputAttrs": { "style": { "width": "5rem" } }
+                                  }
+                                }
+                              ]
+                            }
+
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving Open Drain Output...",
+                              "callContext": "io-channels"
+                            }
                           }
                         }
                       ]
@@ -582,7 +622,8 @@
                     {
                       "field": {
                         "text": "0-10v",
-                        "id": "tab010Out"
+                        "id": "tab010Out",
+                        "attrs": { "data-bindingcontext": "io-channels" }
                       },
                       "options": [
                         {
@@ -593,16 +634,56 @@
                             "total": 4,
                             "units": "v",
                             "ioType": "analog",
-                            "binding": "values.outputs.out0_10"
+                            "binding": "values.outputs.out0_10",
+                            "configTemplate": {
+                              "field": {
+                                "type": "div"
+                              },
+                              "options": [
+                                {
+                                  "field": {
+                                    "type": "div",
+                                    "cssClass": "script-advanced-instructions",
+                                    "html": "Set the current output for the channel."
+                                  }
+                                },
+                                {
+                                  "field": {
+                                    "type": "valueSpinner",
+                                    "binding": "value",
+                                    "canEdit": true,
+                                    "labelText": "Output",
+                                    "min": 0,
+                                    "max": 10,
+                                    "units": "volts",
+                                    "fmtMask": "#.###",
+                                    "emptyMask": "0",
+                                    "dataType": "number",
+                                    "labelAttrs": { "style": { "width": "3.5rem" } },
+                                    "inputAttrs": { "style": { "width": "5rem" } }
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving 0-10v Output...",
+                              "callContext": "io-channels"
+                            }
                           }
                         }
+
                       ]
 
                     },
                     {
                       "field": {
                         "text": "4-20mA",
-                        "id": "tab420Out"
+                        "id": "tab420Out",
+                        "attrs": { "data-bindingcontext": "io-channels" }
                       },
                       "options": [
                         {
@@ -613,7 +694,45 @@
                             "total": 4,
                             "units": "mA",
                             "ioType": "analog",
-                            "binding": "values.outputs.out4_20"
+                            "binding": "values.outputs.out4_20",
+                            "configTemplate": {
+                              "field": {
+                                "type": "div"
+                              },
+                              "options": [
+                                {
+                                  "field": {
+                                    "type": "div",
+                                    "cssClass": "script-advanced-instructions",
+                                    "html": "Set the current output for the channel."
+                                  }
+                                },
+                                {
+                                  "field": {
+                                    "type": "valueSpinner",
+                                    "binding": "value",
+                                    "canEdit": true,
+                                    "labelText": "Output",
+                                    "min": 4,
+                                    "max": 20,
+                                    "units": "mA",
+                                    "fmtMask": "#.###",
+                                    "emptyMask": "0",
+                                    "dataType": "number",
+                                    "labelAttrs": { "style": { "width": "3.5rem" } },
+                                    "inputAttrs": { "style": { "width": "5rem" } }
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving 0-10v Output...",
+                              "callContext": "io-channels"
+                            }
                           }
                         }
                       ]

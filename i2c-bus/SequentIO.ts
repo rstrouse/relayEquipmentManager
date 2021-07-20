@@ -501,7 +501,7 @@ export class SequentMegaIND extends SequentIO {
             // Ch2: 22
             // Ch3: 24
             // Ch4: 26
-            let val = await this.readWord(20 + (2 * (id - 1))) / 100;
+            let val = this.i2c.isMock ? this.outDrain[id - 1].value || 0 : await this.readWord(20 + (2 * (id - 1))) / 100;
             let io = this.outDrain[id - 1];
             if (io.value !== val) {
                 io.value = val;
@@ -516,7 +516,8 @@ export class SequentMegaIND extends SequentIO {
             // Ch3: 24
             // Ch4: 26
             if (val < 0 || val > 100) throw new Error('Value must be between 0 and 100');
-            if (!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 20 + (2 * (id - 1)), val);
+            if (!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 20 + (2 * (id - 1)), Math.round(val * 100));
+            else { this.outDrain[id - 1].value = val; }
         } catch (err) { logger.error(`${this.device.name} error writing Open Drain output ${id}: ${err.message}`); }
 
     }
@@ -527,7 +528,7 @@ export class SequentMegaIND extends SequentIO {
             // Ch3: 8
             // Ch4: 10
             if (val < 0 || val > 10) throw new Error(`Value must be between 0 and 10`);
-            if(!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 4 + (2 * (id - 1)), val * 1000);
+            if (!this.i2c.isMock) await this.i2c.writeWord(this.device.address, 4 + (2 * (id - 1)), Math.round(val * 1000));
             this.out0_10[id - 1].value = val;
             let io = this.out0_10[id - 1];
             if (io.value !== val) {
@@ -557,7 +558,7 @@ export class SequentMegaIND extends SequentIO {
             // Ch2: 14
             // Ch3: 16
             // Ch4: 18
-            let val = await this.readWord(12 + (2 * (id - 1))) / 1000;
+            let val = this.i2c.isMock ? this.out4_20[id - 1].value || 4 : await this.readWord(12 + (2 * (id - 1))) / 1000;
             let io = this.out4_20[id - 1];
             if (io.value !== val) {
                 io.value = val;
@@ -598,6 +599,14 @@ export class SequentMegaIND extends SequentIO {
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }
     }
+    public async setIOChannels(data): Promise<any> {
+        try {
+            if (typeof data.values !== 'undefined') {
+                return await this.setValues(data.values);
+            }
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+    }
     public async setValues(vals): Promise<any> {
         try {
             this.suspendPolling = true;
@@ -607,9 +616,27 @@ export class SequentMegaIND extends SequentIO {
                 if (typeof vals.inputs.inDigital !== 'undefined') await this.setIOChannelOptions(vals.inputs.inDigital, this.inDigital);
             }
             if (typeof vals.outputs !== 'undefined') {
-                if (typeof vals.outputs.out0_10 !== 'undefined') await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
-                if (typeof vals.outputs.out4_20 !== 'undefined') await this.setIOChannelOptions(vals.outputs.out4_20, this.out4_20);
-                if (typeof vals.outputs.outDrain !== 'undefined') await this.setIOChannelOptions(vals.outputs.outDrain, this.outDrain);
+                if (typeof vals.outputs.out0_10 !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
+                    for (let i = 0; i < vals.outputs.out0_10.length; i++) {
+                        let ch = vals.outputs.out0_10[i];
+                        if (ch.enabled) await this.set0_10Output(ch.id, ch.value || 0);
+                    }
+                }
+                if (typeof vals.outputs.out4_20 !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.out4_20, this.out4_20);
+                    for (let i = 0; i < vals.outputs.out4_20.length; i++) {
+                        let ch = vals.outputs.out2_20[i];
+                        if (ch.enabled) await this.set4_20Output(ch.id, ch.value || 4);
+                    }
+                }
+                if (typeof vals.outputs.outDrain !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.outDrain, this.outDrain);
+                    for (let i = 0; i < vals.outputs.outDrain.length; i++) {
+                        let ch = vals.outputs.outDrain[i];
+                        if (ch.enabled) await this.setDrainOutput(ch.id, ch.value || 0);
+                    }
+                }
             }
             return Promise.resolve(this.options);
         }
