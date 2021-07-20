@@ -305,7 +305,7 @@ export class SequentIO extends i2cDeviceBase {
     }
     public async writeWord(register: number, value: number) {
         try {
-            let buff = Buffer.from([Math.floor(value / 256), Math.floor(value % 256)]);
+            let buff = Buffer.from([Math.floor(value % 256), Math.floor(value / 256)]);
             let ret: { bytesWritten: number, buffer: Buffer } = this.i2c.isMock ? {
                 bytesWritten: 2,
                 buffer: buff
