@@ -4323,12 +4323,18 @@ $.ui.position.fieldTip = {
         createChannelElem: function (channel) {
             var self = this, o = self.options, el = self.element;
             var module = $('<div></div>').addClass('io-channel');
-            var header = $('<div></div>').appendTo(module);
+            var header = $('<div></div>').addClass('io-channel-header').appendTo(module);
             var ioType = channel.ioType || o.ioType;
-            if (ioType === 'digital') $('<span></span>').addClass('io-channel-indicator').appendTo(header);
+            var ioVal = $('<span></span>').addClass('io-channel-status').appendTo(header);
+            var ind = $('<span></span>').addClass('io-channel-indicator').appendTo(ioVal);
+            var val = $('<span></span>').addClass('io-channel-value').appendTo(ioVal);
+            var units = $('<span></span>').addClass('io-channel-value-units').appendTo(ioVal).html(self.convertUnitsText(channel));
+            if (ioType === 'digital') {
+                val.hide();
+                units.hide();
+            }
             else {
-                $('<span></span>').addClass('io-channel-value').appendTo(header);
-                $('<span></span>').addClass('io-channel-value-units').appendTo(header).html(self.convertUnitsText(channel));
+                ind.hide();
             }
             $('<i class="fas fa-cogs"></i>').appendTo($('<span></span>').addClass('io-channel-configure').addClass('header-icon-btn').appendTo(header));
             module.attr('data-channelid', channel.id);
@@ -4384,8 +4390,17 @@ $.ui.position.fieldTip = {
             else elemChannel.addClass('disabled');
             var ioType = c.ioType || o.ioType;
             elemChannel.attr('data-value', c.value);
-            if (ioType === 'digital') elemChannel.attr('data-state', makeBool(channel.state || channel.value));
+            var elemStatus = elemChannel.find('.io-channel-status:first');
+            if (ioType === 'digital') {
+                c.enabled ? elemStatus.find('.io-channel-indicator').show() : elemStatus.find('.io-channel-indicator').hide();
+                elemStatus.find('.io-channel-value').hide();
+                elemStatus.find('.io-channel-value-units').hide();
+                elemChannel.attr('data-state', c.value > 0);
+            }
             else {
+                elemStatus.find('.io-channel-indicator').hide();
+                elemStatus.find('.io-channel-value').show();
+                elemStatus.find('.io-channel-value-units').show();
                 if (c.enabled) {
                     elemChannel.find('span.io-channel-value').text(dataBinder.formatValue(channel.state || channel.value, 'number', '#,##0.0##', '--.-'));
                     if (typeof channel.units !== 'undefined') {
@@ -4395,6 +4410,7 @@ $.ui.position.fieldTip = {
                 }
                 else elemChannel.find('span.io-channel-value').text('--.-');
             }
+            elemChannel.attr('data-iotype', ioType);
 
         },
         saveChannel: function (channel) {

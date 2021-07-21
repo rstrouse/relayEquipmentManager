@@ -303,6 +303,17 @@ export class SequentIO extends i2cDeviceBase {
             return ret.buffer.readUInt8(0) + (256 * ret.buffer.readUInt8(1));
         } catch (err) { }
     }
+    public async readByte(register: number): Promise<number> {
+        try {
+            let ret: { bytesRead: number, buffer: Buffer } = this.i2c.isMock ? {
+                bytesRead: 1,
+                buffer: Buffer.from([Math.round(256 * Math.random())])
+            } : await this.i2c.readI2cBlock(this.device.address, register, 1);
+            if (ret.bytesRead !== 2) return Promise.reject(`${this.device.name} error reading byte from register ${register} bytes: ${ret.bytesRead}`);
+            return ret.buffer.readUInt8(0);
+        } catch (err) { }
+    }
+
     public async writeWord(register: number, value: number) {
         try {
             let buff = Buffer.from([Math.floor(value % 256), Math.floor(value / 256)]);
@@ -467,12 +478,13 @@ export class SequentMegaIND extends SequentIO {
             // These are a bitmask so the should be read in one shot.
             let val = (this.i2c.isMock) ? 255 * Math.random() : await this.i2c.readByte(this.device.address, 3);
             // Set all the state values
-            let ch = this.inDigital;
-            for (let i = 0; i < ch.length; i++) {
-                let v = (1 << i) & val;
-                if (ch[i].value !== v) {
-                    ch[i].value = v;
-                    webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inDigital: [ch[i]] } } });
+            let chan = this.inDigital;
+            for (let i = 0; i < chan.length; i++) {
+                let ch = chan[i];
+                let v = ((1 << (ch.id - 1)) & val) > 0 ? 1 : 0;
+                if (ch.value !== v) {
+                    ch.value = v;
+                    webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inDigital: [ch] } } });
                 }
             }
         } catch (err) { logger.error(`${this.device.name} error getting digital inputs: ${err.message}`); }
@@ -811,6 +823,7 @@ export class SequentMegaBAS extends SequentIO {
             await this.getStatus();
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 8);
+            this.ensureIOChannels('OUT 0-10', 'AOUT', this.out0_10, 4);
             await this.getRS485Port();
             return Promise.resolve(true);
         }
@@ -831,6 +844,23 @@ export class SequentMegaBAS extends SequentIO {
         catch (err) { logger.error(`Error getting info ${typeof err !== 'undefined' ? err.message : ''}`); return Promise.reject(err); }
         finally { this.suspendPolling = false; }
     }
+    protected async readDryContact() {
+        try {
+            let val = (this.i2c.isMock) ? 255 * Math.random() : await this.readByte(3);
+            for (let i = 0; i < this.in0_10.length; i++) {
+                let ch = this.in0_10[i];
+                if (ch.type === 'DIN') {
+                    let v = ((1 << (ch.id - 1)) & val) > 0 ? 1 : 0;
+                    if (ch.value !== v || ch.ioType !== 'digital') {
+                        ch.ioType = 'digital';
+                        ch.value = v;
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { in0_10: [ch] } } });
+                    }
+                }
+            }
+        }
+        catch (err) { logger.error(`${this.device.name} error getting dry contact inputs: ${err.message}`); }
+    }
     protected async get0_10Input(id) {
         try {
             let io = this.in0_10[id - 1];
@@ -846,20 +876,54 @@ export class SequentMegaBAS extends SequentIO {
                 baseReg = 44;
                 io.units = 'kohm';
             }
+            else if (io.type === 'DIN') {
+                // We already got this by reading the digital inputs.
+                return;
+            }
             else io.units = 'volts';
             let val = (this.i2c.isMock) ? 10 * Math.random() : await this.readWord(baseReg + (2 * (id - 1))) / 1000;
             if (io.plusMinus === true) val -= 10;
            
-            if (io.value !== val) {
+            if (io.value !== val || io.ioType !== 'analog') {
+                io.ioType = 'analog';
                 io.value = val;
                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { in0_10: [io] } } });
             }
         } catch (err) { logger.error(`${this.device.name} error getting analog input ${id}: ${err.message}`); }
     }
+    protected async get0_10Output(id) {
+        try {
+            let val = (this.i2c.isMock) ? this.out0_10[id - 1].value || 0 : await this.i2c.readWord(this.device.address, 4 + (2 * (id - 1))) / 1000;
+            let io = this.out0_10[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out0_10: [io] } } });
+            }
+        } catch (err) { logger.error(`${this.device.name} error getting 0-10 output ${id}: ${err.message}`); }
+    }
+    protected async set0_10Output(id, val) {
+        try {
+            // Ch1: 4
+            // Ch2: 6
+            // Ch3: 8
+            // Ch4: 10
+            if (val < 0 || val > 10) throw new Error(`Value must be between 0 and 10`);
+            if (!this.i2c.isMock) await this.writeWord(4 + (2 * (id - 1)), Math.round(val * 1000));
+            this.out0_10[id - 1].value = val;
+            let io = this.out0_10[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out0_10: [io] } } });
+            }
+        } catch (err) { logger.error(`${this.device.name} error setting 0-10 output ${id}: ${err.message}`); }
+    }
+
     public async takeReadings(): Promise<boolean> {
         try {
+            await this.readDryContact();
             // Read all the active inputs and outputs.
             await this.readIOChannels(this.in0_10, this.get0_10Input);
+            await this.readIOChannels(this.out0_10, this.get0_10Output);
             // Read all the digital inputs.
             this.emitFeeds();
             return true;
@@ -883,11 +947,21 @@ export class SequentMegaBAS extends SequentIO {
                 if (typeof vals.inputs.in0_10 !== 'undefined') await this.setIOChannelOptions(vals.inputs.in0_10, this.in0_10);
             }
             if (typeof vals.outputs !== 'undefined') {
-                if (typeof vals.outputs.out0_10 !== 'undefined') await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
+                if (typeof vals.outputs.out0_10 !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
+                }
             }
             return Promise.resolve(this.options);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }
+    }
+    public async setIOChannels(data): Promise<any> {
+        try {
+            if (typeof data.values !== 'undefined') {
+                return await this.setValues(data.values);
+            }
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
     }
 }

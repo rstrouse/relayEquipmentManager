@@ -684,7 +684,7 @@
                                     "min": 0,
                                     "max": 10,
                                     "units": "volts",
-                                    "fmtMask": "#.###",
+                                    "fmtMask": "0.###",
                                     "emptyMask": "0",
                                     "dataType": "number",
                                     "labelAttrs": { "style": { "width": "3.5rem" } },
@@ -744,7 +744,7 @@
                                     "min": 4,
                                     "max": 20,
                                     "units": "mA",
-                                    "fmtMask": "#.###",
+                                    "fmtMask": "0.###",
                                     "emptyMask": "0",
                                     "dataType": "number",
                                     "labelAttrs": { "style": { "width": "3.5rem" } },
@@ -1250,7 +1250,8 @@
                     {
                       "field": {
                         "text": "0-10v/Thermistor",
-                        "id": "tab010In"
+                        "id": "tab010In",
+                        "attrs": { "data-bindingcontext": "io-channels" }
                       },
                       "options": [
                         {
@@ -1263,7 +1264,7 @@
                             "units": "v",
                             "ioType": "analog",
                             "binding": "values.inputs.in0_10",
-                            "style": {"maxWidth": "29rem"},
+                            "style": { "maxWidth": "29rem" },
                             "configTemplate": {
                               "field": {
                                 "type": "div"
@@ -1304,6 +1305,11 @@
                                     ],
                                     "items": [
                                       {
+                                        "val": "DIN",
+                                        "name": "DIN",
+                                        "desc": "Dry Contact"
+                                      },
+                                      {
                                         "val": "AIN",
                                         "name": "AIN",
                                         "desc": "0-10v Analog"
@@ -1328,9 +1334,96 @@
 
                               ]
                             }
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving Input...",
+                              "callContext": "io-channels"
+                            }
                           }
+
                         }
                       ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Outputs",
+                "id": "tabOutputs",
+                "cssClass": "i2cReadingValues"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "tabBar",
+                    "style": { "display": "inline-block" }
+
+                  },
+                  "tabs": [
+                    {
+                      "field": {
+                        "text": "0-10v",
+                        "id": "tab010Out",
+                        "attrs": { "data-bindingcontext": "io-channels" }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "panel",
+                            "class": "ioChannels",
+                            "direction": "out",
+                            "total": 4,
+                            "units": "v",
+                            "ioType": "analog",
+                            "binding": "values.outputs.out0_10",
+                            "configTemplate": {
+                              "field": {
+                                "type": "div"
+                              },
+                              "options": [
+                                {
+                                  "field": {
+                                    "type": "div",
+                                    "cssClass": "script-advanced-instructions",
+                                    "html": "Set the current output for the channel."
+                                  }
+                                },
+                                {
+                                  "field": {
+                                    "type": "valueSpinner",
+                                    "binding": "value",
+                                    "canEdit": true,
+                                    "labelText": "Output",
+                                    "min": 0,
+                                    "max": 10,
+                                    "units": "volts",
+                                    "fmtMask": "0.###",
+                                    "emptyMask": "0",
+                                    "dataType": "number",
+                                    "labelAttrs": { "style": { "width": "3.5rem" } },
+                                    "inputAttrs": { "style": { "width": "5rem" } }
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving 0-10v Output...",
+                              "callContext": "io-channels"
+                            }
+                          }
+                        }
+
+                      ]
+
                     }
                   ]
                 }
