@@ -467,7 +467,8 @@
                     {
                       "field": {
                         "text": "Digital",
-                        "id": "tabDigitalIn"
+                        "id": "tabDigitalIn",
+                        "attrs": { "data-bindingcontext": "io-channels" }
                       },
                       "options": [
                         {
@@ -478,6 +479,14 @@
                             "total": 4,
                             "ioType": "digital",
                             "binding": "values.inputs.inDigital"
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving Digital Input...",
+                              "callContext": "io-channels"
+                            }
                           }
                         }
                       ]
@@ -485,7 +494,8 @@
                     {
                       "field": {
                         "text": "0-10v",
-                        "id": "tab010In"
+                        "id": "tab010In",
+                        "attrs": { "data-bindingcontext": "io-channels" }
                       },
                       "options": [
                         {
@@ -519,14 +529,24 @@
                                 }
                               ]
                             }
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving 0-10v Input...",
+                              "callContext": "io-channels"
+                            }
                           }
+
                         }
                       ]
                     },
                     {
                       "field": {
                         "text": "4-20mA",
-                        "id": "tab420In"
+                        "id": "tab420In",
+                        "attrs": { "data-bindingcontext": "io-channels" }
                       },
                       "options": [
                         {
@@ -538,6 +558,14 @@
                             "units": "mA",
                             "ioType": "analog",
                             "binding": "values.inputs.in4_20"
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving 4-20mA Input...",
+                              "callContext": "io-channels"
+                            }
                           }
                         }
                       ]
@@ -597,7 +625,7 @@
                                     "labelText": "Output",
                                     "min": 0,
                                     "max": 100,
-                                    "fmtMask": "#.##",
+                                    "fmtMask": "0.##",
                                     "emptyMask": "0",
                                     "dataType": "number",
                                     "labelAttrs": { "style": { "width": "3.5rem" } },

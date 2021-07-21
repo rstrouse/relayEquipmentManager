@@ -469,7 +469,11 @@ export class SequentMegaIND extends SequentIO {
             // Set all the state values
             let ch = this.inDigital;
             for (let i = 0; i < ch.length; i++) {
-                ch[i].value = (1 << i) & val;
+                let v = (1 << i) & val;
+                if (ch[i].value !== v) {
+                    ch[i].value = v;
+                    webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inDigital: [ch[i]] } } });
+                }
             }
         } catch (err) { logger.error(`${this.device.name} error getting digital inputs: ${err.message}`); }
     }
@@ -677,8 +681,8 @@ export class SequentMegaIND extends SequentIO {
                 else if (p.startsWith('in4_20')) iarr = this.in4_20;
                 else if (p.startsWith('out0_10')) iarr = this.out0_10;
                 else if (p.startsWith('in0_10')) iarr = this.in0_10;
-                else if (p.startsWith('inDigital')) iarr = this.inDigital;
-                else if (p.startsWith('outDrain')) iarr = this.outDrain;
+                else if (p.startsWith('indigital')) iarr = this.inDigital;
+                else if (p.startsWith('outdrain')) iarr = this.outDrain;
                 if (typeof iarr === 'undefined') {
                     logger.error(`${this.device.name} error getting I/O channel ${prop}`);
                     return;
@@ -747,6 +751,42 @@ export class SequentMegaIND extends SequentIO {
             return this.values;
         } catch (err) { return Promise.reject(err); }
     }
+    public getDeviceDescriptions(dev) {
+        let desc = [];
+        let category = typeof dev !== 'undefined' ? dev.category : 'unknown';
+        category = 'Digital Input';
+        for (let i = 0; i < this.inDigital.length; i++) {
+            let chan = this.inDigital[i];
+            if(chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:inDigital.${i}`, category: category });
+        }
+        category = '0-10v Analog Input';
+        for (let i = 0; i < this.in0_10.length; i++) {
+            let chan = this.in0_10[i];
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:in0_10.${i}`, category: category });
+        }
+        category = '4-20mA Input';
+        for (let i = 0; i < this.in4_20.length; i++) {
+            let chan = this.in4_20[i];
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:in4_20.${i}`, category: category });
+        }
+        category = 'Open Drain Output';
+        for (let i = 0; i < this.outDrain.length; i++) {
+            let chan = this.outDrain[i];
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:outDrain.${i}`, category: category });
+        }
+        category = '0-10v Output';
+        for (let i = 0; i < this.out0_10.length; i++) {
+            let chan = this.out0_10[i];
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:out0_10.${i}`, category: category });
+        }
+        category = '4-20mA Output';
+        for (let i = 0; i < this.out4_20.length; i++) {
+            let chan = this.out4_20[i];
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:out4_20.${i}`, category: category });
+        }
+        return desc;
+    }
+
 }
 export class SequentMegaBAS extends SequentIO {
     protected calDefinitions = {
