@@ -55,3 +55,75 @@ The configuration parameters for the server can be found the ```config.json``` f
 # Software Configuration
 Configuration of hardwared devices in REM is straightforward with each exposed hardware interface represented by tabs at the top of the page.  To enable communication with I2c and SPI bus topologies you must first enable them in the OS for Raspberry Pi, Orange Pi, or BeagleBone.  Once you have done that you can add the bus access from the General tab.
 
+# Supported I/O Devices
+REM supports devices connected to GPIO, I2c, and SPI bus interfaces.  Below is a list of some of the supported devices.
+
+## GPIO
+Supports input and output modes for GPIO.  Configuration is performed by clicking on a the pin in the GUI then selecting the parameters for the pin connection.
+- Push Buttons
+- Flow Switches
+- Relays
+
+## SPI
+Most SPI ADC chips are supported for input.  While only the Microchip MCP series ADC chips have predefined profiles you can created your own through the interface.
+
+- MCP3008
+- MCP3004
+- MCP3002
+- MCP3208
+- MCP3204
+- MCP3202
+- MCP3304
+- MCP3302
+
+
+## I2c
+A variety of hardware items are currently supported on the I2c bus in REM.  These are easily configured for items ranging from relay hats to analog to digital converters (ADC).
+
+### Multi-IO Boards
+- Sequent Microsystems Industrial Automation Hat MEGA-IND
+  0-10v Inputs
+  Digital Inputs
+  4-20mA Inputs
+  Open Drain Outputs
+  0-10v Outputs
+  4-20mA Outputs
+  RS485
+- Sequent Microsystems Building Automation Hat MEGA-BAS
+  0-10v Inputs
+  Dry Contact Inputs
+  1k or 10k Thermistor Inputs
+  0-10v Outputs
+  RS485
+  
+### Analog to Digital Converters
+- ADS1115 16-bit
+- ADS1015 12-bit
+- Pimoroni ADC
+
+### Relay Boards
+- MCP23017 Based Relay Boards
+- MCP23008 Based Relay Boards
+- Sequent Microsystems Relay 4
+- Sequent Microsystems Relay 8 (v2.x, v3.0, and industrial cards)
+- PCF8574 Based Relay Boards
+- Seeed Studio
+- Docker Pi 4
+
+### Temperature Sensors
+- ADC fed 10k Thermistors
+- SPI ADC fed NTC Thermistors
+- Atlas Scientific RTD
+
+### Pressure Sensors
+- ADC fed Pressure Transducers
+- Atlas Scientific EZO-PRS
+
+### ORP Sensors
+- Atlas Scientific EZO-ORP
+
+### pH Sensors
+- Atlas Scientific EZO-PH
+- 4-20mA pH sensors
+
+
