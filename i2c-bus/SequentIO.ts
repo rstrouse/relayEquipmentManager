@@ -311,9 +311,8 @@ export class SequentIO extends i2cDeviceBase {
             } : await this.i2c.readI2cBlock(this.device.address, register, 1);
             if (ret.bytesRead !== 2) return Promise.reject(`${this.device.name} error reading byte from register ${register} bytes: ${ret.bytesRead}`);
             return ret.buffer.readUInt8(0);
-        } catch (err) { }
+        } catch (err) { logger.error(`Error reading ${this.device.name} register ${register}: ${err.message}`); }
     }
-
     public async writeWord(register: number, value: number) {
         try {
             let buff = Buffer.from([Math.floor(value % 256), Math.floor(value / 256)]);
