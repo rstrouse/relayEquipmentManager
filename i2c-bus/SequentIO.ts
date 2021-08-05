@@ -307,7 +307,7 @@ export class SequentIO extends i2cDeviceBase {
                 bytesRead: 1,
                 buffer: Buffer.from([Math.round(256 * Math.random())])
             } : await this.i2c.readI2cBlock(this.device.address, register, 1);
-            if (ret.bytesRead !== 2) return Promise.reject(`${this.device.name} error reading byte from register ${register} bytes: ${ret.bytesRead}`);
+            if (ret.bytesRead !== 1) return Promise.reject(`${this.device.name} error reading byte from register ${register} bytes: ${ret.bytesRead}`);
             return ret.buffer.readUInt8(0);
         } catch (err) { logger.error(`Error reading ${this.device.name} register ${register}: ${err.message}`); }
     }
