@@ -291,8 +291,6 @@ export class SequentIO extends i2cDeviceBase {
         }
         catch (err) { return this.logError(err); }
     }
-    public getValue(prop: string, val?: any) { return super.getValue(prop, val); }
-    public setValue(prop: string, value) { }
     public async readWord(register: number): Promise<number> {
         try {
             let ret: { bytesRead: number, buffer: Buffer } = this.i2c.isMock ? {
@@ -320,7 +318,7 @@ export class SequentIO extends i2cDeviceBase {
                 bytesWritten: 2,
                 buffer: buff
             } : await this.i2c.writeI2cBlock(this.device.address, register, 2, buff);
-        } catch (err) {}
+        } catch (err) { }
     }
     protected async setIOChannelOptions(arr, target) {
         try {
@@ -330,6 +328,104 @@ export class SequentIO extends i2cDeviceBase {
                     utils.setObjectProperties(arr[i], t);
                 }
             }
+        } catch (err) { return Promise.reject(err); }
+    }
+    public getValue(prop: string) {
+        // Steps to getting to our value.
+        // 1. Determine whether input or output.
+        // 2. Determine which array we are coming from.
+        // 3. Map the IO number to the value.
+        let p = prop.toLowerCase();
+        switch (p) {
+            case 'cputempc':
+                return this.info.cpuTemp;
+            case 'cputempf':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'F');
+            case 'cputempk':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
+            case 'inputvoltage':
+                return this.info.volts;
+            case 'pivoltage':
+                return this.info.rapsiVolts;
+            case 'fwversion':
+                return this.info.fwVersion;
+            default:
+                let iarr;
+                if (p.startsWith('out4_20')) iarr = this.out4_20;
+                else if (p.startsWith('in4_20')) iarr = this.in4_20;
+                else if (p.startsWith('out0_10')) iarr = this.out0_10;
+                else if (p.startsWith('in0_10')) iarr = this.in0_10;
+                else if (p.startsWith('indigital')) iarr = this.inDigital;
+                else if (p.startsWith('outdrain')) iarr = this.outDrain;
+                if (typeof iarr === 'undefined') {
+                    logger.error(`${this.device.name} error getting I/O channel ${prop}`);
+                    return;
+                }
+                let parr = p.split('.');
+
+                let sord = p[parr[0].length - 1];
+                let ord = parseInt(sord, 10);
+                if (isNaN(ord) || ord <= 0 || ord >= 4) {
+                    logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
+                    return;
+                }
+                let chan = iarr[ord - 1];
+                return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
+        }
+    }
+    public calcMedian(prop: string, values: any[]) {
+        let p = prop.toLowerCase();
+        switch (p) {
+            case 'cputempc':
+            case 'cputempf':
+            case 'cputempk':
+            case 'inputvoltage':
+            case 'pivoltage':
+                return super.calcMedian(prop, values);
+            case 'fwversion':
+                return this.info.fwVersion;
+            default:
+                // Determine whether this is an object.
+                if (p.startsWith('in') || p.startsWith('out')) {
+                    if (values.length > 0 && typeof values[0] === 'object') {
+                        let io = this.getValue(prop);
+                        if (typeof io !== 'undefined') {
+                            let vals = [];
+                            for (let i = 0; i < values.length; i++) vals.push(values[i].value);
+                            return extend(true, {}, io, { value: super.calcMedian(prop, vals) })
+                        }
+                    }
+                    else return super.calcMedian(prop, values);
+                }
+                else logger.error(`${this.device.name} error calculating median value for ${prop}.`);
+        }
+    }
+    protected async set4_20Output(ord, value) { logger.error(`${this.device.name} 4-20mA output not supported for channel ${ord}`); }
+    protected async set0_10Output(ord, value) { logger.error(`${this.device.name} 0-10v output not supported for channel ${ord}`); }
+    protected async setDrainOutput(ord, value) { logger.error(`${this.device.name} Open Drain output not supported for channel ${ord}`); }
+    public setValue(prop: string, value) {
+        let p = prop.toLowerCase();
+        switch (p) {
+            default:
+                let sord = p[p.length - 1];
+                let ord = parseInt(sord, 10);
+                if (isNaN(ord) || ord <= 0 || ord >= 4) {
+                    logger.error(`${this.device.name} error setting I/O ${prop} channel ${sord} out of range.`);
+                    return;
+                }
+                if (p.startsWith('out4_20')) this.set4_20Output(ord, value);
+                else if (p.startsWith('out0_10')) this.set0_10Output(ord, value);
+                else if (p.startsWith('outDrain')) this.setDrainOutput(ord, value);
+                else logger.error(`${this.device.name} error setting I/O channel ${prop} invalid I/O type.`);
+                break;
+        }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what value we are referring to.
+            if (typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
+            return this.values;
         } catch (err) { return Promise.reject(err); }
     }
 }
@@ -667,101 +763,6 @@ export class SequentMegaIND extends SequentIO {
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }
     }
-    public getValue(prop: string) {
-        // Steps to getting to our value.
-        // 1. Determine whether input or output.
-        // 2. Determine which array we are coming from.
-        // 3. Map the IO number to the value.
-        let p = prop.toLowerCase();
-        switch (p) {
-            case 'cputempc':
-                return this.info.cpuTemp;
-            case 'cputempf':
-                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'F');
-            case 'cputempk':
-                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
-            case 'inputvoltage':
-                return this.info.volts;
-            case 'pivoltage':
-                return this.info.rapsiVolts;
-            case 'fwversion':
-                return this.info.fwVersion;
-            default:
-                let iarr;
-                if (p.startsWith('out4_20')) iarr = this.out4_20;
-                else if (p.startsWith('in4_20')) iarr = this.in4_20;
-                else if (p.startsWith('out0_10')) iarr = this.out0_10;
-                else if (p.startsWith('in0_10')) iarr = this.in0_10;
-                else if (p.startsWith('indigital')) iarr = this.inDigital;
-                else if (p.startsWith('outdrain')) iarr = this.outDrain;
-                if (typeof iarr === 'undefined') {
-                    logger.error(`${this.device.name} error getting I/O channel ${prop}`);
-                    return;
-                }
-                let parr = p.split('.');
-
-                let sord = p[parr[0].length - 1];
-                let ord = parseInt(sord, 10);
-                if (isNaN(ord) || ord <= 0 || ord >= 4) {
-                    logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
-                    return;
-                }
-                let chan = iarr[ord - 1];
-                return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
-        }
-    }
-    public setValue(prop: string, value) {
-        let p = prop.toLowerCase();
-        switch (p) {
-            default:
-                let sord = p[p.length - 1];
-                let ord = parseInt(sord, 10);
-                if (isNaN(ord) || ord <= 0 || ord >= 4) {
-                    logger.error(`${this.device.name} error setting I/O ${prop} channel ${sord} out of range.`);
-                    return;
-                }
-                if (p.startsWith('out4_20')) this.set4_20Output(ord, value);
-                else if (p.startsWith('out0_10')) this.set0_10Output(ord, value);
-                else if (p.startsWith('outDrain')) this.setDrainOutput(ord, value);
-                else logger.error(`${this.device.name} error setting I/O channel ${prop} invalid I/O type.`);
-                break;
-        }
-    }
-    public calcMedian(prop: string, values: any[]) {
-        let p = prop.toLowerCase();
-        switch (p) {
-            case 'cputempc':
-            case 'cputempf':
-            case 'cputempk':
-            case 'inputvoltage':
-            case 'pivoltage':
-                return super.calcMedian(prop, values);
-            case 'fwversion':
-                return this.info.fwVersion;
-            default:
-                // Determine whether this is an object.
-                if (p.startsWith('in') || p.startsWith('out')) {
-                    if (values.length > 0 && typeof values[0] === 'object') {
-                        let io = this.getValue(prop);
-                        if (typeof io !== 'undefined') {
-                            let vals = [];
-                            for (let i = 0; i < values.length; i++) vals.push(values[i].value);
-                            return extend(true, {}, io, { value: super.calcMedian(prop, vals) })
-                        }
-                    }
-                    else return super.calcMedian(prop, values);
-                }
-                else logger.error(`${this.device.name} error calculating median value for ${prop}.`);
-        }
-    }
-    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
-        try {
-            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
-            // We need to know what value we are referring to.
-            if (typeof bind.params[0] === 'string') return this.getValue(bind.params[0]);
-            return this.values;
-        } catch (err) { return Promise.reject(err); }
-    }
     public getDeviceDescriptions(dev) {
         let desc = [];
         let category = typeof dev !== 'undefined' ? dev.category : 'unknown';
@@ -939,22 +940,6 @@ export class SequentMegaBAS extends SequentIO {
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }
     }
-    public async setValues(vals): Promise<any> {
-        try {
-            this.suspendPolling = true;
-            if (typeof vals.inputs !== 'undefined') {
-                if (typeof vals.inputs.in0_10 !== 'undefined') await this.setIOChannelOptions(vals.inputs.in0_10, this.in0_10);
-            }
-            if (typeof vals.outputs !== 'undefined') {
-                if (typeof vals.outputs.out0_10 !== 'undefined') {
-                    await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
-                }
-            }
-            return Promise.resolve(this.options);
-        }
-        catch (err) { this.logError(err); Promise.reject(err); }
-        finally { this.suspendPolling = false; }
-    }
     public async setIOChannels(data): Promise<any> {
         try {
             if (typeof data.values !== 'undefined') {
@@ -963,4 +948,70 @@ export class SequentMegaBAS extends SequentIO {
         }
         catch (err) { this.logError(err); Promise.reject(err); }
     }
+    public async setValues(vals): Promise<any> {
+        try {
+            this.suspendPolling = true;
+            if (typeof vals.inputs !== 'undefined') {
+                if (typeof vals.inputs.in0_10 !== 'undefined') await this.setIOChannelOptions(vals.inputs.in0_10, this.in0_10);
+                if (typeof vals.inputs.in4_20 !== 'undefined') await this.setIOChannelOptions(vals.inputs.in4_20, this.in4_20);
+                if (typeof vals.inputs.inDigital !== 'undefined') await this.setIOChannelOptions(vals.inputs.inDigital, this.inDigital);
+            }
+            if (typeof vals.outputs !== 'undefined') {
+                if (typeof vals.outputs.out0_10 !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
+                    for (let i = 0; i < vals.outputs.out0_10.length; i++) {
+                        let ch = vals.outputs.out0_10[i];
+                        if (ch.enabled) await this.set0_10Output(ch.id, ch.value || 0);
+                    }
+                }
+                if (typeof vals.outputs.out4_20 !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.out4_20, this.out4_20);
+                    for (let i = 0; i < vals.outputs.out4_20.length; i++) {
+                        let ch = vals.outputs.out4_20[i];
+                        if (ch.enabled) await this.set4_20Output(ch.id, ch.value || 4);
+                    }
+                }
+                if (typeof vals.outputs.outDrain !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.outDrain, this.outDrain);
+                    for (let i = 0; i < vals.outputs.outDrain.length; i++) {
+                        let ch = vals.outputs.outDrain[i];
+                        if (ch.enabled) await this.setDrainOutput(ch.id, ch.value || 0);
+                    }
+                }
+            }
+            return Promise.resolve(this.options);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
+    public getDeviceDescriptions(dev) {
+        let desc = [];
+        let category = typeof dev !== 'undefined' ? dev.category : 'unknown';
+        category = '0-10v Input';
+        for (let i = 0; i < this.in0_10.length; i++) {
+            let chan = this.in0_10[i];
+            switch (chan.type) {
+                case 'T10k':
+                    category = '10k Thermistor';
+                    break;
+                case 'T1k':
+                    category = '1k Thermistor';
+                    break;
+                case 'DIN':
+                    category = 'Dry Contact';
+                    break;
+                default:
+                    category = '0-10v Input';
+                    break;
+            }
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:in0_10.${i}`, category: category });
+        }
+        category = '0-10v Output';
+        for (let i = 0; i < this.out0_10.length; i++) {
+            let chan = this.out0_10[i];
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:out0_10.${i}`, category: category });
+        }
+        return desc;
+    }
+
 }
