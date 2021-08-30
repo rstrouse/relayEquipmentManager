@@ -2048,7 +2048,8 @@ export class I2cBus extends ConfigItem {
                 // We are adding a device.
                 if (typeof address === 'undefined' || isNaN(address) || address < 1) return Promise.reject(new Error(`An valid I2c device address was not supplied ${dev.address}`));
                 if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
-                if (typeof this.devices.find(elem => elem.address === address) !== 'undefined') return Promise.reject(`A device already exists at thes specified address ${address}`);
+                let existing = this.devices.find(elem => elem.address === address);
+                if (typeof existing !== 'undefined') return Promise.reject(`A device ${existing.id}:${existing.name} already exists at the specified address ${address} while adding a new device.`);
                 id = this.devices.getMaxId() + 1 || 1;
                 device = this.devices.getItemById(id, true);
                 device.address = address;
@@ -2060,7 +2061,8 @@ export class I2cBus extends ConfigItem {
                 if (typeof typeId !== 'undefined') { if (isNaN(typeId)) return Promise.reject(new Error(`An invalid deviceTypeId was supplied ${dev.deviceTypeId}`)); }
                 if (typeof address !== 'undefined') {
                     if (isNaN(address) || address < 0) return Promise.reject(new Error(`An invalid I2c address was supplied ${dev.address}`));
-                    if (typeof this.devices.find(elem => elem.address === address && elem.id !== id) !== 'undefined') return Promise.reject(`A device already exists at thes specified address ${address}`);
+                    let existing = this.devices.find(elem => elem.address === address && elem.id !== id);
+                    if (typeof existing !== 'undefined') return Promise.reject(`A device ${existing.id}:${existing.name} already exists at the specified address ${address} while updating an existing device.`);
                 }
                 if (typeof id !== 'undefined') {
                     if (isNaN(id)) return Promise.reject(new Error(`An invalid device id was supplied ${dev.id}`));
@@ -2118,7 +2120,9 @@ export class I2cBus extends ConfigItem {
                 // We are adding a device.
                 if (typeof address === 'undefined' || isNaN(address) || address < 1) return Promise.reject(new Error(`An valid I2c device address was not supplied ${dev.address}`));
                 if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
-                if (typeof this.devices.find(elem => elem.address === address) !== 'undefined') return Promise.reject(`A device already exists at thes specified address ${address}`);
+                let existing = this.devices.find(elem => elem.address === address);
+                if (typeof existing !== 'undefined') return Promise.reject(`A device ${existing.id}-${existing.name} already exists at the specified address ${address}`);
+
                 id = this.devices.getMaxId() + 1 || 1;
                 device = this.devices.getItemById(id, true);
                 device.address = address;
@@ -2130,7 +2134,8 @@ export class I2cBus extends ConfigItem {
                 if (typeof typeId !== 'undefined') { if (isNaN(typeId)) return Promise.reject(new Error(`An invalid deviceTypeId was supplied ${dev.deviceTypeId}`)); }
                 if (typeof address !== 'undefined') {
                     if (isNaN(address) || address < 0) return Promise.reject(new Error(`An invalid I2c address was supplied ${dev.address}`));
-                    if (typeof this.devices.find(elem => elem.address === address && elem.id !== id) !== 'undefined') return Promise.reject(`A device already exists at thes specified address ${address}`);
+                    let existing = this.devices.find(elem => elem.address === address && elem.id !== id);
+                    if (typeof existing !== 'undefined') return Promise.reject(`A device ${existing.id}-${existing.name} already exists at the specified address ${address}`);
                 }
                 if (typeof id !== 'undefined') {
                     if (isNaN(id)) return Promise.reject(new Error(`An invalid device id was supplied ${dev.id}`));

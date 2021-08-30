@@ -266,7 +266,7 @@ export class i2cRelay extends i2cDeviceBase {
                     // 8relind-rpi -- sequent8IND
                     //relayMaskRemap = [0x01, 0x04, 0x40, 0x10, 0x20, 0x80, 0x08, 0x02]
                     //relayChRemap = [0, 2, 6, 4, 5, 7, 3, 1]
-
+                    
                     // 8relay-rpi -- sequent8v3
                     //relayMaskRemap = [0x01, 0x04, 0x02, 0x08, 0x40, 0x10, 0x20, 0x80]
                     //relayChRemap = [0, 2, 1, 3, 6, 4, 5, 7]

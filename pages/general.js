@@ -278,11 +278,18 @@
                 .text('Connections are used to define triggers as inputs and calls for outputs.  Only active connections can communicate with the Equipment Manager.');
             $('<hr></hr>').appendTo(dlg);
             var line = $('<div></div>').appendTo(dlg);
+            var ctypes = [];
+            for (var i = 0; i < conns.connectionTypes.length; i++) {
+                var ctype = conns.connectionTypes[i];
+                if (ctype.name !== 'internal') {
+                    ctypes.push(ctype);
+                }
+            }
             $('<div></div>').appendTo(line).pickList({
                 required: true,
                 bindColumn: 0, displayColumn: 1, labelText: 'Conn Type', binding: 'type.name',
                 columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Type', style: { minWidth: '157px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'inst', text: 'Description', style: { minWidth: '327px' } }],
-                items: conns.connectionTypes, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '5.5rem' } }
+                items: ctypes, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '5.5rem' } }
             }).on('selchanged', function (e) {
                 var c = dataBinder.fromElement(dlg);
                 c.type = e.newItem;
