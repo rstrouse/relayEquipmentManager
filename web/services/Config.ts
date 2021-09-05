@@ -1,5 +1,6 @@
 ﻿import * as express from "express";
 import * as extend from 'extend';
+import * as dns from 'dns';
 import { config } from "../../config/Config";
 import { logger } from "../../logger/Logger";
 import { utils, vMaps } from "../../boards/Constants";
@@ -127,10 +128,6 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
-
-
-
-
 
         //
         app.get('/config/options/spi/:controllerId', (req, res) => {
@@ -376,8 +373,15 @@ export class ConfigRoute {
         });
         app.put('/config/checkemit', (req, res, next) => {
             try {
-                let server = connBroker.findServer(parseInt(req.body.connectionId,10));
-                server.send(req.body);
+                let server = connBroker.findServer(parseInt(req.body.connectionId, 10));
+                if (typeof server !== 'undefined') {
+                    server.send(req.body);
+                    logger.info(`checkEmit: id ${server.connectionId}`);
+                }
+                else {
+                    console.log(`checkEmit: Invalid connection id ${req.body.connectionId}`);
+                    return res.status(400).send('Server not found');
+                }
                 return res.status(200).send('Ok');
             }
             catch (err) { next(err); }
@@ -391,7 +395,13 @@ export class ConfigRoute {
                         if (statusCode === 200) {
                             let url = new URL(headers.LOCATION);
                             if (typeof servers.find(elem => url.origin === elem.origin) === 'undefined') {
-                                servers.push({ origin: url.origin, username: url.username, password: url.password, protocol: url.protocol, host: url.host, hostname: url.hostname, port: url.port, hash: url.hash });
+                                let server = { origin: url.origin, username: url.username, password: url.password, protocol: url.protocol, host: url.host, hostname: url.hostname, port: url.port, hash: url.hash, hostnames: [] };
+                                servers.push(server);
+                                (async () => {
+                                    try {
+                                        server.hostnames = await dns.promises.reverse(url.hostname);
+                                    } catch (err) { logger.error(`Error resolving host names: ${err.message}`) }
+                                })();
                             }
                         }
                     });

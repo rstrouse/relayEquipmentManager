@@ -61,24 +61,44 @@ export class ConnectionBroker {
             }
         }
     }
-    public init() {
-        for (let i = 0; i < cont.connections.length; i++) {
-            let source = cont.connections.getItemByIndex(i);
-            if (!source.isActive) continue;
-            switch (source.type.name) {
+    public addConnection(conn) {
+        try {
+            let sc: ServerConnection;
+            switch (conn.type.name) {
                 case 'njspc':
                 case 'webSocket':
-                    this.listeners.push(new SocketServerConnection(source));
+                    sc = new SocketServerConnection(conn);
                     break;
                 case 'mqttClient':
-                    this.listeners.push(new MqttConnection(source));
+                    sc = new MqttConnection(conn);
                     break;
             }
-        }
-        this.listeners.push(new InternalConnection(cont.getInternalConnection()));
-        for (let i = 0; i < this.listeners.length; i++) {
-            this.listeners[i].connect();
-        }
+            if (typeof sc !== 'undefined') {
+                this.listeners.push(sc);
+                sc.connect();
+            }
+        } catch (err) { logger.error(`Error adding connection: ${err.message}`); }
+    }
+    public init() {
+        try {
+            for (let i = 0; i < cont.connections.length; i++) {
+                let source = cont.connections.getItemByIndex(i);
+                if (!source.isActive) continue;
+                switch (source.type.name) {
+                    case 'njspc':
+                    case 'webSocket':
+                        this.listeners.push(new SocketServerConnection(source));
+                        break;
+                    case 'mqttClient':
+                        this.listeners.push(new MqttConnection(source));
+                        break;
+                }
+            }
+            this.listeners.push(new InternalConnection(cont.getInternalConnection()));
+            for (let i = 0; i < this.listeners.length; i++) {
+                this.listeners[i].connect();
+            }
+        } catch (err) { logger.error(`Error Initializing Connections: ${err.message}`); }
     }
     public findServer(connectionId: number): ServerConnection {
         return this.listeners.find(elem => elem.connectionId === connectionId);
@@ -336,39 +356,18 @@ class SocketServerConnection extends ServerConnection {
         }
     }
     public connect() {
-        let url = this.server.url;
-        this._sock = io(url, { reconnectionDelay: 2000, reconnection: true, reconnectionDelayMax: 20000 });
-        this._sock.on('connect_error', (err) => { logger.error(`Error connecting to ${this.server.name} ${url}: ${err}`); });
-        this._sock.on('close', (sock) => { this.isOpen = false; logger.info(`Socket ${this.server.name} ${url} closed`); });
-        this._sock.on('reconnecting', (sock) => { logger.info(`Reconnecting to ${this.server.name} : ${url}`); });
-        this._sock.on('connect', (sock) => {
-            logger.info(`Connected to ${this.server.name} : ${url}`);
-            // Put a list of events together for the devuces.
-            for (let i = 0; i < cont.gpio.pins.length; i++) {
-                let pin = cont.gpio.pins.getItemByIndex(i);
-                let triggers = pin.triggers.toArray();
-                for (let j = 0; j < triggers.length; j++) {
-                    let trigger = triggers[j];
-                    if (trigger.sourceId !== this.server.id || typeof trigger.eventName === 'undefined' || trigger.eventName === '') continue;
-                    let evt = this.events.find(elem => elem.name === trigger.eventName);
-                    if (typeof evt === 'undefined') {
-                        evt = { name: trigger.eventName, triggers: [] };
-                        this.events.push(evt);
-                        logger.info(`Binding ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
-                        this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
-                    }
-                    try {
-                        let fnFilter = trigger.makeTriggerFunction();
-                        evt.triggers.push({ filter: fnFilter, binding: `gpio:${pin.headerId}:${pin.id}`, triggerId: trigger.id });
-                    }
-                    catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
-                }
-            }
-            for (let k = 0; k < cont.i2c.buses.length; k++) {
-                let bus = cont.i2c.buses.getItemByIndex(k);
-                for (let i = 0; i < bus.devices.length; i++) {
-                    let device = bus.devices.getItemByIndex(i);
-                    let triggers = device.triggers.toArray();
+        try {
+            let url = this.server.url;
+            this._sock = io(url, { reconnectionDelay: 2000, reconnection: true, reconnectionDelayMax: 20000 });
+            this._sock.on('connect_error', (err) => { logger.error(`Error connecting to ${this.server.name} ${url}: ${err}`); });
+            this._sock.on('close', (sock) => { this.isOpen = false; logger.info(`Socket ${this.server.name} ${url} closed`); });
+            this._sock.on('reconnecting', (sock) => { logger.info(`Reconnecting to ${this.server.name} : ${url}`); });
+            this._sock.on('connect', (sock) => {
+                logger.info(`Connected to ${this.server.name} : ${url}`);
+                // Put a list of events together for the devuces.
+                for (let i = 0; i < cont.gpio.pins.length; i++) {
+                    let pin = cont.gpio.pins.getItemByIndex(i);
+                    let triggers = pin.triggers.toArray();
                     for (let j = 0; j < triggers.length; j++) {
                         let trigger = triggers[j];
                         if (trigger.sourceId !== this.server.id || typeof trigger.eventName === 'undefined' || trigger.eventName === '') continue;
@@ -376,56 +375,81 @@ class SocketServerConnection extends ServerConnection {
                         if (typeof evt === 'undefined') {
                             evt = { name: trigger.eventName, triggers: [] };
                             this.events.push(evt);
-                            logger.info(`Binding ${evt.name} from ${this.server.name} to i2c Device ${bus.busNumber}-${device.address} ${device.name}`);
+                            logger.info(`Binding ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
                             this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
                         }
                         try {
                             let fnFilter = trigger.makeTriggerFunction();
-                            evt.triggers.push({
-                                binding: `i2c:${bus.id}:${device.id}${typeof trigger.channelId !== 'undefined' ? ':' + trigger.channelId : ''}`,
-                                filter: fnFilter, triggerId: trigger.id
-                            });
+                            evt.triggers.push({ filter: fnFilter, binding: `gpio:${pin.headerId}:${pin.id}`, triggerId: trigger.id });
                         }
-                        catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                        catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
                     }
                 }
-            }
-            this.isOpen = true;
-            //let bindings = ConnectionBindings.loadBindingsByConnectionType(this.server.type);
-            //// Go through each of the sockets and add them in.
-            //for (let i = 0; i < cont.gpio.pins.length; i++) {
-            //    let pin = cont.gpio.pins.getItemByIndex(i);
-            //    for (let k = 0; k < pin.triggers.length; k++) {
-            //        let trigger = pin.triggers.getItemByIndex(k);
-            //        if (!trigger.isActive) continue;
-            //        if (trigger.sourceId !== this.server.id) continue;
-            //        // See if there is a binding for this connection type.
-            //        let binding = bindings.events.find(elem => elem.name === trigger.eventName);
-            //        if (typeof trigger.eventName !== 'undefined' && trigger.eventName !== '') {
-            //            let evt = this.events.find(elem => elem.name === trigger.eventName);
-            //            if (typeof evt === 'undefined') {
-            //                evt = { name: trigger.eventName, triggers: [] };
-            //                this.events.push(evt);
-            //                logger.info(`Binding ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
-            //                this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
-            //            }
-            //            try {
-            //                let fnFilter = trigger.makeTriggerFunction();
-            //                evt.triggers.push({ pin: pin, filter: fnFilter, trigger: trigger });
-            //            }
-            //            catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
-                       
-            //        }
-            //    }
-            //}
-        });
+                for (let k = 0; k < cont.i2c.buses.length; k++) {
+                    let bus = cont.i2c.buses.getItemByIndex(k);
+                    for (let i = 0; i < bus.devices.length; i++) {
+                        let device = bus.devices.getItemByIndex(i);
+                        let triggers = device.triggers.toArray();
+                        for (let j = 0; j < triggers.length; j++) {
+                            let trigger = triggers[j];
+                            if (trigger.sourceId !== this.server.id || typeof trigger.eventName === 'undefined' || trigger.eventName === '') continue;
+                            let evt = this.events.find(elem => elem.name === trigger.eventName);
+                            if (typeof evt === 'undefined') {
+                                evt = { name: trigger.eventName, triggers: [] };
+                                this.events.push(evt);
+                                logger.info(`Binding ${evt.name} from ${this.server.name} to i2c Device ${bus.busNumber}-${device.address} ${device.name}`);
+                                this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
+                            }
+                            try {
+                                let fnFilter = trigger.makeTriggerFunction();
+                                evt.triggers.push({
+                                    binding: `i2c:${bus.id}:${device.id}${typeof trigger.channelId !== 'undefined' ? ':' + trigger.channelId : ''}`,
+                                    filter: fnFilter, triggerId: trigger.id
+                                });
+                            }
+                            catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                        }
+                    }
+                }
+                this.isOpen = true;
+                //let bindings = ConnectionBindings.loadBindingsByConnectionType(this.server.type);
+                //// Go through each of the sockets and add them in.
+                //for (let i = 0; i < cont.gpio.pins.length; i++) {
+                //    let pin = cont.gpio.pins.getItemByIndex(i);
+                //    for (let k = 0; k < pin.triggers.length; k++) {
+                //        let trigger = pin.triggers.getItemByIndex(k);
+                //        if (!trigger.isActive) continue;
+                //        if (trigger.sourceId !== this.server.id) continue;
+                //        // See if there is a binding for this connection type.
+                //        let binding = bindings.events.find(elem => elem.name === trigger.eventName);
+                //        if (typeof trigger.eventName !== 'undefined' && trigger.eventName !== '') {
+                //            let evt = this.events.find(elem => elem.name === trigger.eventName);
+                //            if (typeof evt === 'undefined') {
+                //                evt = { name: trigger.eventName, triggers: [] };
+                //                this.events.push(evt);
+                //                logger.info(`Binding ${evt.name} from ${this.server.name} to pin ${pin.headerId}-${pin.id}`);
+                //                this._sock.on(evt.name, (data) => { this.processEvent(evt.name, data); });
+                //            }
+                //            try {
+                //                let fnFilter = trigger.makeTriggerFunction();
+                //                evt.triggers.push({ pin: pin, filter: fnFilter, trigger: trigger });
+                //            }
+                //            catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+
+                //        }
+                //    }
+                //}
+            });
+        } catch (err) { logger.error(`Error connecting to server ${this.server.name}: ${err.message}`); }
     }
     public send(opts) {
-        let obj = {};
-        obj[opts.property] = opts.value;
-        if (typeof opts.options === 'object') obj = extend(true, obj, opts.options);
-        logger.verbose(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
-        this._sock.emit('/' + opts.eventName, JSON.stringify(obj));
+        try {
+            let obj = {};
+            obj[opts.property] = opts.value;
+            if (typeof opts.options === 'object') obj = extend(true, obj, opts.options);
+            logger.verbose(`Emitting: /${opts.eventName} : ${JSON.stringify(obj)}`);
+            this._sock.emit('/' + opts.eventName, JSON.stringify(obj));
+        } catch (err) { logger.error(`Error sending on socket server ${this.server.name}: ${err.message}`); }
     }
 }
 class MqttConnection extends ServerConnection {
@@ -646,51 +670,53 @@ class MqttConnection extends ServerConnection {
 
     }
     private messageHandler = async (topic, message) => {
-        let msg = message.toString();
-        let evt = this.events.find(elem => elem.topic === topic);
-        if (typeof evt !== 'undefined') {
-            logger.info(`Processing MQTT topic ${topic}`);
-            // Do a little messag pre-processing because MQTT is lame.
-            if (msg.startsWith('{')) msg = JSON.parse(msg);
-            if (msg === 'true') msg = true;
-            else if (msg === 'false') msg = false;
-            else if (!isNaN(+msg)) msg = parseFloat(msg);
-            
-            // Go through all the triggers to see if we find one.
-            for (let i = 0; i < evt.triggers.length; i++) {
-                let trig = evt.triggers[i];
-                let device = cont.getDeviceByBinding(trig.binding);
-                if (typeof device === 'undefined' || device.isActive === false) {
-                    logger.warn(`Could not process MQTT topic ${topic} could not find device ${trig.binding}`);
-                    continue;
-                }
-                let trigger = device.triggers.getItemById(trig.triggerId);
-                if (typeof trigger === 'undefined' || !trigger.isActive) continue;
-                if (trigger.sourceId !== this.server.id) continue;
-                let val = typeof trig.filter === 'function' ? trig.filter(this.server.get(true), device.get(true), trigger.get(true), msg) : true;
-                if (val === true) {
-                    if (trig.binding.startsWith('gpio')) {
-                        if (!device.isOutput) continue;
-                        (async () => {
-                            try {
-                                await device.setDeviceState({ state: trigger.state.val });
-                            } catch (err) { }
-                        })();
-                    } 
-                    else (async () => {
-                        try {
-                            if (typeof trigger.stateExpression !== 'undefined' && trigger.stateExpression.length > 0) {
+        try {
+            let msg = message.toString();
+            let evt = this.events.find(elem => elem.topic === topic);
+            if (typeof evt !== 'undefined') {
+                logger.info(`Processing MQTT topic ${topic}`);
+                // Do a little messag pre-processing because MQTT is lame.
+                if (msg.startsWith('{')) msg = JSON.parse(msg);
+                if (msg === 'true') msg = true;
+                else if (msg === 'false') msg = false;
+                else if (!isNaN(+msg)) msg = parseFloat(msg);
+
+                // Go through all the triggers to see if we find one.
+                for (let i = 0; i < evt.triggers.length; i++) {
+                    let trig = evt.triggers[i];
+                    let device = cont.getDeviceByBinding(trig.binding);
+                    if (typeof device === 'undefined' || device.isActive === false) {
+                        logger.warn(`Could not process MQTT topic ${topic} could not find device ${trig.binding}`);
+                        continue;
+                    }
+                    let trigger = device.triggers.getItemById(trig.triggerId);
+                    if (typeof trigger === 'undefined' || !trigger.isActive) continue;
+                    if (trigger.sourceId !== this.server.id) continue;
+                    let val = typeof trig.filter === 'function' ? trig.filter(this.server.get(true), device.get(true), trigger.get(true), msg) : true;
+                    if (val === true) {
+                        if (trig.binding.startsWith('gpio')) {
+                            if (!device.isOutput) continue;
+                            (async () => {
                                 try {
-                                    let fnTransform = new Function('connection', 'trigger', 'device', 'data', trigger.stateExpression);
-                                    msg = fnTransform(this, trigger, device, msg);
-                                } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err}`); }
-                            }
-                            await device.setDeviceState(trig.binding, msg);
-                        } catch (err) { logger.error(`Error processing MQTT topic ${evt.topic}: ${err}`); }
-                    })();
+                                    await device.setDeviceState({ state: trigger.state.val });
+                                } catch (err) { }
+                            })();
+                        }
+                        else (async () => {
+                            try {
+                                if (typeof trigger.stateExpression !== 'undefined' && trigger.stateExpression.length > 0) {
+                                    try {
+                                        let fnTransform = new Function('connection', 'trigger', 'device', 'data', trigger.stateExpression);
+                                        msg = fnTransform(this, trigger, device, msg);
+                                    } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err}`); }
+                                }
+                                await device.setDeviceState(trig.binding, msg);
+                            } catch (err) { logger.error(`Error processing MQTT topic ${evt.topic}: ${err}`); }
+                        })();
+                    }
                 }
             }
-        }
+        } catch (err) { logger.error(`Error Processing MQTT topic ${topic}`); }
     }
     public connect() {
         let url = this.server.url;
@@ -698,32 +724,35 @@ class MqttConnection extends ServerConnection {
         let opts = extend(true, {}, this.server.options);
         if (typeof this.server.userName !== 'undefined' && this.server.userName !== '') opts.username = this.server.userName;
         if (typeof this.server.password !== 'undefined' && this.server.password !== '') opts.password = this.server.password;
-
-        this._mqtt = connect(url, opts);
-        this._mqtt.on('connect', () => {
-            logger.info(`MQTT Connected to ${url}`);
-            this.isOpen = true;
-            //this._mqtt.disconnecting = false;
-            this.initSubscribe();
-            this.initPublish();
-        });
+        try {
+            this._mqtt = connect(url, opts);
+            this._mqtt.on('connect', () => {
+                logger.info(`MQTT Connected to ${url}`);
+                this.isOpen = true;
+                //this._mqtt.disconnecting = false;
+                this.initSubscribe();
+                this.initPublish();
+            });
+        } catch (err) { logger.error(`Error connecting to MQTT broker ${err.message}`); }
     }
     public send(opts) {
-        if (typeof this._mqtt === 'undefined' || !this._mqtt) {
-            logger.warn(`MQTT Channel disconnected`);
-        }
-        else if (this._mqtt.disconnected) {
-            logger.warn('MQTT Channel disconnected');
-        }
-        else if (this._mqtt.disconnecting) {
-            logger.warn(`MQTT Channel disconnecting`);
-        }
-        else if (this._mqtt.connected) {
-            logger.silly(`Sending on MQTT Channel ${JSON.stringify(opts)}`);
-            this._mqtt.publish(opts.eventName, JSON.stringify(opts.value), { retain: true, qos: 2 }, (err) => {
-                if (err) logger.error(err);
-            });
-        }
+        try {
+            if (typeof this._mqtt === 'undefined' || !this._mqtt) {
+                logger.warn(`MQTT Channel disconnected`);
+            }
+            else if (this._mqtt.disconnected) {
+                logger.warn('MQTT Channel disconnected');
+            }
+            else if (this._mqtt.disconnecting) {
+                logger.warn(`MQTT Channel disconnecting`);
+            }
+            else if (this._mqtt.connected) {
+                logger.silly(`Sending on MQTT Channel ${JSON.stringify(opts)}`);
+                this._mqtt.publish(opts.eventName, JSON.stringify(opts.value), { retain: true, qos: 2 }, (err) => {
+                    if (err) logger.error(err);
+                });
+            }
+        } catch (err) { logger.error(`Error publishing to MQTT server: ${err.message}`); }
     }
 }
 export const connBroker = new ConnectionBroker()

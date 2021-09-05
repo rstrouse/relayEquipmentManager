@@ -385,15 +385,19 @@ export class Controller extends ConfigItem {
         // check for connection by type and ip
         let allCons = this.connections.toArray();
         let conns = allCons.filter(elem => elem.type.name === data.type);
-
+        let hostnames: string[] = (typeof data.hostnames !== 'undefined') ? data.hostnames : [];
         let c: ConnectionSource;
         for (let i = 0; i < conns.length; i++){
-            if (conns[i].ipAddress === data.ipAddress && conns[i].port === data.port || conns[i].ipAddress === '127.0.0.1') c = conns[i] as ConnectionSource;
+            if (conns[i].ipAddress === data.ipAddress && conns[i].port === data.port) c = conns[i] as ConnectionSource;
+            else if (hostnames.includes(conns[i].ipAddress) && conns[i].port === data.port) c = conns[i] as ConnectionSource;
         }
         // if connection is undefined; or address/port do not match, and server is not localhost; set data and reset server
-        if (typeof c === 'undefined' || ((c.ipAddress !== data.ipAddress || c.port !== data.port) && c.ipAddress !== '127.0.0.1')) {
+        if (typeof c === 'undefined') {
+            if (hostnames.length === 1) data.ipAddress = hostnames[0];
             c = await this.setConnectionAsync(data);
-            setTimeout(async() => {await cont.reset()},200); // reset server after req is returned
+            logger.info(`Added connection ${c.id}-${c.name}`);
+            connBroker.addConnection(c);
+            //setTimeout(async() => {await cont.reset()},200); // reset server after req is returned
         };
 
         return c;

@@ -202,23 +202,26 @@
             }).on('initdialog', function (evt) {
                 console.log('open triggered');
                 $.searchLocalService('/config/findServer', server, function (servers, status, xhr) {
-                    console.log(server);
-                    console.log(servers);
                     if (servers.length > 0) {
                         searchStatus.text(servers.length + ' Running ' + server.desc + ' server(s) found.');
                         for (var i = 0; i < servers.length; i++) {
-                            var srv = servers[i];
-                            var divSelection = $('<div></div>').addClass('picButton').addClass('server').addClass('btn').css({ maxWidth: '227px', height: '97px', verticalAlign: 'middle' }).appendTo(line);
-                            if (server.desc.startsWith('nodejs'))
-                                $('<div></div>').addClass('body-text').css({ textAlign: 'center' }).appendTo(divSelection).append('<i class="fab fa-node-js" style="font-size:30pt;color:green;vertical-align:middle;"></i>').append('<span style="vertical-align:middle;"> ' + server.desc + '</span>');
-                            else
-                                $('<div></div>').addClass('body-text').css({ textAlign: 'center' }).appendTo(divSelection).append('<i class="fas fa-server" style="font-size:30pt;color:lightseagreen;vertical-align:middle;"></i>').append('<span style="vertical-align:middle;"> ' + server.desc + '</span>');
-                            $('<div></div>').css({ textAlign: 'center', marginLeft: '1rem', marginRight: '1rem' }).appendTo(divSelection).text(srv.origin);
-                            divSelection.data('server', srv);
+                            var serv = servers[i];
+                            var divSelection = $('<div></div>').addClass('picButton').addClass('REM').addClass('server').addClass('btn').css({ maxWidth: '227px', height: '97px', verticalAlign: 'middle', minWidth: '210px' }).appendTo(line);
+                            $('<div></div>').addClass('body-text').css({ textAlign: 'center' }).appendTo(divSelection).append('<i class="fab fa-node-js" style="font-size:30pt;color:green;vertical-align:middle;"></i>').append('<span style="vertical-align:middle;"> REM Controller</span>');
+                            var hostname = serv.hostnames && typeof serv.hostnames !== 'undefined' && serv.hostnames.length === 1 ? serv.hostnames[0] : serv.hostname;
+                            var ipadddress = serv.hostname;
+                            serv.resolvedHost = hostname;
+                            if (serv.port && typeof serv.port !== 'undefined' && !isNaN(serv.port)) {
+                                hostname += `:${serv.port}`;
+                                ipadddress += `:${serv.port}`;
+                            }
+                            $('<div></div>').css({ textAlign: 'center', marginLeft: '1rem', marginRight: '1rem' }).appendTo(divSelection).text(hostname);
+                            $('<div></div>').css({ textAlign: 'center', marginLeft: '1rem', marginRight: '1rem' }).appendTo(divSelection).text(ipadddress);
+                            divSelection.data('server', serv);
                             divSelection.on('click', function (e) {
                                 var srv = $(e.currentTarget).data('server');
                                 console.log(srv);
-                                pnl.find('div[data-bind="ipAddress"]').each(function () { this.val(srv.hostname); });
+                                pnl.find('div[data-bind="ipAddress"]').each(function () { this.val(srv.resolvedHost); });
                                 pnl.find('div[data-bind="protocol"]').each(function () { this.val(srv.protocol) });
                                 pnl.find('div[data-bind="port"]').each(function () { this.val(srv.port) });
                                 //dataBinder.bind(divOuter, { services: { ip: server.hostname, port: server.port, protocol: server.protocol + '//' } });
@@ -238,7 +241,6 @@
             $('<hr></hr>').appendTo(line);
             line = $('<div></div>').css({ textAlign: 'center' }).appendTo(found);
             dlg.css({ overflow: 'visible' });
-
         },
         _createConnectionDialog: function (id, title, conns) {
             var self = this, o = self.options, el = self.element;
@@ -293,6 +295,7 @@
             }).on('selchanged', function (e) {
                 var c = dataBinder.fromElement(dlg);
                 c.type = e.newItem;
+                console.log(c.type);
                 dlg.find('div.pnl-connection-type').each(function () { this.dataBind(c); });
             });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive' });
@@ -475,7 +478,7 @@
         dataBind: function (conn) {
             var self = this, o = self.options, el = self.element;
             var connType = el.attr('data-conntype');
-            console.log(conn);
+            console.log({msg: 'dataBinding', conn: conn});
             if (conn.type.name !== connType) {
                 // We need to create the interface for the new connection type.
                 el.empty();
@@ -495,13 +498,19 @@
                     case 'mqttBroker':
                         break;
                 }
+                console.log({ msg: 'Open Dialog', conn: conn });
                 if (typeof conn.type.urn !== 'undefined' && conn.type.urn) {
-                    var btn = el.parents('div.ui-widget-content:first').find('#btnFindServer');
-                    btn.attr('data-urn', conn.type.urn);
-                    btn.show();
+                    setTimeout(function () {
+                        var btn = el.parents('div.ui-widget-content:first').find('#btnFindServer');
+                        btn.attr('data-urn', conn.type.urn);
+                        console.log('showing button')
+                        btn.show();
+                    }, 100);
                 }
-                else
+                else {
+                    console.log('hiding button');
                     el.parents('div.ui-widget-content:first').find('#btnFindServer').hide();
+                }
             }
             dataBinder.bind(el, conn);
             el.attr('data-conntype', conn.type);
