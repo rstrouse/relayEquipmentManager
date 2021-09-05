@@ -1122,6 +1122,21 @@
                     {
                       "field": {
                         "type": "staticField",
+                        "labelText": "Hardware",
+                        "binding": "info.hwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": { "width": "5.5rem" }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
                         "labelText": "Firmware",
                         "binding": "info.fwVersion",
                         "style": {

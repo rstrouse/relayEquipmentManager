@@ -11,8 +11,8 @@ import { I2cDevice, DeviceBinding } from "../boards/Controller";
 export class SequentIO extends i2cDeviceBase {
     protected regs = {
         rs485Settings: 65,
-        fwVersionMajor: 120,
-        fwVersionMinor: 121,
+        hwVersion: 120,  // 120 & 121 = major.(minor/100)
+        fwVersion: 122,  // 122 & 123 = major.(minor/100)
         cpuTemp: 114,
         sourceVolts: 115,
         raspiVolts: 117,
@@ -172,15 +172,19 @@ export class SequentIO extends i2cDeviceBase {
             this.rs485.address = p.address;
         } catch (err) { logger.error(`${this.device.name} error setting RS485 port: ${err.message}`); }
     }
-    protected async getFwVer() {
+    protected async getHwFwVer() {
         try {
             if (this.i2c.isMock) {
                 this.info.fwVersion = `1.0 Mock`;
+                this.info.hwVersion = `0.1 Mock`
             }
             else {
-                let major = await this.i2c.readByte(this.device.address, this.regs.fwVersionMajor);
-                let minor = await this.i2c.readByte(this.device.address, this.regs.fwVersionMinor);
-                this.info.fwVersion = `${major + minor / 100.0}`;
+                let hwBuf = await this.i2c.readI2cBlock(this.device.address, this.regs.hwVersion, 2);
+                let fwBuf = await this.i2c.readI2cBlock(this.device.address, this.regs.fwVersion, 2);
+                let hw = hwBuf.buffer.toJSON().data;
+                let fw = fwBuf.buffer.toJSON().data;
+                this.info.hwVersion = `${hw[0] + (hw[1] > 0 ? hw[1] / 100.0 : '.00')}`;
+                this.info.fwVersion = `${fw[0] + (fw[1] > 0 ? fw[1] / 100.0 : '.00')}`;
             }
         } catch (err) { logger.error(`${this.device.name} error getting firmware version: ${err.message}`); }
     }
@@ -444,7 +448,7 @@ export class SequentMegaIND extends SequentIO {
             this.options.readInterval = Math.max(500, this.options.readInterval);
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
-            this.device.info.firmware = await this.getFwVer();
+            this.device.info.firmware = await this.getHwFwVer();
             await this.getStatus();
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 4);
@@ -689,7 +693,7 @@ export class SequentMegaIND extends SequentIO {
     protected async set4_20Input(id, val) {
         try {
             if (val < 4 || val > 20) throw new Error(`Value must be between 4 and 20`);
-            if(!this.i2c.isMock) await this.writeWord(44 + (2 * (id - 1)), val * 1000);
+            if (!this.i2c.isMock) await this.writeWord(44 + (2 * (id - 1)), val * 1000);
             this.in4_20[id - 1].value = val;
             let io = this.in4_20[id - 1];
             if (io.value !== val) {
@@ -701,7 +705,7 @@ export class SequentMegaIND extends SequentIO {
     protected async set4_20Output(id, val) {
         try {
             if (val < 4 || val > 20) throw new Error(`Value must be between 4 and 20`);
-            if(!this.i2c.isMock) await this.writeWord(12 + (2 * (id - 1)), val * 1000);
+            if (!this.i2c.isMock) await this.writeWord(12 + (2 * (id - 1)), val * 1000);
             let io = this.out4_20[id - 1];
             if (io.value !== val) {
                 io.value = val;
@@ -769,7 +773,7 @@ export class SequentMegaIND extends SequentIO {
         category = 'Digital Input';
         for (let i = 0; i < this.inDigital.length; i++) {
             let chan = this.inDigital[i];
-            if(chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:inDigital.${i}`, category: category });
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:inDigital.${i}`, category: category });
         }
         category = '0-10v Analog Input';
         for (let i = 0; i < this.in0_10.length; i++) {
@@ -812,14 +816,14 @@ export class SequentMegaBAS extends SequentIO {
         try {
             // The Sequent cards pick registers at random between cards.  Not ideal but we simply override
             // these for the sequent card we are dealing with.
-            this.regs.fwVersionMajor = 128;
-            this.regs.fwVersionMinor = 129;
+            // this.regs.hwVersion = 128;
+            // this.regs.fwVersion = 129;
             this.stopPolling();
             if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 3000;
             this.options.readInterval = Math.max(500, this.options.readInterval);
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
-            this.device.info.firmware = await this.getFwVer();
+            this.device.info.firmware = await this.getHwFwVer();
             await this.getStatus();
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 8);
@@ -883,7 +887,7 @@ export class SequentMegaBAS extends SequentIO {
             else io.units = 'volts';
             let val = (this.i2c.isMock) ? 10 * Math.random() : await this.readWord(baseReg + (2 * (id - 1))) / 1000;
             if (io.plusMinus === true) val -= 10;
-           
+
             if (io.value !== val || io.ioType !== 'analog') {
                 io.ioType = 'analog';
                 io.value = val;
