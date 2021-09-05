@@ -448,7 +448,7 @@ export class SequentMegaIND extends SequentIO {
             this.options.readInterval = Math.max(500, this.options.readInterval);
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
-            this.device.info.firmware = await this.getHwFwVer();
+            await this.getHwFwVer();
             await this.getStatus();
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 4);
@@ -823,7 +823,7 @@ export class SequentMegaBAS extends SequentIO {
             this.options.readInterval = Math.max(500, this.options.readInterval);
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
-            this.device.info.firmware = await this.getHwFwVer();
+            await this.getHwFwVer();
             await this.getStatus();
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 8);
