@@ -43,7 +43,7 @@ export class SequentSmartFan extends i2cDeviceBase {
                 this.device.options.units = this.device.values.units = 'C';
             }
             if (typeof this.options.fanPowerFn !== 'undefined' && this.options.fanPowerFn.length > 0)
-            this.evalFanPower = new Function('options', 'values', 'info', this.options.fanPowerFn);
+                this.evalFanPower = new Function('options', 'values', 'info', this.options.fanPowerFn);
             await this.getHwFwVer();
             await this.getFanPower();
             await this.getFanBlink();
@@ -64,8 +64,7 @@ export class SequentSmartFan extends i2cDeviceBase {
             if (typeof opts.units !== 'undefined' && this.options.units !== opts.units) this.setUnits(opts.units);
             if (typeof opts.blink !== 'undefined' && opts.blink !== this.options.blink) await this.setFanBlink(opts.blink);
             if (typeof opts.readInterval !== 'undefined' && opts.readInterval !== this.options.readInterval) await this.setFanBlink(opts.blink);
-            if (typeof opts.fanPowerFn !== 'undefined' && opts.fanPowerFn !== this.options.fanPowerFn) 
-            {
+            if (typeof opts.fanPowerFn !== 'undefined' && opts.fanPowerFn !== this.options.fanPowerFn) {
                 this.evalFanPower = new Function('options', 'values', 'info', opts.fanPowerFn);
                 this.options.fanPowerFn = opts.fanPowerFn;
             }
@@ -110,16 +109,24 @@ export class SequentSmartFan extends i2cDeviceBase {
     }
     protected async setFanPower() {
         try {
-            let val = typeof this.evalFanPower === 'function' ? Math.round(this.evalFanPower(this.options, this.values, this.info)) : 0;
-            if (isNaN(val)){
-                logger.error(`Sequent Smart Fan: Result of expression is isNaN.`);
+            let val: number, _val: number;
+            val = _val = typeof this.evalFanPower === 'function' ? Math.round(this.evalFanPower(this.options, this.values, this.info)) : 0;
+            if (isNaN(val)) {
+                logger.error(`Sequent Smart Fan: Result of expression is isNaN.  Function evaluated is ${this.evalFanPower.toString()}`);
                 val = 0;
             }
+            // Check for valid values:
+            // 1. the value is between 0-100
+            // 2. the value is different from the current fanPower
             if (val < 0 || val > 100) {
                 val = Math.max(0, Math.min(100, val));
-                logger.warn(`Sequent Smart Fan: Result of expression is outside bounds (0-100).  Setting fan speed to ${val}`);
+                // compare to prev result so we are not spamming the log
+                if (val !== this.values.fanPowerFnVal){
+                    logger.warn(`Sequent Smart Fan: Result of expression (${this.values.fanPowerFnVal}) is outside bounds (0-100).  Setting fan speed to ${val}`);
+                }
             }
-            if (val !== this.options.fanPower){
+            this.values.fanPowerFnVal = _val;
+            if (val !== this.values.fanPower) {
                 let buffer = Buffer.from([val]);
                 buffer.writeUInt8(val, 0);
                 await this.i2c.writeI2cBlock(this.device.address, this.regs.I2C_MEM_FAN_POWER, 1, buffer);
@@ -205,7 +212,7 @@ export class SequentSmartFan extends i2cDeviceBase {
             await this.getFanTemp();
             await this.setFanPower(); //not a reading; but set the value and then make sure it is set properly.
             await this.getFanPower();
-            if (this.values.fanPower !== _values.fanPower || this.values.fanTemp !== _values.fanTemp){
+            if (this.values.fanPower !== _values.fanPower || this.values.fanTemp !== _values.fanTemp || this.values.fanPowerFnVal !== _values.fanPowerFnVal) {
                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             }
             this.emitFeeds();
@@ -220,7 +227,7 @@ export class SequentSmartFan extends i2cDeviceBase {
             if (!this.suspendPolling && this.device.isActive) {
                 (async () => {
                     await this.takeReadings()
-                    .catch(err => { logger.error(err); });
+                        .catch(err => { logger.error(err); });
                 })();
 
 

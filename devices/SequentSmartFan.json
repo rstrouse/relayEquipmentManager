@@ -261,6 +261,29 @@
                       "lineHeight": "1.2"
                     }
                   }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Script Result",
+                    "binding": "values.fanPowerFnVal",
+                    "dataType": "number",
+                    "fmtMask": "#,##0",
+                    "emptyMask": "--.-",
+                    "units": "%",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem",
+                        "fontSize": ".8rem",
+                        "lineHeight": "1.2"
+                      }
+                    },
+                    "style": {
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "display": "block"
+                    }
+                  }
                 }
               ]
             },
