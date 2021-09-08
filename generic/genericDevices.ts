@@ -11,6 +11,7 @@ import * as extend from "extend";
 import { Buffer } from "buffer";
 import * as path from 'path';
 import * as fs from 'fs';
+import { CPUTempDevice } from "./SystemDevices";
 
 export class genericController {
     constructor() { }
@@ -77,7 +78,7 @@ export class genericController {
     }
 }
 export class GenericDeviceBase implements IDevice {
-    public static async factoryCreate(gdc: genericController, dev: GenericDevice): Promise<GenericDeviceBase> {
+    public static async factoryCreate(gdc: genericController|CPUTempDevice, dev: GenericDevice): Promise<GenericDeviceBase> {
         try {
             let dt = dev.getDeviceType();
             if (typeof dt === 'undefined') return Promise.reject(new Error(`Cannot initialize Generic device id${dev.id}: Device type not found ${dev.typeId}`));
@@ -110,6 +111,17 @@ export class GenericDeviceBase implements IDevice {
     public device: GenericDevice;
     public lastComm: number;
     public get deviceStatus(): DeviceStatus { return { name: this.device.name, category: this.category, hasFault: utils.makeBool(this.hasFault), status: this.status, lastComm: this.lastComm, protocol: 'generic', busNumber: 1, address: undefined } }
+    public get isMock(): boolean { 
+        try {
+            console.log(process.platform);
+            switch (process.platform) {
+                case 'linux':
+                    return false
+                default:
+                   return true;
+            }
+        } catch (err) { console.log(err); }
+    }
     public async closeAsync(): Promise<void> {
         try {
             logger.info(`Stopped Generic Device ${this.device.name}`);
@@ -138,12 +150,14 @@ export class GenericDeviceBase implements IDevice {
     }
     public async setOptions(opts: any): Promise<any> {
         try {
-            this.device.options = opts;
+            this.device.options.set(opts);
             return Promise.resolve(this);
         }
         catch (err) { logger.error(err); }
     }
-    public async setValues(vals: any): Promise<any> { return Promise.resolve(this); }
+    public async setValues(vals: any): Promise<any> { 
+        this.device.values.set(vals);
+        return Promise.resolve(this); }
     public initFeeds() {
         this.feeds = [];
         for (let i = 0; i < this.device.feeds.length; i++) {

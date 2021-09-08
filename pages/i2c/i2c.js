@@ -494,6 +494,10 @@
                 case 'templateRepeater':
                     fld = $(`<div></div>`).appendTo(pnl).templateRepeater(opt.field);
                     break;
+                case 'scriptEditor':
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).scriptEditor(opt.field);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
                 default:
                     fld = $(`<${opt.field.type || 'div'}></${opt.field.type || 'div'}>`).appendTo(pnl);
                     if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);

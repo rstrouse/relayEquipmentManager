@@ -960,6 +960,10 @@ var templateBuilder = {
                 }
                 fld[0].selectFirstVisibleTab();
                 break;
+            case 'scriptEditor':
+                fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).scriptEditor(opt.field);
+                if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                break;
             default:
                 fld = $(`<${opt.field.type || 'div'}></${opt.field.type || 'div'}>`).appendTo(pnl);
                 if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
@@ -3445,7 +3449,7 @@ $.ui.position.fieldTip = {
                         pin.active = p.isActive;
                         pin.state = p.state;
                     }
-                    else if(typeof over === 'undefined' && pin.type === 'gpio') pin.active = false;
+                    else if (typeof over === 'undefined' && pin.type === 'gpio') pin.active = false;
                 }
                 else pin.active = false;
 
@@ -3670,10 +3674,10 @@ $.ui.position.fieldTip = {
                 bindColumn: 0, displayColumn: 1, value: '',
                 columns: [{ hidden: true, binding: 'name', text: 'name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'desc', text: 'State', style: { whiteSpace: 'nowrap' } }],
                 items: [{ name: 'on', desc: 'Relay On' },
-                    { name: 'off', desc: 'Relay Off' },
-                    { name: '', label: 'No Change', desc: 'No Change' },
-                    { name: 'last', label: 'Last State', desc: 'Last State' }],
-                inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { } }
+                { name: 'off', desc: 'Relay Off' },
+                { name: '', label: 'No Change', desc: 'No Change' },
+                { name: 'last', label: 'Last State', desc: 'Last State' }],
+                inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: {} }
             })
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Invert Output Signal', binding: 'invert' });
             $('<hr></hr>').appendTo(dlg);
@@ -4009,7 +4013,7 @@ $.ui.position.fieldTip = {
                 e.stopImmediatePropagation();
                 e.preventDefault();
             });
-            
+
         },
         openConfigureChannel: function (channel) {
             var self = this, o = self.options, el = self.element;
@@ -4042,7 +4046,7 @@ $.ui.position.fieldTip = {
             $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Enabled', binding: 'enabled' });
             $('<div></div>').appendTo(dlg).pickList({
-                labelText: 'Power Gain', binding: 'pga', dataType:'number',
+                labelText: 'Power Gain', binding: 'pga', dataType: 'number',
                 labelAttrs: {
                     style: { width: "6rem" }
                 },
@@ -4196,7 +4200,7 @@ $.ui.position.fieldTip = {
         }
     });
     $.widget('pic.templateRepeater', {
-        options: { rowCount: 1, binding:'' },
+        options: { rowCount: 1, binding: '' },
         _create: function () {
             var self = this, o = self.options, el = self.element;
             self._buildControls();
@@ -4433,7 +4437,7 @@ $.ui.position.fieldTip = {
                 evt.channel = c;
                 el.trigger(evt);
             }
-           
+
         },
         removeChannel: function (channelId) {
             var self = this, o = self.options, el = self.element;

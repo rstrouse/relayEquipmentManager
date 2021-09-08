@@ -39,6 +39,17 @@ export class i2cController {
                 let ibus = new i2cBus();
                 await ibus.initAsync(bus);
                 this.buses.push(ibus);
+                // push the path for mock i2c buses
+                if (typeof i2c.detected[i] === 'undefined') {
+                    let _detected = JSON.parse(JSON.stringify(i2c.detected));
+                    _detected.push({
+                        path: `/Mock/I2C/Bus/${bus.busNumber}`,
+                        "driver": "Mock Driver",
+                        "name": `i2c-${bus.busNumber}`,
+                        "busNumber": bus.busNumber
+                    })
+                    i2c.detected = _detected;
+                }
             }
             return Promise.resolve();
         } catch (err) { logger.error(err); }
@@ -284,7 +295,7 @@ export class i2cBus {
                 if (typeof length === 'undefined') length = command.length;
                 ret = await this._i2cBus.i2cWrite(address, length, command);
             }
-            else { 
+            else {
                 let err = new Error(`Error writing I2c ${command}.  Invalid type for command.`);
                 logger.error(err);
                 return Promise.reject(err);
@@ -535,14 +546,14 @@ export class i2cDeviceBase implements IDevice {
             return v;
         } catch (err) { logger.error(`${this.device.name} error getting device value ${prop}: ${err.message}`); }
     }
-    public setValue(prop, value) { 
+    public setValue(prop, value) {
         let replaceSymbols = /(?:\]\.|\[|\.)/g
-            let _prop = prop.replace(replaceSymbols, ',').split(',');
-            let obj = this.device.values;
-            for (let i = 0; i < prop.length; i++) {
-                obj = obj[_prop[i]];
-            }
-            obj = value;
+        let _prop = prop.replace(replaceSymbols, ',').split(',');
+        let obj = this.device.values;
+        for (let i = 0; i < prop.length; i++) {
+            obj = obj[_prop[i]];
+        }
+        obj = value;
     }
     public calcMedian(prop, values: any[]) {
         let arr = [];

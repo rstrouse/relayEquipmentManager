@@ -231,7 +231,6 @@
           "desc": "Open Drain #4",
           "maxSamples": 50
         }
-
       ],
       "inputs": [
         {
@@ -300,7 +299,9 @@
           "dataType": "panel",
           "field": {
             "type": "tabBar",
-            "style": { "display": "inline-block" }
+            "style": {
+              "display": "inline-block"
+            }
           },
           "tabs": [
             {
@@ -319,9 +320,13 @@
                     "labelText": "Name",
                     "inputAttrs": {
                       "maxLength": 16,
-                      "style": { "width": "16rem" }
+                      "style": {
+                        "width": "16rem"
+                      }
                     },
-                    "style": { "display": "block" }
+                    "style": {
+                      "display": "block"
+                    }
                   }
                 },
                 {
@@ -339,6 +344,23 @@
                     {
                       "field": {
                         "type": "staticField",
+                        "labelText": "Hardware",
+                        "binding": "info.hwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
                         "labelText": "Firmware",
                         "binding": "info.fwVersion",
                         "style": {
@@ -347,7 +369,9 @@
                           "lineHeight": "1.2"
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         }
                       }
                     },
@@ -370,7 +394,9 @@
                           }
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         },
                         "units": "volts"
                       }
@@ -394,7 +420,9 @@
                           }
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         },
                         "units": "volts"
                       }
@@ -418,12 +446,13 @@
                           }
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         },
                         "units": "&deg;C"
                       }
                     },
-
                     {
                       "field": {
                         "type": "staticField",
@@ -443,7 +472,9 @@
                           }
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         }
                       }
                     }
@@ -461,14 +492,18 @@
                 {
                   "field": {
                     "type": "tabBar",
-                    "style": { "display": "inline-block" }
+                    "style": {
+                      "display": "inline-block"
+                    }
                   },
                   "tabs": [
                     {
                       "field": {
                         "text": "Digital",
                         "id": "tabDigitalIn",
-                        "attrs": { "data-bindingcontext": "io-channels" }
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
                       },
                       "options": [
                         {
@@ -495,7 +530,9 @@
                       "field": {
                         "text": "0-10v",
                         "id": "tab010In",
-                        "attrs": { "data-bindingcontext": "io-channels" }
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
                       },
                       "options": [
                         {
@@ -525,7 +562,6 @@
                                     "bind": "plusMinus",
                                     "labelText": "Use +/- 10v Scale"
                                   }
-
                                 }
                               ]
                             }
@@ -538,7 +574,6 @@
                               "callContext": "io-channels"
                             }
                           }
-
                         }
                       ]
                     },
@@ -546,7 +581,9 @@
                       "field": {
                         "text": "4-20mA",
                         "id": "tab420In",
-                        "attrs": { "data-bindingcontext": "io-channels" }
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
                       },
                       "options": [
                         {
@@ -569,7 +606,6 @@
                           }
                         }
                       ]
-
                     }
                   ]
                 }
@@ -585,15 +621,18 @@
                 {
                   "field": {
                     "type": "tabBar",
-                    "style": { "display": "inline-block" }
-
+                    "style": {
+                      "display": "inline-block"
+                    }
                   },
                   "tabs": [
                     {
                       "field": {
                         "text": "Open Drain",
                         "id": "tabOpenDrainOut",
-                        "attrs": { "data-bindingcontext": "io-channels" }
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
                       },
                       "options": [
                         {
@@ -621,20 +660,27 @@
                                   "field": {
                                     "type": "valueSpinner",
                                     "binding": "value",
-                                    "canEdit":  true,
+                                    "canEdit": true,
                                     "labelText": "Output",
                                     "min": 0,
                                     "max": 100,
                                     "fmtMask": "0.##",
                                     "emptyMask": "0",
                                     "dataType": "number",
-                                    "labelAttrs": { "style": { "width": "3.5rem" } },
-                                    "inputAttrs": { "style": { "width": "5rem" } }
+                                    "labelAttrs": {
+                                      "style": {
+                                        "width": "3.5rem"
+                                      }
+                                    },
+                                    "inputAttrs": {
+                                      "style": {
+                                        "width": "5rem"
+                                      }
+                                    }
                                   }
                                 }
                               ]
                             }
-
                           },
                           "fieldEvents": {
                             "saveIOChannel": {
@@ -651,7 +697,9 @@
                       "field": {
                         "text": "0-10v",
                         "id": "tab010Out",
-                        "attrs": { "data-bindingcontext": "io-channels" }
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
                       },
                       "options": [
                         {
@@ -687,8 +735,16 @@
                                     "fmtMask": "0.###",
                                     "emptyMask": "0",
                                     "dataType": "number",
-                                    "labelAttrs": { "style": { "width": "3.5rem" } },
-                                    "inputAttrs": { "style": { "width": "5rem" } }
+                                    "labelAttrs": {
+                                      "style": {
+                                        "width": "3.5rem"
+                                      }
+                                    },
+                                    "inputAttrs": {
+                                      "style": {
+                                        "width": "5rem"
+                                      }
+                                    }
                                   }
                                 }
                               ]
@@ -703,15 +759,15 @@
                             }
                           }
                         }
-
                       ]
-
                     },
                     {
                       "field": {
                         "text": "4-20mA",
                         "id": "tab420Out",
-                        "attrs": { "data-bindingcontext": "io-channels" }
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
                       },
                       "options": [
                         {
@@ -747,8 +803,16 @@
                                     "fmtMask": "0.###",
                                     "emptyMask": "0",
                                     "dataType": "number",
-                                    "labelAttrs": { "style": { "width": "3.5rem" } },
-                                    "inputAttrs": { "style": { "width": "5rem" } }
+                                    "labelAttrs": {
+                                      "style": {
+                                        "width": "3.5rem"
+                                      }
+                                    },
+                                    "inputAttrs": {
+                                      "style": {
+                                        "width": "5rem"
+                                      }
+                                    }
                                   }
                                 }
                               ]
@@ -798,7 +862,9 @@
                       {
                         "binding": "desc",
                         "text": "Mode",
-                        "style": { "whiteSpace": "nowrap" }
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
                       }
                     ],
                     "items": [
@@ -813,7 +879,11 @@
                         "desc": "Modbus RTU (slave)"
                       }
                     ],
-                    "inputAttrs": { "style": { "width": "10rem" } }
+                    "inputAttrs": {
+                      "style": {
+                        "width": "10rem"
+                      }
+                    }
                   },
                   "fieldEvents": {
                     "selchanged": "var pnl = $(evt.currentTarget).parents('.picTabContent:first'); if(evt.newItem.val > 0) { pnl.find('fieldset.pnl-port-settings').show(); } else { pnl.find('fieldset.pnl-port-settings').hide(); }"
@@ -850,8 +920,14 @@
                             "textAlign": "right"
                           }
                         },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        },
                         "units": "baud"
                       }
                     },
@@ -879,7 +955,9 @@
                           {
                             "binding": "desc",
                             "text": "Parity",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           }
                         ],
                         "items": [
@@ -899,9 +977,19 @@
                             "desc": "Odd"
                           }
                         ],
-                        "inputAttrs": { "style": { "width": "5rem" } },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" }
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        }
                       }
                     },
                     {
@@ -913,9 +1001,19 @@
                         "labelText": "Stop Bits",
                         "min": 1,
                         "max": 2,
-                        "inputAttrs": { "style": { "width": "3rem" } },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" }
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3rem"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        }
                       }
                     },
                     {
@@ -927,9 +1025,19 @@
                         "min": 1,
                         "max": 255,
                         "canEdit": true,
-                        "inputAttrs": { "style": { "width": "3rem" } },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" }
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3rem"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        }
                       }
                     }
                   ]
@@ -945,7 +1053,9 @@
           ]
         }
       ],
-      "interfaces": [ "i2c" ]
+      "interfaces": [
+        "i2c"
+      ]
     },
     {
       "id": 902,
@@ -1083,7 +1193,9 @@
           "dataType": "panel",
           "field": {
             "type": "tabBar",
-            "style": { "display": "inline-block" }
+            "style": {
+              "display": "inline-block"
+            }
           },
           "tabs": [
             {
@@ -1102,9 +1214,13 @@
                     "labelText": "Name",
                     "inputAttrs": {
                       "maxLength": 16,
-                      "style": { "width": "16rem" }
+                      "style": {
+                        "width": "16rem"
+                      }
                     },
-                    "style": { "display": "block" }
+                    "style": {
+                      "display": "block"
+                    }
                   }
                 },
                 {
@@ -1130,7 +1246,9 @@
                           "lineHeight": "1.2"
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         }
                       }
                     },
@@ -1145,7 +1263,9 @@
                           "lineHeight": "1.2"
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         }
                       }
                     },
@@ -1168,7 +1288,9 @@
                           }
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         },
                         "units": "volts"
                       }
@@ -1192,7 +1314,9 @@
                           }
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         },
                         "units": "volts"
                       }
@@ -1216,12 +1340,13 @@
                           }
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         },
                         "units": "&deg;C"
                       }
                     },
-
                     {
                       "field": {
                         "type": "staticField",
@@ -1241,7 +1366,9 @@
                           }
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         }
                       }
                     }
@@ -1259,14 +1386,18 @@
                 {
                   "field": {
                     "type": "tabBar",
-                    "style": { "display": "inline-block" }
+                    "style": {
+                      "display": "inline-block"
+                    }
                   },
                   "tabs": [
                     {
                       "field": {
                         "text": "0-10v/Thermistor",
                         "id": "tab010In",
-                        "attrs": { "data-bindingcontext": "io-channels" }
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
                       },
                       "options": [
                         {
@@ -1279,7 +1410,9 @@
                             "units": "v",
                             "ioType": "analog",
                             "binding": "values.inputs.in0_10",
-                            "style": { "maxWidth": "29rem" },
+                            "style": {
+                              "maxWidth": "29rem"
+                            },
                             "configTemplate": {
                               "field": {
                                 "type": "div"
@@ -1315,7 +1448,9 @@
                                       {
                                         "binding": "desc",
                                         "text": "Mode",
-                                        "style": { "whiteSpace": "nowrap" }
+                                        "style": {
+                                          "whiteSpace": "nowrap"
+                                        }
                                       }
                                     ],
                                     "items": [
@@ -1340,13 +1475,16 @@
                                         "desc": "10k Thermistor"
                                       }
                                     ],
-                                    "inputAttrs": { "style": { "width": "10rem" } }
+                                    "inputAttrs": {
+                                      "style": {
+                                        "width": "10rem"
+                                      }
+                                    }
                                   },
                                   "fieldEvents": {
                                     "selchanged": ""
                                   }
                                 }
-
                               ]
                             }
                           },
@@ -1358,7 +1496,6 @@
                               "callContext": "io-channels"
                             }
                           }
-
                         }
                       ]
                     }
@@ -1376,15 +1513,18 @@
                 {
                   "field": {
                     "type": "tabBar",
-                    "style": { "display": "inline-block" }
-
+                    "style": {
+                      "display": "inline-block"
+                    }
                   },
                   "tabs": [
                     {
                       "field": {
                         "text": "0-10v",
                         "id": "tab010Out",
-                        "attrs": { "data-bindingcontext": "io-channels" }
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
                       },
                       "options": [
                         {
@@ -1420,8 +1560,16 @@
                                     "fmtMask": "0.###",
                                     "emptyMask": "0",
                                     "dataType": "number",
-                                    "labelAttrs": { "style": { "width": "3.5rem" } },
-                                    "inputAttrs": { "style": { "width": "5rem" } }
+                                    "labelAttrs": {
+                                      "style": {
+                                        "width": "3.5rem"
+                                      }
+                                    },
+                                    "inputAttrs": {
+                                      "style": {
+                                        "width": "5rem"
+                                      }
+                                    }
                                   }
                                 }
                               ]
@@ -1436,9 +1584,7 @@
                             }
                           }
                         }
-
                       ]
-
                     }
                   ]
                 }
@@ -1473,7 +1619,9 @@
                       {
                         "binding": "desc",
                         "text": "Mode",
-                        "style": { "whiteSpace": "nowrap" }
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
                       }
                     ],
                     "items": [
@@ -1488,7 +1636,11 @@
                         "desc": "Modbus RTU (slave)"
                       }
                     ],
-                    "inputAttrs": { "style": { "width": "10rem" } }
+                    "inputAttrs": {
+                      "style": {
+                        "width": "10rem"
+                      }
+                    }
                   },
                   "fieldEvents": {
                     "selchanged": "var pnl = $(evt.currentTarget).parents('.picTabContent:first'); if(evt.newItem.val > 0) { pnl.find('fieldset.pnl-port-settings').show(); } else { pnl.find('fieldset.pnl-port-settings').hide(); }"
@@ -1525,8 +1677,14 @@
                             "textAlign": "right"
                           }
                         },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        },
                         "units": "baud"
                       }
                     },
@@ -1554,7 +1712,9 @@
                           {
                             "binding": "desc",
                             "text": "Parity",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           }
                         ],
                         "items": [
@@ -1574,9 +1734,19 @@
                             "desc": "Odd"
                           }
                         ],
-                        "inputAttrs": { "style": { "width": "5rem" } },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" }
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        }
                       }
                     },
                     {
@@ -1588,9 +1758,19 @@
                         "labelText": "Stop Bits",
                         "min": 1,
                         "max": 2,
-                        "inputAttrs": { "style": { "width": "3rem" } },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" }
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3rem"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        }
                       }
                     },
                     {
@@ -1602,9 +1782,19 @@
                         "min": 1,
                         "max": 255,
                         "canEdit": true,
-                        "inputAttrs": { "style": { "width": "3rem" } },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" }
+                        "inputAttrs": {
+                          "style": {
+                            "width": "3rem"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        }
                       }
                     }
                   ]
@@ -1620,7 +1810,9 @@
           ]
         }
       ],
-      "interfaces": [ "i2c" ]
+      "interfaces": [
+        "i2c"
+      ]
     }
   ]
 }

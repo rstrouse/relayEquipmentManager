@@ -395,9 +395,7 @@ export class Controller extends ConfigItem {
         if (typeof c === 'undefined') {
             if (hostnames.length === 1) data.ipAddress = hostnames[0];
             c = await this.setConnectionAsync(data);
-            logger.info(`Added connection ${c.id}-${c.name}`);
-            connBroker.addConnection(c);
-            //setTimeout(async() => {await cont.reset()},200); // reset server after req is returned
+            setTimeout(async () => { await cont.reset() }, 200); // reset server after req is returned
         };
 
         return c;
@@ -641,18 +639,18 @@ export class Controller extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-    public async setDeviceFeed(obj:any){
+    public async setDeviceFeed(obj: any) {
         let dev = this.getDeviceByBinding(obj.deviceBinding);
         let srv = connBroker.findServer(obj.connectionId);
         let type = obj.deviceBinding.split(':')[0];
         let feed;
-        switch (type){
-            case 'i2c':{
+        switch (type) {
+            case 'i2c': {
                 // feed = (dev as I2cDevice).getDeviceFeed(obj);
                 (dev as I2cDevice).setDeviceFeed(obj);
                 break;
             }
-            case 'gpio':{
+            case 'gpio': {
                 (dev as GpioPin).setDeviceFeed(obj);
                 break;
             }
@@ -1205,7 +1203,7 @@ export class GpioPin extends ConfigItem {
             let trig = await c.setPinTriggerAsync(data);
             gpioCont.resetPinTriggers(this.headerId, this.id);
             return trig;
-        } catch(err) { return Promise.reject(new Error(`Error Setting pin trigger ${err.message}`)); }
+        } catch (err) { return Promise.reject(new Error(`Error Setting pin trigger ${err.message}`)); }
     }
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
@@ -1266,7 +1264,7 @@ export class GpioPin extends ConfigItem {
             }
             else {
                 // Search by attributes
-                for (let i = 0; i < this.feeds.length; i++){
+                for (let i = 0; i < this.feeds.length; i++) {
                     feed = this.feeds.getItemByIndex(i);
                     let bOptions = false;
                     if (typeof feed.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && feed.options.id === data.options.id) bOptions = true;
@@ -1274,8 +1272,8 @@ export class GpioPin extends ConfigItem {
                         bOptions &&
                         feed.sendValue === data.sendValue &&
                         feed.eventName === data.eventName &&
-                        feed.property === data.property){
-                        return feed; 
+                        feed.property === data.property) {
+                        return feed;
                     }
                 }
             }
@@ -1829,7 +1827,7 @@ export class I2cController extends ConfigItem {
         }
         return devices;
     }
-    public getDeviceById(busId: number, deviceId: number):I2cDevice {
+    public getDeviceById(busId: number, deviceId: number): I2cDevice {
         let bus = this.buses.getItemById(busId);
         return bus.getDeviceById(deviceId);
     }
@@ -1970,7 +1968,7 @@ export class I2cBus extends ConfigItem {
     public async scanBus() {
         try {
             let dbus = i2c.buses.find(elem => elem.busNumber === this.busNumber);
-            if(typeof dbus !== 'undefined') this.addresses = await dbus.scanBus();
+            if (typeof dbus !== 'undefined') this.addresses = await dbus.scanBus();
         } catch (err) { return Promise.reject(err); }
     }
     public async addAddress(obj) {
@@ -2435,12 +2433,12 @@ export class I2cDevice extends ConfigItem {
                     feed = this.feeds.getItemByIndex(i);
                     let bOptions = false;
                     if (typeof feed.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && feed.options.id === data.options.id) bOptions = true;
-                    if (feed.connectionId === data.connectionId && 
+                    if (feed.connectionId === data.connectionId &&
                         bOptions &&
                         feed.sendValue === data.sendValue &&
                         feed.eventName === data.eventName &&
                         feed.property === data.property) {
-                        return feed; 
+                        return feed;
                     }
                 }
             }
@@ -2451,7 +2449,7 @@ export class I2cDevice extends ConfigItem {
         try {
             let triggerId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.triggerId !== 'undefined' ? parseInt(data.triggerId, 10) : -1;
             if (isNaN(triggerId)) return Promise.reject(`The trigger identifier is not valid.`);
-            let trigger : DeviceTrigger;
+            let trigger: DeviceTrigger;
             let connectionId;
             let connection;
             if (triggerId !== -1) {
@@ -2694,12 +2692,37 @@ export class GenericDeviceController extends ConfigItem {
         try {
             logger.info(`received ${JSON.stringify(dev)}`);
             let id = parseInt(dev.id, 10);
-            if (isNaN(id)) id = this.devices.getMaxId(false, 0) + 1; // if devices get deleted, need to make sure we pick a new id.
-            let device = this.devices.getItemById(id, true, { id: id });
-            dev.id = id;
-            device.set(dev);
-            if (typeof gdc.devices.find(elem => elem.id === device.id) === 'undefined') gdc.addDevice(device);
-            if (typeof dev.options.name !== 'undefined') device.name = dev.options.name;
+            let typeId = typeof dev.typeId !== 'undefined' ? parseInt(dev.typeId, 10) : undefined;
+            let device: GenericDevice;
+            if (typeof id === 'undefined') {
+                // adding a device
+                if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
+                if (isNaN(id)) id = this.devices.getMaxId(false, 0) + 1; // if devices get deleted, need to make sure we pick a new id.
+                device = this.devices.getItemById(id, true);
+                device.options = dev.options || {};
+            }
+            else {
+                device = this.devices.getItemById(id);
+                // device.set(dev);
+            }
+
+            if (typeof dev.typeId !== 'undefined' && typeId !== device.typeId) {
+                // If the type has changed clear out the options;
+                device.typeId = typeId;
+                device.options = {};
+            }
+            if (typeof dev.sampling !== 'undefined' && !isNaN(parseInt(dev.sampling, 10))) device.sampling = parseInt(dev.sampling, 10);
+            if (typeof dev.isActive !== 'undefined') device.isActive = utils.makeBool(dev.isActive);
+
+            let gdcDevice = gdc.devices.find(elem => elem.id === id);
+            if (typeof gdcDevice === 'undefined') {
+                await gdc.addDevice(dev);
+            }
+            else {
+                if (typeof dev.options !== 'undefined') await gdcDevice.setOptions(dev.options);
+                if (typeof dev.values !== 'undefined') await gdcDevice.setValues(dev.Values);
+            }
+
             return Promise.resolve(device);
         }
         catch (err) { return Promise.reject(err); }
@@ -2767,7 +2790,7 @@ export class GenericDevice extends ConfigItem {
     constructor(data) {
         super(data);
     }
-    protected _feeds:Feed[] = [];
+    protected _feeds: Feed[] = [];
     public initData(data?: any) {
         if (typeof this.data.values === 'undefined') this.values = {};
         if (typeof this.data.options === 'undefined') this.options = {};

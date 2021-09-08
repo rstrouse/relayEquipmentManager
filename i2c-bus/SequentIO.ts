@@ -762,7 +762,7 @@ export class SequentMegaIND extends SequentIO {
                     }
                 }
             }
-            return Promise.resolve(this.options);
+            return Promise.resolve(this.values);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }

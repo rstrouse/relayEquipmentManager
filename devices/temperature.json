@@ -1159,6 +1159,207 @@
         }
       ],
       "interfaces": [ "generic" ]
+    },
+    {
+      "id": 1101,
+      "name": "CPU Temperature (Linux)",
+      "deviceClass": "CPUTempDevice",
+      "module": "./SystemDevices",
+      "convertValue": "",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "temp",
+          "desc": "CPU Temperature (current units)",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempC",
+          "desc": "CPU Temperature C",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempK",
+          "desc": "CPU Temperature K",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempF",
+          "desc": "CPU Temperature F",
+          "maxSamples": 50
+        },
+        {
+          "name": "units",
+          "desc": "Temperature Units",
+          "maxSamples": 50
+        },
+        {
+          "name": "all",
+          "desc": "All values",
+          "maxSamples": 50
+        }
+      ],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block"
+            }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "canEdit": true,
+                "inputAttrs": {
+                  "maxLength": 24,
+                  "style": {
+                    "width": "16rem"
+                  }
+                },
+                "style": {
+                  "display": "block"
+                }
+              }
+            },
+            {
+              "dataType": "boolean",
+              "default": true,
+              "field": {
+                "type": "checkbox",
+                "bind": "isActive",
+                "labelText": "Is Active"
+              }
+            },
+            {
+              "default": "C",
+              "field": {
+                "type": "pickList",
+                "labelText": "Units",
+                "binding": "options.units",
+                "bindColumn": 0,
+                "displayColumn": 2,
+                "style": {
+                  "display": "block"
+                },
+                "labelAttrs": {
+                  "style": {
+                    "width": "3rem"
+                  }
+                },
+                "columns": [
+                  {
+                    "hidden": true,
+                    "binding": "name",
+                    "text": "name",
+                    "style": {
+                      "whiteSpace": "nowrap"
+                    }
+                  },
+                  {
+                    "hidden": true,
+                    "binding": "val",
+                    "text": "val",
+                    "style": {
+                      "whiteSpace": "nowrap"
+                    }
+                  },
+                  {
+                    "hidden": false,
+                    "binding": "desc",
+                    "text": "Description",
+                    "style": {
+                      "whiteSpace": "nowrap"
+                    }
+                  }
+                ],
+                "items": [
+                  {
+                    "name": "F",
+                    "val": "F",
+                    "desc": "Fahrenheit"
+                  },
+                  {
+                    "name": "C",
+                    "val": "C",
+                    "desc": "Celsius"
+                  },
+                  {
+                    "name": "K",
+                    "val": "K",
+                    "desc": "Kelvin"
+                  }
+                ],
+                "inputAttrs": {
+                  "style": {
+                    "width": "7rem"
+                  }
+                }
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "genericReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "CPU Temp",
+                        "binding": "values.temp",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0#",
+                        "emptyMask": "--.-",
+                        "units": "&deg;",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "binding": "values.units",
+                        "type": "span",
+                        "cssClass": "picSpinner-units picUnits"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        "generic"
+      ]
     }
 
   ],
