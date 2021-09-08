@@ -432,7 +432,7 @@
                     "style": {
                       "width": "21rem"
                     },
-                    "html": "The script determines how to set the fan power.",
+                    "html": "The script determines how to set the fan power. See <a href='https://github.com/rstrouse/relayEquipmentManager/wiki/Sequent-Microsystems-Boards#sequent-smart-fan' target='_blank'>Sequent Smart Fan Wiki</a> for instructions.",
                     "cssClass": "script-advanced-instructions"
                   }
                 },
