@@ -1187,7 +1187,28 @@
           "maxSamples": 50
         }
       ],
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "out0_101",
+          "desc": "0-10v out #1",
+          "dataType": "number"
+        },
+        {
+          "name": "out0_102",
+          "desc": "0-10v out #2",
+          "dataType": "number"
+        },
+        {
+          "name": "out0_103",
+          "desc": "0-10v out #3",
+          "dataType": "number"
+        },
+        {
+          "name": "out0_104",
+          "desc": "0-10v out #4",
+          "dataType": "number"
+        }
+      ],
       "options": [
         {
           "dataType": "panel",

@@ -567,6 +567,12 @@
                                     self._build_deviceBindings(itm);
                                 });
                             self._build_deviceBindings();
+                            if (type === 'internal') {
+                                line = $('<div></div>').appendTo(el);
+                                $('<div></div>').appendTo(line).addClass('script-advanced-instructions').html('Enter plain javascript for the data to be transferred.  Return a string, number, or object from the function.');
+                                line = $('<div></div>').appendTo(el);
+                                $('<div></div>').appendTo(line).scriptEditor({ binding: 'payloadExpression', prefix: '(feed, value): any => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
+                            }
                         }
                         else if (typeof o.bindings.feeds !== 'undefined' && o.bindings.feeds.length >= 1) {
                             $('<div></div>').appendTo(line).pickList({

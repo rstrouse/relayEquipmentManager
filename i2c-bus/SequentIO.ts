@@ -913,7 +913,6 @@ export class SequentMegaBAS extends SequentIO {
             // Ch4: 10
             if (val < 0 || val > 10) throw new Error(`Value must be between 0 and 10`);
             if (!this.i2c.isMock) await this.writeWord(4 + (2 * (id - 1)), Math.round(val * 1000));
-            this.out0_10[id - 1].value = val;
             let io = this.out0_10[id - 1];
             if (io.value !== val) {
                 io.value = val;
