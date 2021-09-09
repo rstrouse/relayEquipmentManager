@@ -2694,7 +2694,7 @@ export class GenericDeviceController extends ConfigItem {
             let id = parseInt(dev.id, 10);
             let typeId = typeof dev.typeId !== 'undefined' ? parseInt(dev.typeId, 10) : undefined;
             let device: GenericDevice;
-            if (typeof id === 'undefined') {
+            if (typeof id === 'undefined' || isNaN(id) || id < 0) {
                 // adding a device
                 if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
                 if (isNaN(id)) id = this.devices.getMaxId(false, 0) + 1; // if devices get deleted, need to make sure we pick a new id.
@@ -2716,7 +2716,7 @@ export class GenericDeviceController extends ConfigItem {
 
             let gdcDevice = gdc.devices.find(elem => elem.id === id);
             if (typeof gdcDevice === 'undefined') {
-                await gdc.addDevice(dev);
+                await gdc.addDevice(device);
             }
             else {
                 if (typeof dev.options !== 'undefined') await gdcDevice.setOptions(dev.options);

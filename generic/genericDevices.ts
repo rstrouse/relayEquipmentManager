@@ -113,7 +113,7 @@ export class GenericDeviceBase implements IDevice {
     public get deviceStatus(): DeviceStatus { return { name: this.device.name, category: this.category, hasFault: utils.makeBool(this.hasFault), status: this.status, lastComm: this.lastComm, protocol: 'generic', busNumber: 1, address: undefined } }
     public get isMock(): boolean { 
         try {
-            console.log(process.platform);
+            //console.log(process.platform);
             switch (process.platform) {
                 case 'linux':
                     return false
