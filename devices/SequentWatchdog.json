@@ -1,0 +1,606 @@
+﻿{
+  "category": "Watchdog",
+  "predefined": true,
+  "devices": [
+    {
+      "id": 1051,
+      "enabled": true,
+      "name": "Sequent Watchdog",
+      "deviceClass": "SequentWatchdog",
+      "module": "./SequentWatchdog",
+      "hasReset": false,
+      "hasChangeAddress": false,
+      "readings": {},
+      "outputs": [
+        {
+          "name": "tempC",
+          "desc": "Temperature C",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempF",
+          "desc": "Temperature F",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempK",
+          "desc": "Temperature K",
+          "maxSamples": 50
+        },
+        {
+          "name": "piVoltage",
+          "desc": "Raspberry Pi Voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "chargeStatus",
+          "desc": "Charge Status",
+          "maxSamples": 1
+        },
+        {
+          "name": "sourceVolts",
+          "desc": "Source Volts",
+          "maxSamples": 50
+        },
+        {
+          "name": "batteryVolts",
+          "desc": "Battery Volts",
+          "maxSamples": 50
+        },
+        {
+          "name": "watchdogRestarts",
+          "desc": "Watchdog Restarts",
+          "maxSamples": 1
+        },
+        {
+          "name": "scriptResult",
+          "desc": "Script Result",
+          "maxSamples": 1
+        }
+      ],
+      "inputs": [],
+      "options": [
+        {
+          "field": {
+            "text": "General",
+            "id": "tabGeneral"
+          },
+          "options": [
+            {
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "inputAttrs": {
+                  "maxLength": 16,
+                  "style": {
+                    "width": "16rem"
+                  }
+                },
+                "style": {
+                  "display": "block"
+                }
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Device Info",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                },
+                "cssClass": "i2cDeviceInformation"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Hardware",
+                    "binding": "info.hwVersion",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Firmware",
+                    "binding": "info.fwVersion",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Script Result",
+                    "binding": "values.scriptFnVal",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem",
+                        "fontSize": ".8rem",
+                        "lineHeight": "1.2"
+                      }
+                    },
+                    "style": {
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2",
+                      "display": "block"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "i2cReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Charging Status",
+                    "binding": "values.chargeStatus",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Pi Voltage",
+                    "binding": "values.raspiVolts",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5rem"
+                      }
+                    },
+                    "units": "volts"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Source Voltage",
+                    "binding": "values.sourceVolts",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5rem"
+                      }
+                    },
+                    "units": "volts"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Battery Voltage",
+                    "binding": "values.batteryVolts",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0.0##",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5em",
+                        "textAlign": "right"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5rem"
+                      }
+                    },
+                    "units": "volts"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "WDT Restarts",
+                    "binding": "values.watchdogRestarts",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "dataType": "number",
+                    "fmtMask": "#,##0",
+                    "inputAttrs": {
+                      "style": {
+                        "width": "4.5em"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "actionButton",
+                    "text": "Reset Count",
+                    "icon": "<i class=\"fab fa-creative-commons-zero\"></i>",
+                    "style": {
+                      "width": "8rem"
+                    }
+                  },
+                  "fieldEvents": {
+                    "click": {
+                      "type": "putservice",
+                      "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/clearResetCount`",
+                      "message": "Resetting Count...",
+                      "callContext": "reset",
+                      "resultContext": "resetting"
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Temp",
+                        "binding": "values.temp",
+                        "dataType": "number",
+                        "fmtMask": "#,##0",
+                        "emptyMask": "--.-",
+                        "units": "&deg;",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "8.5rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "binding": "values.units",
+                        "type": "span",
+                        "cssClass": "picSpinner-units picUnits"
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Settings",
+                "style": {},
+                "attrs": {
+                  "data-bindingcontext": "settings"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "pickList",
+                    "labelText": "Units",
+                    "binding": "options.units",
+                    "bindColumn": 0,
+                    "displayColumn": 1,
+                    "style": {
+                      "display": "block",
+                      "marginLeft": ".25rem",
+                      "marginBottom": ".25rem"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5rem"
+                      }
+                    },
+                    "columns": [
+                      {
+                        "hidden": true,
+                        "binding": "name",
+                        "text": "name",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      },
+                      {
+                        "hidden": false,
+                        "binding": "desc",
+                        "text": "Description",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      }
+                    ],
+                    "items": [
+                      {
+                        "name": "F",
+                        "desc": "Fahrenheit"
+                      },
+                      {
+                        "name": "C",
+                        "desc": "Celsius"
+                      },
+                      {
+                        "name": "K",
+                        "desc": "Kelvin"
+                      }
+                    ],
+                    "inputAttrs": {
+                      "style": {
+                        "width": "7rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "default": 4,
+                  "field": {
+                    "binding": "options.readInterval",
+                    "type": "valueSpinner",
+                    "labelText": "Dev. Poll Interval",
+                    "canEdit": true,
+                    "min": 3,
+                    "max": 9999999,
+                    "step": 1000,
+                    "fmtMask": "##,##0",
+                    "units": "ms",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5em"
+                      }
+                    },
+                    "style": {
+                      "marginLeft": ".25rem",
+                      "marginBottom": ".25rem",
+                      "display": "block"
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "width": "21rem"
+                    },
+                    "html": "Period: The period is the interval at which the watchdog will reboot the Pi if no keep-alive (aka reset) is received.  Set to 0 for disabled (no watchdog).  Min is 1s (per the spec, but never set it below 3s) and max is 65,535s (~18h 12m hours).  This value must be higher than the device polling interval.<hr style=\"margin:2px\"></hr>Default period: The default period is the amount of time after a reboot that the Pi will reset if it doesn't receive a keep-alive (aka reset) signal.  Default is 270s; min is 11s and max is 64,999s (~18 hours).  This value must be higher than the device polling interval.<hr style=\"margin:2px\"></hr>Off interval: Set the off interval (seconds), The Raspberry will kept off this amount of time when the repower operation is performed.<hr style=\"margin:2px\"></hr>Repower on battery: if the watchdog power off the Raspberry, will repower on battery only if this is true.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "default": 4,
+                  "field": {
+                    "binding": "options.period",
+                    "type": "valueSpinner",
+                    "labelText": "Period",
+                    "canEdit": true,
+                    "min": 0,
+                    "max": 65535,
+                    "step": 10,
+                    "fmtMask": "##,##0",
+                    "units": "s",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5em"
+                      }
+                    },
+                    "style": {
+                      "marginLeft": ".25rem",
+                      "marginBottom": ".25rem"
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "default": 4,
+                  "field": {
+                    "binding": "options.defaultPeriod",
+                    "type": "valueSpinner",
+                    "labelText": "Default Period",
+                    "canEdit": true,
+                    "min": 10,
+                    "max": 64999,
+                    "step": 10,
+                    "fmtMask": "##,##0",
+                    "units": "s",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5em"
+                      }
+                    },
+                    "style": {
+                      "marginLeft": ".25rem",
+                      "marginBottom": ".25rem",
+                      "display": "block"
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "default": 4,
+                  "field": {
+                    "binding": "options.offInterval",
+                    "type": "valueSpinner",
+                    "labelText": "Off Interval",
+                    "canEdit": true,
+                    "min": 10,
+                    "max": 64999,
+                    "step": 10,
+                    "fmtMask": "##,##0",
+                    "units": "s",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "8.5em"
+                      }
+                    },
+                    "style": {
+                      "marginLeft": ".25rem",
+                      "marginBottom": ".25rem"
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.rePowerOnBattery",
+                    "labelText": "Repower on Battery",
+                    "style": {
+                      "display": "block"
+                    }
+                  }
+                },
+                {
+                  "dataType": "boolean",
+                  "default": false,
+                  "field": {
+                    "type": "checkbox",
+                    "bind": "options.powerButtonEnabled",
+                    "labelText": "Power Button Enabled",
+                    "style": {
+                      "display": "block"
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "width": "21rem"
+                    },
+                    "html": "The script allows the user to take action based on the known information. See <a href='https://github.com/rstrouse/relayEquipmentManager/wiki/Sequent-Microsystems-Boards#sequent-watchdog' target='_blank'>Sequent Watchdog Wiki</a> for instructions.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "block",
+                      "lineHeight": "1.2"
+                    },
+                    "class": "script-editor",
+                    "binding": "test-binding"
+                  },
+                  "options": [
+                    {
+                      "default": "return 0;",
+                      "field": {
+                        "binding": "options.scriptFn",
+                        "type": "scriptEditor",
+                        "labelText": "Fan Power Function",
+                        "prefix": "(options, values, info) => {",
+                        "suffix": "}",
+                        "codeStyle": "{ maxHeight: '300px', overflow: 'auto' }",
+                        "canEdit": true,
+                        "style": {
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        "i2c"
+      ]
+    }
+  ]
+}
