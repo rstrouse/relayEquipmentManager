@@ -129,7 +129,10 @@ export class GenericDeviceBase implements IDevice {
         catch (err) { logger.error(err); return Promise.resolve(); }
     }
     public get id(): number { return typeof this.device !== 'undefined' ? this.device.id : undefined; }
-    public async initAsync(deviceType: any): Promise<boolean> { this.category = deviceType.category; return Promise.resolve(true); }
+    public async initAsync(deviceType: any): Promise<boolean> { 
+        this.category = deviceType.category; 
+        if (typeof this.device.name === 'undefined') this.device.name = typeof (this.device.options.name !== 'undefined') ? this.device.options.name : deviceType.name;
+        return Promise.resolve(true); }
     public async callCommand(cmd: any): Promise<any> {
         try {
             if (typeof cmd.name !== 'string') return Promise.reject(new Error(`Invalid command ${cmd.name}`));
@@ -150,13 +153,15 @@ export class GenericDeviceBase implements IDevice {
     }
     public async setOptions(opts: any): Promise<any> {
         try {
-            this.device.options.set(opts);
+            this.device.options = opts;
+            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name
             return Promise.resolve(this);
         }
         catch (err) { logger.error(err); }
     }
     public async setValues(vals: any): Promise<any> { 
-        this.device.values.set(vals);
+
+        this.device.values = vals;
         return Promise.resolve(this); }
     public initFeeds() {
         this.feeds = [];
@@ -192,7 +197,7 @@ export class GenericDeviceBase implements IDevice {
     }
     public setValue(prop, value) {
         let replaceSymbols = /(?:\]\.|\[|\.)/g
-        let _prop = prop.replace(replaceSymbols, ',').split(',');
+        let _prop = prop.indexOf(',') > -1 ? prop.replace(replaceSymbols, ',').split(',') : prop;
         //let obj = this.device.values;
         // for (let i = 0; i < _prop.length; i++) {
         //     obj = obj[_prop[i]];

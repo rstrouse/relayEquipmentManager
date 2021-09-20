@@ -2699,15 +2699,15 @@ export class GenericDeviceController extends ConfigItem {
                 if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
                 if (isNaN(id)) id = this.devices.getMaxId(false, 0) + 1; // if devices get deleted, need to make sure we pick a new id.
                 device = this.devices.getItemById(id, true);
+                device.typeId = typeId;
                 device.options = dev.options || {};
             }
             else {
                 device = this.devices.getItemById(id);
-                // device.set(dev);
             }
 
-            if (typeof dev.typeId !== 'undefined' && typeId !== device.typeId) {
-                // If the type has changed clear out the options;
+            if (typeof typeId !== 'undefined' && typeId !== device.typeId && !isNaN(parseInt(dev.id, 10))) {
+                // If the type has changed (and it isn't a brand new device = null dev.id) clear out the options;
                 device.typeId = typeId;
                 device.options = {};
             }

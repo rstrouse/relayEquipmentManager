@@ -334,49 +334,6 @@ export class SequentIO extends i2cDeviceBase {
             }
         } catch (err) { return Promise.reject(err); }
     }
-    public getValue(prop: string) {
-        // Steps to getting to our value.
-        // 1. Determine whether input or output.
-        // 2. Determine which array we are coming from.
-        // 3. Map the IO number to the value.
-        let p = prop.toLowerCase();
-        switch (p) {
-            case 'cputempc':
-                return this.info.cpuTemp;
-            case 'cputempf':
-                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'F');
-            case 'cputempk':
-                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
-            case 'inputvoltage':
-                return this.info.volts;
-            case 'pivoltage':
-                return this.info.rapsiVolts;
-            case 'fwversion':
-                return this.info.fwVersion;
-            default:
-                let iarr;
-                if (p.startsWith('out4_20')) iarr = this.out4_20;
-                else if (p.startsWith('in4_20')) iarr = this.in4_20;
-                else if (p.startsWith('out0_10')) iarr = this.out0_10;
-                else if (p.startsWith('in0_10')) iarr = this.in0_10;
-                else if (p.startsWith('indigital')) iarr = this.inDigital;
-                else if (p.startsWith('outdrain')) iarr = this.outDrain;
-                if (typeof iarr === 'undefined') {
-                    logger.error(`${this.device.name} error getting I/O channel ${prop}`);
-                    return;
-                }
-                let parr = p.split('.');
-
-                let sord = p[parr[0].length - 1];
-                let ord = parseInt(sord, 10);
-                if (isNaN(ord) || ord <= 0 || ord >= 4) {
-                    logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
-                    return;
-                }
-                let chan = iarr[ord - 1];
-                return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
-        }
-    }
     public calcMedian(prop: string, values: any[]) {
         let p = prop.toLowerCase();
         switch (p) {
@@ -802,7 +759,49 @@ export class SequentMegaIND extends SequentIO {
         }
         return desc;
     }
+    public getValue(prop: string) {
+        // Steps to getting to our value.
+        // 1. Determine whether input or output.
+        // 2. Determine which array we are coming from.
+        // 3. Map the IO number to the value.
+        let p = prop.toLowerCase();
+        switch (p) {
+            case 'cputempc':
+                return this.info.cpuTemp;
+            case 'cputempf':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'F');
+            case 'cputempk':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
+            case 'inputvoltage':
+                return this.info.volts;
+            case 'pivoltage':
+                return this.info.rapsiVolts;
+            case 'fwversion':
+                return this.info.fwVersion;
+            default:
+                let iarr;
+                if (p.startsWith('out4_20')) iarr = this.out4_20;
+                else if (p.startsWith('in4_20')) iarr = this.in4_20;
+                else if (p.startsWith('out0_10')) iarr = this.out0_10;
+                else if (p.startsWith('in0_10')) iarr = this.in0_10;
+                else if (p.startsWith('indigital')) iarr = this.inDigital;
+                else if (p.startsWith('outdrain')) iarr = this.outDrain;
+                if (typeof iarr === 'undefined') {
+                    logger.error(`${this.device.name} error getting I/O channel ${prop}`);
+                    return;
+                }
+                let parr = p.split('.');
 
+                let sord = p[parr[0].length - 1];
+                let ord = parseInt(sord, 10);
+                if (isNaN(ord) || ord <= 0 || ord >= 5) {
+                    logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
+                    return;
+                }
+                let chan = iarr[ord - 1];
+                return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
+        }
+    }
 }
 export class SequentMegaBAS extends SequentIO {
     protected calDefinitions = {
@@ -1016,5 +1015,45 @@ export class SequentMegaBAS extends SequentIO {
         }
         return desc;
     }
+    public getValue(prop: string) {
+        // Steps to getting to our value.
+        // 1. Determine whether input or output.
+        // 2. Determine which array we are coming from.
+        // 3. Map the IO number to the value.
+        let p = prop.toLowerCase();
+        switch (p) {
+            case 'cputempc':
+                return this.info.cpuTemp;
+            case 'cputempf':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'F');
+            case 'cputempk':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
+            case 'inputvoltage':
+                return this.info.volts;
+            case 'pivoltage':
+                return this.info.rapsiVolts;
+            case 'fwversion':
+                return this.info.fwVersion;
+            default:
+                let iarr;
+                if (p.startsWith('out4_20')) iarr = this.out4_20;
+                else if (p.startsWith('in4_20')) iarr = this.in4_20;
+                else if (p.startsWith('out0_10')) iarr = this.out0_10;
+                else if (p.startsWith('in0_10')) iarr = this.in0_10;
+                if (typeof iarr === 'undefined') {
+                    logger.error(`${this.device.name} error getting I/O channel ${prop}`);
+                    return;
+                }
+                let parr = p.split('.');
 
+                let sord = p[parr[0].length - 1];
+                let ord = parseInt(sord, 10);
+                if (isNaN(ord) || (p.startsWith('in') && (ord <= 0 || ord >= 9)) || (p.startsWith('out') && (ord <= 0 || ord >= 5))) {
+                    logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
+                    return;
+                }
+                let chan = iarr[ord - 1];
+                return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
+        }
+    }
 }

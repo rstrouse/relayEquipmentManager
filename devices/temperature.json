@@ -25,23 +25,33 @@
             "labelText": "Units",
             "required": true,
             "canEdit": false,
-            "inputAttrs": { "style": { "width": "2rem" } },
+            "inputAttrs": {
+              "style": {
+                "width": "2rem"
+              }
+            },
             "columns": [
               {
                 "binding": "val",
                 "hidden": true,
                 "text": "Units",
-                "style": { "whiteSpace": "nowrap" }
+                "style": {
+                  "whiteSpace": "nowrap"
+                }
               },
               {
                 "binding": "name",
                 "text": "",
-                "style": { "whiteSpace": "nowrap" }
+                "style": {
+                  "whiteSpace": "nowrap"
+                }
               },
               {
                 "binding": "desc",
                 "text": "Temp Units",
-                "style": { "whiteSpace": "nowrap" }
+                "style": {
+                  "whiteSpace": "nowrap"
+                }
               }
             ],
             "items": [
@@ -80,19 +90,27 @@
             "labelText": "Resistance",
             "required": true,
             "units": "&#937;",
-            "inputAttrs": { "style": { "width": "4rem" } },
+            "inputAttrs": {
+              "style": {
+                "width": "4rem"
+              }
+            },
             "canEdit": true,
             "columns": [
               {
                 "binding": "val",
                 "hidden": true,
                 "text": "Units",
-                "style": { "whiteSpace": "nowrap" }
+                "style": {
+                  "whiteSpace": "nowrap"
+                }
               },
               {
                 "binding": "name",
                 "text": "",
-                "style": { "whiteSpace": "nowrap" }
+                "style": {
+                  "whiteSpace": "nowrap"
+                }
               }
             ],
             "items": [
@@ -131,24 +149,38 @@
             "labelText": "Units",
             "required": true,
             "canEdit": false,
-            "labelAttrs": { "style": { "marginLeft": ".25rem" } },
-            "inputAttrs": { "style": { "width": "2rem" } },
+            "labelAttrs": {
+              "style": {
+                "marginLeft": ".25rem"
+              }
+            },
+            "inputAttrs": {
+              "style": {
+                "width": "2rem"
+              }
+            },
             "columns": [
               {
                 "binding": "val",
                 "hidden": true,
                 "text": "Units",
-                "style": { "whiteSpace": "nowrap" }
+                "style": {
+                  "whiteSpace": "nowrap"
+                }
               },
               {
                 "binding": "name",
                 "text": "",
-                "style": { "whiteSpace": "nowrap" }
+                "style": {
+                  "whiteSpace": "nowrap"
+                }
               },
               {
                 "binding": "desc",
                 "text": "Temp Units",
-                "style": { "whiteSpace": "nowrap" }
+                "style": {
+                  "whiteSpace": "nowrap"
+                }
               }
             ],
             "items": [
@@ -192,7 +224,9 @@
           "options": {
             "a": {
               "dataType": "object",
-              "field": { "type": "div" },
+              "field": {
+                "type": "div"
+              },
               "options": {
                 "resistance": {
                   "default": 25000,
@@ -203,8 +237,14 @@
                     "canEdit": true,
                     "units": "&#937;",
                     "labelText": "A",
-                    "inputAttrs": { "maxLength": "7rem" },
-                    "labelAttrs": { "style": { "marginRight": ".15rem" } }
+                    "inputAttrs": {
+                      "maxLength": "7rem"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "marginRight": ".15rem"
+                      }
+                    }
                   }
                 },
                 "temp": {
@@ -217,7 +257,9 @@
                     "canEdit": true,
                     "units": "&deg;",
                     "labelText": "Temp",
-                    "inputAttrs": { "maxLength": "5rem" },
+                    "inputAttrs": {
+                      "maxLength": "5rem"
+                    },
                     "labelAttrs": {
                       "style": {
                         "marginRight": ".15rem",
@@ -230,7 +272,9 @@
             },
             "b": {
               "dataType": "object",
-              "field": { "type": "div" },
+              "field": {
+                "type": "div"
+              },
               "options": {
                 "resistance": {
                   "default": 10000,
@@ -241,8 +285,14 @@
                     "canEdit": true,
                     "units": "&#937;",
                     "labelText": "B",
-                    "inputAttrs": { "maxLength": "7rem" },
-                    "labelAttrs": { "style": { "marginRight": ".15rem" } }
+                    "inputAttrs": {
+                      "maxLength": "7rem"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "marginRight": ".15rem"
+                      }
+                    }
                   }
                 },
                 "temp": {
@@ -255,7 +305,9 @@
                     "canEdit": true,
                     "units": "&deg;",
                     "labelText": "Temp",
-                    "inputAttrs": { "maxLength": "5rem" },
+                    "inputAttrs": {
+                      "maxLength": "5rem"
+                    },
                     "labelAttrs": {
                       "style": {
                         "marginRight": ".15rem",
@@ -268,7 +320,9 @@
             },
             "c": {
               "dataType": "object",
-              "field": { "type": "div" },
+              "field": {
+                "type": "div"
+              },
               "options": {
                 "resistance": {
                   "default": 4000,
@@ -279,8 +333,14 @@
                     "canEdit": true,
                     "units": "&#937;",
                     "labelText": "C",
-                    "inputAttrs": { "maxLength": "7rem" },
-                    "labelAttrs": { "style": { "marginRight": ".15rem" } }
+                    "inputAttrs": {
+                      "maxLength": "7rem"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "marginRight": ".15rem"
+                      }
+                    }
                   }
                 },
                 "temp": {
@@ -293,7 +353,9 @@
                     "canEdit": true,
                     "units": "&deg;",
                     "labelText": "Temp",
-                    "inputAttrs": { "maxLength": "5rem" },
+                    "inputAttrs": {
+                      "maxLength": "5rem"
+                    },
                     "labelAttrs": {
                       "style": {
                         "marginRight": ".15rem",
@@ -307,7 +369,10 @@
           }
         }
       },
-      "interfaces": [ "spi", "i2cAdc" ]
+      "interfaces": [
+        "spi",
+        "i2cAdc"
+      ]
     },
     {
       "id": 3,
@@ -353,7 +418,9 @@
           "dataType": "panel",
           "field": {
             "type": "div",
-            "style": { "display": "inline-block" }
+            "style": {
+              "display": "inline-block"
+            }
           },
           "options": [
             {
@@ -367,9 +434,13 @@
                 "labelText": "Name",
                 "inputAttrs": {
                   "maxLength": 16,
-                  "style": { "width": "16rem" }
+                  "style": {
+                    "width": "16rem"
+                  }
                 },
-                "style": { "display": "block" }
+                "style": {
+                  "display": "block"
+                }
               }
             },
             {
@@ -393,7 +464,9 @@
                     "type": "checkbox",
                     "bind": "options.ledEnabled",
                     "labelText": "LED Enabled",
-                    "style": { "marginLeft": "1rem" }
+                    "style": {
+                      "marginLeft": "1rem"
+                    }
                   }
                 }
               ]
@@ -406,22 +479,30 @@
                 "binding": "options.scale",
                 "bindColumn": 0,
                 "displayColumn": 1,
-                "style": { "display": "block" },
+                "style": {
+                  "display": "block"
+                },
                 "labelAttrs": {
-                  "style": { "width": "3rem" }
+                  "style": {
+                    "width": "3rem"
+                  }
                 },
                 "columns": [
                   {
                     "hidden": true,
                     "binding": "name",
                     "text": "name",
-                    "style": { "whiteSpace": "nowrap" }
+                    "style": {
+                      "whiteSpace": "nowrap"
+                    }
                   },
                   {
                     "hidden": false,
                     "binding": "desc",
                     "text": "Description",
-                    "style": { "whiteSpace": "nowrap" }
+                    "style": {
+                      "whiteSpace": "nowrap"
+                    }
                   }
                 ],
                 "items": [
@@ -438,10 +519,13 @@
                     "desc": "Kelvin"
                   }
                 ],
-                "inputAttrs": { "style": { "width": "7rem" } }
+                "inputAttrs": {
+                  "style": {
+                    "width": "7rem"
+                  }
+                }
               }
             },
-
             {
               "dataType": "panel",
               "field": {
@@ -465,14 +549,18 @@
                       "lineHeight": "1.2"
                     },
                     "labelAttrs": {
-                      "style": { "width": "5rem" }
+                      "style": {
+                        "width": "5rem"
+                      }
                     }
                   }
                 },
                 {
                   "field": {
                     "type": "div",
-                    "style": { "lineHeight": ".8" }
+                    "style": {
+                      "lineHeight": ".8"
+                    }
                   },
                   "options": [
                     {
@@ -485,7 +573,9 @@
                           "lineHeight": "1.2"
                         },
                         "labelAttrs": {
-                          "style": { "width": "5.5rem" }
+                          "style": {
+                            "width": "5.5rem"
+                          }
                         }
                       }
                     },
@@ -500,7 +590,6 @@
                         }
                       }
                     }
-
                   ]
                 },
                 {
@@ -522,7 +611,9 @@
                       }
                     },
                     "labelAttrs": {
-                      "style": { "width": "5.5rem" }
+                      "style": {
+                        "width": "5.5rem"
+                      }
                     },
                     "units": "volts"
                   }
@@ -561,7 +652,9 @@
                         "emptyMask": "--.-",
                         "units": "&deg;",
                         "labelAttrs": {
-                          "style": { "width": "5rem" }
+                          "style": {
+                            "width": "5rem"
+                          }
                         }
                       }
                     },
@@ -588,13 +681,17 @@
               "verticalAlign": "top",
               "marginLeft": ".5rem"
             },
-            "attrs": { "data-bindingcontext": "calibration" }
+            "attrs": {
+              "data-bindingcontext": "calibration"
+            }
           },
           "options": [
             {
               "field": {
                 "type": "div",
-                "style": { "width": "21rem" },
+                "style": {
+                  "width": "21rem"
+                },
                 "html": "Calibrate the probe by supplying the temperature from a reliable device in the in the field next to the calibrate button.  The units should be in the units set for the RTD.<hr style=\"margin:2px\"></hr>Wait a couple of minutes for the RTD reading to stabilize then press the calibrate button.",
                 "cssClass": "script-advanced-instructions"
               }
@@ -613,7 +710,9 @@
                   "dataType": "panel",
                   "field": {
                     "type": "div",
-                    "attrs": { "data-bindingcontext": "calibrate" }
+                    "attrs": {
+                      "data-bindingcontext": "calibrate"
+                    }
                   },
                   "options": [
                     {
@@ -621,7 +720,9 @@
                         "type": "actionButton",
                         "text": "Calibrate",
                         "icon": "<i class=\"fas fa-cogs\"></i>",
-                        "style": { "width": "7rem" }
+                        "style": {
+                          "width": "7rem"
+                        }
                       },
                       "fieldEvents": {
                         "click": {
@@ -650,10 +751,14 @@
                           }
                         },
                         "inputAttrs": {
-                          "style": { "width": "4.5rem" }
+                          "style": {
+                            "width": "4.5rem"
+                          }
                         },
                         "units": "&deg;",
-                        "style": { "marginLeft": ".25rem" }
+                        "style": {
+                          "marginLeft": ".25rem"
+                        }
                       }
                     },
                     {
@@ -670,7 +775,9 @@
                     "type": "actionButton",
                     "text": "Clear",
                     "icon": "<i class=\"fas fa-broom\"></i>",
-                    "style": { "width": "7rem" }
+                    "style": {
+                      "width": "7rem"
+                    }
                   },
                   "fieldEvents": {
                     "click": {
@@ -725,7 +832,9 @@
           ]
         }
       ],
-      "interfaces": [ "i2c" ]
+      "interfaces": [
+        "i2c"
+      ]
     },
     {
       "id": 5,
@@ -768,7 +877,9 @@
         {
           "field": {
             "type": "div",
-            "style": { "display": "inline-block" }
+            "style": {
+              "display": "inline-block"
+            }
           },
           "options": [
             {
@@ -780,7 +891,11 @@
                 "required": false,
                 "bind": "options.name",
                 "labelText": "Name",
-                "labelAttrs": { "style": { "width": "4rem" } },
+                "labelAttrs": {
+                  "style": {
+                    "width": "4rem"
+                  }
+                },
                 "inputAttrs": {
                   "maxLength": 16,
                   "style": {
@@ -800,24 +915,38 @@
                 "value": "F",
                 "required": true,
                 "canEdit": false,
-                "inputAttrs": { "style": { "width": "2rem" } },
-                "labelAttrs": { "style": { "width": "4rem" } },
+                "inputAttrs": {
+                  "style": {
+                    "width": "2rem"
+                  }
+                },
+                "labelAttrs": {
+                  "style": {
+                    "width": "4rem"
+                  }
+                },
                 "columns": [
                   {
                     "binding": "val",
                     "hidden": true,
                     "text": "Units",
-                    "style": { "whiteSpace": "nowrap" }
+                    "style": {
+                      "whiteSpace": "nowrap"
+                    }
                   },
                   {
                     "binding": "name",
                     "text": "",
-                    "style": { "whiteSpace": "nowrap" }
+                    "style": {
+                      "whiteSpace": "nowrap"
+                    }
                   },
                   {
                     "binding": "desc",
                     "text": "Temp Units",
-                    "style": { "whiteSpace": "nowrap" }
+                    "style": {
+                      "whiteSpace": "nowrap"
+                    }
                   }
                 ],
                 "items": [
@@ -857,7 +986,11 @@
                       "display": "block"
                     },
                     "unitsBinding": "values.inputUnits",
-                    "labelAttrs": { "style": { "width": "7em" } }
+                    "labelAttrs": {
+                      "style": {
+                        "width": "7em"
+                      }
+                    }
                   }
                 },
                 {
@@ -872,13 +1005,19 @@
                       "fontSize": ".77em",
                       "display": "block"
                     },
-                    "labelAttrs": { "style": { "width": "7em" } }
+                    "labelAttrs": {
+                      "style": {
+                        "width": "7em"
+                      }
+                    }
                   }
                 },
                 {
                   "field": {
                     "type": "div",
-                    "style": { "fontSize": ".77em" }
+                    "style": {
+                      "fontSize": ".77em"
+                    }
                   },
                   "options": [
                     {
@@ -890,7 +1029,11 @@
                         "dataType": "number",
                         "fmtMask": "#,##0.####",
                         "style": {},
-                        "labelAttrs": { "style": { "width": "7em" } }
+                        "labelAttrs": {
+                          "style": {
+                            "width": "7em"
+                          }
+                        }
                       }
                     },
                     {
@@ -933,25 +1076,41 @@
                     "value": "raw",
                     "required": true,
                     "canEdit": false,
-                    "inputAttrs": { "style": { "width": "7rem" } },
-                    "labelAttrs": { "style": { "width": "5rem" } },
-                    "style": { "display": "block" },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "7rem"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "style": {
+                      "display": "block"
+                    },
                     "columns": [
                       {
                         "binding": "val",
                         "hidden": true,
                         "text": "Val",
-                        "style": { "whiteSpace": "nowrap" }
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
                       },
                       {
                         "binding": "name",
                         "text": "Type",
-                        "style": { "whiteSpace": "nowrap" }
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
                       },
                       {
                         "binding": "desc",
                         "text": "ADC Value",
-                        "style": { "whiteSpace": "nowrap" }
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
                       }
                     ],
                     "items": [
@@ -979,9 +1138,10 @@
                 {
                   "field": {
                     "type": "div",
-                    "style": { "display": "none" },
+                    "style": {
+                      "display": "none"
+                    },
                     "cssClass": "pnl-voltinput-options pnl-input-options"
-
                   },
                   "options": [
                     {
@@ -998,8 +1158,16 @@
                         "fmtMask": "0.0###",
                         "emptyMask": "-.-",
                         "units": "volts",
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "inputAttrs": { "style": { "width": "4rem" } }
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "4rem"
+                          }
+                        }
                       }
                     }
                   ]
@@ -1008,7 +1176,9 @@
                   "field": {
                     "type": "div",
                     "cssClass": "pnl-rawinput-options pnl-input-options",
-                    "style": { "display": "block" }
+                    "style": {
+                      "display": "block"
+                    }
                   },
                   "options": [
                     {
@@ -1019,25 +1189,41 @@
                         "value": 10,
                         "required": true,
                         "canEdit": false,
-                        "inputAttrs": { "style": { "width": "7rem" } },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "7rem"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        },
                         "columns": [
                           {
                             "binding": "val",
                             "hidden": true,
                             "text": "Val",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           },
                           {
                             "binding": "name",
                             "text": "Bits",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           },
                           {
                             "binding": "desc",
                             "text": "ADC Value",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           }
                         ],
                         "items": [
@@ -1069,14 +1255,15 @@
                         ]
                       }
                     }
-
                   ]
                 },
                 {
                   "field": {
                     "type": "div",
                     "cssClass": "pnl-ohmsinput-options pnl-input-options",
-                    "style": { "display": "none" }
+                    "style": {
+                      "display": "none"
+                    }
                   },
                   "options": [
                     {
@@ -1087,26 +1274,42 @@
                         "value": 1,
                         "required": true,
                         "canEdit": false,
-                        "inputAttrs": { "style": { "width": "7rem" } },
-                        "labelAttrs": { "style": { "width": "5rem" } },
-                        "style": { "display": "block" },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "7rem"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": {
+                          "display": "block"
+                        },
                         "columns": [
                           {
                             "binding": "val",
                             "hidden": true,
                             "text": "Val",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           },
                           {
                             "binding": "name",
                             "hidden": true,
                             "text": "Units",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           },
                           {
                             "binding": "desc",
                             "text": "Input Units",
-                            "style": { "whiteSpace": "nowrap" }
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
                           }
                         ],
                         "items": [
@@ -1123,7 +1326,6 @@
                         ]
                       }
                     }
-
                   ]
                 }
               ]
@@ -1149,8 +1351,16 @@
                     "fmtMask": "0.0###",
                     "emptyMask": "-.-",
                     "units": "&deg;",
-                    "labelAttrs": { "style": { "width": "5.5rem" } },
-                    "inputAttrs": { "style": { "width": "4rem" } }
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "4rem"
+                      }
+                    }
                   }
                 }
               ]
@@ -1158,7 +1368,9 @@
           ]
         }
       ],
-      "interfaces": [ "generic" ]
+      "interfaces": [
+        "generic"
+      ]
     },
     {
       "id": 1101,
@@ -1361,7 +1573,6 @@
         "generic"
       ]
     }
-
   ],
   "maps": [
     {
