@@ -13,6 +13,9 @@ import { SpiAdcChips } from "../../spi-adc/SpiAdcChips";
 export class ConfigRoute {
     // GPIO Config services.
     public static initGPIO(app: express.Application) {
+        app.get('/config/backup/controller', (req, res) => {
+            return res.status(200).send(cont.get(true));
+        });
         app.get('/config/options/gpio/pin/feeds/:headerId/:pinId', (req, res) => {
             let pin = cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10));
             let opts = {
@@ -488,7 +491,6 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
-
         app.put('/config/genericDevices/device', async (req, res, next) => {
             try {
                 let dev = await cont.genericDevices.setDevice(req.body);
