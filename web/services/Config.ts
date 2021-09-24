@@ -16,6 +16,12 @@ export class ConfigRoute {
         app.get('/config/backup/controller', (req, res) => {
             return res.status(200).send(cont.get(true));
         });
+        app.put('/config/restore/validate', async (req, res, next) => {
+            try {
+                let ctx = await cont.validateRestore(req.body);
+                return res.status(200).send(ctx);
+            } catch (err) { next(err); }
+        });
         app.get('/config/options/gpio/pin/feeds/:headerId/:pinId', (req, res) => {
             let pin = cont.gpio.pins.getPinById(parseInt(req.params.headerId, 10), parseInt(req.params.pinId, 10));
             let opts = {

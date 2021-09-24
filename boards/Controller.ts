@@ -664,6 +664,44 @@ export class Controller extends ConfigItem {
                 }
         }
     }
+    public async validateRestore(rest: any): Promise<any> {
+        try {
+            let ctx: any = {
+                board: { errors: [], warnings: [] },
+                connections: { errors: [], warnings: [], add: [], update: [], remove: [] }
+            };
+            let c = this.get(true);
+            if (rest.controllerType !== c.controllerType) ctx.board.errors.push(`Controller Types do not match cannot restore backup from ${c.controllerType} to ${rest.controllerType}`);
+
+            // Verify the connections
+            if (typeof rest.connections === 'undefined') {
+                ctx.connections.errors.push(`The connections section is missing elements.`);
+            }
+            else {
+                let devs = rest.connections;
+                let cfg = c.connections;
+                for (let i = 0; i < devs.length; i++) {
+                    let r = devs[i];
+                    let c = cfg.find(elem => r.id === elem.id);
+                    if (typeof c === 'undefined') ctx.connections.add.push(r);
+                    else if (JSON.stringify(c) !== JSON.stringify(r)) ctx.connections.update.push(r);
+                }
+                for (let i = 0; i < cfg.length; i++) {
+                    let c = cfg[i];
+                    let r = devs.find(elem => elem.id == c.id);
+                    if (typeof r === 'undefined') ctx.connections.remove.push(c);
+                }
+            }
+            ctx.gpio = await this.gpio.validateRestore(rest);
+            ctx.spi0 = await this.spi0.validateRestore(rest);
+            ctx.spi1 = await this.spi1.validateRestore(rest);
+            ctx.genericDevices = await this.genericDevices.validateRestore(rest);
+            await this.i2c.validateRestore(rest, ctx);
+            return ctx;
+        } catch (err) { logger.error(`Error validating gpio for restore: ${err.message}`); }
+
+    }
+
 }
 
 export class DeviceFeedCollection extends ConfigItemCollection<DeviceFeed> {
@@ -954,6 +992,31 @@ export class Gpio extends ConfigItem {
     public emitFeeds(headerId, pinId) {
         let dev = this.pins.getPinById(headerId, pinId);
         setTimeout(() => { dev.emitFeeds(); }, 250);
+    }
+    public async validateRestore(rest: any): Promise<{ errors: any, warnings: any, add: any, update: any, remove: any }> {
+        try {
+            let ctx = { errors: [], warnings: [], add: [], update: [], remove: [] };
+            // Verify there is a GPIO section.
+            if (typeof rest.gpio === 'undefined' || typeof rest.gpio.pins == 'undefined') {
+                ctx.errors.push(`The gpio section is missing elements.`);
+            }
+            else {
+                let devs = rest.gpio.pins;
+                let cfg = cont.gpio.get(true).pins;
+                for (let i = 0; i < devs.length; i++) {
+                    let r = devs[i];
+                    let c = cfg.find(elem => r.id === elem.id && r.headerId === elem.headerId);
+                    if (typeof c === 'undefined') ctx.add.push(r);
+                    else if (JSON.stringify(c) !== JSON.stringify(r)) ctx.update.push(r);
+                }
+                for (let i = 0; i < cfg.length; i++) {
+                    let c = cfg[i];
+                    let r = devs.find(elem => elem.id == c.id && c.headerId === elem.headerId);
+                    if (typeof r === 'undefined') ctx.remove.push(c);
+                }
+            }
+            return ctx;
+        } catch (err) { logger.error(`Error validating gpio for restore: ${err.message}`); }
     }
 }
 
@@ -1642,6 +1705,32 @@ export class SpiController extends ConfigItem {
             return { status: dev.deviceStatus, state: dev.lastVal };
         } catch (err) { return Promise.reject(err); }
     }
+    public async validateRestore(rest: any): Promise<{ errors: any, warnings: any, add: any, update: any, remove: any }> {
+        try {
+            let ctx = { errors: [], warnings: [], add: [], update: [], remove: [] };
+            // Verify there is a SPIO section.
+            let spio = rest[`spi${this.busNumber}`]
+            if (typeof spio === 'undefined' || typeof spio.channels === 'undefined') {
+                ctx.errors.push(`The spi${this.busNumber} section is missing elements.`);
+            }
+            else {
+                let devs = spio.channels;
+                let cfg = this.get().channels;
+                for (let i = 0; i < devs.length; i++) {
+                    let r = devs[i];
+                    let c = cfg.find(elem => r.id === elem.id);
+                    if (typeof c === 'undefined') ctx.add.push(r);
+                    else if (JSON.stringify(c) !== JSON.stringify(r)) ctx.update.push(r);
+                }
+                for (let i = 0; i < cfg.length; i++) {
+                    let c = cfg[i];
+                    let r = devs.find(elem => elem.id == c.id);
+                    if (typeof r === 'undefined') ctx.remove.push(c);
+                }
+            }
+            return ctx;
+        } catch (err) { logger.error(`Error validating spi${this.busNumber} for restore: ${ err.message }`); }
+    }
 
 }
 export class I2cController extends ConfigItem {
@@ -1915,7 +2004,31 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
+    public async validateRestore(rest: any, ctx: any): Promise<void> {
+        try {
+            ctx.i2cBus = { errors: [], warnings:[], add:[], update:[], remove: [] };
+            // First check to see it there are any i2c busses that need removed or added.
+            let ic = rest.i2c;
+            if (typeof ic === 'undefined' || typeof ic.buses === 'undefined') {
+                ctx.i2cBus.errors.push(`The i2c bus section is missing elements.`);
+            }
+            else {
+                let cfg = this.get(true).buses;
+                for (let i = 0; i < ic.buses.length; i++) {
+                    let r = ic.buses[i];
+                    let c = cfg.find(elem => r.busNumber === elem.busNumber);
+                    if (typeof c === 'undefined') ctx.add.push(r);
+                    else if (JSON.stringify(c) !== JSON.stringify(r)) ctx.i2cBus.update.push(r);
+                }
+                for (let i = 0; i < cfg.length; i++) {
+                    let c = cfg[i];
+                    let r = ic.buses.find(elem => elem.busNumber == c.busNumber);
+                    if (typeof r === 'undefined') ctx.remove.push(c);
+                }
+            }
+            return;
+        } catch (err) { logger.error(`Error validating i2c controller for restore: ${err.message}`); }
+    }
 }
 export class I2cBusCollection extends ConfigItemCollection<I2cBus> {
     constructor(data: any, name?: string) { super(data, name) }
@@ -2781,6 +2894,32 @@ export class GenericDeviceController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async validateRestore(rest: any): Promise<{ errors: any, warnings: any, add: any, update: any, remove: any }> {
+        try {
+            let ctx = { errors: [], warnings: [], add: [], update: [], remove: [] };
+            // Verify there is a genericDevices section.
+            if (typeof rest.genericDevices === 'undefined' || typeof rest.genericDevices.devices == 'undefined') {
+                ctx.errors.push(`The genericDevices section is missing elements.`);
+            }
+            else {
+                let devs = rest.genericDevices.devices;
+                let cfg = this.get(true).devices;
+                for (let i = 0; i < devs.length; i++) {
+                    let r = devs[i];
+                    let c = cfg.find(elem => r.id === elem.id);
+                    if (typeof c === 'undefined') ctx.add.push(r);
+                    else if (JSON.stringify(c) !== JSON.stringify(r)) ctx.update.push(r);
+                }
+                for (let i = 0; i < cfg.length; i++) {
+                    let c = cfg[i];
+                    let r = devs.find(elem => elem.id == c.id);
+                    if (typeof r === 'undefined') ctx.remove.push(c);
+                }
+            }
+            return ctx;
+        } catch (err) { logger.error(`Error validating generic device configuration for restore: ${err.message}`); }
+    }
+
 }
 export class GenericDeviceCollection extends ConfigItemCollection<GenericDevice> {
     constructor(data: any, name?: string) { super(data, name || 'devices') }
