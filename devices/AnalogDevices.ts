@@ -36,7 +36,7 @@ export class AnalogDevices {
                 }
             }
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`Error loading device definitions: ${err.message}`); }
         return defs;
     }
     private static loadFile(filePath, filter:string) {
@@ -61,7 +61,7 @@ export class AnalogDevices {
             }
             return defs;
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`Error loading device file ${filePath}: ${err.message}`); }
     }
     public static saveCustomDefinition(device) {
         let filePath = path.posix.join(process.cwd(), `/devices/`, 'custom-devices.json');

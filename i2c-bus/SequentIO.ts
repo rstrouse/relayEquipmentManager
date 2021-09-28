@@ -230,7 +230,7 @@ export class SequentIO extends i2cDeviceBase {
                     break;
             }
             return val;
-        } catch (err) { return Promise.reject(`${this.device.name} error getting calibration status: ${err.message}`); }
+        } catch (err) { return Promise.reject(new Error(`${this.device.name} error getting calibration status: ${err.message}`)); }
         finally { this.suspendPolling = false; }
     }
     protected pollDeviceInformation() {
@@ -301,7 +301,7 @@ export class SequentIO extends i2cDeviceBase {
                 bytesRead: 2,
                 buffer: Buffer.from([Math.round(256 * Math.random()), Math.round(256 * Math.random())])
             } : await this.i2c.readI2cBlock(this.device.address, register, 2);
-            if (ret.bytesRead !== 2) return Promise.reject(`${this.device.name} error reading word from register ${register} bytes: ${ret.bytesRead}`);
+            if (ret.bytesRead !== 2) return Promise.reject(new Error(`${this.device.name} error reading word from register ${register} bytes: ${ret.bytesRead}`));
             return ret.buffer.readUInt8(0) + (256 * ret.buffer.readUInt8(1));
         } catch (err) { }
     }
@@ -311,7 +311,7 @@ export class SequentIO extends i2cDeviceBase {
                 bytesRead: 1,
                 buffer: Buffer.from([Math.round(256 * Math.random())])
             } : await this.i2c.readI2cBlock(this.device.address, register, 1);
-            if (ret.bytesRead !== 1) return Promise.reject(`${this.device.name} error reading byte from register ${register} bytes: ${ret.bytesRead}`);
+            if (ret.bytesRead !== 1) return Promise.reject(new Error(`${this.device.name} error reading byte from register ${register} bytes: ${ret.bytesRead}`));
             return ret.buffer.readUInt8(0);
         } catch (err) { logger.error(`Error reading ${this.device.name} register ${register}: ${err.message}`); }
     }

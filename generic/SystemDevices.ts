@@ -123,7 +123,7 @@ export class CPUTempDevice extends GenericDeviceBase {
             this._timerRead == null;
             if (!this.suspendPolling && this.device.isActive) {
                 (async () => {
-                    await this.takeReadings().catch(err => { logger.error(err); });
+                    await this.takeReadings().catch(err => { logger.error(`Error polling generic device ${this.device.name}: ${err.message}`); });
                 })();
                 webApp.emitToClients('genericDataValues', { id: this.device.id, typeId: this.device.typeId, values: this.values });
             }

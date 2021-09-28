@@ -147,7 +147,7 @@ export class ads1x15 extends i2cDeviceBase {
             let r = await this.i2c.readI2cBlock(this.device.address, 0, 2);  // read val
             return Promise.resolve(r.buffer.toJSON().data);
         }
-        catch (err) { logger.error(`${this.device.name} Read Command: ${err}`); }
+        catch (err) { logger.error(`${this.device.name} Read Command: ${err.message}`); }
     }
     public async stopRead() {
         if (typeof this._timerRead !== 'undefined')

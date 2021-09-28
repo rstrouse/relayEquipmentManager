@@ -385,9 +385,9 @@ export class AtlasEZOorp extends AtlasEZO {
     public async calibrate(data): Promise<I2cDevice> {
         try {
             this.suspendPolling = true; 
-            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-ORP invalid data format. ${JSON.stringify(data)}`);
+            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(new Error(`Could not calibrate EZO-ORP invalid data format. ${JSON.stringify(data)}`));
             if (typeof data.options.calPoint !== 'undefined') await this.setCalibrationPoint(parseFloat(data.options.calPoint));
-            else { return Promise.reject(`Could not calibrate EZO-ORP no setpoint was provided. ${JSON.stringify(data)}`) }
+            else { return Promise.reject(new Error(`Could not calibrate EZO-ORP no setpoint was provided. ${JSON.stringify(data)}`)) }
             this.options.calibrationMode = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
@@ -522,11 +522,11 @@ export class AtlasEZOpH extends AtlasEZO {
     public async calibrate(data): Promise<I2cDevice> {
         try {
             this.suspendPolling = true;
-            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-PH invalid data format. ${JSON.stringify(data)}`);
+            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(new Error(`Could not calibrate EZO-PH invalid data format. ${JSON.stringify(data)}`));
             if (typeof data.options.calMidPoint !== 'undefined') await this.setCalibrationPoint('mid', parseFloat(data.options.calMidPoint));
             else if (typeof data.options.calLowPoint !== 'undefined') await this.setCalibrationPoint('low', parseFloat(data.options.calLowPoint));
             else if (typeof data.options.calHighPoint !== 'undefined') await this.setCalibrationPoint('high', parseFloat(data.options.calHighPoint));
-            else { return Promise.reject(`Could not calibrate EZO-PH no setpoint was provided. ${JSON.stringify(data)}`) }
+            else { return Promise.reject(new Error(`Could not calibrate EZO-PH no setpoint was provided. ${JSON.stringify(data)}`)) }
             await this.getCalibrated();
             await this.getSlope();
             return Promise.resolve(this.device);
@@ -1053,9 +1053,9 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async calibrate(data): Promise<I2cDevice> {
         try {
-            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-PMP invalid data format. ${JSON.stringify(data)}`);
+            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(new Error(`Could not calibrate EZO-PMP invalid data format. ${JSON.stringify(data)}`));
             if (typeof data.options.calPoint !== 'undefined') await this.setCalibration(parseFloat(data.options.calPoint));
-            else { return Promise.reject(`Could not calibrate EZO-PMP no setpoint was provided. ${JSON.stringify(data)}`) }
+            else { return Promise.reject(new Error(`Could not calibrate EZO-PMP no setpoint was provided. ${JSON.stringify(data)}`)) }
             await this.getCalibrated();
             return Promise.resolve(this.device);
         }
@@ -1510,9 +1510,9 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async calibrate(data): Promise<I2cDevice> {
         try {
             this.suspendPolling = true;
-            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-RTD invalid data format. ${JSON.stringify(data)}`);
+            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(new Error(`Could not calibrate EZO-RTD invalid data format. ${JSON.stringify(data)}`));
             if (typeof data.options.calPoint !== 'undefined') await this.setCalibrationPoint(parseFloat(data.options.calPoint));
-            else { return Promise.reject(`Could not calibrate EZO-RTD no setpoint was provided. ${JSON.stringify(data)}`) }
+            else { return Promise.reject(new Error(`Could not calibrate EZO-RTD no setpoint was provided. ${JSON.stringify(data)}`)) }
             this.options.calibrationMode = await this.getCalibrated();
             return Promise.resolve(this.device);
         }
@@ -1786,14 +1786,14 @@ export class AtlasEZOec extends AtlasEZO {
     public async calibrate(data): Promise<I2cDevice> {
         try {
             this.suspendPolling = true;
-            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(`Could not calibrate EZO-EC invalid data format. ${JSON.stringify(data)}`);
-            if (typeof data.options.calPointType == 'undefined') return Promise.reject(`Could not calibrate EZO-EC point type not provider. ${JSON.stringify(data)}`);
+            if (typeof data === 'undefined' || typeof data.options === 'undefined') return Promise.reject(new Error(`Could not calibrate EZO-EC invalid data format. ${JSON.stringify(data)}`));
+            if (typeof data.options.calPointType == 'undefined') return Promise.reject(new Error(`Could not calibrate EZO-EC point type not provider. ${JSON.stringify(data)}`));
             if (data.options.calPointType === 'dry') await this.setCalibrationPoint('dry');
-            else if (isNaN(parseFloat(data.options.calPoint))) return Promise.reject(`Could not calibrate EZO-EC ${data.options.calPointType} invalid value ${data.options.calPoint}. ${JSON.stringify(data)}`);
+            else if (isNaN(parseFloat(data.options.calPoint))) return Promise.reject(new Error(`Could not calibrate EZO-EC ${data.options.calPointType} invalid value ${data.options.calPoint}. ${JSON.stringify(data)}`));
             else if (data.options.calPointType === 'single') await this.setCalibrationPoint('single', parseFloat(data.options.calPoint));
             else if (data.options.calPointType === 'low') await this.setCalibrationPoint('low', parseFloat(data.options.calPoint));
             else if (data.options.calPointType === 'high') await this.setCalibrationPoint('high', parseFloat(data.options.calPoint));
-            else { await this.getCalibrated(); return Promise.reject(`Could not calibrate EZO-EC no setpoint was provided. ${JSON.stringify(data)}`) }
+            else { await this.getCalibrated(); return Promise.reject(new Error(`Could not calibrate EZO-EC no setpoint was provided. ${JSON.stringify(data)}`)); }
             
             return Promise.resolve(this.device);
         }
@@ -2215,7 +2215,7 @@ export class AtlasEZOhum extends AtlasEZO {
     public async setAlarm(alarmType: number, level?: number, tolerance?: number): Promise<boolean> {
         try {
             this.suspendPolling = true;
-            if (isNaN(alarmType) || alarmType < 0 || alarmType > 2) return Promise.reject(`Could not set Humidity alarm type:${alarmType} level:${level} tolerance:${tolerance}`);
+            if (isNaN(alarmType) || alarmType < 0 || alarmType > 2) return Promise.reject(new Error(`Could not set Humidity alarm type:${alarmType} level:${level} tolerance:${tolerance}`));
             if (typeof this.options.alarm === 'undefined') this.options.alarm = { enableHumidity: false, enableDewpoint: false, humidity: null, dewpoint: null, tolerance: 0 };
             let at = this.device.options.alarm.enableHumidity ? 1 : this.device.options.alarm.enableDewpoint ? 2 : 0;
             if (alarmType === 0) {
@@ -2223,7 +2223,7 @@ export class AtlasEZOhum extends AtlasEZO {
                 await this.getAlarm();
             }
             else {
-                if (isNaN(level) || isNaN(tolerance) || alarmType < 0 || alarmType > 2) return Promise.reject(`Could not set Humidity alarm type:${alarmType} level:${level} tolerance:${tolerance}`);
+                if (isNaN(level) || isNaN(tolerance) || alarmType < 0 || alarmType > 2) return Promise.reject(new Error(`Could not set Humidity alarm type:${alarmType} level:${level} tolerance:${tolerance}`));
                 if (alarmType !== at || tolerance !== this.device.options.alarm.tolerance ||
                     (alarmType === 1 && level !== this.device.options.alarm.humidity) ||
                     (alarmType === 2 && level !== this.device.options.alarm.dewpoint)) {

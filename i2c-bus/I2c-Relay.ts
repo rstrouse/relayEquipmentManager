@@ -10,6 +10,17 @@ import { isArray } from "util";
 import { LatchTimers } from "../devices/AnalogDevices";
 
 export class i2cRelay extends i2cDeviceBase {
+    protected static controllerTypes = [
+        { name: 'mcp23017', desc: 'MCP23017 Based', options: { idType: 'bit', maxRelays: 16 }},
+        { name: 'mcp23008', desc: 'MCP23008 Based', options: { idType: 'bit', maxRelays: 8 } },
+        { name: 'pcf8574', desc: 'PCF8574 Based', options: { idType: 'bit', maxRelays: 8 }},
+        { name: 'seeed', desc: 'Seeed Studio', options: { idType: 'bit', maxRelays: 8}},
+        { name: 'dockerPi4', desc: 'Docker Pi 4', options: { idType: 'ordinal', maxRelays: 4 } },
+        { name: 'sequent4', desc: 'Sequent 4', options: { idType: 'sequent4', maxRelays: 4 }   },
+        { name: 'sequent8', desc: 'Sequent 8 v2.x', options: { idType: 'sequent8', maxRelays: 8 } },
+        { name: 'sequent8v3', desc: 'Sequent 8 v3.0+', options: {idType: 'sequent8', maxRelays: 8 }},
+        { name: 'sequent8IND', desc: 'Sequent 8 IND', options: { idType: 'sequent8', maxRelays: 8 }}
+    ]
     protected static commandBytes = {
         mcp23017: {
             read: [0x12, 0x13],
@@ -178,11 +189,11 @@ export class i2cRelay extends i2cDeviceBase {
     protected async readCommand(command: number): Promise<number> {
         try {
             let r = await this.i2c.readByte(this.device.address, command);
-            logger.debug(`Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
+            logger.debug(`${this.device.address} - ${this.device.name} Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
             this.hasFault = false;
             return Promise.resolve(r);
         }
-        catch (err) { logger.error(`${this.device.name} Read Command: ${err.message}`); this.hasFault = true; }
+        catch (err) { logger.error(`${this.device.address} - ${this.device.name} Read Command: ${err.message}`); this.hasFault = true; }
     }
     public async emitFeeds() {
         try {
@@ -335,6 +346,17 @@ export class i2cRelay extends i2cDeviceBase {
     }
     public async initAsync(deviceType): Promise<boolean> {
         try {
+            let ctype = i2cRelay.controllerTypes.find(elem => this.options.controllerType === elem.name);
+            if (typeof ctype !== 'undefined') {
+                this.options.maxRelays = ctype.options.maxRelays;
+                this.options.idType = ctype.options.idType;
+                if (this.relays.length !== this.options.maxRelays) {
+                    for (let i = 0; i < this.options.maxRelays; i++) {
+                        if (typeof this.relays[i] === 'undefined') this.relays.push({ name: `Relay #${i + 1}`, enabled: false, state: false });
+                    }
+                    this.relays.length = this.options.maxRelays;
+                }
+            }
             if (this._timerRead) clearTimeout(this._timerRead);
             if (typeof this.device.options === 'undefined') this.device.options = {};
             // Temporary for now so we can move all the relays from the options object to values.
@@ -567,7 +589,7 @@ export class i2cRelay extends i2cDeviceBase {
             let oldState = relay.state;
             let command: number[] = [];
             if (typeof relay === 'undefined') {
-                return Promise.reject(`${this.device.name} - Invalid Relay id: ${opts.id}`);
+                return Promise.reject(new Error(`${this.device.name} - Invalid Relay id: ${opts.id}`));
             }
             let newState = utils.makeBool(opts.state);
             // Make the relay command.
@@ -690,7 +712,7 @@ export class i2cRelay extends i2cDeviceBase {
             if (typeof relay === 'undefined') return Promise.reject(new Error(`setDeviceState: Could not find relay Id ${bind.params[0]}`));
             if (!relay.enabled) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] is not enabled.`));
             let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
-            if (isNaN(latch)) return Promise.reject(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`);
+            if (isNaN(latch)) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`));
             this.latches.clearLatch(relayId);
             await this.readRelayState(relay);
             // Now that the relay has been read lets set its state.

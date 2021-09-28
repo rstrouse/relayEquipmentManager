@@ -191,11 +191,16 @@ export class i2cBus {
                     cdev.name = d.name || 'Unknown';
                 }
                 catch (err) {
-                    logger.silly(`Error Executing deviceId for address ${cdev.address}: ${err}`);
+                    logger.silly(`Error Executing deviceId for address ${cdev.address}: ${err.message}`);
                 }
             }
+            
             for (let i = 0; i < bus.devices.length; i++) {
                 let d = bus.devices.getItemByIndex(i);
+                if (typeof d.address !== 'number') {
+                    setTimeout(() => { bus.devices.removeItemById(d.id); }, 50);
+                    continue;
+                }
                 let addr = devs.find(elem => elem.address === d.address);
                 if (typeof addr === 'undefined') {
                     logger.info(`Adding I2C device that could not be scanned ${d.address} - (0x${d.address.toString(16)})`);
@@ -206,7 +211,7 @@ export class i2cBus {
             bus.addresses = devs;
             return devs;
         }
-        catch (err) { logger.error(`Error Scanning i2c Bus #${this.busNumber}: ${err}`); }
+        catch (err) { logger.error(`Error Scanning i2c Bus #${this.busNumber}: ${err.message}`); }
     }
     public async addDevice(dev: I2cDevice) {
         try {

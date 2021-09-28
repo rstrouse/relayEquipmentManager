@@ -29,7 +29,7 @@ export class genericController {
         try {
             for (let i = this.devices.length - 1; i >= 0; i--) {
                 let dev = this.devices[i];
-                await dev.closeAsync();
+                if (typeof dev !== 'undefined' && dev && typeof dev.closeAsync === 'function') await dev.closeAsync();
                 this.devices.splice(i, 1);
             }
         } catch (err) { logger.error(`Error removing generic device: ${err.message}`); return Promise.reject(err); }
@@ -39,17 +39,16 @@ export class genericController {
             logger.info(`Initializing Generic Devices`);
             for (let i = 0; i < dc.devices.length; i++) {
                 let dev = dc.devices.getItemByIndex(i);
-                await this.addDevice(dev).catch(err => { logger.error(err); });
-            }
+                await this.addDevice(dev).catch(err => { logger.error(`Error adding generic device ${dev.name}: ${err.message }`); });  }
             logger.info(`Generic Devices Initialized`);
-        } catch (err) { logger.error(err); }
+        } catch (err) { logger.error(`Error initializing Generic Devices: ${err.message}`); }
     }
     public async resetAsync(bus): Promise<void> {
         try {
             await this.closeAsync();
             await this.initAsync(bus);
             return Promise.resolve();
-        } catch (err) { logger.error(err); }
+        } catch (err) { logger.error(`Error resetting generic devices: ${err.message}`); }
     }
     public async closeAsync(): Promise<void> {
         try {
@@ -60,7 +59,7 @@ export class genericController {
             this.devices.length = 0;
             logger.info(`Closed Generic Devices`);
             return Promise.resolve();
-        } catch (err) { logger.error(err); }
+        } catch (err) { logger.error(`Error closing generic devices: ${err.message}`); }
     }
     public setDeviceValue(deviceId: number, prop: string, value) {
         let device = this.devices.find(elem => elem.device.id === deviceId);
@@ -95,7 +94,7 @@ export class GenericDeviceBase implements IDevice {
             }
             return Promise.resolve(d);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`Error creating generic device factoryCreate: ${err.message}`); }
     }
     constructor(gdc: genericController, dev: GenericDevice) {
         this.device = dev;
@@ -124,9 +123,9 @@ export class GenericDeviceBase implements IDevice {
     }
     public async closeAsync(): Promise<void> {
         try {
-            logger.info(`Stopped Generic Device ${this.device.name}`);
+            logger.info(`Stopped Generic Device ${this.device.id}: ${this.device.name}`);
         }
-        catch (err) { logger.error(err); return Promise.resolve(); }
+        catch (err) { logger.error(`Error stopping genteric device: ${this.device.name}: ${err.message}`); return Promise.resolve(); }
     }
     public get id(): number { return typeof this.device !== 'undefined' ? this.device.id : undefined; }
     public async initAsync(deviceType: any): Promise<boolean> { 
@@ -154,10 +153,11 @@ export class GenericDeviceBase implements IDevice {
     public async setOptions(opts: any): Promise<any> {
         try {
             this.device.options = opts;
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name
+            if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
+            //if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name
             return Promise.resolve(this);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`Error setting generic device options: ${err.message}`); }
     }
     public async setValues(vals: any): Promise<any> { 
 
@@ -230,7 +230,7 @@ export class GenericDeviceBase implements IDevice {
             for (let i = 0; i < this.feeds.length; i++) {
                 await this.feeds[i].send(this);
             }
-        } catch (err) { logger.error(err); }
+        } catch (err) { logger.error(`Error emitting feeds for generic device ${this.device.name}: ${err.message}`); }
     }
     public get values() { return this.device.values; }
     public get options() { return this.device.options; }

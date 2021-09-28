@@ -53,7 +53,7 @@ class Config {
             });
             this._isLoading = false;
         } catch (err) {
-            console.log(`Error reading configuration information.  Aborting startup: ${err}`);
+            console.log(`Error reading configuration information.  Aborting startup: ${err.message}`);
             // Rethrow this error so we exit the app with the appropriate pause in the console.
             throw err;
         }

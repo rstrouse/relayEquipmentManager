@@ -1003,9 +1003,11 @@ var templateBuilder = {
     },
     createObjectOptions: function (pnl, opts) {
         var self = this;
-        for (var i = 0; i < opts.options.length; i++) {
-            var opt = opts.options[i];
-            self.createControlOptions(pnl, opt, opt.bind);
+        if (typeof opts !== 'undefined' && typeof opts.options !== 'undefined') {
+            for (var i = 0; i < opts.options.length; i++) {
+                var opt = opts.options[i];
+                self.createControlOptions(pnl, opt, opt.bind);
+            }
         }
     },
     callServiceEvent: function (evt, fevent) {

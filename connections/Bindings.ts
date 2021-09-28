@@ -231,7 +231,7 @@ class SocketServerConnection extends ServerConnection {
                     let fnFilter = trigger.makeTriggerFunction();
                     evt.triggers.push({ filter: fnFilter, binding: binding, triggerId: trigger.id });
                 }
-                catch (err) { logger.error(`Invalid device ${binding} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                catch (err) { logger.error(`Invalid device ${binding} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
             }
         } catch (err) { logger.error(`Error setting socket device trigger. ${binding}-${trigger.id}`) }
     }
@@ -273,7 +273,7 @@ class SocketServerConnection extends ServerConnection {
                         let fnFilter = trigger.makeTriggerFunction();
                         evt.triggers.push({ filter: fnFilter, binding: `gpio:${pin.headerId}:${pin.id}`, triggerId: trigger.id });
                     }
-                    catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                    catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
                 }
             }
             for (let k = 0; k < cont.i2c.buses.length; k++) {
@@ -300,7 +300,7 @@ class SocketServerConnection extends ServerConnection {
                                 filter: fnFilter, triggerId: trigger.id
                             });
                         }
-                        catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                        catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
                     }
                 }
             }
@@ -344,10 +344,10 @@ class SocketServerConnection extends ServerConnection {
                                 try {
                                     let fnTransform = new Function('connection', 'trigger', 'device', 'data', trigger.stateExpression);
                                     data = fnTransform(this, trigger, device, data);
-                                } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err}`); }
+                                } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err.message}`); }
                             }
                             await device.setDeviceState(trig.binding, data);
-                        } catch (err) { logger.error(`Error processing Socket event ${event}: ${err}`); }
+                        } catch (err) { logger.error(`Error processing Socket event ${event}: ${err.message}`); }
                     })();
                     //if (trig.binding.startsWith('gpio')) device.setDeviceState({ state: trigger.state.val });
                     //else device.setDeviceState(trig.binding, data);
@@ -359,7 +359,7 @@ class SocketServerConnection extends ServerConnection {
         try {
             let url = this.server.url;
             this._sock = io(url, { reconnectionDelay: 2000, reconnection: true, reconnectionDelayMax: 20000 });
-            this._sock.on('connect_error', (err) => { logger.error(`Error connecting to ${this.server.name} ${url}: ${err}`); });
+            this._sock.on('connect_error', (err) => { logger.error(`Error connecting to ${this.server.name} ${url}: ${err.message}`); });
             this._sock.on('close', (sock) => { this.isOpen = false; logger.info(`Socket ${this.server.name} ${url} closed`); });
             this._sock.on('reconnecting', (sock) => { logger.info(`Reconnecting to ${this.server.name} : ${url}`); });
             this._sock.on('connect', (sock) => {
@@ -382,7 +382,7 @@ class SocketServerConnection extends ServerConnection {
                             let fnFilter = trigger.makeTriggerFunction();
                             evt.triggers.push({ filter: fnFilter, binding: `gpio:${pin.headerId}:${pin.id}`, triggerId: trigger.id });
                         }
-                        catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                        catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
                     }
                 }
                 for (let k = 0; k < cont.i2c.buses.length; k++) {
@@ -407,7 +407,7 @@ class SocketServerConnection extends ServerConnection {
                                     filter: fnFilter, triggerId: trigger.id
                                 });
                             }
-                            catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                            catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
                         }
                     }
                 }
@@ -434,7 +434,7 @@ class SocketServerConnection extends ServerConnection {
                 //                let fnFilter = trigger.makeTriggerFunction();
                 //                evt.triggers.push({ pin: pin, filter: fnFilter, trigger: trigger });
                 //            }
-                //            catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                //            catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
 
                 //        }
                 //    }
@@ -526,7 +526,7 @@ class MqttConnection extends ServerConnection {
                 try {
                     let fnFilter = trigger.makeTriggerFunction();
                     evt.triggers.push({ filter: fnFilter, binding: binding, triggerId: trigger.id });
-                } catch (err) { logger.error(`Invalid device ${binding} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                } catch (err) { logger.error(`Invalid device ${binding} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
             }
         } catch (err) { logger.error(`Error setting socket device trigger. ${binding}-${trigger.id}`) }
     }
@@ -569,7 +569,7 @@ class MqttConnection extends ServerConnection {
                         let fnFilter = trigger.makeTriggerFunction();
                         evt.triggers.push({ filter: fnFilter, binding: `gpio:${pin.headerId}:${pin.id}`, triggerId: trigger.id });
                     }
-                    catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                    catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
                 }
             }
             for (let k = 0; k < cont.i2c.buses.length; k++) {
@@ -600,7 +600,7 @@ class MqttConnection extends ServerConnection {
                                 filter: fnFilter, triggerId: trigger.id
                             });
                         }
-                        catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+                        catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
                     }
                 }
             }
@@ -630,7 +630,7 @@ class MqttConnection extends ServerConnection {
         //            let fnFilter = trigger.makeTriggerFunction();
         //            evt.triggers.push({ filter: fnFilter, binding: `gpio:${pin.headerId}:${pin.id}`, triggerId: trigger.id });
         //        }
-        //        catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+        //        catch (err) { logger.error(`Invalid Pin#${pin.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
         //    }
         //}
         //for (let k = 0; k < cont.i2c.buses.length; k++) {
@@ -658,7 +658,7 @@ class MqttConnection extends ServerConnection {
         //                    binding: `i2c:${bus.busNumber}:${device.id}${typeof trigger.channelId !== 'undefined' ? ':' + trigger.channelId : ''}`,
         //                    filter: fnFilter, triggerId: trigger.id });
         //            }
-        //            catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err} : ${trigger.makeExpression()}`); }
+        //            catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }
         //        }
         //    }
         //}
@@ -708,10 +708,10 @@ class MqttConnection extends ServerConnection {
                                     try {
                                         let fnTransform = new Function('connection', 'trigger', 'device', 'data', trigger.stateExpression);
                                         msg = fnTransform(this, trigger, device, msg);
-                                    } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err}`); }
+                                    } catch (err) { logger.error(`Trigger for device ${trig.binding} cannot evaluate binding function ${err.message}`); }
                                 }
                                 await device.setDeviceState(trig.binding, msg);
-                            } catch (err) { logger.error(`Error processing MQTT topic ${evt.topic}: ${err}`); }
+                            } catch (err) { logger.error(`Error processing MQTT topic ${evt.topic}: ${err.message}`); }
                         })();
                     }
                 }
@@ -749,7 +749,7 @@ class MqttConnection extends ServerConnection {
             else if (this._mqtt.connected) {
                 logger.silly(`Sending on MQTT Channel ${JSON.stringify(opts)}`);
                 this._mqtt.publish(opts.eventName, JSON.stringify(opts.value), { retain: true, qos: 2 }, (err) => {
-                    if (err) logger.error(err);
+                    if (err) logger.error(`MQTT Error publishing ${opts.eventName}:${err.message}`);
                 });
             }
         } catch (err) { logger.error(`Error publishing to MQTT server: ${err.message}`); }
