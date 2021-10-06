@@ -195,8 +195,8 @@ export class ConfigRoute {
             return res.status(200).send(opts);
         });
 
-        app.get('/config/options/i2c/:busId', (req, res) => {
-            let opts = { bus: cont.i2c.buses.getItemById(parseInt(req.params.busId, 10)).getExtended() };
+        app.get('/config/options/i2c/:busNumber', (req, res) => {
+            let opts = { bus: cont.i2c.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10)).getExtended() };
             return res.status(200).send(opts);
         });
         app.get('/config/options/i2c', (req, res) => {

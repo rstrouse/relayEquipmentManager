@@ -36,7 +36,7 @@
                 default:
                     evt.newTab.contents.empty();
                     if (evt.newTab.id.startsWith('tabI2c')) {
-                        $('<div></div>').appendTo(evt.newTab.contents).pnlI2cBus({ busId: parseInt(evt.newTab.id.replace('tabI2c', ''), 10) });
+                        $('<div></div>').appendTo(evt.newTab.contents).pnlI2cBus({ busNumber: parseInt(evt.newTab.id.replace('tabI2c', ''), 10) });
 
                     }
                     break;
@@ -76,7 +76,7 @@
             $.getLocalService('/config/options/i2c', null, function (i2c, status, xhr) {
                 for (var i = 0; i < i2c.buses.length; i++) {
                     var bus = i2c.buses[i];
-                    self._addConfigTab({ id: 'tabI2c' + bus.id, text: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + bus.busNumber });
+                    self._addConfigTab({ id: 'tabI2c' + bus.busNumber, text: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + bus.busNumber });
                    
                 }
             });

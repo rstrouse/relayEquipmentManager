@@ -383,11 +383,12 @@
                 $('<div id="dlgAddI2cBus" style="display:block;position:relative;padding:4px;"></div>').dlgI2cBus()
                     .on('busadded', function (e) {
                         i2cCrud[0].addRow(e.bus);
-                        el.parents('div.dashContainer:first')[0].addTab({ id: 'tabI2c' + e.bus.id, text: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + e.bus.busNumber })
+                        el.parents('div.dashContainer:first')[0].addTab({ id: 'tabI2c' + e.bus.busNumber, text: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + e.bus.busNumber })
                     });
             }).on('removeitem', function (evt) {
                 $.getLocalService('/config/options/i2c/' + evt.dataKey, null, function (opts, status, xhr) {
                     var bus = opts.bus;
+                    console.log(evt.dataKey);
                     console.log(bus);
                     $.pic.modalDialog.createConfirm('dlgConfirmI2cBus', {
                         message: '<div>Are you sure you want to delete I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + bus.busNumber + '?</div><hr></hr><div><span style="color:red;font-weight:bold;">WARNING:</span> If you delete this bus it will remove all <span style="font-weight:bold;">devices</span> configured on the bus.</div>',
@@ -397,10 +398,11 @@
                         buttons: [{
                             text: 'Yes', icon: '<i class="fas fa-trash"></i>',
                             click: function () {
+                                console.log(bus);
                                 $.pic.modalDialog.closeDialog(this);
                                 $.deleteLocalService('/config/i2c/bus/', bus, 'Deleting I2C Bus...', function (c, status, xhr) {
                                     evt.dataRow.remove();
-                                    el.parents('div.dashContainer:first')[0].removeTab('tabI2c' + bus.id);
+                                    el.parents('div.dashContainer:first')[0].removeTab('tabI2c' + bus.busNumber);
                                 });
                             }
                         },

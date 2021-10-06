@@ -34,7 +34,7 @@
             el.attr('data-busid', o.busId);
             var divList = $('<div></div>').appendTo(el);
             var divDevice = $('<div></div>').appendTo(el);
-            $.getLocalService('/config/options/i2c/' + o.busId, null, function (i2cBus, status, xhr) {
+            $.getLocalService('/config/options/i2c/' + o.busNumber, null, function (i2cBus, status, xhr) {
                 console.log(i2cBus);
                 $('<div></div>').appendTo(divList).selectList({
                     id: 'i2cAddresses',
@@ -100,13 +100,13 @@
         },
         loadDevices: function (selAddr) {
             var self = this, o = self.options, el = self.element;
-            $.getLocalService('/config/options/i2c/' + o.busId, null, function (i2cBus, status, xhr) {
+            $.getLocalService('/config/options/i2c/' + o.busNumber, null, function (i2cBus, status, xhr) {
                 self.dataBind(i2cBus, selAddr);
             });
         },
         dataBind: function (data, selAddr) {
             var self = this, o = self.options, el = self.element;
-            var addrs = data.bus.addresses.slice();
+            var addrs = typeof data.bus.addresses !== 'undefined' ? data.bus.addresses.slice() : [];
             for (var i = 0; i < data.bus.devices.length; i++) {
                 var dev = data.bus.devices[i];
                 var addr = addrs.find(elem => elem.address === dev.address);
@@ -666,7 +666,7 @@
                         self._createTriggerDialog('dlgAddI2cTrigger', 'Add Trigger to I2c Device', triggers);
                     });
                 }).on('edititem', function (evt) {
-                    $.getLocalService('/config/options/i2c/' + o.busId + '/' + o.address + '/trigger/0', null, function (triggers, status, xhr) {
+                    $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/trigger/0', null, function (triggers, status, xhr) {
                         triggers.trigger = o.triggers.find(elem => elem.id == evt.dataKey);
                         self._createTriggerDialog('dlgEditI2cTrigger', 'Edit I2C Device Trigger', triggers);
                     });
@@ -1049,7 +1049,7 @@
                         self._createFeedDialog('dlgAddI2cFeed', 'Add Feed to I2c Device', feeds);
                     });
                 }).on('edititem', function (evt) {
-                    $.getLocalService('/config/options/i2c/' + o.busId + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
+                    $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
                         feeds.feed = o.feeds.find(elem => elem.id == evt.dataKey);
                         self._createFeedDialog('dlgEditI2cFeed', 'Edit I2C Device Feed', feeds);
                     });
