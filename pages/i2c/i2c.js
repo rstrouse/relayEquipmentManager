@@ -183,7 +183,7 @@
             var head = $('<div></div>').appendTo(outer).addClass('pnl-settings-header').addClass('control-panel-title');
             $('<span></span>').appendTo(head).addClass('header-text').html(`I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Device Definition for Address <span class="i2cpnl-address">${o.address} - 0x${o.address.toString(16).padStart(2, '0')}</span>`);
             var pnl = $('<div></div>').appendTo(outer);
-            $.getLocalService('/config/options/i2c/' + o.busId + '/' + o.address, null, function (i2cDevice, status, xhr) {
+            $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address, null, function (i2cDevice, status, xhr) {
                 console.log(i2cDevice);
                 var binding = '';
                 var line = $('<div></div>').appendTo(pnl);
