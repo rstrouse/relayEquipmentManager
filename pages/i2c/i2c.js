@@ -315,6 +315,9 @@
                 buttons: [{
                     text: 'Yes', icon: '<i class="fas fa-trash"></i>',
                     click: function (evt) {
+                        dev.busId = o.busId;
+                        dev.busNumber = o.busNumber;
+                        dev.address = o.address;
                         $.deleteLocalService('/config/i2c/device', dev, 'Deleting I2c Device...', function (i2cDev, status, xhr) {
                             self.dataBind({ id: '', busId: dev.busId, busNumber: dev.busNumber, address: dev.address, isActive: false, typeId: 0 });
                             el.parents('div.pnl-i2c-bus:first')[0].loadDevices(dev.address);
