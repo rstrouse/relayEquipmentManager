@@ -193,7 +193,8 @@ export class i2cRelay extends i2cDeviceBase {
             this.hasFault = false;
             return Promise.resolve(r);
         }
-        catch (err) { logger.error(`${this.device.address} - ${this.device.name} Read Command: ${err.message}`); this.hasFault = true; }
+        catch (err) {
+            logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} Read Command: ${ err.message }`); this.hasFault = true; }
     }
     public async emitFeeds() {
         try {
