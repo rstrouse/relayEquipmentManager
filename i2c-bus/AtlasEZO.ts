@@ -394,7 +394,16 @@ export class AtlasEZOorp extends AtlasEZO {
         catch (err) { this.logError(err); return Promise.reject(err); }
         finally { this.suspendPolling = false; }
     }
-
+    public async clearCalibration(): Promise<I2cDevice> {
+        try {
+            this.suspendPolling = true;
+            await this.execCommand(`Cal,clear`, 300);
+            await this.getCalibrated();
+            return Promise.resolve(this.device);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
     public async getName(): Promise<string> {
         try {
             this.suspendPolling = true;
