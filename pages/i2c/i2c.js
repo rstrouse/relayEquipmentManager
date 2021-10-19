@@ -52,7 +52,7 @@
                     divDevice.empty();
                     $('<div></div>').appendTo(divDevice).pnlI2cDevice({ busId: o.busId, busNumber: i2cBus.bus.busNumber, address: evt.dataKey });
                 }).on('additem', function (evt) {
-                    self._openAddAddressDialog(o.busId);
+                    self._openAddAddressDialog(o.busNumber);
                 });
                 //.css({ fontSize: '8pt' });
                 self.dataBind(i2cBus);

@@ -221,10 +221,10 @@ export class ConfigRoute {
         });
         app.put('/config/i2c/scanBus', async (req, res, next) => {
             try {
-                let busId = parseInt(req.body.busNumber, 10);
-                if (isNaN(busId)) next(new Error(`Cannot scan bus because the bus id ${req.body.busNumber} is invalid.`));
+                let busNumber = parseInt(req.body.busNumber, 10);
+                if (isNaN(busNumber)) next(new Error(`Cannot scan bus because the bus id ${req.body.busNumber} is invalid.`));
                 else {
-                    let bus = cont.i2c.buses.find(elem => elem.id === busId);
+                    let bus = cont.i2c.buses.find(elem => elem.busNumber === busNumber);
                     if (typeof bus === 'undefined') next(new Error(`Cannot scan bus because the bus ${req.body.busNumber} cannot be found.`));
                     else {
                         await bus.scanBus();
@@ -236,10 +236,10 @@ export class ConfigRoute {
         });
         app.put('/config/i2c/addAddress', async (req, res, next) => {
             try {
-                let busId = parseInt(req.body.busNumber, 10);
-                if (isNaN(busId)) next(new Error(`Cannot add address because the bus id ${req.body.busNumber} is invalid.`));
+                let busNumber = parseInt(req.body.busNumber, 10);
+                if (isNaN(busNumber)) next(new Error(`Cannot add address because the bus id ${req.body.busNumber} is invalid.`));
                 else {
-                    let bus = cont.i2c.buses.find(elem => elem.id === busId);
+                    let bus = cont.i2c.buses.find(elem => elem.busNumber === busNumber);
                     if (typeof bus === 'undefined') next(new Error(`Cannot scan bus because the bus ${req.body.busNumber} cannot be found.`));
                     else {
                         await bus.addAddress(req.body);
