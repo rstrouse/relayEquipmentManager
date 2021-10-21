@@ -13,5 +13,6 @@
   },
   "i2c": { "isActive": false },
   "connections": [],
-  "genericDevices": {"isActive": true}
+  "genericDevices": {"isActive": true},
+  "oneWire": { "isActive": false }
 }

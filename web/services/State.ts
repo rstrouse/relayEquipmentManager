@@ -10,6 +10,7 @@ import { ConnectionBindings } from "../../connections/Bindings";
 import { gpioCont } from "../../gpio/Gpio-Controller";
 import { SpiAdcChips } from "../../spi-adc/SpiAdcChips";
 import { i2c, i2cBus } from "../../i2c-bus/I2cBus";
+import { oneWire } from "../../one-wire/OneWireBus";
 
 export class StateRoute {
     public static initRoutes(app: express.Application) {
@@ -39,6 +40,17 @@ export class StateRoute {
                     let i2cdevice = typeof i2cbus !== 'undefined' ? i2cbus.devices.find(elem => elem.device.id === device.id) : undefined;
                     if (typeof i2cdevice !== 'undefined') devices.push(...i2cdevice.getDeviceDescriptions(dev));
                     else devices.push({ type: 'i2c', isActive: device.isActive, name: device.name, binding: `i2c:${bus.id}:${device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown', feeds: device.feeds.get()  });
+                }
+            }
+            for (let i = 0; i < cont.oneWire.buses.length; i++) {
+                let bus = cont.oneWire.buses.getItemByIndex(i);
+                let oneWirebus = oneWire.buses.find(elem => elem.busId === bus.id);
+                for (let j = 0; j < bus.devices.length; j++) {
+                    let device = bus.devices.getItemByIndex(j);
+                    let dev = devs.find(elem => elem.id === device.typeId);
+                    let oneWiredevice = typeof oneWirebus !== 'undefined' ? oneWirebus.devices.find(elem => elem.device.id === device.id) : undefined;
+                    if (typeof oneWiredevice !== 'undefined') devices.push(...oneWiredevice.getDeviceDescriptions(dev));
+                    else devices.push({ type: 'oneWire', isActive: device.isActive, name: device.name, binding: `oneWire:${bus.id}:${device.id}`, category: typeof dev !== 'undefined' ? dev.category : 'unknown', feeds: device.feeds.get()  });
                 }
             }
             for (let i = 0; i < cont.genericDevices.devices.length; i++) {

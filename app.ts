@@ -9,6 +9,7 @@ import { spi0, spi1 } from "./spi-adc/SpiAdcBus";
 import { i2c } from "./i2c-bus/I2cBus";
 import { gdc } from "./generic/genericDevices";
 import { setTimeout } from "timers";
+import { oneWire } from "./one-wire/OneWireBus";
 require("source-map-support/register")
 
 export function initAsync() {
@@ -22,6 +23,7 @@ export function initAsync() {
         .then(function () { spi0.initAsync(cont.spi0); })
         .then(function () { spi1.initAsync(cont.spi1); })
         .then(function () { i2c.initAsync(cont.i2c); })
+        .then(function () { oneWire.initAsync(cont.oneWire)})
         .then(function () { gdc.initAsync(cont.genericDevices); });
 }
 export async function stopAsync(): Promise<void> {
@@ -29,6 +31,7 @@ export async function stopAsync(): Promise<void> {
         console.log(`Shutting down Relay Equipment Manager`);
         try { await connBroker.stopAsync(); } catch (err) { console.error(`Error stopping Connection Broker: ${err.message}`); }
         try { await gdc.closeAsync(); } catch (err) { console.error(`Error stopping generic device controller: ${err.message}`); }
+        try { await oneWire.closeAsync(); } catch (err) { console.error(`Error stopping 1-wire bus interface: ${err.message}`); }
         try { await i2c.closeAsync(); } catch (err) { console.error(`Error stopping I2c bus interface: ${err.message}`); }
         try { await spi0.closeAsync(); } catch (err) { console.error(`Error stopping SPI0 bus interface: ${err.message}`); }
         try { await spi1.closeAsync(); } catch (err) { console.error(`Error stopping SPI1 bus interface: ${err.message}`); }

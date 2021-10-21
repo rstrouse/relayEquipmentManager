@@ -254,5 +254,5 @@ export class DeviceStatus {
     public lastComm: number;
     public protocol: string;
     public busNumber: number;
-    public address: number;
+    public address: number|string;
 }

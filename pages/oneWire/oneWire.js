@@ -1,5 +1,5 @@
 ﻿(function ($) {
-    $.widget('pic.pnlCfgI2c', {
+    $.widget('pic.pnlCfgOneWire', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -7,19 +7,19 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-config-i2c');
+            el.addClass('pnl-config-oneWire');
             el.attr('data-controllerid', o.controllerId);
-            $.getLocalService('/config/options/i2c', null, function (data, status, xhr) {
+            $.getLocalService('/config/options/oneWire', null, function (data, status, xhr) {
                 console.log(data);
 
             });
         },
-        dataBind: function (i2c) {
+        dataBind: function (oneWire) {
             var self = this, o = self.options, el = self.element;
             dataBinder.bind(el, data);
         }
     });
-    $.widget('pic.pnlI2cBus', {
+    $.widget('pic.pnlOneWireBus', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -30,33 +30,34 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-i2c-bus');
+            el.addClass('pnl-oneWire-bus');
+            el.attr('data-busid', o.busId);
             var divList = $('<div></div>').appendTo(el);
             var divDevice = $('<div></div>').appendTo(el);
-            $.getLocalService('/config/options/i2c/' + o.busNumber, null, function (i2cBus, status, xhr) {
-                el.attr('data-busid', i2cBus.bus.id);
-                o.busId = i2cBus.bus.id;
-                console.log(i2cBus);
+            $.getLocalService('/config/options/oneWire/' + o.busNumber, null, function (oneWireBus, status, xhr) {
+                console.log(oneWireBus);
+                el.attr('data-busid', oneWireBus.bus.id);
+                o.busId = oneWireBus.bus.id;
                 $('<div></div>').appendTo(divList).selectList({
-                    id: 'i2cAddresses',
+                    id: 'oneWireAddresses',
                     key: 'address',
                     canCreate: true,
                     actions: { canCreate: true },
                     caption: 'Devices', itemName: 'Device',
                     columns: [{
-                        binding: 'addressName', text: 'Address', cellStyle: { verticalAlign: 'top' },
-                        style: { width: '87px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }
+                        binding: 'address', text: 'Address', cellStyle: { verticalAlign: 'top' },
+                        style: { width: '177px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }
                     },
                     { binding: 'name', text: 'Name', style: { width: '177px' } }]
                 }).on('selected', function (evt) {
                     console.log(evt);
                     divDevice.empty();
-                    $('<div></div>').appendTo(divDevice).pnlI2cDevice({ busId: o.busId, busNumber: i2cBus.bus.busNumber, address: evt.dataKey });
+                    $('<div></div>').appendTo(divDevice).pnlOneWireDevice({ busId: o.busId, busNumber: oneWireBus.bus.busNumber, address: evt.dataKey });
                 }).on('additem', function (evt) {
-                    self._openAddAddressDialog(o.busNumber);
+                    self._openAddAddressDialog(o.busId);
                 });
                 //.css({ fontSize: '8pt' });
-                self.dataBind(i2cBus);
+                self.dataBind(oneWireBus);
             });
 
         },
@@ -65,15 +66,15 @@
             var dlg = $.pic.modalDialog.createDialog('dlgAddAddress', {
                 width: '377px',
                 height: 'auto',
-                title: 'Add I2c Address',
+                title: 'Add 1-Wire Address',
                 buttons: [{
                     text: 'Add Address', icon: '<i class="fas fa-at"></i>',
                     click: function (evt) {
                         var a = dataBinder.fromElement(dlg);
                         console.log(a);
                         a.busNumber = busId;
-                        $.putLocalService('/config/i2c/addAddress', a, 'Adding I2c Bus Addresses...', function (i2cBus, status, xhr) {
-                            self.dataBind(i2cBus);
+                        $.putLocalService('/config/oneWire/addAddress', a, 'Adding 1-Wire Bus Addresses...', function (oneWireBus, status, xhr) {
+                            self.dataBind(oneWireBus);
                             $.pic.modalDialog.closeDialog(dlg);
                         });
                     }
@@ -81,9 +82,9 @@
                 {
                     text: 'Re-scan', icon: '<i class="fas fa-eye"></i>',
                     click: function (evt) {
-                        $.putLocalService('/config/i2c/scanBus', { busNumber: busId }, 'Scanning I2c Bus Addresses...', function (i2cBus, status, xhr) {
-                            console.log(i2cBus);
-                            self.dataBind(i2cBus);
+                        $.putLocalService('/config/oneWire/scanBus', { busNumber: busId }, 'Scanning 1-Wire Bus Addresses...', function (oneWireBus, status, xhr) {
+                            console.log(oneWireBus);
+                            self.dataBind(oneWireBus);
                             $.pic.modalDialog.closeDialog(dlg);
                         });
                     }
@@ -95,14 +96,14 @@
             });
             $('<div></div>').appendTo(dlg).html(`Provide a known address for any device that could not be detected?`)
             $('<hr></hr>').appendTo(dlg);
-            $('<div></div>').appendTo(dlg).addClass('script-advanced-instructions').html(`This action will allow you to configure the device without detection.  However, if you do not define the device or activate it, this address will be removed from the i2c list when devices are queried again.<hr style="margin:3px"></hr>If you would like REM to attempt to rescan the bus press the Re-scan button.`);
+            $('<div></div>').appendTo(dlg).addClass('script-advanced-instructions').html(`This action will allow you to configure the device without detection.  However, if you do not define the device or activate it, this address will be removed from the 1-Wire list when devices are queried again.  This should never be necessary.  If you still want to proceed, enter an address with 1-Wire format (xx-yyyyyyyyyyyy) with xx being the family and y representing the unique address.<hr style="margin:3px"></hr>If you would like REM to attempt to rescan the bus press the Re-scan button.`);
             var line = $('<div></div>').appendTo(dlg);
-            $('<div></div').appendTo(line).valueSpinner({ canEdit: true, fmtMask: '#', dataType: 'int', binding: 'newAddress', min: 3, max: 127, labelText: 'New Address', labelAttrs: { style: { marginRight: '.25rem' } }, inputAttrs: { maxLength: 4 } });
+            $('<div></div').appendTo(line).inputField({ canEdit: true, dataType: 'string', binding: 'newAddress',  labelText: 'New Address', labelAttrs: { style: { marginRight: '.25rem' } }, inputAttrs: { maxLength: 15 }, style: {width: '195px'}});
         },
         loadDevices: function (selAddr) {
             var self = this, o = self.options, el = self.element;
-            $.getLocalService('/config/options/i2c/' + o.busNumber, null, function (i2cBus, status, xhr) {
-                self.dataBind(i2cBus, selAddr);
+            $.getLocalService('/config/options/oneWire/' + o.busNumber, null, function (oneWire, status, xhr) {
+                self.dataBind(oneWire, selAddr);
             });
         },
         dataBind: function (data, selAddr) {
@@ -117,10 +118,10 @@
                 }
             }
             addrs.sort((a, b) => { return a.address - b.address });
-            el.find('div#i2cAddresses').each(function () {
+            el.find('div#oneWireAddresses').each(function () {
                 this.clear();
                 for (var n = 0; n < addrs.length; n++) {
-                    addrs[n].addressName = `${addrs[n].address.toString()} - 0x${addrs[n].address.toString(16).padStart(2, '0')}`;
+                    // addrs[n].addressName = `${addrs[n].address.toString()} - 0x${addrs[n].address.toString(16).padStart(2, '0')}`;
                     var r = this.addRow(addrs[n]);
                     if (typeof selAddr !== 'undefined' && selAddr === addrs[n].address) r.addClass('selected');
                 }
@@ -128,7 +129,7 @@
 
         },
     });
-    $.widget('pic.pnlI2cDevice', {
+    $.widget('pic.pnlOneWireDevice', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -140,11 +141,11 @@
         },
         setConnected: function (val) {
             var self = this, o = self.options, el = self.element;
-            if (val) el.find('div.i2c-status-overlay').remove();
+            if (val) el.find('div.oneWire-status-overlay').remove();
             else {
-                var overlay = el.find('div.i2c-status-overlay');
+                var overlay = el.find('div.oneWire-status-overlay');
                 if (overlay.length === 0) {
-                    $('<div></div>').addClass('i2c-status-overlay').appendTo(el);
+                    $('<div></div>').addClass('oneWire-status-overlay').appendTo(el);
                 }
             }
         },
@@ -169,7 +170,7 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-i2c-device');
+            el.addClass('pnl-oneWire-device');
             el.addClass('pnl-device-config');
             el.attr('data-busnumber', o.busNumber);
             el.attr('data-address', o.address);
@@ -182,14 +183,14 @@
             el.attr('data-address', o.address);
             var outer = $('<div></div>').appendTo(el).addClass('control-panel');
             var head = $('<div></div>').appendTo(outer).addClass('pnl-settings-header').addClass('control-panel-title');
-            $('<span></span>').appendTo(head).addClass('header-text').html(`I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Device Definition for Address <span class="i2cpnl-address">${o.address} - 0x${o.address.toString(16).padStart(2, '0')}</span>`);
+            $('<span></span>').appendTo(head).addClass('header-text').html(`1-Wire Device Definition for Address <span class="oneWirepnl-address">${o.address}</span>`);
             var pnl = $('<div></div>').appendTo(outer);
-            $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address, null, function (i2cDevice, status, xhr) {
-                console.log(i2cDevice);
+            $.getLocalService('/config/options/oneWire/' + o.busNumber + '/' + o.address, null, function (oneWireDevice, status, xhr) {
+                console.log(oneWireDevice);
                 var binding = '';
                 var line = $('<div></div>').appendTo(pnl);
-                o.deviceTypes = i2cDevice.deviceTypes;
-                o.deviceId = i2cDevice.id;
+                o.deviceTypes = oneWireDevice.deviceTypes;
+                o.deviceId = oneWireDevice.id;
                 $('<div></div>').appendTo(line).checkbox({ binding: binding + 'isActive', labelText: 'Is Active', style: {} }).on('changed', function (evt) {
                     //acc[0].columns()[0].elGlyph().attr('class', evt.newVal ? 'fas fa-share-alt' : 'fas fa-share-alt').css({ textShadow: evt.newVal ? '0px 0px 3px green' : '', color: evt.newVal ? 'darkGreen' : '' });
                 });
@@ -197,29 +198,29 @@
                     binding: binding + 'typeId', labelText: 'Device',
                     bindColumn: 0, displayColumn: 1,
                     columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'name', text: 'Device Name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'category', text: 'Category', style: { whiteSpace: 'nowrap' } }],
-                    items: i2cDevice.deviceTypes, inputAttrs: { style: { width: '14rem' } }, labelAttrs: { style: { marginLeft: '1rem' } }
+                    items: oneWireDevice.deviceTypes, inputAttrs: { style: { width: '14rem' } }, labelAttrs: { style: { marginLeft: '1rem' } }
                 }).on('selchanged', function (evt) {
                     self.createDeviceOptions(evt.newItem);
                 });
                 var samp = $('<div></div>').appendTo(line).valueSpinner({ required: true, binding: binding + 'sampling', labelText: 'Sampling', min: 1, max: 100, labelAttrs: { style: { width: '5rem' } } }).hide();
-                var dt = o.deviceTypes.find(elem => elem.id === i2cDevice.device.typeId) || { id: i2cDevice.device.typeId, takeSamples: false };
+                var dt = o.deviceTypes.find(elem => elem.id === oneWireDevice.device.typeId) || { id: oneWireDevice.device.typeId, takeSamples: false };
                 if (dt.takeSamples) samp.show();
                 var tabBar = $('<div></div>').appendTo(pnl).tabBar().on('tabchange', function (evt) {
                     evt.stopPropagation();
                 }).hide();
-                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabOptions', text: 'Device Options' })).pnlI2cOptions();
-                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabTriggers', text: 'Triggers' })).pnlI2cTriggers({ deviceId: i2cDevice.device.id, busNumber: o.busNumber, busId: o.busId, address: o.address })[0].dataBind(i2cDevice.device.triggers);
-                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabFeeds', text: 'Feeds' })).pnlI2cFeeds({ deviceId: i2cDevice.device.id, busNumber: o.busNumber, busId: o.busId, address: o.address })[0].dataBind(i2cDevice.device.feeds);
+                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabOptions', text: 'Device Options' })).pnlOneWireOptions();
+                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabTriggers', text: 'Triggers' })).pnlOneWireTriggers({ deviceId: oneWireDevice.device.id, busNumber: o.busNumber, busId: o.busId, address: o.address })[0].dataBind(oneWireDevice.device.triggers);
+                $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabFeeds', text: 'Feeds' })).pnlOneWireFeeds({ deviceId: oneWireDevice.device.id, busNumber: o.busNumber, busId: o.busId, address: o.address })[0].dataBind(oneWireDevice.device.feeds);
                 tabBar[0].selectTabById('tabOptions');
                 if (typeof dt !== 'undefined') self.createDeviceOptions(dt);
-                i2cDevice.device.busNumber = o.busNumber;
-                i2cDevice.device.address = o.address;
-                i2cDevice.device.busId = o.busId;
+                oneWireDevice.device.busNumber = o.busNumber;
+                oneWireDevice.device.address = o.address;
+                oneWireDevice.device.busId = o.busId;
                 if (dt.hasReset) el.find('div#btnResetDevice').show();
                 else el.find('div#btnResetDevice').hide();
                 if (dt.hasChangeAddress) el.find('div#btnChangeAddress').show();
                 else el.find('div#btnChangeAddress').hide();
-                self.dataBind(i2cDevice.device);
+                self.dataBind(oneWireDevice.device);
             });
             var btnPnl = $('<div class="btn-panel"></div>').appendTo(outer);
             $('<div></div>').appendTo(btnPnl).actionButton({ id: "btnChangeAddress", text: 'Change Address', icon: '<i class="fas fa-at"></i>' })
@@ -243,9 +244,9 @@
                 buttons: [{
                     text: 'Yes', icon: '<i class="fas fa-toilet"></i>',
                     click: function (evt) {
-                        $.putLocalService('/config/i2c/device/reset', dev, 'Resetting I2c Device...', function (i2cDev, status, xhr) {
-                            self.dataBind(i2cDev);
-                            el.parents('div.pnl-i2c-bus:first')[0].loadDevices(dev.address);
+                        $.putLocalService('/config/oneWire/device/reset', dev, 'Resetting 1-Wire Device...', function (oneWireDev, status, xhr) {
+                            self.dataBind(oneWireDev);
+                            el.parents('div.pnl-oneWire-bus:first')[0].loadDevices(dev.address);
                         });
                         $.pic.modalDialog.closeDialog(this);
                     }
@@ -271,9 +272,9 @@
                         a.address = dev.address;
                         a.busNumber = dev.busNumber;
                         console.log(a);
-                        $.putLocalService('/config/i2c/device/changeAddress', a, 'Changing I2c Device Address...', function (i2cDev, status, xhr) {
-                            self.dataBind(i2cDev);
-                            el.parents('div.pnl-i2c-bus:first')[0].loadDevices(a.newAddress);
+                        $.putLocalService('/config/oneWire/device/changeAddress', a, 'Changing 1-Wire Device Address...', function (oneWireDev, status, xhr) {
+                            self.dataBind(oneWireDev);
+                            el.parents('div.pnl-oneWire-bus:first')[0].loadDevices(a.newAddress);
                         });
                         $.pic.modalDialog.closeDialog(this);
                     }
@@ -299,9 +300,9 @@
                 dev.address = o.address;
                 console.log(dev);
                 if (isNaN(dev.id)) delete dev.id;
-                $.putLocalService('/config/i2c/device', dev, 'Saving I2c Device...', function (i2cDev, status, xhr) {
-                    self.dataBind(i2cDev);
-                    el.parents('div.pnl-i2c-bus:first')[0].loadDevices(dev.address);
+                $.putLocalService('/config/oneWire/device', dev, 'Saving 1-Wire Device...', function (oneWireDev, status, xhr) {
+                    self.dataBind(oneWireDev);
+                    el.parents('div.pnl-oneWire-bus:first')[0].loadDevices(dev.address);
                 });
             }
         },
@@ -316,12 +317,9 @@
                 buttons: [{
                     text: 'Yes', icon: '<i class="fas fa-trash"></i>',
                     click: function (evt) {
-                        dev.busId = o.busId;
-                        dev.busNumber = o.busNumber;
-                        dev.address = o.address;
-                        $.deleteLocalService('/config/i2c/device', dev, 'Deleting I2c Device...', function (i2cDev, status, xhr) {
+                        $.deleteLocalService('/config/oneWire/device', dev, 'Deleting 1-Wire Device...', function (oneWireDev, status, xhr) {
                             self.dataBind({ id: '', busId: dev.busId, busNumber: dev.busNumber, address: dev.address, isActive: false, typeId: 0 });
-                            el.parents('div.pnl-i2c-bus:first')[0].loadDevices(dev.address);
+                            el.parents('div.pnl-oneWire-bus:first')[0].loadDevices(dev.address);
                         });
                         $.pic.modalDialog.closeDialog(this);
                     }
@@ -337,7 +335,7 @@
             var self = this, o = self.options, el = self.element;
             if (typeof dev === 'undefined' || typeof dev.id === 'undefined' || el.attr('data-typeid') !== dev.id.toString()) {
                 el.attr('data-typeid', dev.id);
-                var pnl = el.find('div.pnl-i2cdevice-options:first');
+                var pnl = el.find('div.pnl-oneWiredevice-options:first');
                 pnl.empty();
             }
         },
@@ -361,20 +359,20 @@
                 else
                     el.find('div.picActionButton#btnResetDevice').hide();
             }
-            var pnlOpts = el.find('div.i2cdevice-options');
+            var pnlOpts = el.find('div.oneWiredevice-options');
             pnlOpts[0].setDeviceType(dt, data);
-            $('span.i2cpnl-address').each(function () {
-                $(this).text(`${data.address} - 0x${data.address.toString(16).padStart(2, '0')}`);
-            });
+            // $('span.oneWirepnl-address').each(function () {
+            //     $(this).text(`${data.address} - 0x${data.address.toString(16).padStart(2, '0')}`);
+            // });
             console.log(data);
             dataBinder.bind(el, data);
         },
     });
-    $.widget('pic.pnlI2cOptions', {
+    $.widget('pic.pnlOneWireOptions', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('i2cdevice-options');
+            el.addClass('oneWiredevice-options');
             el[0].setDeviceType = function (dt) { self.setDeviceType(dt); }
         },
         setDeviceType: function (dt, device) {
@@ -570,7 +568,7 @@
         },
 
     });
-    $.widget('pic.pnlI2cTriggers', {
+    $.widget('pic.pnlOneWireTriggers', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -593,7 +591,7 @@
                                 trigger.busId = trig.bus.id;
                                 trigger.busNumber = trig.bus.busNumber;
                                 trigger.deviceId = trig.device.id;
-                                $.putLocalService('/config/i2c/device/trigger', trigger, 'Saving Trigger...', function (t, status, xhr) {
+                                $.putLocalService('/config/oneWire/device/trigger', trigger, 'Saving Trigger...', function (t, status, xhr) {
                                     self.dataBind(t);
                                 });
                             }
@@ -632,7 +630,7 @@
             });
             line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).addClass('pnl-state-params');
-            $('<div></div>').appendTo(dlg).pnlI2cTriggerParams({});
+            $('<div></div>').appendTo(dlg).pnlOneWireTriggerParams({});
             if (typeof trig.trigger.id !== 'undefined') {
                 var d = dlg.find('div.pnl-state-params');
                 if (typeof trig.trigger !== 'undefined' &&
@@ -654,8 +652,8 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-i2cdevice-triggers');
-            $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Triggers act upon input from other devices and are used as inputs for this i2c device.');
+            el.addClass('pnl-oneWiredevice-triggers');
+            $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Triggers act upon input from other devices and are used as inputs for this 1-Wire device.');
             $('<div></div>').appendTo(el).crudList({
                 id: 'crudTriggers' + o.deviceId, actions: { canCreate: true, canEdit: true, canRemove: true },
                 key: 'id',
@@ -665,17 +663,17 @@
                 { binding: 'filter', text: 'Filter', style: { width: '247px' }, cellStyle: { fontSize: '8pt', whiteSpace: 'nowrap' } }]
             }).css({ width: '100%' })
                 .on('additem', function (evt) {
-                    $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/trigger/0', null, function (triggers, status, xhr) {
+                    $.getLocalService('/config/options/oneWire/' + o.busNumber + '/' + o.address + '/trigger/0', null, function (triggers, status, xhr) {
                         triggers.trigger = { id: -1, isActive: true };
-                        self._createTriggerDialog('dlgAddI2cTrigger', 'Add Trigger to I2c Device', triggers);
+                        self._createTriggerDialog('dlgAddOneWireTrigger', 'Add Trigger to 1-Wire Device', triggers);
                     });
                 }).on('edititem', function (evt) {
-                    $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/trigger/0', null, function (triggers, status, xhr) {
+                    $.getLocalService('/config/options/oneWire/' + o.busNumber + '/' + o.address + '/trigger/0', null, function (triggers, status, xhr) {
                         triggers.trigger = o.triggers.find(elem => elem.id == evt.dataKey);
-                        self._createTriggerDialog('dlgEditI2cTrigger', 'Edit I2C Device Trigger', triggers);
+                        self._createTriggerDialog('dlgEditOneWireTrigger', 'Edit 1-Wire Device Trigger', triggers);
                     });
                 }).on('removeitem', function (evt) {
-                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteI2cTrigger', {
+                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteOneWireTrigger', {
                         message: 'Are you sure you want to delete Trigger?',
                         width: '350px',
                         height: 'auto',
@@ -689,7 +687,7 @@
                                 trigger.deviceId = o.deviceId;
                                 trigger.address = o.address;
                                 trigger.id = evt.dataKey;
-                                $.deleteLocalService('/config/i2c/device/trigger', trigger, function (triggers, status, xhr) {
+                                $.deleteLocalService('/config/oneWire/device/trigger', trigger, function (triggers, status, xhr) {
                                     $.pic.modalDialog.closeDialog(dlg);
                                     self.dataBind(triggers)
                                 });
@@ -728,7 +726,7 @@
         }
 
     });
-    $.widget('pic.pnlI2cTriggerParams', {
+    $.widget('pic.pnlOneWireTriggerParams', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -1030,7 +1028,7 @@
         }
     });
 
-    $.widget('pic.pnlI2cFeeds', {
+    $.widget('pic.pnlOneWireFeeds', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -1039,7 +1037,7 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-i2cdevice-feeds');
+            el.addClass('pnl-oneWiredevice-feeds');
             $('<div></div>').appendTo(el).addClass('script-advanced-instructions').html('Feeds send values from the device via a connection to other software.  The defined connection determines the format, protocol, and potential data that is sent.');
             $('<div></div>').appendTo(el).crudList({
                 id: 'crudFeeds' + o.deviceId, actions: { canCreate: true, canEdit: true, canRemove: true },
@@ -1048,17 +1046,17 @@
                 columns: [{ binding: 'connection.name', text: 'Connection', style: { width: '157px' } }, { binding: 'sendValue', text: 'Value', style: { width: '127px' } }, { binding: 'propertyDesc', text: 'Property', style: { width: '247px' }, cellStyle: {} }]
             }).css({ width: '100%' })
                 .on('additem', function (evt) {
-                    $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
+                    $.getLocalService('/config/options/oneWire/' + o.busNumber + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
                         feeds.feed = { isActive: true };
-                        self._createFeedDialog('dlgAddI2cFeed', 'Add Feed to I2c Device', feeds);
+                        self._createFeedDialog('dlgAddOneWireFeed', 'Add Feed to 1-Wire Device', feeds);
                     });
                 }).on('edititem', function (evt) {
-                    $.getLocalService('/config/options/i2c/' + o.busNumber + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
+                    $.getLocalService('/config/options/oneWire/' + o.busNumber + '/' + o.address + '/feeds', null, function (feeds, status, xhr) {
                         feeds.feed = o.feeds.find(elem => elem.id == evt.dataKey);
-                        self._createFeedDialog('dlgEditI2cFeed', 'Edit I2C Device Feed', feeds);
+                        self._createFeedDialog('dlgEditOneWireFeed', 'Edit 1-Wire Device Feed', feeds);
                     });
                 }).on('removeitem', function (evt) {
-                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteI2cFeed', {
+                    var dlg = $.pic.modalDialog.createConfirm('dlgConfirmDeleteOneWireFeed', {
                         message: 'Are you sure you want to delete Feed?',
                         width: '350px',
                         height: 'auto',
@@ -1072,7 +1070,7 @@
                                 feed.deviceId = o.deviceId;
                                 feed.address = o.address;
                                 feed.id = evt.dataKey;
-                                $.deleteLocalService('/config/i2c/device/feed', feed, function (feeds, status, xhr) {
+                                $.deleteLocalService('/config/oneWire/device/feed', feed, function (feeds, status, xhr) {
                                     $.pic.modalDialog.closeDialog(dlg);
                                     self.dataBind(feeds)
                                 });
@@ -1131,7 +1129,7 @@
                 items: f.connections, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
             })
                 .on('selchanged', function (evt) {
-                    dlg.find('div.pnl-i2c-feed-params').each(function () { this.setConnection(evt.newItem); });
+                    dlg.find('div.pnl-oneWire-feed-params').each(function () { this.setConnection(evt.newItem); });
                 });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
             line = $('<div></div>').appendTo(dlg);
@@ -1157,10 +1155,10 @@
             }).hide();
 
             line = $('<div></div>').appendTo(dlg);
-            $('<div></div>').appendTo(dlg).pnlI2cFeedParams({ device: f.device });
+            $('<div></div>').appendTo(dlg).pnlOneWireFeedParams({ device: f.device });
             if (typeof f.feed.id !== 'undefined') {
                 conn[0].disabled(true);
-                dlg.find('div.pnl-i2c-feed-params').each(function () {
+                dlg.find('div.pnl-oneWire-feed-params').each(function () {
                     var pnl = this;
                     this.dataBind(f.feed);
                 });
@@ -1171,7 +1169,7 @@
         },
         saveFeed: function (feed) {
             var self = this, o = self.options, el = self.element;
-            $.putLocalService('/config/i2c/device/feed', feed, 'Saving Device Feed...', function (f, result, xhr) {
+            $.putLocalService('/config/oneWire/device/feed', feed, 'Saving Device Feed...', function (f, result, xhr) {
                 self.dataBind(f);
             });
         },
@@ -1187,7 +1185,7 @@
             o.feeds = feeds;
         }
     });
-    $.widget('pic.pnlI2cFeedParams', {
+    $.widget('pic.pnlOneWireFeedParams', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
@@ -1198,7 +1196,7 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-i2c-feed-params');
+            el.addClass('pnl-oneWire-feed-params');
         },
         setTopic: function () {
             var self = this, o = self.options, el = self.element;
@@ -1325,11 +1323,11 @@
             }
         }
     });
-    $.widget('pic.dlgI2cBus', $.pic.modalDialog, {
+    $.widget('pic.dlgOneWireBus', $.pic.modalDialog, {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
-            o.title = 'Add I2C Bus';
+            o.title = 'Add 1-Wire Bus';
             o.autoOpen = true;
             o.width = '447px';
             o.height = 'auto';
@@ -1351,10 +1349,10 @@
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('dlg-config-i2c');
+            el.addClass('dlg-config-oneWire');
             el.attr('data-busid', o.id);
             var line = $('<div></div>').appendTo(el);
-            $('<div></div>').appendTo(line).addClass('script-advanced-instructions').html('Most ECs can have more than one i2c bus.  These are typically identified by a number.  Run i2cdetect -l to see the enabled i2c bus drivers on your system.');
+            $('<div></div>').appendTo(line).addClass('script-advanced-instructions').html('Most ECs can have more than one 1-Wire Bus.  These are typically identified by a number.  Run `ls -al  /sys/bus/w1/devices` to see to see the enabled 1-Wire Bus drivers on your system.  If no busses are present, enable the 1-Wire interface in the system gui or via the command line.');
             line = $('<div></div>').appendTo(el);
             $('<div></div>').appendTo(line).valueSpinner({ required: true, binding: 'busNumber', labelText: 'Bus #', min: 1, max: 100, labelAttrs: { style: { width: '4rem' } } });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
@@ -1364,7 +1362,7 @@
             var self = this, o = self.options, el = self.element;
             var bus = dataBinder.fromElement(el);
             console.log(bus);
-            $.putLocalService('/config/i2c/bus', bus, function (data, status, xhr) {
+            $.putLocalService('/config/oneWire/bus', bus, function (data, status, xhr) {
                 var evt = $.Event('busadded');
                 evt.bus = data;
                 el.trigger(evt);
@@ -1373,11 +1371,11 @@
 
         }
     });
-    $.widget('pic.pnlI2cRelay', {
+    $.widget('pic.pnlOneWireRelay', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-i2cdevice-relay');
+            el.addClass('pnl-oneWiredevice-relay');
             el.attr('data-bind', 'relayStates');
             el[0].val = function (val) { return self.val(val); }
 
@@ -1407,8 +1405,8 @@
                 })
                 .on('clickRelay', function (evt) {
                     console.log(evt);
-                    var dev = dataBinder.fromElement(el.parents('div.pnl-i2c-device:first'));
-                    $.putLocalService(`/config/i2c/${dev.busNumber}/${dev.address}/deviceCommand/setRelayState`, { id: evt.relay.id, state: !makeBool(evt.relay.state) }, 'Setting Relay State...', function (res, status, xhr) {
+                    var dev = dataBinder.fromElement(el.parents('div.pnl-oneWire-device:first'));
+                    $.putLocalService(`/config/oneWire/${dev.busNumber}/${dev.address}/deviceCommand/setRelayState`, { id: evt.relay.id, state: !makeBool(evt.relay.state) }, 'Setting Relay State...', function (res, status, xhr) {
                         evt.currentTarget.setRelay(res);
                     });
                 });
@@ -1421,11 +1419,11 @@
                 });
         }
     });
-    $.widget('pic.pnlI2cADC', {
+    $.widget('pic.pnlOneWireADC', {
         options: {},
         _create: function () {
             var self = this, o = self.options, el = self.element;
-            el.addClass('pnl-i2cdevice-adc');
+            el.addClass('pnl-oneWiredevice-adc');
             el.attr('data-bind', 'options.channelStates');
             el[0].val = function (val) { return self.val(val); }
             self._buildControls();

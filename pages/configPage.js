@@ -39,6 +39,10 @@
                         $('<div></div>').appendTo(evt.newTab.contents).pnlI2cBus({ busNumber: parseInt(evt.newTab.id.replace('tabI2c', ''), 10) });
 
                     }
+                    if (evt.newTab.id.startsWith('tabOneWire')) {
+                        $('<div></div>').appendTo(evt.newTab.contents).pnlOneWireBus({ busNumber: parseInt(evt.newTab.id.replace('tabOneWire', ''), 10) });
+
+                    }
                     break;
             }
         },
@@ -77,7 +81,12 @@
                 for (var i = 0; i < i2c.buses.length; i++) {
                     var bus = i2c.buses[i];
                     self._addConfigTab({ id: 'tabI2c' + bus.busNumber, text: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Bus #' + bus.busNumber });
-                   
+                }
+            });
+            $.getLocalService('/config/options/oneWire', null, function (oneWire, status, xhr) {
+                for (var i = 0; i < oneWire.buses.length; i++) {
+                    var bus = oneWire.buses[i];
+                    self._addConfigTab({ id: 'tabOneWire' + bus.busNumber, text: '1-Wire - Bus #' + bus.busNumber });
                 }
             });
             el.trigger(evt);
@@ -135,19 +144,40 @@
                 });
                 
             });
-            o.socket.on('genericDataValues', function (data) {
-                el.find(`.pnl-generic-device-details[data-id="${data.id}"][data-typeId=${data.typeId}] .genericReadingValues`).each(function () {
-                    console.log({ evt: 'genericDataValues', data: data, control: this });
-                    dataBinder.bind($(this), data);
-                });
-            });
             o.socket.on('i2cDeviceInformation', function (data) {
                 //console.log({ evt: 'i2cDeviceInformation', data: data });
                 el.find(`.pnl-i2c-device[data-address="${data.address}"][data-busnumber="${data.bus}"] .i2cDeviceInformation`).each(function () {
                     console.log({ evt: 'i2cDeviceInformation', data: data, control: this });
                     dataBinder.bind($(this), data);
                 });
-
+                
+            });
+            o.socket.on('oneWireDataValues', function (data) {
+                el.find(`.pnl-oneWire-device[data-address="${data.address}"][data-busnumber="${data.bus}"] .oneWireReadingValues`).each(function () {
+                    console.log({ evt: 'oneWireDataValues', data: data, control: this });
+                    dataBinder.bind($(this), data);
+                });
+            });
+            o.socket.on('oneWireDeviceStatus', function (data) {
+                el.find(`.pnl-oneWire-device[data-address="${data.address}"][data-busnumber="${data.bus}"] .oneWireReadingValues`).each(function () {
+                    console.log({ evt: 'oneWireDeviceStatus', data: data, control: this });
+                    this.setStatus(data);
+                });
+                
+            });
+            o.socket.on('oneWireDeviceInformation', function (data) {
+                //console.log({ evt: 'oneWireDeviceInformation', data: data });
+                el.find(`.pnl-oneWire-device[data-address="${data.address}"][data-busnumber="${data.bus}"] .oneWireDeviceInformation`).each(function () {
+                    console.log({ evt: 'oneWireDeviceInformation', data: data, control: this });
+                    dataBinder.bind($(this), data);
+                });
+                
+            });
+            o.socket.on('genericDataValues', function (data) {
+                el.find(`.pnl-generic-device-details[data-id="${data.id}"][data-typeId=${data.typeId}] .genericReadingValues`).each(function () {
+                    console.log({ evt: 'genericDataValues', data: data, control: this });
+                    dataBinder.bind($(this), data);
+                });
             });
             o.socket.on('connect_error', function (data) {
                 console.log('connection error:' + data);

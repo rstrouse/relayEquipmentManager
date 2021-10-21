@@ -316,6 +316,165 @@ export class ConfigRoute {
             catch (err) { next(err); }
         });
 
+        // BEGIN 1-WIRE END POINTS
+
+
+        app.get('/config/options/oneWire/:busNumber/:deviceAddress/feeds', (req, res) => {
+            // Get a listing of all the devices that we can feed internally.  These are destinations
+            // that don't need to go anywhere outside.  This is our internal connection.
+            let bus = cont.oneWire.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
+            let dev = bus.devices.getItemByAddress(req.params.deviceAddress);
+            let opts = {
+                connections: cont.connections.toExtendedArray(),
+                device: dev.getExtended()
+            }
+            opts.connections.unshift(cont.getInternalConnection().getExtended());
+            return res.status(200).send(opts);
+        });
+        app.get('/config/options/oneWire/:busNumber/:deviceAddress/trigger/:triggerId', (req, res) => {
+            let bus = cont.oneWire.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
+            let device = bus.devices.getItemByAddress(req.params.deviceAddress);
+            let trigger = device.triggers.getItemById(parseInt(req.params.triggerId, 10));
+            let opts = {
+                bus: bus.getExtended(),
+                device: device.getExtended(),
+                trigger: trigger.getExtended(),
+                connections: cont.connections.toExtendedArray()
+            };
+            return res.status(200).send(opts);
+        });
+        app.get('/config/options/oneWire/:busNumber/:deviceAddress', (req, res) => {
+            let bus = cont.oneWire.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10));
+            let device = bus.devices.getItemByAddress(req.params.deviceAddress);
+            let opts = {
+                bus: bus.getExtended(),
+                device: device.getExtended(),
+                deviceTypes: cont.analogDevices.filter(elem => typeof elem.interfaces === 'undefined' || elem.interfaces.indexOf('oneWire') !== -1)
+            };
+            return res.status(200).send(opts);
+        });
+
+        app.get('/config/options/oneWire/:busNumber', (req, res) => {
+            let opts = { bus: cont.oneWire.buses.getItemByBusNumber(parseInt(req.params.busNumber, 10)).getExtended() };
+            return res.status(200).send(opts);
+        });
+        app.get('/config/options/oneWire', (req, res) => {
+            let opts = {
+                buses: cont.oneWire.buses.toExtendedArray()
+            }
+            return res.status(200).send(opts);
+        });
+        app.put('/config/oneWire/bus', async (req, res, next) => {
+            try {
+                let bus = await cont.setOneWireBusAsync(req.body);
+                return res.status(200).send(bus.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/oneWire/device/changeAddress', async (req, res, next) => {
+            try {
+                let dev = await cont.oneWire.changeAddress(req.body);
+                return res.status(200).send(dev.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/oneWire/scanBus', async (req, res, next) => {
+            try {
+                let busId = parseInt(req.body.busNumber, 10);
+                if (isNaN(busId)) next(new Error(`Cannot scan bus because the bus number ${req.body.busNumber} is invalid.`));
+                else {
+                    let bus = cont.oneWire.buses.find(elem => elem.id === busId);
+                    if (typeof bus === 'undefined') next(new Error(`Cannot scan bus because the bus ${req.body.busNumber} cannot be found.`));
+                    else {
+                        await bus.scanBus();
+                        let opts = { bus: bus.getExtended() };
+                        return res.status(200).send(opts);
+                    }
+                }
+            } catch(err) { next(err); }
+        });
+        app.put('/config/oneWire/addAddress', async (req, res, next) => {
+            try {
+                let busId = parseInt(req.body.busNumber, 10);
+                if (isNaN(busId)) next(new Error(`Cannot add address because the bus number ${req.body.busNumber} is invalid.`));
+                else {
+                    let bus = cont.oneWire.buses.find(elem => elem.id === busId);
+                    if (typeof bus === 'undefined') next(new Error(`Cannot scan bus because the bus ${req.body.busNumber} cannot be found.`));
+                    else {
+                        await bus.addAddress(req.body);
+                        let opts = { bus: bus.getExtended() };
+                        return res.status(200).send(opts);
+                    }
+                }
+            } catch (err) { next(err); }
+        });
+
+        app.put('/config/oneWire/device/reset', async (req, res, next) => {
+            try {
+                let dev = await cont.oneWire.resetDevice(req.body);
+                return res.status(200).send(dev.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/oneWire/device', async (req, res, next) => {
+            try {
+                let dev = await cont.oneWire.setDevice(req.body);
+                return res.status(200).send(dev.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/oneWire/device/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.oneWire.setDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/oneWire/device/feed', async (req, res, next) => {
+            try {
+                let feeds = await cont.oneWire.deleteDeviceFeed(req.body);
+                return res.status(200).send(feeds.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/oneWire/device/trigger', async (req, res, next) => {
+            try {
+                let trigs = await cont.oneWire.setDeviceTrigger(req.body);
+                return res.status(200).send(trigs.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/oneWire/device/trigger', async (req, res, next) => {
+            try {
+                let trigs = await cont.oneWire.deleteDeviceTrigger(req.body);
+                return res.status(200).send(trigs.toExtendedArray());
+            }
+            catch (err) { next(err); }
+        });
+
+        app.delete('/config/oneWire/bus', async (req, res, next) => {
+            try {
+                await cont.oneWire.deleteBus(req.body);
+                return res.status(200).send({ buses: cont.oneWire.buses.toExtendedArray() });
+            }
+            catch (err) { next(err); }
+        });
+        app.delete('/config/oneWire/device', async (req, res, next) => {
+            try {
+                let dev = await cont.oneWire.deleteDevice(req.body);
+                return res.status(200).send(dev.getExtended());
+            }
+            catch (err) { next(err); }
+        });
+        app.put('/config/oneWire/:busNumber/:deviceAddress/deviceCommand/:command', async (req, res, next) => {
+            try {
+                let result = await cont.oneWire.runDeviceCommand(parseInt(req.params.busNumber, 10), req.params.deviceAddress, req.params.command, req.body);
+                if (result instanceof ConfigItem) return res.status(200).send((result as ConfigItem).getExtended());
+                return res.status(200).send(result);
+            }
+            catch (err) { next(err); }
+        });
+        // END 1-WIRE END POINTS
 
         app.put('/config/spi/:controllerId', async (req, res, next) => {
             try {

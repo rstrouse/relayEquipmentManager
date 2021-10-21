@@ -40,6 +40,11 @@
                             el.find('div#cbI2c').hide();
                             //el.find('div#cbI2c')[0].val(false);
                         }
+                        if (makeBool(evt.newItem.oneWire)) el.find('div#cbOneWire').show();
+                        else {
+                            el.find('div#cbOneWire').hide();
+                            //el.find('div#cbOneWire')[0].val(false);
+                        }
                     });
                 var grpLogs = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpLogs');
                 $('<legend></legend>').appendTo(grpLogs).text('Logging');
@@ -79,12 +84,15 @@
                 $('<div></div>').appendTo(line).checkbox({ id: 'cbSpi1', labelText: 'SPI1 - Serial Peripheral Interface', binding: 'spi1.isActive' }).hide()
                     .on('changed', function (evt) { $(evt.target).parents('div#tabsMain')[0].showTab('tabSpi1', evt.newVal); });
                 line = $('<div></div>').appendTo(grpInterfaces);
-                //$('<div></div>').appendTo(line).checkbox({ id: 'cbI2c', labelText: 'I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Inter-Integrated Circuit', binding: 'i2c.isActive' }).hide()
-                //    .on('changed', function (evt) { $(evt.target).parents('div#tabsMain')[0].showTab('tabI2c', evt.newVal); });
                 grpInterfaces = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpInterfaces');
                 $('<legend></legend>').appendTo(grpInterfaces).html('I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C - Interface');
                 line = $('<div></div>').appendTo(grpInterfaces);
                 $('<div></div>').appendTo(grpInterfaces).pnlI2cBuses();
+
+                grpInterfaces = $('<fieldset></fieldset>').appendTo(settings).attr('id', 'grpInterfaces');
+                $('<legend></legend>').appendTo(grpInterfaces).html('1-Wire Interface');
+                line = $('<div></div>').appendTo(grpInterfaces);
+                $('<div></div>').appendTo(grpInterfaces).pnlOneWireBuses();
 
 
                 $('<hr></hr>').appendTo(outer);
@@ -114,6 +122,13 @@
                 this.clear();
                 for (var i = 0; i < data.i2c.buses.length; i++) {
                     var bus = data.i2c.buses[i];
+                    this.addRow(bus);
+                }
+            });
+            el.find('div.crud-list#crudOneWireBuses').each(function () {
+                this.clear();
+                for (var i = 0; i < data.oneWire.buses.length; i++) {
+                    var bus = data.oneWire.buses[i];
                     this.addRow(bus);
                 }
             });
@@ -415,6 +430,66 @@
                 });
             var line = $('<div></div>').css({ display: 'inline-block', verticalAlign: 'top' }).appendTo(el);
             $('<div></div>').appendTo(line).addClass('script-advanced-instructions').css({ width: '13rem', marginLeft:'.5rem' }).html('Add the I<span style="vertical-align:super;font-size:.7em;display:inline-block;margin-top:-20px;">2</span>C Buses you would like to control by clicking the plus sign.');
+        }
+
+    });
+    $.widget('pic.pnlOneWireBuses', {
+        options: { cfg: {} },
+        _create: function () {
+            var self = this, o = self.options, el = self.element;
+            self._buildControls();
+            el[0].dataBind = function (conns) { self.dataBind(conns); }
+        },
+        _reloadBuses() {
+            var self = this, o = self.options, el = self.element;
+            $.getLocalService('/config/options/oneWire', null, function (oneWire, status, xhr) {
+                console.log(oneWire);
+                self.dataBind(oneWire.buses);
+            });
+        },
+        _buildControls: function () {
+            var self = this, o = self.options, el = self.element;
+            var oneWireCrud = $('<div></div>').appendTo(el).crudList({
+                id: 'crudOneWireBuses',
+                key: 'busNumber', actions: { canCreate: true, canEdit: false, canRemove: true },
+                caption: '1-Wire - Buses', itemName: 'Bus',
+                columns: [{ binding: 'busNumber', text: '#', style: { width: '2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' } }, { binding: 'detected.path', text: 'Path', style: { width: '277px' } }]
+            }).css({ display: 'inline-block' }).on('additem', function (evt) {
+                $('<div id="dlgAddOneWireBus" style="display:block;position:relative;padding:4px;"></div>').dlgOneWireBus()
+                    .on('busadded', function (e) {
+                        oneWireCrud[0].addRow(e.bus);
+                        el.parents('div.dashContainer:first')[0].addTab({ id: 'tabOneWire' + e.bus.busNumber, text: '1-Wire - Bus #' + e.bus.busNumber })
+                    });
+            }).on('removeitem', function (evt) {
+                $.getLocalService('/config/options/oneWire/' + evt.dataKey, null, function (opts, status, xhr) {
+                    var bus = opts.bus;
+                    console.log(evt.dataKey);
+                    console.log(bus);
+                    $.pic.modalDialog.createConfirm('dlgConfirmOneWireBus', {
+                        message: '<div>Are you sure you want to delete 1-Wire - Bus #' + bus.busNumber + '?</div><hr></hr><div><span style="color:red;font-weight:bold;">WARNING:</span> If you delete this bus it will remove all <span style="font-weight:bold;">devices</span> configured on the bus.</div>',
+                        width: '377px',
+                        height: 'auto',
+                        title: 'Confirm Delete OneWire Bus',
+                        buttons: [{
+                            text: 'Yes', icon: '<i class="fas fa-trash"></i>',
+                            click: function () {
+                                console.log(bus);
+                                $.pic.modalDialog.closeDialog(this);
+                                $.deleteLocalService('/config/oneWire/bus/', bus, 'Deleting 1-Wire Bus...', function (c, status, xhr) {
+                                    evt.dataRow.remove();
+                                    el.parents('div.dashContainer:first')[0].removeTab('tabOneWire' + bus.busNumber);
+                                });
+                            }
+                        },
+                        {
+                            text: 'No', icon: '<i class="far fa-window-close"></i>',
+                            click: function () { $.pic.modalDialog.closeDialog(this); }
+                        }]
+                    });
+                });
+                });
+            // var line = $('<div></div>').css({ display: 'inline-block', verticalAlign: 'top' }).appendTo('oneWireCrud');
+            // $('<div></div>').appendTo(line).addClass('script-advanced-instructions').css({ width: '13rem', marginLeft:'.5rem' }).html('Add the 1-Wire Buses you would like to control by clicking the plus sign.');
         }
 
     });

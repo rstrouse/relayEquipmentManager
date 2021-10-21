@@ -185,7 +185,7 @@ export class i2cBus {
                 try {
                     let d = bus.devices.getItemByAddress(addrs[i]);
                     logger.info(`Found I2C device ${d.name || 'Unknown'} at address: ${addrs[i]} - (0x${addrs[i].toString(16)})`);
-                    cdev = { address: addrs[i], manufacturer: 0, product: 0, name: d.name || 'Unkown' };
+                    cdev = { address: addrs[i], manufacturer: 0, product: 0, name: d.name || 'Unknown' };
                     devs.push(cdev);
                     //let o = await this._i2cBus.deviceId(addrs[i]);
                     cdev.name = d.name || 'Unknown';
@@ -334,7 +334,7 @@ export class i2cBus {
     }
     public async closeAsync(): Promise<void> {
         try {
-            logger.info(`Closing ${this.devices.length} devices.`);
+            logger.info(`Closing ${this.devices.length} i2c devices.`);
             for (let i = 0; i < this.devices.length; i++) {
                 await this.devices[i].closeAsync();
             }

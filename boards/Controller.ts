@@ -10,6 +10,7 @@ import { gdc } from '../generic/genericDevices';
 import { gpioCont } from '../gpio/Gpio-Controller';
 import { i2c } from '../i2c-bus/I2cBus';
 import { logger } from '../logger/Logger';
+import { oneWire } from '../one-wire/OneWireBus';
 import { PinDefinitions } from '../pinouts/Pinouts';
 import { spi0, spi1, SpiAdcChannel } from '../spi-adc/SpiAdcBus';
 import { SpiAdcChips } from '../spi-adc/SpiAdcChips';
@@ -254,6 +255,7 @@ export class Controller extends ConfigItem {
         this.spi0 = new SpiController(this.data, 'spi0');
         this.spi1 = new SpiController(this.data, 'spi1');
         this.i2c = new I2cController(this.data, 'i2c');
+        this.oneWire = new OneWireController(this.data, 'oneWire');
         this.genericDevices = new GenericDeviceController(this.data, 'genericDevices')
         this.data.configVersion = cfgVer;
         this.connections = new ConnectionSourceCollection(this.data, 'connections');
@@ -349,6 +351,7 @@ export class Controller extends ConfigItem {
     public spi0: SpiController;
     public spi1: SpiController;
     public i2c: I2cController;
+    public oneWire: OneWireController;
     public genericDevices: GenericDeviceController;
     public connections: ConnectionSourceCollection;
     public get pinouts() {
@@ -463,7 +466,34 @@ export class Controller extends ConfigItem {
             resolve(bus);
         });
     }
-
+    public async setOneWireBusAsync(data): Promise<OneWireBus> {
+        return new Promise<OneWireBus>((resolve, reject) => {
+            let bus: OneWireBus;
+            let id = parseInt(data.id || -1, 10);
+            if (isNaN(id)) return reject(new Error(`An invalid 1-Wire id was supplied`));
+            let busNumber = parseInt(data.busNumber, 10);
+            if (id < 0) {
+                // We are adding a new bus.
+                if (isNaN(busNumber)) return reject(new Error(`The 1-Wire bus number was not supplied`));
+                bus = this.oneWire.buses.find(elem => elem.busNumber === busNumber);
+                if (typeof bus !== 'undefined') return reject(new Error(`There is already an 1-Wire bus defined at Bus #${busNumber}.`));
+                bus = this.oneWire.buses.getItemById((this.oneWire.buses.getMaxId() || 0) + 1, true);
+                bus.set(data);
+            }
+            else {
+                bus = this.oneWire.buses.find(elem => elem.id === id);
+                if (typeof bus === 'undefined') return reject(new Error(`Could not find 1-Wire bus definition at id ${id}.`));
+                if (typeof data.busNumber !== 'undefined') {
+                    if (isNaN(busNumber)) return reject(new Error(`An invalid bus number was supplied for the bus ${data.busNumber}`));
+                    bus = this.oneWire.buses.find(elem => elem.busNumber === busNumber);
+                    if (bus.id !== id) return reject(new Error(`Cannot change bus number because another bus shares ${data.busNumber}`));
+                }
+                bus = this.oneWire.buses.getItemById(id);
+                bus.set(data);
+            }
+            resolve(bus);
+        });
+    }
     private sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     public async reset(): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
@@ -485,6 +515,7 @@ export class Controller extends ConfigItem {
         c.connections = [];
         c.gpio = this.gpio.getExtended();
         c.i2c = this.i2c.getExtended();
+        c.oneWire = this.oneWire.getExtended();
         for (let i = 0; i < this.connections.length; i++) {
             c.connections.push(this.connections.getItemByIndex(i).getExtended());
         }
@@ -517,6 +548,8 @@ export class Controller extends ConfigItem {
                 return this.gpio.pins.getItemById(parseInt(arr[2], 10));
             case 'generic':
                 return this.genericDevices.getDevice(binding);
+            case 'oneWire':
+                return this.oneWire.getDevice(binding);
         }
     }
     public getInternalConnection() {
@@ -538,6 +571,9 @@ export class Controller extends ConfigItem {
             else if (bind.type === 'generic') {
                 return await this.genericDevices.setDeviceState(bind, data);
             }
+            else if (bind.type === 'oneWire') {
+                return await this.oneWire.setDeviceState(bind, data);
+            }
             else {
                 return Promise.reject(new Error(`setDeviceState: Unrecognized I/O Channel ${bind.type}`));
             }
@@ -557,6 +593,9 @@ export class Controller extends ConfigItem {
             else if (bind.type === 'generic') {
                 return await this.genericDevices.getDeviceState(bind);
             }
+            else if (bind.type === 'oneWire') {
+                return await this.oneWire.getDeviceState(bind);
+            }
             else if (bind.type === 'spi') {
                 if (isNaN(bind.busId) || bind.busId > 2)
                     return Promise.reject(new Error(`getDeviceState: Invalid spi busId ${bind.busId} - ${bind.binding}`));
@@ -572,6 +611,9 @@ export class Controller extends ConfigItem {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
             if (bind.type === 'i2c') {
                 return await this.i2c.getDeviceStatus(bind);
+            }
+            if (bind.type === 'oneWire') {
+                return await this.oneWire.getDeviceStatus(bind);
             }
             else if (bind.type === 'gpio') {
                 return await this.gpio.getDeviceStatus(bind);
@@ -598,6 +640,9 @@ export class Controller extends ConfigItem {
             if (bind.type === 'i2c') {
                 return await this.i2c.feedDeviceValue(bind, data);
             }
+            if (bind.type === 'oneWire') {
+                return await this.oneWire.feedDeviceValue(bind, data);
+            }
             else if (bind.type === 'gpio') {
                 return await this.gpio.feedDeviceValue(bind, data);
             }
@@ -620,6 +665,9 @@ export class Controller extends ConfigItem {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
             if (bind.type === 'i2c') {
                 return await this.i2c.getDevice(bind);
+            }
+            if (bind.type === 'oneWire') {
+                return await this.oneWire.getDevice(bind);
             }
             else if (bind.type === 'gpio') {
                 return await this.gpio.getDevice(bind);
@@ -653,10 +701,8 @@ export class Controller extends ConfigItem {
                 break;
             }
             case 'spi':
-                {
-                    break;
-                }
             case 'generic':
+            case 'oneWire':  
                 {
                     break;
                 }
@@ -694,6 +740,7 @@ export class Controller extends ConfigItem {
             ctx.spi0 = await this.spi0.validateRestore(rest);
             ctx.spi1 = await this.spi1.validateRestore(rest);
             ctx.genericDevices = await this.genericDevices.validateRestore(rest);
+            await this.oneWire.validateRestore(rest, ctx);
             await this.i2c.validateRestore(rest, ctx);
             return ctx;
         } catch (err) { logger.error(`Error validating gpio for restore: ${err.message}`); }
@@ -715,18 +762,31 @@ export class Controller extends ConfigItem {
             await cont.gpio.restore(rest, ctx);
             await cont.spi0.restore(rest, ctx);
             await cont.spi1.restore(rest, ctx);
+            await cont.oneWire.restore(rest, ctx);
             await cont.i2c.restore(rest, ctx);
             await cont.genericDevices.restore(rest, ctx);
 
             await cont.gpio.restoreIO(rest, ctx);
             await cont.spi0.restoreIO(rest, ctx);
             await cont.spi1.restoreIO(rest, ctx);
+            await cont.oneWire.restoreIO(rest, ctx);
             await cont.i2c.restoreIO(rest, ctx);
             await cont.genericDevices.restoreIO(rest, ctx);
             for (let i = 0; i < ctx.connections.remove.length; i++)
                 await cont.deleteConnectionAsync(ctx.connections.remove[i].id);
         }
         catch (err) { logger.error(`Error restoring configuration: ${err.message}`); }
+    }
+    public static isMock(): boolean { 
+        try {
+            //console.log(process.platform);
+            switch (process.platform) {
+                case 'linux':
+                    return false
+                default:
+                   return true;
+            }
+        } catch (err) { console.log(err); }
     }
 }
 
@@ -3543,6 +3603,1026 @@ export class GenericDevice extends ConfigItem {
             return trigger;
         }
         catch (err) { return Promise.reject(err); }
+    }
+}
+
+
+
+export class OneWireController extends ConfigItem {
+    constructor(data, name: string) { super(data, name); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.buses === 'undefined') this.data.buses = [];
+        if (typeof this.data.detected === 'undefined') this.data.detected = [];
+        return data;
+    }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get detected(): any[] { return this.data.detected; }
+    public set detected(val: any[]) { this.data.detected = val; }
+    public get buses(): OneWireBusCollection { return new OneWireBusCollection(this.data, 'buses'); }
+
+    public getExtended() {
+        let c = this.get(true);
+        c.buses = this.buses.toExtendedArray();
+        return c;
+    }
+    public async deleteConnectionAsync(id: number) {
+        try {
+            for (let i = 0; i < this.buses.length; i++) await this.buses.getItemByIndex(i).deleteConnectionAsync(id);
+        } catch (err) { return Promise.reject(new Error(`Error removing connection from i2c controller`)); }
+    }
+
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // A valid device binding for i2c includes i2c:<busId>:<deviceId>.
+            if (isNaN(bind.busId)) return Promise.reject(new Error(`setDeviceState: Invalid i2c bus id ${bind.busId} - ${bind.binding}`));
+            let bus = this.buses.find(elem => elem.id === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c bus not found ${bind.busId} - ${bind.binding}`));
+            // At this point we know the protocol and we know the bus so forward this to our bus.
+            return await bus.setDeviceState(bind, data);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async feedDeviceValue(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // A valid device binding for i2c includes i2c:<busId>:<deviceId>.
+            if (isNaN(bind.busId)) return Promise.reject(new Error(`feedDeviceValue: Invalid i2c bus id ${bind.busId} - ${bind.binding}`));
+            let bus = this.buses.find(elem => elem.id === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c bus not found ${bind.busId} - ${bind.binding}`));
+            // At this point we know the protocol and we know the bus so forward this to our bus.
+            return await bus.feedDeviceValue(bind, data);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
+    public async getDevice(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // A valid device binding for i2c includes i2c:<busId>:<deviceId>.
+            if (isNaN(bind.busId)) return Promise.reject(new Error(`getDevice: Invalid i2c bus id ${bind.busId} - ${bind.binding}`));
+            let bus = this.buses.find(elem => elem.id === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDevice: i2c bus not found ${bind.busId} - ${bind.binding}`));
+            // At this point we know the protocol and we know the bus so forward this to our bus.
+            return await bus.getDevice(bind);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // A valid device binding for 1-wire includes oneWire:<busId>:<deviceId>.
+            if (isNaN(bind.busId)) return Promise.reject(new Error(`getDevice: Invalid 1-wire bus id ${bind.busId} - ${bind.binding}`));
+            let bus = this.buses.find(elem => elem.id === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDevice: 1-wire bus not found ${bind.busId} - ${bind.binding}`));
+            // At this point we know the protocol and we know the bus so forward this to our bus.
+            return await bus.getDeviceStatus(bind);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            // A valid device binding for 1-wire includes oneWire:<busId>:<deviceId>.
+            if (isNaN(bind.busId)) return Promise.reject(new Error(`getDeviceState: Invalid 1-Wire bus id ${bind.busId} - ${bind.binding}`));
+            let bus = this.buses.find(elem => elem.id === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDeviceState: 1-Wire bus not found ${bind.busId} - ${bind.binding}`));
+            // At this point we know the protocol and we know the bus so forward this to our bus.
+            return await bus.getDeviceState(bind);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async resetDevice(dev): Promise<OneWireDevice> {
+        try {
+            let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
+            let busNumber = (typeof dev.busNumber !== 'undefined') ? parseInt(dev.busNumber, 10) : undefined;
+            let bus: OneWireBus;
+            if (typeof busId !== 'undefined') {
+                bus = this.buses.getItemById(busId);
+                if (typeof bus.busNumber === 'undefined') return Promise.reject(new Error(`An invalid OneWire bus id was supplied ${dev.busId}`));
+            }
+            else if (typeof busNumber !== 'undefined') {
+                bus = this.buses.getItemByBusNumber(busNumber);
+                if (typeof bus.id === 'undefined') return Promise.reject(new Error(`An invalid OneWire bus # was supplied ${dev.busNumber}`));
+            }
+            else {
+                return Promise.reject(new Error(`The specified OneWire bus could not be found at busId:${dev.busId} or busNumber:${dev.busNumber}`));
+            }
+            let device = await bus.resetDevice(dev);
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async changeAddress(dev): Promise<OneWireDevice> {
+        try {
+            let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
+            let busNumber = (typeof dev.busNumber !== 'undefined') ? parseInt(dev.busNumber, 10) : undefined;
+            let bus: OneWireBus;
+            if (typeof busId !== 'undefined') {
+                bus = this.buses.getItemById(busId);
+                if (typeof bus.busNumber === 'undefined') return Promise.reject(new Error(`An invalid OneWire bus id was supplied ${dev.busId}`));
+            }
+            else if (typeof busNumber !== 'undefined') {
+                bus = this.buses.getItemByBusNumber(busNumber);
+                if (typeof bus.id === 'undefined') return Promise.reject(new Error(`An invalid OneWire bus # was supplied ${dev.busNumber}`));
+            }
+            else {
+                return Promise.reject(new Error(`The specified OneWire bus could not be found at busId:${dev.busId} or busNumber:${dev.busNumber}`));
+            }
+            let device = await bus.changeDeviceAddress(dev);
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
+    public async setDevice(dev): Promise<OneWireDevice> {
+        try {
+            let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
+            let busNumber = (typeof dev.busNumber !== 'undefined') ? parseInt(dev.busNumber, 10) : undefined;
+            let bus: OneWireBus;
+            if (typeof busId !== 'undefined') {
+                bus = this.buses.getItemById(busId);
+                if (typeof bus.busNumber === 'undefined') return Promise.reject(new Error(`An invalid OneWire bus id was supplied ${dev.busId}`));
+            }
+            else if (typeof busNumber !== 'undefined') {
+                bus = this.buses.getItemByBusNumber(busNumber);
+                if (typeof bus.id === 'undefined') return Promise.reject(new Error(`An invalid OneWire bus # was supplied ${dev.busNumber}`));
+            }
+            else {
+                return Promise.reject(new Error(`The specified OneWire bus could not be found at busId:${dev.busId} or busNumber:${dev.busNumber}`));
+            }
+            let device = await bus.setDevice(dev);
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async runDeviceCommand(busNumber: number, address: string, command: string, options: any): Promise<any> {
+        try {
+            let dbus = oneWire.buses.find(elem => elem.busNumber === busNumber);
+            if (typeof dbus === 'undefined') return Promise.reject(new Error(`Cannot execute command Bus #${busNumber} could not be found`));
+            let ddevice = dbus.devices.find(elem => elem.device.address === address);
+            if (typeof ddevice === 'undefined') { return Promise.reject(new Error(`Cannot execute command Bus #${busNumber} Address ${address} could not be found`)); }
+            let result = await ddevice.callCommand({ name: command, params: [options] });
+            return Promise.resolve(result);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDevice(dev): Promise<OneWireDevice> {
+        try {
+            let bus = (typeof dev.busId !== 'undefined') ? this.buses.getItemById(dev.busId) : typeof dev.busNumber !== 'undefined' ? this.buses.getItemByBusNumber(dev.busNumber) : undefined;
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`Could not find bus by bus #${dev.busNumber} or id ${dev.busId}`));
+            let device = await bus.deleteDevice(dev);
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteBus(bus): Promise<OneWireBus> {
+        try {
+            let b = (typeof bus.Id !== 'undefined') ? this.buses.getItemById(bus.id) : typeof bus.busNumber !== 'undefined' ? this.buses.getItemByBusNumber(bus.busNumber) : undefined;
+            if (typeof b === 'undefined') return Promise.reject(new Error(`Could not find bus by bus #${bus.busNumber} or id ${bus.busId}`));
+            await b.closeAsync();
+            this.buses.removeItemById(b.id);
+            return Promise.resolve(bus);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public getDeviceInputs(): any[] {
+        let devices = [];
+        for (let i = 0; i < this.buses.length; i++) {
+            let bus = this.buses.getItemByIndex(i);
+            devices.push(...bus.getDeviceInputs());
+        }
+        return devices;
+    }
+    public getDeviceById(busId: number, deviceId: number): OneWireDevice {
+        let bus = this.buses.getItemById(busId);
+        return bus.getDeviceById(deviceId);
+    }
+    public async setDeviceFeed(data): Promise<DeviceFeedCollection> {
+        if (typeof data.busNumber === 'undefined' && typeof data.busId === 'undefined') return Promise.reject(new Error(`A valid 1-Wire bus identifier was not provided`));
+        try {
+            let busId;
+            let busNumber;
+            let bus;
+            if (typeof data.busId !== 'undefined') {
+                busId = parseInt(data.busId, 10);
+                if (isNaN(busId)) return Promise.reject(new Error(`A valid 1-Wire bus id was not provided ${data.busId}`));
+            }
+            if (typeof data.busNumber !== 'undefined') {
+                busNumber = parseInt(data.busNumber, 10);
+                if (isNaN(busNumber)) return Promise.reject(new Error(`A valid 1-Wire bus # was not provided ${data.busNumber}`));
+            }
+            if (!isNaN(busId)) bus = this.buses.getItemById(busId);
+            else if (!isNaN(busNumber)) bus = this.buses.getItemByBusNumber(busNumber);
+            else return Promise.reject(new Error(`A valid 1-Wire bus identifier was not provided`));
+            return await bus.setDeviceFeed(data);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceFeed(data): Promise<DeviceFeedCollection> {
+        if (typeof data.busNumber === 'undefined' && typeof data.busId === 'undefined') return Promise.reject(new Error(`A valid 1-Wire bus identifier was not provided`));
+        try {
+            let busId;
+            let busNumber;
+            let bus;
+            if (typeof data.busId !== 'undefined') {
+                busId = parseInt(data.busId, 10);
+                if (isNaN(busId)) return Promise.reject(new Error(`A valid 1-Wire bus id was not provided ${data.busId}`));
+            }
+            if (typeof data.busNumber !== 'undefined') {
+                busNumber = parseInt(data.busNumber, 10);
+                if (isNaN(busNumber)) return Promise.reject(new Error(`A valid 1-Wire bus # was not provided ${data.busNumber}`));
+            }
+            if (!isNaN(busId)) bus = this.buses.getItemById(busId);
+            else if (!isNaN(busNumber)) bus = this.buses.getItemByBusNumber(busNumber);
+            else return Promise.reject(new Error(`A valid 1-Wire bus identifier was not provided`));
+            return await bus.deleteDeviceFeed(data);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async setDeviceTrigger(data): Promise<DeviceTriggerCollection> {
+        if (typeof data.busNumber === 'undefined' && typeof data.busId === 'undefined') return Promise.reject(new Error(`A valid 1-Wire bus identifier was not provided`));
+        try {
+            let busId;
+            let busNumber;
+            let bus: OneWireBus;
+            if (typeof data.busId !== 'undefined') {
+                busId = parseInt(data.busId, 10);
+                if (isNaN(busId)) return Promise.reject(new Error(`A valid 1-Wire bus id was not provided ${data.busId}`));
+            }
+            if (typeof data.busNumber !== 'undefined') {
+                busNumber = parseInt(data.busNumber, 10);
+                if (isNaN(busNumber)) return Promise.reject(new Error(`A valid 1-Wire bus # was not provided ${data.busNumber}`));
+            }
+            if (!isNaN(busId)) bus = this.buses.getItemById(busId);
+            else if (!isNaN(busNumber)) bus = this.buses.getItemByBusNumber(busNumber);
+            else return Promise.reject(new Error(`A valid 1-Wire bus identifier was not provided`));
+            return await bus.setDeviceTrigger(data);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceTrigger(data): Promise<DeviceTriggerCollection> {
+        if (typeof data.busNumber === 'undefined' && typeof data.busId === 'undefined') return Promise.reject(new Error(`A valid 1-Wire bus identifier was not provided`));
+        try {
+            let busId;
+            let busNumber;
+            let bus: OneWireBus;
+            if (typeof data.busId !== 'undefined') {
+                busId = parseInt(data.busId, 10);
+                if (isNaN(busId)) return Promise.reject(new Error(`A valid 1-Wire bus id was not provided ${data.busId}`));
+            }
+            if (typeof data.busNumber !== 'undefined') {
+                busNumber = parseInt(data.busNumber, 10);
+                if (isNaN(busNumber)) return Promise.reject(new Error(`A valid 1-Wire bus # was not provided ${data.busNumber}`));
+            }
+            if (!isNaN(busId)) bus = this.buses.getItemById(busId);
+            else if (!isNaN(busNumber)) bus = this.buses.getItemByBusNumber(busNumber);
+            else return Promise.reject(new Error(`A valid 1-Wire bus identifier was not provided`));
+            return await bus.deleteDeviceTrigger(data);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async validateRestore(rest: any, ctx: any): Promise<void> {
+        try {
+            ctx.oneWireBus = { errors: [], warnings:[], add:[], update:[], remove: [] };
+            // First check to see it there are any oneWire busses that need removed or added.
+            let ic = rest.oneWire;
+            if (typeof ic === 'undefined' || typeof ic.buses === 'undefined') {
+                ctx.oneWireBus.errors.push(`The 1-Wire bus section is missing elements.`);
+            }
+            else {
+                let cfg = this.get(true).buses;
+                for (let i = 0; i < ic.buses.length; i++) {
+                    let r = ic.buses[i];
+                    let c = cfg.find(elem => r.busNumber === elem.busNumber);
+                    if (typeof c === 'undefined') ctx.add.push(r);
+                    else if (JSON.stringify(c) !== JSON.stringify(r)) ctx.oneWireBus.update.push(r);
+                }
+                for (let i = 0; i < cfg.length; i++) {
+                    let c = cfg[i];
+                    let r = ic.buses.find(elem => elem.busNumber == c.busNumber);
+                    if (typeof r === 'undefined') ctx.remove.push(c);
+                }
+            }
+            return;
+        } catch (err) { logger.error(`Error validating 1-Wire controller for restore: ${err.message}`); }
+    }
+    public async restore(rest: any, ctx: any) {
+        try {
+            for (let i = 0; i < ctx.oneWireBus.update.length; i++) {
+                let bus = this.buses.getItemByBusNumber(ctx.oneWireBus.update[i].busNumber, true);
+                await bus.restore(rest, ctx);
+            }
+            for (let i = 0; i < ctx.oneWireBus.add.length; i++) {
+                let bus = this.buses.getItemByBusNumber(ctx.oneWireBus.add[i].busNumber, true);
+                await bus.restore(rest, ctx);
+            }
+            for (let i = 0; i < ctx.oneWireBus.remove.length; i++) {
+                await this.deleteBus(ctx.oneWireBus.remove[i]);
+            }
+        } catch (err) { logger.error(`Error restoring 1-Wire devices: ${err.message}`); }
+    }
+    public async restoreIO(rest: any, ctx: any) {
+        try {
+            for (let i = 0; i < ctx.oneWireBus.update.length; i++) {
+                let bus = this.buses.getItemByBusNumber(ctx.oneWireBus.update[i].busNumber, true);
+                await bus.restoreIO(rest, ctx);
+            }
+            for (let i = 0; i < ctx.oneWireBus.add.length; i++) {
+                let bus = this.buses.getItemByBusNumber(ctx.oneWireBus.add[i].busNumber, true);
+                await bus.restoreIO(rest, ctx);
+            }
+        } catch (err) { logger.error(`Error restoring 1-Wire devices: ${err.message}`); }
+    }
+
+}
+export class OneWireBusCollection extends ConfigItemCollection<OneWireBus> {
+    constructor(data: any, name?: string) { super(data, name) }
+    public createItem(data: any): OneWireBus { return new OneWireBus(data); }
+    public getItemByBusNumber(busNumber: number | string, add?: boolean, data?: any): OneWireBus {
+        let itm = this.find(elem => elem.busNumber === busNumber && typeof elem.busNumber !== 'undefined');
+        if (typeof itm !== 'undefined') return itm;
+        let id = this.getMaxId() + 1 || 1;
+        if (typeof add !== 'undefined' && add) return this.add(data || { id: id, busNumber: busNumber });
+        return this.createItem(data || { id: id, busNumber: busNumber });
+    }
+}
+
+export class OneWireBus extends ConfigItem {
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = true;
+        if (typeof this.data.devices === 'undefined') this.data.devices = [];
+        return data;
+    }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get busNumber(): number { return this.data.busNumber; }
+    public set busNumber(val: number) { this.setDataVal('busNumber', val); }
+
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get addresses(): { address: string, name: string, product: number, manufacturer: number }[] { return this.data.addresses || []; }
+    public set addresses(val: { address: string, name: string, product: number, manufacturer: number }[]) { this.setDataVal('addresses', val); }
+    public get functions(): any { return this.data.functions || {}; }
+    public set functions(val: any) { this.setDataVal('functions', val); }
+    public get devices(): OneWireDeviceCollection { return new OneWireDeviceCollection(this.data, 'devices'); }
+    public getExtended() {
+        let c = this.get(true);
+        c.detected = cont.oneWire.detected.find(elem => elem.busNumber === this.busNumber);
+        c.devices = [];
+        for (let i = 0; i < this.devices.length; i++) {
+            c.devices.push(this.devices.getItemByIndex(i).getExtended());
+        }
+        return c;
+    }
+    public async deleteConnectionAsync(id: number) {
+        try {
+            for (let i = 0; i < this.devices.length; i++) {
+                let dev = this.devices.getItemByIndex(i);
+                await dev.feeds.deleteByConnectionId(id);
+                await dev.triggers.deleteByConnectionId(id);
+                await oneWire.resetDeviceFeeds(this.id, dev.id);
+                await oneWire.resetDeviceTriggers(this.id, dev.id);
+            }
+        } catch (err) { return Promise.reject(new Error(`Error removing connection from i2c-${this.busNumber} devices`)); }
+    }
+
+    public async closeAsync(): Promise<void> {
+        try {
+            let dbus = oneWire.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus !== 'undefined') {
+                await dbus.closeAsync();
+            }
+            return Promise.resolve();
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async scanBus() {
+        try {
+            let dbus = oneWire.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus !== 'undefined') this.addresses = await dbus.scanBus();
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async addAddress(obj) {
+        try {
+            let dbus = oneWire.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus === 'undefined') return Promise.reject(new Error(`Cannot add address bus ${this.id} is not initialized.`));
+            let addr = obj.newAddress;
+            if (addr.length < 15) return Promise.reject(new Error(`Cannot add invalid address ${obj.newAddress}`));
+            let cdev = this.addresses.find(elem => elem.address === addr);
+            if (typeof cdev !== 'undefined') return Promise.reject(new Error(`Address ${cdev.address} aready exists for device ${cdev.name}`));
+            this.addresses.push({ address: addr, name: 'Unknown', product: 0, manufacturer: 0 });
+            this.addresses.sort((a, b) => { 
+                if (a.address < b.address) return -1;
+                if (a.address > b.address) return 1;
+                return 0;
+                 });
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            logger.info(`Setting device state ${binding}`);
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`setDeviceState: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.devices.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`setDeviceState: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            return await device.setDeviceState(bind, data);
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async feedDeviceValue(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`feedDeviceValue: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.devices.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`feedDeviceValue: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            return await device.feedDeviceValue(bind, data);
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDevice(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDevice: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.devices.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDevice: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            return device;
+        } catch (err) { return Promise.reject(err); }
+    }
+
+    public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceStatus: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.devices.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            let bus = oneWire.buses.find(elem => this.busNumber === elem.busNumber);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Bus not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let dev = bus.devices.find(elem => elem.device.id === bind.deviceId);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Device not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            return dev.deviceStatus;
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceState: Invalid i2c deviceId ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.devices.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find i2c device ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            let bus = oneWire.buses.find(elem => this.busNumber === elem.busNumber);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`getDeviceState: Bus not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let dev = bus.devices.find(elem => elem.device.id === bind.deviceId);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceState: Device not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            return { status: dev.deviceStatus, state: await dev.getDeviceState(bind) };
+        } catch (err) { return Promise.reject(err); }
+    }
+
+    public async setDevice(dev): Promise<OneWireDevice> {
+        try {
+            let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
+            let address = typeof dev.address !== 'undefined' ? dev.address : undefined;
+            let typeId = typeof dev.typeId !== 'undefined' ? parseInt(dev.typeId, 10) : undefined;
+            let device: OneWireDevice;
+            let added = false;
+
+            if (typeof id === 'undefined') {
+                // We are adding a device.
+                if (typeof address === 'undefined') return Promise.reject(new Error(`An valid OneWire device address was not supplied ${dev.address}`));
+                if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
+                let existing = this.devices.find(elem => elem.address === address);
+                if (typeof existing !== 'undefined') return Promise.reject(new Error(`A device ${existing.id}:${existing.name} already exists at the specified address ${address} while adding a new device.`));
+                id = typeof id === 'undefined' ? this.devices.getMaxId() + 1 || 1 : id;
+                device = this.devices.getItemById(id, true);
+                device.address = address;
+                device.typeId = typeId;
+                device.options = dev.options || {};
+                added = true;
+            }
+            else if (typeof this.devices.find(elem => elem.id === id) === 'undefined') {
+                if (typeof address === 'undefined') return Promise.reject(new Error(`An valid OneWire device address was not supplied ${dev.address}`));
+                if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
+                let existing = this.devices.find(elem => elem.address === address);
+                if (typeof existing !== 'undefined') return Promise.reject(new Error(`A device ${existing.id}:${existing.name} already exists at the specified address ${address} while adding a new device.`));
+                device = this.devices.getItemById(id, true);
+                device.address = address;
+                device.typeId = typeId;
+                device.options = dev.options || {};
+                added = true;
+            }
+            else {
+                if (typeof typeId !== 'undefined') { if (isNaN(typeId)) return Promise.reject(new Error(`An invalid deviceTypeId was supplied ${dev.deviceTypeId}`)); }
+                if (typeof address !== 'undefined') {
+                    if (address.length !== 15) return Promise.reject(new Error(`An invalid OneWire address was supplied ${dev.address}`));
+                    let existing = this.devices.find(elem => elem.address === address && elem.id !== id);
+                    if (typeof existing !== 'undefined') return Promise.reject(new Error(`A device ${existing.id}:${existing.name} already exists at the specified address ${address} while updating an existing device.`));
+                }
+                if (typeof id !== 'undefined') {
+                    if (isNaN(id)) return Promise.reject(new Error(`An invalid device id was supplied ${dev.id}`));
+                    device = this.devices.getItemById(id);
+                }
+                else if (typeof address !== 'undefined') {
+                    device = this.devices.getItemByAddress(address);
+                }
+            }
+            // At this point we should have our device.
+            if (typeof dev.typeId !== 'undefined' && typeId !== device.typeId) {
+                // If the type has changed clear out the options;
+                device.typeId = typeId;
+                device.options = {};
+            }
+            if (typeof dev.address !== 'undefined' && address !== device.address) device.address = address;
+            if (typeof dev.sampling !== 'undefined' && !isNaN(parseInt(dev.sampling, 10))) device.sampling = parseInt(dev.sampling, 10);
+            if (typeof dev.isActive !== 'undefined') device.isActive = utils.makeBool(dev.isActive);
+            let dbus = oneWire.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus !== 'undefined') {
+                let ddev = dbus.devices.find(elem => elem.device.id === device.id);
+                if (typeof ddev === 'undefined') {
+                    await dbus.addDevice(device);
+                    ddev = dbus.devices.find(elem => elem.device.id === device.id);
+                }
+                if (typeof ddev !== 'undefined') {
+                    if (typeof dev.options !== 'undefined') await ddev.setOptions(dev.options);
+                    if (typeof dev.values !== 'undefined') await ddev.setValues(dev.values);
+                }
+            }
+            let addr = this.addresses.find(elem => elem.address === device.address);
+            if (typeof addr !== 'undefined') addr.name = device.name;
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async resetDevice(dev): Promise<OneWireDevice> {
+        try {
+            let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
+            let address = typeof dev.address !== 'undefined' ? dev.address : undefined;
+            let typeId = typeof dev.typeId !== 'undefined' ? parseInt(dev.typeId, 10) : undefined;
+            let device: OneWireDevice;
+            let added = false;
+            if (typeof id === 'undefined') {
+                // We are adding a device.
+                if (typeof address === 'undefined' || isNaN(address) || address < 1) return Promise.reject(new Error(`An valid OneWire device address was not supplied ${dev.address}`));
+                if (typeof typeId === 'undefined' || isNaN(typeId)) return Promise.reject(new Error(`An invalid device type id was supplied ${dev.typeId}`));
+                let existing = this.devices.find(elem => elem.address === address);
+                if (typeof existing !== 'undefined') return Promise.reject(new Error(`A device ${existing.id}-${existing.name} already exists at the specified address ${address}`));
+
+                id = this.devices.getMaxId() + 1 || 1;
+                device = this.devices.getItemById(id, true);
+                device.address = address;
+                device.typeId = typeId;
+                device.options = dev.options || {};
+                added = true;
+            }
+            else {
+                if (typeof typeId !== 'undefined') { if (isNaN(typeId)) return Promise.reject(new Error(`An invalid deviceTypeId was supplied ${dev.deviceTypeId}`)); }
+                if (typeof address !== 'undefined') {
+                    if (isNaN(address) || address < 0) return Promise.reject(new Error(`An invalid OneWire address was supplied ${dev.address}`));
+                    let existing = this.devices.find(elem => elem.address === address && elem.id !== id);
+                    if (typeof existing !== 'undefined') return Promise.reject(new Error(`A device ${existing.id}-${existing.name} already exists at the specified address ${address}`));
+                }
+                if (typeof id !== 'undefined') {
+                    if (isNaN(id)) return Promise.reject(new Error(`An invalid device id was supplied ${dev.id}`));
+                    device = this.devices.getItemById(id);
+                }
+                else if (typeof address !== 'undefined') {
+                    device = this.devices.getItemByAddress(address);
+                }
+            }
+            // At this point we should have our device.
+            if (typeof dev.typeId !== 'undefined' && typeId !== device.typeId) {
+                // If the type has changed clear out the options;
+                device.typeId = typeId;
+                device.options = {};
+            }
+            if (typeof dev.address !== 'undefined' && address !== device.address) device.address = address;
+            if (typeof dev.sampling !== 'undefined' && !isNaN(parseInt(dev.sampling, 10))) device.sampling = parseInt(dev.sampling, 10);
+            if (typeof dev.isActive !== 'undefined') device.isActive = utils.makeBool(dev.isActive);
+            // Need to deal with the triggers and feeds.
+            //if (typeof dev.options !== 'undefined') {
+            //    let op = Object.getOwnPropertyNames(dev.options);
+            //    for (let i in op) {
+            //        let prop = op[i];
+            //        if (typeof this[prop] === 'function') continue;
+            //        if (typeof dev.options[prop] !== 'undefined') {
+            //            device.options[prop] = dev.options[prop];
+            //        }
+            //    }
+            //}
+            let dbus = oneWire.buses.find(elem => elem.busNumber === this.busNumber);
+            if (typeof dbus !== 'undefined') {
+                let ddev = dbus.devices.find(elem => elem.device.id === device.id);
+                if (typeof ddev === 'undefined') {
+                    return Promise.reject(new Error(`The OneWire device at ${dev.address} could not be found on the bus.`));
+                }
+                else
+                    await ddev.resetDevice(dev);
+            }
+            let addr = this.addresses.find(elem => elem.address === device.address);
+            if (typeof addr !== 'undefined') addr.name = device.name;
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async changeDeviceAddress(dev): Promise<OneWireDevice> {
+        try {
+            let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
+            let newAddress = typeof dev.newAddress !== 'undefined' ? dev.newAddress : undefined;
+            let dbus = oneWire.buses.find(elem => elem.busNumber === this.busNumber);
+            let ddev;
+            let device: OneWireDevice;
+            if (typeof newAddress === 'undefined' || newAddress.length !== 15) return Promise.reject(new Error(`A valid new address was not supplied. ${dev.newAddress}`));
+            if (typeof id === 'undefined') {
+                // You cannot change the address of a device we have not added or are not in control of.
+                return Promise.reject(new Error(`You may not change the address of a device that has not been added ${dev.address}`));
+            }
+            else {
+                device = this.devices.getItemById(id);
+                if (typeof dbus !== 'undefined') {
+                    ddev = dbus.devices.find(elem => elem.device.id === id);
+                    if (typeof ddev === 'undefined') {
+                        return Promise.reject(new Error(`The OneWire device id ${id} could not be found on the bus.`));
+                    }
+                }
+                else
+                    return Promise.reject(new Error(`The OneWire bus at ${this.busNumber} could not be found.`));
+
+                let address = device.address;
+                if (address.length < 15) return Promise.reject(new Error(`An invalid OneWire address was supplied ${dev.address}`));
+                if (typeof this.devices.find(elem => elem.address === address && elem.id !== id) !== 'undefined') return Promise.reject(new Error(`A device already exists at this specified address ${address}`));
+                // Check to see if there is another address at the new address.
+                if (typeof this.devices.find(elem => elem.address === newAddress && elem.id !== id) !== 'undefined') return Promise.reject(new Error(`A device already exists at the new specified address ${newAddress}`));
+                if (typeof ddev.changeAddress !== 'function') return Promise.reject(new Error(`This device does not support changing the address via software`));
+                await ddev.changeAddress(newAddress);
+                // Remove the old address and add in the new one.
+                await this.scanBus();
+            }
+            return device;
+        }
+        catch (err) { logger.error(`Error changing i2c device address ${err.message}`); return Promise.reject(err); }
+    }
+
+    public async deleteDevice(dev): Promise<OneWireDevice> {
+        try {
+            let id = parseInt(dev.id, 10);
+            if (isNaN(id)) return Promise.reject(new Error(`Cannot delete device. Invalid device id ${dev.id}`));
+            let dbus = oneWire.buses.find(elem => elem.busNumber == this.busNumber);
+            if (typeof dbus !== 'undefined') {
+                dbus.devices.forEach(async (item, index) => {
+                    if (item.device.id === id) {
+                        dbus.devices.splice(index, 1);
+                        await item.closeAsync();
+                    }
+                });
+            }
+            let device = this.devices.getItemById(id);
+            this.devices.removeItemById(id);
+            let addr = this.addresses.find(elem => elem.address === device.address);
+            if (typeof addr !== 'undefined') addr.name = 'Unknown';
+            return Promise.resolve(device);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public getDeviceInputs(): any[] {
+        let devices = [];
+        let ad = cont.analogDevices;
+        for (let i = 0; i < this.devices.length; i++) {
+            let device = this.devices.getItemByIndex(i);
+            let dev;
+            if (typeof device.typeId !== 'undefined' && device.typeId !== 0)
+                dev = ad.find(elem => elem.id === device.typeId);
+            if (typeof dev !== 'undefined' && typeof dev.inputs !== 'undefined') {
+                devices.push({ uid: `i2c:${this.busNumber}:${device.id}`, id: device.id, name: device.name, deviceId: dev.id, type: 'i2c', busNumber: this.busNumber, bindings: dev.inputs });
+            }
+        }
+        return devices;
+    }
+    public async setDeviceFeed(data): Promise<DeviceFeedCollection> {
+        try {
+            if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Feed device address or id was not provided.`));
+            let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
+            let address = (typeof data.address !== 'undefined') ? data.address : undefined;
+            let dev = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
+            await dev.setDeviceFeed(data);
+            oneWire.resetDeviceFeeds(this.id, dev.id);
+            return Promise.resolve(dev.feeds);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceFeed(data): Promise<DeviceFeedCollection> {
+        try {
+            if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Feed device address or id was not provided.`));
+            let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
+            let address = (typeof data.address !== 'undefined') ? data.address : undefined;
+            let dev = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Feed device has not been initialized`));
+            await dev.deleteDeviceFeed(data);
+            oneWire.resetDeviceFeeds(this.id, dev.id);
+            return Promise.resolve(dev.feeds);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async setDeviceTrigger(data): Promise<DeviceTriggerCollection> {
+        try {
+            if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Trigger device address or id was not provided.`));
+            let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
+            let address = (typeof data.address !== 'undefined') ?data.address : undefined;
+            let dev: OneWireDevice = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Trigger device has not been initialized`));
+            await dev.setDeviceTrigger(data);
+            oneWire.resetDeviceTriggers(this.id, dev.id);
+            return Promise.resolve(dev.triggers);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceTrigger(data): Promise<DeviceTriggerCollection> {
+        try {
+            if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Trigger device address or id was not provided.`));
+            let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
+            let address = (typeof data.address !== 'undefined') ? data.address : undefined;
+            let dev: OneWireDevice = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
+            if (isNaN(dev.typeId)) return Promise.reject(new Error(`Trigger device has not been initialized`));
+            await dev.deleteDeviceTrigger(data);
+            oneWire.resetDeviceTriggers(this.id, dev.id);
+            return Promise.resolve(dev.triggers);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
+    public getDeviceById(deviceId: number) { return this.devices.getItemById(deviceId); }
+    //public async setDeviceTriggerAsync(deviceId: number, data): Promise<DeviceTrigger> {
+    //    let dev = this.devices.getItemById(deviceId, true);
+    //    return await dev.setDeviceTriggerAsync(data);
+    //}
+    //public async deleteDeviceTriggerAsync(deviceId: number, data): Promise<OneWireDevice> {
+    //    return await this.devices.getItemById(deviceId, false).deleteDeviceTriggerAsync(data);
+    //}
+    public async restore(rest: any, ctx: any) {
+        try {
+            let bus = rest.oneWire.buses.find(elem => this.busNumber === elem.busNumber);
+            for (let i = this.devices.length - 1; i >= 0; i--) {
+                let dev = this.devices.getItemByIndex(i);
+                let ddata = bus.devices.find(elem => dev.id === elem.id);
+                if (typeof ddata === 'undefined') await this.deleteDevice(dev.get(true));
+            }
+            for (let i = 0; i < bus.devices.length; i++) {
+                let ddata = bus.devices[i];
+                //let dev = this.devices.getItemById(ddata.id, true);
+                await this.setDevice(ddata);
+            }
+        }
+        catch (err) { logger.error(`Error restoring i2c Bus: ${err.messsage}`); }
+    }
+    public async restoreIO(rest: any, ctx: any) {
+        try {
+            let bus = rest.oneWire.buses.find(elem => this.busNumber === elem.busNumber);
+            for (let i = 0; i < bus.devices.length; i++) {
+                let ddata = bus.devices[i];
+                let dev = this.devices.getItemById(ddata.id, true);
+                await dev.restoreIO(ddata);
+            }
+        }
+        catch (err) { logger.error(`Error restoring i2c Bus: ${err.messsage}`); }
+    }
+
+}
+export class OneWireDeviceCollection extends ConfigItemCollection<OneWireDevice> {
+    constructor(data: any, name?: string) { super(data, name || 'devices') }
+    public createItem(data: any): OneWireDevice { return new OneWireDevice(data); }
+    public getItemByAddress(address: number | string, add?: boolean, data?: any): OneWireDevice {
+        let itm = this.find(elem => elem.address === address && typeof elem.address !== 'undefined');
+        if (typeof itm !== 'undefined') return itm;
+        let id = this.getMaxId() + 1 || 1;
+        if (typeof add !== 'undefined' && add) return this.add(data || { id: id, address: address });
+        return this.createItem(data || { address: address });
+    }
+}
+export class OneWireDevice extends ConfigItem {
+    constructor(data) { super(data); }
+    public initData(data?: any) {
+        if (typeof this.data.values === 'undefined') this.values = {};
+        if (typeof this.data.options === 'undefined') this.options = {};
+        if (typeof this.data.info === 'undefined') this.info = {};
+        return data;
+    }
+    public get id(): number { return this.data.id; }
+    public set id(val: number) { this.setDataVal('id', val); }
+    public get name(): string { return this.data.name; }
+    public set name(val: string) { this.setDataVal('name', val); }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get typeId(): number { return this.data.typeId; }
+    public set typeId(val: number) { this.setDataVal('typeId', val); }
+    public get address(): string { return this.data.address; }
+    public set address(val: string) { this.setDataVal('address', val); }
+    public get feeds(): DeviceFeedCollection { return new DeviceFeedCollection(this.data, 'feeds'); }
+    public get triggers(): DeviceTriggerCollection { return new DeviceTriggerCollection(this.data, 'triggers'); }
+    public get options(): any { return typeof this.data.options === 'undefined' ? this.data.options = {} : this.data.options; }
+    public set options(val: any) { this.setDataVal('options', val || {}); }
+    public get info(): any { return typeof this.data.info === 'undefined' ? this.data.info = {} : this.data.info; }
+    public set info(val: any) { this.setDataVal('info', val || {}); }
+    public get values(): any { return typeof this.data.values === 'undefined' ? this.data.values = {} : this.data.values; }
+    public set values(val: any) { this.setDataVal('values', val || {}); }
+    public get sampling(): number { return this.data.sampling; }
+    public set sampling(val: number) { this.setDataVal('sampling', val); }
+    public getExtended() {
+        let dev = this.get(true);
+        dev.deviceType = cont.analogDevices.find(elem => elem.id === this.typeId);
+        dev.feeds = [];
+        for (let i = 0; i < this.feeds.length; i++) {
+            dev.feeds.push(this.feeds.getItemByIndex(i).getExtended());
+        }
+        dev.triggers = [];
+        for (let i = 0; i < this.triggers.length; i++) {
+            dev.triggers.push(this.triggers.getItemByIndex(i).getExtended());
+        }
+        return dev;
+    }
+    public getDeviceType() {
+        return cont.analogDevices.find(elem => elem.id === this.typeId);
+    }
+
+    public async setDeviceFeed(data): Promise<DeviceFeed> {
+        try {
+            let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
+            if (isNaN(feedId)) return Promise.reject(new Error(`The feed identifier is not valid.`));
+            let feed: DeviceFeed;
+            let connectionId;
+            let connection;
+            // search for existing feed; also acts as to not allow duplicate feeds
+            feed = this.getDeviceFeed(data); // try to find feed with matching data; useful if data is sent from njsPC
+            if (typeof feed !== 'undefined') {
+                connectionId = typeof data.connectionId !== 'undefined' ? parseInt(data.connectionId, 10) : feed.connectionId;
+            }
+            else if (feedId !== -1) {
+                // We are updating.
+                feed = this.feeds.getItemById(feedId, true);
+                connectionId = typeof data.connectionId !== 'undefined' ? parseInt(data.connectionId, 10) : feed.connectionId;
+                //connectionId = typeof feed.connectionId !== 'undefined' ? feed.connectionId : parseInt(data.connectionId, 10);
+            }
+            else {
+                // We are adding.
+                feedId = (this.feeds.getMaxId() || 0) + 1;
+                connectionId = parseInt(data.connectionId, 10);
+                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
+            }
+            connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
+            if (connectionId !== -1 && typeof connection === 'undefined') {
+                console.log(data);
+                return Promise.reject(new Error(`The feed #${feedId} connection was not found at id ${connectionId}`));
+            }
+            if (typeof feed === 'undefined') feed = this.feeds.getItemById(feedId, true);
+            feed.connectionId = connectionId;
+            feed.set(data);
+            feed.id = feedId;
+            // Set this on the bus.
+            return Promise.resolve(feed);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceFeed(data): Promise<DeviceFeed> {
+        try {
+            let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
+            if (isNaN(feedId)) return Promise.reject(new Error(`The feed identifier is not valid.`));
+            let feed: DeviceFeed;
+            feed = this.feeds.getItemById(feedId);
+            this.feeds.removeItemById(feedId);
+            return Promise.resolve(feed);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public getDeviceFeed(data): DeviceFeed {
+        try {
+            let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
+            if (isNaN(feedId)) return;
+            let feed: DeviceFeed;
+            if (feedId !== -1) {
+                // Search by feed id
+                return this.feeds.find(elem => elem.id === feedId);
+            }
+            else {
+                // Search by attributes
+                for (let i = 0; i < this.feeds.length; i++) {
+                    feed = this.feeds.getItemByIndex(i);
+                    let bOptions = false;
+                    if (typeof feed.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && feed.options.id === data.options.id) bOptions = true;
+                    if (feed.connectionId === data.connectionId &&
+                        bOptions &&
+                        feed.sendValue === data.sendValue &&
+                        feed.eventName === data.eventName &&
+                        feed.property === data.property) {
+                        return feed;
+                    }
+                }
+            }
+        }
+        catch (err) { console.log(data); logger.error(`getDeviceFeed OneWire: ${err.message};`); }
+    }
+    public async setDeviceTrigger(data): Promise<DeviceTrigger> {
+        try {
+            let triggerId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.triggerId !== 'undefined' ? parseInt(data.triggerId, 10) : -1;
+            if (isNaN(triggerId)) return Promise.reject(new Error(`The trigger identifier is not valid.`));
+            let trigger: DeviceTrigger;
+            let connectionId;
+            let connection;
+            if (triggerId !== -1) {
+                // We are updating.
+                trigger = this.triggers.find(elem => elem.id === triggerId);
+                if (typeof trigger === 'undefined') return Promise.reject(new Error(`Could not find a trigger by id ${triggerId}`));
+                connectionId = typeof trigger.sourceId !== 'undefined' ? trigger.sourceId : parseInt(data.sourceId, 10);
+            }
+            else {
+                // We are adding.
+                triggerId = (this.triggers.getMaxId() || 0) + 1;
+                connectionId = parseInt(data.sourceId, 10);
+                if (isNaN(connectionId)) return Promise.reject(new Error(`The trigger connection identifier was not supplied.`));
+            }
+            connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
+            if (connectionId !== -1 && typeof connection === 'undefined') return Promise.reject(new Error(`The trigger connection was not found at id ${connectionId}`));
+            trigger = this.triggers.getItemById(triggerId, true);
+            trigger.sourceId = connectionId;
+            trigger.set(data);
+            trigger.id = triggerId;
+            // Set this on the bus.
+            return Promise.resolve(trigger);
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async deleteDeviceTrigger(data): Promise<DeviceTrigger> {
+        try {
+            let triggerId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.triggerId !== 'undefined' ? parseInt(data.triggerId, 10) : -1;
+            if (isNaN(triggerId)) return Promise.reject(new Error(`The trigger identifier is not valid.`));
+            let trigger: DeviceTrigger;
+            trigger = this.triggers.getItemById(triggerId);
+            this.triggers.removeItemById(triggerId);
+            return trigger;
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
+    //public async deleteDeviceTriggerAsync(triggerId: number): Promise<OneWireDevice> {
+    //    return new Promise<OneWireDevice>((resolve, reject) => {
+    //        this.triggers.removeItemById(triggerId);
+    //        resolve(this);
+    //    });
+    //}
+    //public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
+    //    let c = this.triggers.find(elem => elem.id === data.id);
+    //    if (typeof c === 'undefined') {
+    //        data.id = this.triggers.getMaxId(false, -1) + 1;
+    //        if (data.id === 0) data.id = 1;
+    //        c = this.triggers.getItemById(data.id, true);
+    //    }
+    //    return await c.setDeviceTriggerAsync(data);
+    //}
+
+    public async setDeviceState(binding: string | DeviceBinding, data: any) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (this.isActive === false) return Promise.reject(new Error(`setDeviceState: i2c Device ${this.name} not active - ${bind.binding}`));
+            let bus = oneWire.buses.find(elem => elem.busId === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
+            let dev = bus.devices.find(elem => elem.device.id === this.id);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
+            return await dev.setDeviceState(bind, data);
+        }
+        catch (err) { return Promise.reject(new Error(`setDeviceState: Error setting device state ${err.message}`)) }
+    }
+    public async feedDeviceValue(binding: string | DeviceBinding, data: any) {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (this.isActive === false) return Promise.reject(new Error(`feedDeviceValue: i2c Device ${this.name} not active - ${bind.binding}`));
+            let bus = oneWire.buses.find(elem => elem.busId === bind.busId);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
+            let dev = bus.devices.find(elem => elem.device.id === this.id);
+            if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
+            return await dev.feedDeviceValue(bind, data);
+        }
+        catch (err) { return Promise.reject(new Error(`feedDeviceValue: Error setting device value ${err.message}`)) }
+    }
+    public async restoreIO(data) {
+        try {
+            // Ok so now add in the triggers.
+            for (let i = 0; i < data.triggers.length; i++) {
+                let t = this.triggers.getItemById(data.triggers[i].id, true);
+                await this.setDeviceTrigger(data.triggers[i]);
+            }
+            for (let i = this.triggers.length - 1; i >= 0; i--) {
+                let t = this.triggers.getItemByIndex(i);
+                let tdata = data.triggers.find(elem => elem.id === t.id);
+                if (typeof tdata === 'undefined') await this.deleteDeviceTrigger(tdata);
+            }
+            for (let i = 0; i < data.feeds.length; i++) {
+                let f = this.feeds.getItemById(data.feeds[i].id, true);
+                await this.setDeviceFeed(data.feeds[i]);
+            }
+            for (let i = this.feeds.length - 1; i >= 0; i--) {
+                let f = this.feeds.getItemByIndex(i);
+                let fdata = data.feeds.find(elem => elem.id === f.id);
+                if (typeof fdata === 'undefined') await this.deleteDeviceFeed(data);
+            }
+        } catch (err) { logger.error(`Error restoring OneWire Device ${this.address}-${this.name}: ${err.message}`); }
     }
 }
 export let cont = new Controller({});

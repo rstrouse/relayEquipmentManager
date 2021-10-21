@@ -380,7 +380,6 @@
       "deviceClass": "AtlasEZOrtd",
       "module": "./AtlasEZO",
       "hasReset": true,
-      "hasChangeAddress": true,
       "readings": {
         "temperature": {
           "label": "temperature",
@@ -1373,6 +1372,401 @@
       ]
     },
     {
+      "id": 6,
+      "name": "DS18B20",
+      "precision": 2,
+      "deviceClass": "OneWireTemperature",
+      "module": "./OneWireTemperature",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "tempC",
+          "desc": "CPU Temperature C",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempK",
+          "desc": "CPU Temperature K",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempF",
+          "desc": "CPU Temperature F",
+          "maxSamples": 50
+        },
+        {
+          "name": "temp",
+          "desc": "Temperature",
+          "maxSamples": 50
+        },
+        {
+          "name": "units",
+          "desc": "Temperature Units",
+          "maxSamples": 50
+        },
+        {
+          "name": "all",
+          "desc": "All Values",
+          "maxSamples": 50
+        }
+      ],
+      "options": [
+        {
+          "bind": "options.name",
+          "dataType": "string",
+          "default": "",
+          "field": {
+            "type": "inputField",
+            "required": false,
+            "bind": "options.name",
+            "labelText": "Name",
+            "labelAttrs": {
+              "style": {
+                "width": "4rem"
+              }
+            },
+            "inputAttrs": {
+              "maxLength": 16,
+              "style": {
+                "width": "16rem"
+              }
+            },
+            "style": {
+              "display": "block"
+            }
+          }
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "fieldset",
+            "legend": "Device Info",
+            "style": {
+              "display": "block",
+              "verticalAlign": "top"
+            },
+            "cssClass": "i2cDeviceInformation"
+          },
+          "options": [
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Power",
+                "binding": "info.extPower",
+                "style": {
+                  "display": "block"
+                },
+                "labelAttrs": {
+                  "style": {
+                    "width": "6.5rem"
+                  }
+                }
+              }
+            },
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Conv. Time",
+                "binding": "info.convTime",
+                "units": "ms",
+                "dataType": "number",
+                "fmtMask": "#0",
+                "style": {
+                  "display": "block"
+                },
+                "labelAttrs": {
+                  "style": {
+                    "width": "6.5em"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "block",
+              "verticalAlign": "top"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "oneWireReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {}
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Temperature",
+                        "binding": "values.temp",
+                        "units": "&deg;",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.####",
+                        "style": {},
+                        "labelAttrs": {
+                          "style": {
+                            "width": "6.5em"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "span",
+                        "binding": "values.units"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Options",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "pickList",
+                    "labelText": "Units",
+                    "binding": "options.units",
+                    "value": "F",
+                    "required": true,
+                    "canEdit": false,
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2rem"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "6.5rem"
+                      }
+                    },
+                    "style": {
+                      "marginBottom": ".25rem"
+                    },
+                    "columns": [
+                      {
+                        "binding": "val",
+                        "hidden": true,
+                        "text": "Units",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      },
+                      {
+                        "binding": "name",
+                        "text": "",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      },
+                      {
+                        "binding": "desc",
+                        "text": "Temp Units",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      }
+                    ],
+                    "items": [
+                      {
+                        "val": "F",
+                        "name": "F",
+                        "desc": "Fahrenheit"
+                      },
+                      {
+                        "val": "C",
+                        "name": "C",
+                        "desc": "Celsius"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "default": 12,
+                  "field": {
+                    "binding": "options.resolution",
+                    "type": "valueSpinner",
+                    "labelText": "Resolution",
+                    "canEdit": false,
+                    "min": 9,
+                    "max": 12,
+                    "fmtMask": "#0",
+                    "units": "bits",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "6.5em"
+                      }
+                    },
+                    "style": {
+                      "marginBottom": ".25rem",
+                      "display": "block"
+                    }
+                  }
+                },
+                {
+                  "default": 3000,
+                  "field": {
+                    "binding": "options.alarmLow",
+                    "type": "valueSpinner",
+                    "labelText": "Alarm Low",
+                    "canEdit": true,
+                    "min": -148,
+                    "max": 212,
+                    "step": 1,
+                    "fmtMask": "##,##0",
+                    "units": "&deg;",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "6.5em"
+                      }
+                    },
+                    "style": {
+                      "marginBottom": ".25rem",
+                      "display": "block"
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "default": 3000,
+                  "field": {
+                    "binding": "options.alarmHigh",
+                    "type": "valueSpinner",
+                    "labelText": "Alarm High",
+                    "canEdit": true,
+                    "min": -128,
+                    "max": 127,
+                    "step": 1,
+                    "fmtMask": "##,##0",
+                    "units": "&deg;",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "6.5em"
+                      }
+                    },
+                    "style": {
+                      "marginBottom": ".25rem",
+                      "display": "block"
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "default": 3000,
+                  "field": {
+                    "binding": "options.readInterval",
+                    "type": "valueSpinner",
+                    "labelText": "Poll Interval",
+                    "canEdit": true,
+                    "min": 3,
+                    "max": 9999999,
+                    "step": 1000,
+                    "fmtMask": "##,##0",
+                    "units": "ms",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "6.5em"
+                      }
+                    },
+                    "style": {
+                      "marginBottom": ".25rem",
+                      "display": "block"
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Calibration",
+                "cssClass": "pnl-calibration"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "valueSpinner",
+                    "labelText": "+/- Degrees",
+                    "binding": "options.calibration",
+                    "canEdit": "true",
+                    "value": 0,
+                    "min": -100,
+                    "max": 100,
+                    "step": 0.1,
+                    "dataType": "number",
+                    "fmtMask": "0.0###",
+                    "emptyMask": "-.-",
+                    "units": "&deg;",
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "4rem"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        "oneWire"
+      ]
+    },
+    {
       "id": 1101,
       "name": "CPU Temperature (Linux)",
       "deviceClass": "CPUTempDevice",
@@ -1522,7 +1916,7 @@
               "field": {
                 "type": "fieldset",
                 "legend": "Readings",
-                "cssClass": "genericReadingValues",
+                "cssClass": "oneWireReadingValues",
                 "style": {
                   "display": "block",
                   "verticalAlign": "top"
