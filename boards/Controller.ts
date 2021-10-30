@@ -2798,7 +2798,7 @@ export class I2cDevice extends ConfigItem {
             }
             connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
             if (connectionId !== -1 && typeof connection === 'undefined') {
-                console.log(data);
+                //console.log(data);
                 return Promise.reject(new Error(`The feed #${feedId} connection was not found at id ${connectionId}`));
             }
             if (typeof feed === 'undefined') feed = this.feeds.getItemById(feedId, true);

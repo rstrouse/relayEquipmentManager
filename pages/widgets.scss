@@ -888,12 +888,16 @@ div.pnl-pin-definition {
     vertical-align: top;
     @include box_shadow(5px 5px 5px, rgba(27, 27, 27, 0.4), gainsboro);
 }
+.control-panel {
+    user-select:none;
+}
 .slist-list,
 .crud-list {
     border: solid 1px black;
     border-radius: 5px;
     min-height: 50px;
     display: inline-block;
+    user-select:none;
 }
 .slist-list[data-cancreate="false"] .btn-add,
 .crud-list[data-cancreate="false"] .btn-add {
@@ -1196,7 +1200,9 @@ div.io-channel-name > span {
 }
 
 
-
+.ui-dialog {
+    user-select:none;
+}
 .ui-widget input {
     font-size:1rem;
 }

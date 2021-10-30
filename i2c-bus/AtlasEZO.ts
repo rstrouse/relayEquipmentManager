@@ -133,8 +133,15 @@ export class AtlasEZO extends i2cDeviceBase {
         try {
             if (this._timerRead) clearTimeout(this._timerRead);
             this._timerRead == null;
-            if (!this.suspendPolling && this.device.isActive) {
-                this.takeReadings();
+            if (this.device.isActive) {
+                if (!this.suspendPolling) {
+                    (async () => {
+                        try {
+                            await this.takeReadings();
+                        } catch (err) { this.logError(err, 'Error taking device readings'); }
+                    })();
+                }
+                else logger.warn(`${this.device.name} Suspend Polling ${this._suspendPolling}`);
             }
         }
         catch (err) { this.logError(err, 'Error Polling Device Values'); }
@@ -144,7 +151,7 @@ export class AtlasEZO extends i2cDeviceBase {
         try { return Promise.resolve(true); }
         catch (err) { this.logError(err, 'Error taking device readings'); }
     }
-    public get suspendPolling(): boolean { if (this._suspendPolling > 0) logger.warn(`${this.device.name} Suspend Polling ${this._suspendPolling}`); return this._suspendPolling > 0; }
+    public get suspendPolling(): boolean { return this._suspendPolling > 0; }
     public set suspendPolling(val: boolean) {
         //if(!val) logger.warn(`${this.device.name} Cancel Suspend Start ${this._suspendPolling} - End ${Math.max(0, this._suspendPolling + (val ? 1 : -1))}`);
         this._suspendPolling = Math.max(0, this._suspendPolling + (val ? 1 : -1));
