@@ -62,7 +62,7 @@
         },
         _openAddAddressDialog: function (busId) {
             var self = this, o = self.options, el = self.element;
-            var dlg = $.pic.modalDialog.createDialog('dlgAddAddress', {
+            var dlg = $.pic.modalDialog.createDialog('dlgI2cAddAddress', {
                 width: '377px',
                 height: 'auto',
                 title: 'Add I2c Address',
@@ -76,6 +76,7 @@
                             self.dataBind(i2cBus);
                             $.pic.modalDialog.closeDialog(dlg);
                         });
+                        evt.stopPropagation();
                     }
                 },
                 {

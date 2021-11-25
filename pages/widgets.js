@@ -2933,12 +2933,14 @@ $.ui.position.fieldTip = {
             var self = this, o = self.options, el = self.element;
             var caption = $('<div></div>').addClass('crud-caption').html(o.caption);
             $('<span></span>').appendTo(caption).addClass('header-icon-btn').addClass('btn-add').append($('<i class="fas fa-plus"></i>')).attr('title', 'Add a new ' + o.itemName)
-                .on('click', function (evt) {
+                .on('click', function (e) {
+                    e.stopPropagation();
                     var evt = $.Event('additem');
                     el.trigger(evt);
                 });
             $('<span></span>').appendTo(caption).addClass('header-icon-btn').addClass('btn-clear').append($('<i class="fas fa-broom"></i>')).attr('title', 'Clear all ' + o.itemName)
-                .on('click', function (evt) {
+                .on('click', function (e) {
+                    e.stopPropagation();
                     var evt = $.Event('clearitems');
                     el.trigger(evt);
                 });

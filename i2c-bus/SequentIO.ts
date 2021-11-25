@@ -795,7 +795,6 @@ export class SequentMegaIND extends SequentIO {
                 let ord = parseInt(sord, 10);
                 if (isNaN(ord) || ord <= 0 || ord >= 5) {
                     logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
-                    console.log(parr);
                     return;
                 }
                 let chan = iarr[ord - 1];
