@@ -1381,22 +1381,22 @@
       "outputs": [
         {
           "name": "tempC",
-          "desc": "CPU Temperature C",
+          "desc": "Temperature C",
           "maxSamples": 50
         },
         {
           "name": "tempK",
-          "desc": "CPU Temperature K",
+          "desc": "Temperature K",
           "maxSamples": 50
         },
         {
           "name": "tempF",
-          "desc": "CPU Temperature F",
+          "desc": "Temperature F",
           "maxSamples": 50
         },
         {
           "name": "temp",
-          "desc": "Temperature",
+          "desc": "Temperature (Current units)",
           "maxSamples": 50
         },
         {
