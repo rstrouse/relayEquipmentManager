@@ -96,7 +96,17 @@ export class SpiAdcChannel {
         this.sampling = chan.sampling || 1;
         for (let i = 0; i < chan.feeds.length; i++) {
             let f = chan.feeds.getItemByIndex(i);
-            if (f.isActive) this.feeds.push(new SpiAdcFeed(f));
+            if (f.isActive) this.feeds.push(new SpiAdcFeed(chan.id, f));
+        }
+    }
+    public resetDeviceFeeds(chan: SpiChannel) {
+        for (let i = this.feeds.length - 1; i <= 0; i--) {
+            let f = this.feeds[i];
+            if (f.channelId === chan.id) this.feeds.splice(i, 1);
+        }
+        for (let i = 0; i < chan.feeds.length; i++) {
+            let f = chan.feeds.getItemByIndex(i);
+            if (f.isActive) this.feeds.push(new SpiAdcFeed(chan.id, f));
         }
     }
     public openAsync(spiBus, opts) {
@@ -238,8 +248,9 @@ class SpiAdcFeed {
     //public changesOnly: boolean;
     private _timerSend: NodeJS.Timeout;
     public translatePayload: Function;
+    public channelId: number;
     public feed: DeviceFeed;
-    constructor(feed: DeviceFeed) {
+    constructor(channelId: number, feed: DeviceFeed) {
         this.server = connBroker.findServer(feed.connectionId);
         //this.frequency = feed.frequency * 1000;
         //this.eventName = feed.eventName;

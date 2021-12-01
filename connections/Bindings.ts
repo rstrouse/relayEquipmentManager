@@ -655,7 +655,7 @@ class MqttConnection extends ServerConnection {
         //            try {
         //                let fnFilter = trigger.makeTriggerFunction();
         //                evt.triggers.push({
-        //                    binding: `i2c:${bus.busNumber}:${device.id}${typeof trigger.channelId !== 'undefined' ? ':' + trigger.channelId : ''}`,
+        //                    binding: `i2c:${bus.id}:${device.id}${typeof trigger.channelId !== 'undefined' ? ':' + trigger.channelId : ''}`,
         //                    filter: fnFilter, triggerId: trigger.id });
         //            }
         //            catch (err) { logger.error(`Invalid I2c Device ${device.id} trigger Expression: ${err.message} : ${trigger.makeExpression()}`); }

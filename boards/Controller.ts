@@ -6,13 +6,13 @@ import * as util from 'util';
 
 import { connBroker, ConnectionBindings, ServerConnection } from '../connections/Bindings';
 import { AnalogDevices, DeviceStatus } from '../devices/AnalogDevices';
-import { gdc } from '../generic/genericDevices';
+import { gdc, genericController } from '../generic/genericDevices';
 import { gpioCont } from '../gpio/Gpio-Controller';
 import { i2c } from '../i2c-bus/I2cBus';
 import { logger } from '../logger/Logger';
 import { oneWire } from '../one-wire/OneWireBus';
 import { PinDefinitions } from '../pinouts/Pinouts';
-import { spi0, spi1, SpiAdcChannel } from '../spi-adc/SpiAdcBus';
+import { spi0, spi1, SpiAdcBus, SpiAdcChannel } from '../spi-adc/SpiAdcBus';
 import { SpiAdcChips } from '../spi-adc/SpiAdcChips';
 import { webApp } from '../web/Server';
 import { utils, valueMap, vMaps } from './Constants';
@@ -659,7 +659,6 @@ export class Controller extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public async getDevice(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -788,6 +787,14 @@ export class Controller extends ConfigItem {
             }
         } catch (err) { console.log(err); }
     }
+    public removeInternalReferences(binding: string) {
+        this.gpio.removeInternalReferences(binding);
+        this.spi0.removeInternalReferences(spi0, binding);
+        this.spi1.removeInternalReferences(spi1, binding);
+        this.i2c.removeInternalReferences(binding);
+        this.genericDevices.removeInternalReferences(binding);
+        this.oneWire.removeInternalReferences(binding);
+    }
 }
 
 export class DeviceFeedCollection extends ConfigItemCollection<DeviceFeed> {
@@ -797,6 +804,19 @@ export class DeviceFeedCollection extends ConfigItemCollection<DeviceFeed> {
         for (let i = this.length - 1; i >= 0; i--) {
             if (this.getItemByIndex(i).connectionId === id) this.removeItemByIndex(i);
         }
+    }
+    public removeInternalReferences(binding: string): number {
+        let rem = 0;
+        for (let i = this.length - 1; i >= 0; i--) {
+            let ref = this.getItemByIndex(i);
+            if (typeof ref.deviceBinding !== 'string') continue;
+            console.log(binding);
+            if (ref.deviceBinding.startsWith(binding)) {
+                this.removeItemByIndex(i);
+                rem++;
+            }
+        }
+        return rem;
     }
 }
 export class DeviceFeed extends ConfigItem {
@@ -905,7 +925,6 @@ export class Feed {
     public closeAsync() { }
 }
 
-
 export class Gpio extends ConfigItem {
     constructor(data, name?: string) { super(data, name || 'gpio'); }
     protected initData(data?: any) {
@@ -990,11 +1009,9 @@ export class Gpio extends ConfigItem {
         let pin = this.pins.getPinById(headerId, pinId, true);
         return await pin.setPinTriggerAsync(data);
     }
-
     public async deletePinTriggerAsync(headerId: number, pinId: number, data): Promise<GpioPin> {
         return await this.pins.getPinById(headerId, pinId, true).deletePinTriggerAsync(data);
     }
-
     public async setDeviceStateAsync(binding: string | DeviceBinding, data: any) {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -1021,7 +1038,6 @@ export class Gpio extends ConfigItem {
         }
         catch (err) { return Promise.reject(new Error(`Could not feed gpio value: ${err.message}`)); }
     }
-
     public async getDevice(binding: string | DeviceBinding) {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -1143,10 +1159,13 @@ export class Gpio extends ConfigItem {
             await pin.restoreIO(data);
         } catch (err) { logger.error(`Error restoring pin ${data.headerId}-${data.pinId} ${data.name}: ${err.message}`); }
     }
-
-
+    public removeInternalReferences(binding: string) {
+        for (let i = 0; i < this.pins.length; i++) {
+            let pin = this.pins.getItemByIndex(i);
+            pin.removeInternalReferences(binding);
+        }
+    }
 }
-
 export class GpioPinCollection extends ConfigItemCollection<GpioPin> {
     constructor(data: any, name?: string) { super(data, name || 'pins'); }
     public createItem(data: any): GpioPin { return new GpioPin(data); }
@@ -1509,7 +1528,14 @@ export class GpioPin extends ConfigItem {
             }
         } catch (err) { logger.error(`Error restoring GPIO pin IO ${this.headerId}-${this.id}`); }
     }
-
+    public removeInternalReferences(binding: string) {
+        if (this.feeds.removeInternalReferences(binding) > 0) {
+            gpioCont.resetDeviceFeeds(this.headerId, this.id);
+        }
+        if (this.triggers.removeInternalReferences(binding)) {
+            gpioCont.resetPinTriggers(this.headerId, this.id);
+        }
+    }
 }
 export class DataTrigger extends ConfigItem {
     constructor(data) { super(data); }
@@ -1605,6 +1631,18 @@ export class GpioPinTriggerCollection extends ConfigItemCollection<GpioPinTrigge
             trigger.upgrade(ver);
         }
     }
+    public removeInternalReferences(binding: string): number {
+        let rem = 0;
+        // RKS: 11-30-21 At this time GPIPin triggers do not support internal device binding.
+        //for (let i = this.length - 1; i >= 0; i--) {
+        //    let ref = this.getItemByIndex(i);
+        //    if (ref.deviceBinding === binding) {
+        //        this.removeItemByIndex(i);
+        //        rem++;
+        //    }
+        //}
+        return rem;
+    }
 }
 export class GpioPinTrigger extends DataTrigger {
     constructor(data) { super(data); }
@@ -1693,6 +1731,19 @@ export class DeviceTriggerCollection extends ConfigItemCollection<DeviceTrigger>
             if (this.getItemByIndex(i).sourceId === id) this.removeItemByIndex(i);
         }
     }
+    public removeInternalReferences(binding: string): number {
+        let rem = 0;
+        // RKS: 11-30-21 At this time triggers are only external and are not triggered by internal devices.
+        //for (let i = this.length - 1; i >= 0; i--) {
+        //    let ref = this.getItemByIndex(i);
+        //    if (ref.deviceBinding === binding) {
+        //        this.removeItemByIndex(i);
+        //        rem++;
+        //    }
+        //}
+        return rem;
+    }
+
 }
 export class DeviceTrigger extends DataTrigger {
     constructor(data) { super(data); }
@@ -1808,140 +1859,6 @@ export class DeviceTriggerBinding extends ConfigItem {
     }
 }
 
-
-
-export class SpiController extends ConfigItem {
-    constructor(data, name: string) { super(data, name); }
-    public initData(data?: any) {
-        if (typeof this.data.isActive === 'undefined') this.isActive = false;
-        if (typeof this.data.referenceVoltage === 'undefined') this.referenceVoltage = 3.3;
-        if (typeof this.data.spiClock === 'undefined') this.spiClock = 1000;
-        if (typeof this.data.channels === 'undefined') this.data.channels = [];
-        return data;
-    }
-    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
-    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
-    public get busNumber(): number { return this.data.busNumber; }
-    public get adcChipType(): number { return this.data.adcChipType; }
-    public set adcChipType(val: number) { this.setDataVal('adcChipType', val); }
-    public get referenceVoltage(): number { return this.data.referenceVoltage; }
-    public set referenceVoltage(val: number) { this.setDataVal('referenceVoltage', val); }
-    public get spiClock(): number { return this.data.spiClock; }
-    public set spiClock(val: number) { this.setDataVal('spiClock', val); }
-    public get channels(): SpiChannelCollection { return new SpiChannelCollection(this.data, 'channels'); }
-    public getExtended() {
-        let c = this.get(true);
-        c.chipType = cont.spiAdcChips.find(elem => elem.id === this.adcChipType);
-        c.channels = [];
-        for (let i = 0; i < this.channels.length; i++) {
-            c.channels.push(this.channels.getItemByIndex(i).getExtended());
-        }
-        return c;
-    }
-    public getDeviceInputs(): any[] {
-        let devices = [];
-        let ad = cont.analogDevices;
-        for (let i = 0; i < this.channels.length; i++) {
-            let channel = this.channels.getItemByIndex(i);
-            let dev;
-            if (typeof channel.deviceId !== 'undefined' && channel.deviceId !== 0)
-                dev = ad.find(elem => elem.id === channel.deviceId);
-            if (typeof dev !== 'undefined' && typeof dev.inputs !== 'undefined') {
-                devices.push({ uid: `spi:${this.busNumber}:${channel.id}`, id: channel.id, name: ad.name, deviceId: dev.id, type: 'spi', busNumber: this.busNumber, bindings: dev.inputs });
-            }
-        }
-        return devices;
-    }
-    public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
-        try {
-            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
-            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceStatus: Invalid SPI Channel ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
-            let device = this.channels.find(elem => elem.id === bind.deviceId);
-            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Could not find SPI Channel ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
-            let dev: SpiAdcChannel;
-            if (this.busNumber === 0)
-                dev = spi0.channels.find(elem => bind.deviceId === elem.channel);
-            else
-                dev = spi1.channels.find(elem => bind.deviceId === elem.channel);
-            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Channel not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
-            return dev.deviceStatus;
-        } catch (err) { return Promise.reject(err); }
-    }
-    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
-        try {
-            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
-            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceState: Invalid SPI Channel ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
-            let device = this.channels.find(elem => elem.id === bind.deviceId);
-            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find SPI Channel ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
-            let dev: SpiAdcChannel;
-            if (this.busNumber === 0)
-                dev = spi0.channels.find(elem => bind.deviceId === elem.channel);
-            else
-                dev = spi1.channels.find(elem => bind.deviceId === elem.channel);
-            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceState: Channel not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
-            return { status: dev.deviceStatus, state: dev.lastVal };
-        } catch (err) { return Promise.reject(err); }
-    }
-    public async deleteConnectionAsync(id: number) {
-        try {
-            for (let i = 0; i < this.channels.length; i++) await this.channels.getItemByIndex(i).deleteConnectionAsync(id);
-        } catch (err) { return Promise.reject(new Error(`Error removing connection from spi controller`)); }
-    }
-
-    public async validateRestore(rest: any): Promise<{ errors: any, warnings: any, add: any, update: any, remove: any }> {
-        try {
-            let ctx = { errors: [], warnings: [], add: [], update: [], remove: [] };
-            // Verify there is a SPIO section.
-            let spio = rest[`spi${this.busNumber}`]
-            if (typeof spio === 'undefined' || typeof spio.channels === 'undefined') {
-                ctx.errors.push(`The spi${this.busNumber} section is missing elements.`);
-            }
-            else {
-                let devs = spio.channels;
-                let cfg = this.get().channels;
-                for (let i = 0; i < devs.length; i++) {
-                    let r = devs[i];
-                    let c = cfg.find(elem => r.id === elem.id);
-                    if (typeof c === 'undefined') ctx.add.push(r);
-                    else if (JSON.stringify(c) !== JSON.stringify(r)) ctx.update.push(r);
-                }
-                for (let i = 0; i < cfg.length; i++) {
-                    let c = cfg[i];
-                    let r = devs.find(elem => elem.id == c.id);
-                    if (typeof r === 'undefined') ctx.remove.push(c);
-                }
-            }
-            return ctx;
-        } catch (err) { logger.error(`Error validating spi${this.busNumber} for restore: ${ err.message }`); }
-    }
-    public async restore(rest: any, ctx: any) {
-        try {
-            let bus = rest[`spi${this.busNumber}`];
-            this.adcChipType = bus.adcChipType;
-            this.spiClock = bus.spiClock;
-            this.isActive = bus.isActive;
-            // Now restore the channels.
-            for (let i = 0; i < bus.channels.length; i++) {
-                let ch = this.channels.getItemById(bus.channels[i], true);
-                await ch.restore(bus.channels[i]);
-            }
-            for (let i = this.channels.length - 1; i >= 0; i--) {
-                let ch = this.channels.getItemByIndex(i);
-                if (typeof bus.channels.find(elem => elem.id === ch.id) === 'undefined') this.channels.removeItemByIndex(i);
-            }
-        } catch (err) { logger.error(`Error restoring spi${this.busNumber} bus`); }
-    }
-    public async restoreIO(rest: any, ctx: any) {
-        try {
-            let bus = rest[`spi${this.busNumber}`];
-            // Now restore the channels.
-            for (let i = 0; i < bus.channels.length; i++) {
-                let ch = this.channels.getItemById(bus.channels[i], true);
-                await ch.restoreIO(bus.channels[i]);
-            }
-        } catch (err) { logger.error(`Error restoring spi${this.busNumber} bus`); }
-    }
-}
 export class I2cController extends ConfigItem {
     constructor(data, name: string) { super(data, name); }
     public initData(data?: any) {
@@ -2272,6 +2189,12 @@ export class I2cController extends ConfigItem {
             }
         } catch (err) { logger.error(`Error restoring i2c devices: ${err.message}`); }
     }
+    public removeInternalReferences(binding: string) {
+        for (let i = 0; i < this.buses.length; i++) {
+            let bus = this.buses.getItemByIndex(i);
+            bus.removeInternalReferences(binding);
+        }
+    }
 
 }
 export class I2cBusCollection extends ConfigItemCollection<I2cBus> {
@@ -2323,7 +2246,6 @@ export class I2cBus extends ConfigItem {
             }
         } catch (err) { return Promise.reject(new Error(`Error removing connection from i2c-${this.busNumber} devices`)); }
     }
-
     public async closeAsync(): Promise<void> {
         try {
             let dbus = i2c.buses.find(elem => elem.busNumber === this.busNumber);
@@ -2380,7 +2302,6 @@ export class I2cBus extends ConfigItem {
             return device;
         } catch (err) { return Promise.reject(err); }
     }
-
     public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -2407,7 +2328,6 @@ export class I2cBus extends ConfigItem {
             return { status: dev.deviceStatus, state: await dev.getDeviceState(bind) };
         } catch (err) { return Promise.reject(err); }
     }
-
     public async setDevice(dev): Promise<I2cDevice> {
         try {
             let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
@@ -2590,7 +2510,6 @@ export class I2cBus extends ConfigItem {
         }
         catch (err) { logger.error(`Error changing i2c device address ${err.message}`); return Promise.reject(err); }
     }
-
     public async deleteDevice(dev): Promise<I2cDevice> {
         try {
             let id = parseInt(dev.id, 10);
@@ -2608,6 +2527,7 @@ export class I2cBus extends ConfigItem {
             this.devices.removeItemById(id);
             let addr = this.addresses.find(elem => elem.address === device.address);
             if (typeof addr !== 'undefined') addr.name = 'Unknown';
+            cont.removeInternalReferences(`i2c:${this.id}:${device.id}`);
             return Promise.resolve(device);
         }
         catch (err) { return Promise.reject(err); }
@@ -2621,7 +2541,7 @@ export class I2cBus extends ConfigItem {
             if (typeof device.typeId !== 'undefined' && device.typeId !== 0)
                 dev = ad.find(elem => elem.id === device.typeId);
             if (typeof dev !== 'undefined' && typeof dev.inputs !== 'undefined') {
-                devices.push({ uid: `i2c:${this.busNumber}:${device.id}`, id: device.id, name: device.name, deviceId: dev.id, type: 'i2c', busNumber: this.busNumber, bindings: dev.inputs });
+                devices.push({ uid: `i2c:${this.id}:${device.id}`, id: device.id, name: device.name, deviceId: dev.id, type: 'i2c', busNumber: this.busNumber, bindings: dev.inputs });
             }
         }
         return devices;
@@ -2678,15 +2598,7 @@ export class I2cBus extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public getDeviceById(deviceId: number) { return this.devices.getItemById(deviceId); }
-    //public async setDeviceTriggerAsync(deviceId: number, data): Promise<DeviceTrigger> {
-    //    let dev = this.devices.getItemById(deviceId, true);
-    //    return await dev.setDeviceTriggerAsync(data);
-    //}
-    //public async deleteDeviceTriggerAsync(deviceId: number, data): Promise<I2cDevice> {
-    //    return await this.devices.getItemById(deviceId, false).deleteDeviceTriggerAsync(data);
-    //}
     public async restore(rest: any, ctx: any) {
         try {
             let bus = rest.i2c.buses.find(elem => this.busNumber === elem.busNumber);
@@ -2714,7 +2626,12 @@ export class I2cBus extends ConfigItem {
         }
         catch (err) { logger.error(`Error restoring i2c Bus: ${err.messsage}`); }
     }
-
+    public removeInternalReferences(binding: string) {
+        for (let i = 0; i < this.devices.length; i++) {
+            let dev = this.devices.getItemByIndex(i);
+            dev.removeInternalReferences(this.id, binding);
+        }
+    }
 }
 export class I2cDeviceCollection extends ConfigItemCollection<I2cDevice> {
     constructor(data: any, name?: string) { super(data, name || 'devices') }
@@ -2771,7 +2688,6 @@ export class I2cDevice extends ConfigItem {
     public getDeviceType() {
         return cont.analogDevices.find(elem => elem.id === this.typeId);
     }
-
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -2889,6 +2805,12 @@ export class I2cDevice extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public removeInternalReferences(busId: number, binding: string) {
+        if (this.feeds.removeInternalReferences(binding))
+            i2c.resetDeviceFeeds(busId, this.id);
+        if (this.triggers.removeInternalReferences(binding))
+            i2c.resetDeviceTriggers(busId, this.id);
+    }
 
     //public async deleteDeviceTriggerAsync(triggerId: number): Promise<I2cDevice> {
     //    return new Promise<I2cDevice>((resolve, reject) => {
@@ -2955,7 +2877,144 @@ export class I2cDevice extends ConfigItem {
     }
 }
 
-
+export class SpiController extends ConfigItem {
+    constructor(data, name: string) { super(data, name); }
+    public initData(data?: any) {
+        if (typeof this.data.isActive === 'undefined') this.isActive = false;
+        if (typeof this.data.referenceVoltage === 'undefined') this.referenceVoltage = 3.3;
+        if (typeof this.data.spiClock === 'undefined') this.spiClock = 1000;
+        if (typeof this.data.channels === 'undefined') this.data.channels = [];
+        return data;
+    }
+    public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
+    public set isActive(val: boolean) { this.setDataVal('isActive', val); }
+    public get busNumber(): number { return this.data.busNumber; }
+    public get adcChipType(): number { return this.data.adcChipType; }
+    public set adcChipType(val: number) { this.setDataVal('adcChipType', val); }
+    public get referenceVoltage(): number { return this.data.referenceVoltage; }
+    public set referenceVoltage(val: number) { this.setDataVal('referenceVoltage', val); }
+    public get spiClock(): number { return this.data.spiClock; }
+    public set spiClock(val: number) { this.setDataVal('spiClock', val); }
+    public get channels(): SpiChannelCollection { return new SpiChannelCollection(this.data, 'channels'); }
+    public getExtended() {
+        let c = this.get(true);
+        c.chipType = cont.spiAdcChips.find(elem => elem.id === this.adcChipType);
+        c.channels = [];
+        for (let i = 0; i < this.channels.length; i++) {
+            c.channels.push(this.channels.getItemByIndex(i).getExtended());
+        }
+        return c;
+    }
+    public getDeviceInputs(): any[] {
+        let devices = [];
+        let ad = cont.analogDevices;
+        for (let i = 0; i < this.channels.length; i++) {
+            let channel = this.channels.getItemByIndex(i);
+            let dev;
+            if (typeof channel.deviceId !== 'undefined' && channel.deviceId !== 0)
+                dev = ad.find(elem => elem.id === channel.deviceId);
+            if (typeof dev !== 'undefined' && typeof dev.inputs !== 'undefined') {
+                devices.push({ uid: `spi:${this.busNumber}:${channel.id}`, id: channel.id, name: ad.name, deviceId: dev.id, type: 'spi', busNumber: this.busNumber, bindings: dev.inputs });
+            }
+        }
+        return devices;
+    }
+    public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceStatus: Invalid SPI Channel ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.channels.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Could not find SPI Channel ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            let dev: SpiAdcChannel;
+            if (this.busNumber === 0)
+                dev = spi0.channels.find(elem => bind.deviceId === elem.channel);
+            else
+                dev = spi1.channels.find(elem => bind.deviceId === elem.channel);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceStatus: Channel not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            return dev.deviceStatus;
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+            if (isNaN(bind.deviceId)) return Promise.reject(new Error(`getDeviceState: Invalid SPI Channel ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            let device = this.channels.find(elem => elem.id === bind.deviceId);
+            if (typeof device === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find SPI Channel ${bind.busId}:${bind.deviceId} - ${bind.binding}`));
+            let dev: SpiAdcChannel;
+            if (this.busNumber === 0)
+                dev = spi0.channels.find(elem => bind.deviceId === elem.channel);
+            else
+                dev = spi1.channels.find(elem => bind.deviceId === elem.channel);
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceState: Channel not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
+            return { status: dev.deviceStatus, state: dev.lastVal };
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async deleteConnectionAsync(id: number) {
+        try {
+            for (let i = 0; i < this.channels.length; i++) await this.channels.getItemByIndex(i).deleteConnectionAsync(id);
+        } catch (err) { return Promise.reject(new Error(`Error removing connection from spi controller`)); }
+    }
+    public async validateRestore(rest: any): Promise<{ errors: any, warnings: any, add: any, update: any, remove: any }> {
+        try {
+            let ctx = { errors: [], warnings: [], add: [], update: [], remove: [] };
+            // Verify there is a SPIO section.
+            let spio = rest[`spi${this.busNumber}`]
+            if (typeof spio === 'undefined' || typeof spio.channels === 'undefined') {
+                ctx.errors.push(`The spi${this.busNumber} section is missing elements.`);
+            }
+            else {
+                let devs = spio.channels;
+                let cfg = this.get().channels;
+                for (let i = 0; i < devs.length; i++) {
+                    let r = devs[i];
+                    let c = cfg.find(elem => r.id === elem.id);
+                    if (typeof c === 'undefined') ctx.add.push(r);
+                    else if (JSON.stringify(c) !== JSON.stringify(r)) ctx.update.push(r);
+                }
+                for (let i = 0; i < cfg.length; i++) {
+                    let c = cfg[i];
+                    let r = devs.find(elem => elem.id == c.id);
+                    if (typeof r === 'undefined') ctx.remove.push(c);
+                }
+            }
+            return ctx;
+        } catch (err) { logger.error(`Error validating spi${this.busNumber} for restore: ${err.message}`); }
+    }
+    public async restore(rest: any, ctx: any) {
+        try {
+            let bus = rest[`spi${this.busNumber}`];
+            this.adcChipType = bus.adcChipType;
+            this.spiClock = bus.spiClock;
+            this.isActive = bus.isActive;
+            // Now restore the channels.
+            for (let i = 0; i < bus.channels.length; i++) {
+                let ch = this.channels.getItemById(bus.channels[i], true);
+                await ch.restore(bus.channels[i]);
+            }
+            for (let i = this.channels.length - 1; i >= 0; i--) {
+                let ch = this.channels.getItemByIndex(i);
+                if (typeof bus.channels.find(elem => elem.id === ch.id) === 'undefined') this.channels.removeItemByIndex(i);
+            }
+        } catch (err) { logger.error(`Error restoring spi${this.busNumber} bus`); }
+    }
+    public async restoreIO(rest: any, ctx: any) {
+        try {
+            let bus = rest[`spi${this.busNumber}`];
+            // Now restore the channels.
+            for (let i = 0; i < bus.channels.length; i++) {
+                let ch = this.channels.getItemById(bus.channels[i], true);
+                await ch.restoreIO(bus.channels[i]);
+            }
+        } catch (err) { logger.error(`Error restoring spi${this.busNumber} bus`); }
+    }
+    public removeInternalReferences(bus: SpiAdcBus, binding: string) {
+        let rem = 0;
+        for (let i = 0; i < this.channels.length; i++) {
+            let chan = this.channels.getItemByIndex(i);
+            if (chan.removeInternalReferences(binding) > 0) bus.channels[i].resetDeviceFeeds(chan);
+        }
+    }
+}
 export class SpiChannelCollection extends ConfigItemCollection<SpiChannel> {
     constructor(data: any, name?: string) { super(data, name || 'channels') }
     public createItem(data: any): SpiChannel { return new SpiChannel(data); }
@@ -2993,7 +3052,6 @@ export class SpiChannel extends ConfigItem {
             //await this.triggers.deleteByConnectionId(id);
         } catch (err) { return Promise.reject(new Error(`Error deleting connection from SPI channel ${this.id}`)); }
     }
-
     public async restore(data) {
         try {
             this.set(data);
@@ -3012,7 +3070,6 @@ export class SpiChannel extends ConfigItem {
             }
         } catch (err) { logger.error(`Error restoring spi channel #${this.id}`); }
     }
-
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -3088,7 +3145,9 @@ export class SpiChannel extends ConfigItem {
         }
         catch (err) { logger.error(`getDeviceFeed GPIO: ${err.message};`); }
     }
-
+    public removeInternalReferences(binding: string) {
+        return this.feeds.removeInternalReferences(binding);
+    }
 }
 export class ConnectionSourceCollection extends ConfigItemCollection<ConnectionSource> {
     constructor(data: any, name?: string) { super(data, name || 'connections') }
@@ -3135,7 +3194,6 @@ export class ConnectionSource extends ConfigItem {
     public set options(val: any) { this.setDataVal('options', val); }
 }
 
-
 export class GenericDeviceController extends ConfigItem {
     constructor(data, name: string) { super(data, name); }
     public initData(data?: any) {
@@ -3162,7 +3220,6 @@ export class GenericDeviceController extends ConfigItem {
             for (let i = 0; i < this.devices.length; i++) await this.devices.getItemByIndex(i).deleteConnectionAsync(id);
         } catch (err) { return Promise.reject(new Error(`Error removing connection from generic device controller`)); }
     }
-
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -3187,7 +3244,6 @@ export class GenericDeviceController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public async getDevice(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -3272,9 +3328,11 @@ export class GenericDeviceController extends ConfigItem {
     public async deleteDevice(dev): Promise<GenericDevice> {
         try {
             if (typeof dev.id === 'undefined') return Promise.reject(new Error(`Could not find generic device ith id id ${dev.id}`));
-            let device = await this.devices.removeItemById(dev.id);
+            let device = this.devices.getItemById(dev.id);
+            await this.devices.removeItemById(dev.id);
             gdc.removeDevice(dev.id);
-            return Promise.resolve(device[0]);  // err, why am I getting back an array here instead of a single device.  
+            cont.removeInternalReferences(`generic:${device.typeId}:${dev.id}`);
+            return Promise.resolve(device);  // err, why am I getting back an array here instead of a single device.  
         }
         catch (err) { return Promise.reject(err); }
     }
@@ -3391,6 +3449,12 @@ export class GenericDeviceController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public removeInternalReferences(binding: string) {
+        for (let i = 0; i < this.devices.length; i++) {
+            let dev = this.devices.getItemByIndex(i);
+            dev.removeInternalReferences(binding);
+        }
+    }
 }
 export class GenericDeviceCollection extends ConfigItemCollection<GenericDevice> {
     constructor(data: any, name?: string) { super(data, name || 'devices') }
@@ -3457,7 +3521,6 @@ export class GenericDevice extends ConfigItem {
             gdc.resetDeviceTriggers(this.id);
         } catch (err) { return Promise.reject(new Error(`Error deleting connection from Generic device ${this.id}-${this.name}`)); }
     }
-
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -3604,10 +3667,11 @@ export class GenericDevice extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public removeInternalReferences(binding: string) {
+        if (this.feeds.removeInternalReferences(binding) > 0) gdc.resetDeviceFeeds(this.id);
+        if (this.triggers.removeInternalReferences(binding) > 0) gdc.resetDeviceTriggers(this.id);
+    }
 }
-
-
-
 export class OneWireController extends ConfigItem {
     constructor(data, name: string) { super(data, name); }
     public initData(data?: any) {
@@ -3623,7 +3687,6 @@ export class OneWireController extends ConfigItem {
     public get detected(): any[] { return this.data.detected; }
     public set detected(val: any[]) { this.data.detected = val; }
     public get buses(): OneWireBusCollection { return new OneWireBusCollection(this.data, 'buses'); }
-
     public getExtended() {
         let c = this.get(true);
         c.buses = this.buses.toExtendedArray();
@@ -3634,7 +3697,6 @@ export class OneWireController extends ConfigItem {
             for (let i = 0; i < this.buses.length; i++) await this.buses.getItemByIndex(i).deleteConnectionAsync(id);
         } catch (err) { return Promise.reject(new Error(`Error removing connection from i2c controller`)); }
     }
-
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -3659,7 +3721,6 @@ export class OneWireController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public async getDevice(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -3738,7 +3799,6 @@ export class OneWireController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public async setDevice(dev): Promise<OneWireDevice> {
         try {
             let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
@@ -3938,7 +3998,12 @@ export class OneWireController extends ConfigItem {
             }
         } catch (err) { logger.error(`Error restoring 1-Wire devices: ${err.message}`); }
     }
-
+    public removeInternalReferences(binding: string) {
+        for (let i = 0; i < this.buses.length; i++) {
+            let bus = this.buses.getItemByIndex(i);
+            bus.removeInternalReferences(binding);
+        }
+    }
 }
 export class OneWireBusCollection extends ConfigItemCollection<OneWireBus> {
     constructor(data: any, name?: string) { super(data, name) }
@@ -3951,7 +4016,6 @@ export class OneWireBusCollection extends ConfigItemCollection<OneWireBus> {
         return this.createItem(data || { id: id, busNumber: busNumber });
     }
 }
-
 export class OneWireBus extends ConfigItem {
     public initData(data?: any) {
         if (typeof this.data.isActive === 'undefined') this.isActive = true;
@@ -3990,7 +4054,6 @@ export class OneWireBus extends ConfigItem {
             }
         } catch (err) { return Promise.reject(new Error(`Error removing connection from i2c-${this.busNumber} devices`)); }
     }
-
     public async closeAsync(): Promise<void> {
         try {
             let dbus = oneWire.buses.find(elem => elem.busNumber === this.busNumber);
@@ -4051,7 +4114,6 @@ export class OneWireBus extends ConfigItem {
             return device;
         } catch (err) { return Promise.reject(err); }
     }
-
     public async getDeviceStatus(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -4078,7 +4140,6 @@ export class OneWireBus extends ConfigItem {
             return { status: dev.deviceStatus, state: await dev.getDeviceState(bind) };
         } catch (err) { return Promise.reject(err); }
     }
-
     public async setDevice(dev): Promise<OneWireDevice> {
         try {
             let id = typeof dev.id !== 'undefined' && dev.id ? parseInt(dev.id, 10) : undefined;
@@ -4261,7 +4322,6 @@ export class OneWireBus extends ConfigItem {
         }
         catch (err) { logger.error(`Error changing i2c device address ${err.message}`); return Promise.reject(err); }
     }
-
     public async deleteDevice(dev): Promise<OneWireDevice> {
         try {
             let id = parseInt(dev.id, 10);
@@ -4277,6 +4337,7 @@ export class OneWireBus extends ConfigItem {
             }
             let device = this.devices.getItemById(id);
             this.devices.removeItemById(id);
+            cont.removeInternalReferences(`oneWire:${this.id}:${device.id}`);
             let addr = this.addresses.find(elem => elem.address === device.address);
             if (typeof addr !== 'undefined') addr.name = 'Unknown';
             return Promise.resolve(device);
@@ -4292,7 +4353,7 @@ export class OneWireBus extends ConfigItem {
             if (typeof device.typeId !== 'undefined' && device.typeId !== 0)
                 dev = ad.find(elem => elem.id === device.typeId);
             if (typeof dev !== 'undefined' && typeof dev.inputs !== 'undefined') {
-                devices.push({ uid: `i2c:${this.busNumber}:${device.id}`, id: device.id, name: device.name, deviceId: dev.id, type: 'i2c', busNumber: this.busNumber, bindings: dev.inputs });
+                devices.push({ uid: `oneWire:${this.id}:${device.id}`, id: device.id, name: device.name, deviceId: dev.id, type: 'oneWire', busNumber: this.busNumber, bindings: dev.inputs });
             }
         }
         return devices;
@@ -4349,15 +4410,7 @@ export class OneWireBus extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public getDeviceById(deviceId: number) { return this.devices.getItemById(deviceId); }
-    //public async setDeviceTriggerAsync(deviceId: number, data): Promise<DeviceTrigger> {
-    //    let dev = this.devices.getItemById(deviceId, true);
-    //    return await dev.setDeviceTriggerAsync(data);
-    //}
-    //public async deleteDeviceTriggerAsync(deviceId: number, data): Promise<OneWireDevice> {
-    //    return await this.devices.getItemById(deviceId, false).deleteDeviceTriggerAsync(data);
-    //}
     public async restore(rest: any, ctx: any) {
         try {
             let bus = rest.oneWire.buses.find(elem => this.busNumber === elem.busNumber);
@@ -4385,7 +4438,12 @@ export class OneWireBus extends ConfigItem {
         }
         catch (err) { logger.error(`Error restoring i2c Bus: ${err.messsage}`); }
     }
-
+    public removeInternalReferences(binding: string) {
+        for (let i = 0; i < this.devices.length; i++) {
+            let dev = this.devices.getItemByIndex(i);
+            dev.removeInternalReferences(this.id, binding);
+        }
+    }
 }
 export class OneWireDeviceCollection extends ConfigItemCollection<OneWireDevice> {
     constructor(data: any, name?: string) { super(data, name || 'devices') }
@@ -4442,7 +4500,6 @@ export class OneWireDevice extends ConfigItem {
     public getDeviceType() {
         return cont.analogDevices.find(elem => elem.id === this.typeId);
     }
-
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -4560,23 +4617,6 @@ export class OneWireDevice extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
-    //public async deleteDeviceTriggerAsync(triggerId: number): Promise<OneWireDevice> {
-    //    return new Promise<OneWireDevice>((resolve, reject) => {
-    //        this.triggers.removeItemById(triggerId);
-    //        resolve(this);
-    //    });
-    //}
-    //public async setDeviceTriggerAsync(data): Promise<DeviceTrigger> {
-    //    let c = this.triggers.find(elem => elem.id === data.id);
-    //    if (typeof c === 'undefined') {
-    //        data.id = this.triggers.getMaxId(false, -1) + 1;
-    //        if (data.id === 0) data.id = 1;
-    //        c = this.triggers.getItemById(data.id, true);
-    //    }
-    //    return await c.setDeviceTriggerAsync(data);
-    //}
-
     public async setDeviceState(binding: string | DeviceBinding, data: any) {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -4623,6 +4663,10 @@ export class OneWireDevice extends ConfigItem {
                 if (typeof fdata === 'undefined') await this.deleteDeviceFeed(data);
             }
         } catch (err) { logger.error(`Error restoring OneWire Device ${this.address}-${this.name}: ${err.message}`); }
+    }
+    public removeInternalReferences(busId: number, binding: string) {
+        if (this.feeds.removeInternalReferences(binding) > 0) oneWire.resetDeviceFeeds(busId, this.id);
+        if (this.triggers.removeInternalReferences(binding) > 0) oneWire.resetDeviceFeeds(busId, this.id);
     }
 }
 export let cont = new Controller({});

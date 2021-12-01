@@ -180,7 +180,7 @@ export class GenericDeviceBase implements IDevice {
             }
             for (let i = 0; i < conns.length; i++) {
                 let conn = conns[i];
-                conn.resetDeviceTriggers(`generic:1:${this.device.id}`);
+                conn.resetDeviceTriggers(`generic:${this.device.typeId}:${this.device.id}`);
             }
         } catch (err) { return logger.error(`Error resetting trigger for device.`); }
     }

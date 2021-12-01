@@ -3112,7 +3112,8 @@ $.ui.position.fieldTip = {
             var self = this, o = self.options, el = self.element;
             var caption = $('<div></div>').addClass('slist-caption').text(o.caption);
             $('<span></span>').appendTo(caption).addClass('header-icon-btn').addClass('btn-add').append($('<i class="fas fa-plus"></i>')).attr('title', 'Add a new ' + o.itemName)
-                .on('click', function (evt) {
+                .on('click', function (e) {
+                    e.stopPropagation();
                     var evt = $.Event('additem');
                     el.trigger(evt);
                 });
