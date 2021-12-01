@@ -1194,6 +1194,7 @@ export class GpioPin extends ConfigItem {
             this.direction = 'output';
         if (typeof this.data.triggers === 'undefined')
             this.data.triggers = [];
+        if (typeof this.data.initialState === 'undefined') this.data.initialState = 'last';
         return data;
     }
     public upgrade(ver) {
@@ -1217,6 +1218,8 @@ export class GpioPin extends ConfigItem {
     public set name(val: string) { this.setDataVal('name', val); }
     public get debounceTimeout(): number { return this.data.debounceTimeout; }
     public set debounceTimeout(val: number) { this.setDataVal('debounceTimeout', val); }
+    public get initialState(): string { return this.data.initialState; }
+    public set initialState(val: string) { this.setDataVal('initialState', val); }
     public get triggers(): GpioPinTriggerCollection { return new GpioPinTriggerCollection(this.data, 'triggers'); }
     public get feeds(): DeviceFeedCollection { return new DeviceFeedCollection(this.data, 'feeds'); }
     public async setPinAsync(data: any) {

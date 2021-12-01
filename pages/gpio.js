@@ -102,6 +102,7 @@
                 // If we are an input we need to show the debounce stuff.
                 if (evt.newItem.name === 'input') {
                     pin.find('div.pnl-input-params').show();
+                    pin.find('div.pnl-output-params').hide();
                     el.find('div#tabsGpioPin').each(function () {
                         this.showTab('tabPinTriggers', false);
                         this.selectTabById('tabPinFeeds');
@@ -109,12 +110,20 @@
                 }
                 else {
                     pin.find('div.pnl-input-params').hide();
+                    pin.find('div.pnl-output-params').show();
                     el.find('div#tabsGpioPin').each(function () {
                         this.showTab('tabPinTriggers', true);
                     });
                 }
             });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Inverted', bind: 'isInverted' });
+            line = $('<div></div>').appendTo(pin).addClass('pnl-output-params');
+            $('<div></div>').appendTo(line).pickList({
+                required: true,
+                bindColumn: 0, displayColumn: 1, labelText: 'Startup State', binding: 'initialState',
+                columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Pin Direction', style: { width: '250px' } }],
+                items: [{ name: 'on', desc: 'On' }, { name: 'off', desc: 'Off'}, { name: 'last', desc: 'Last State' }], inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '7rem' } }
+            });
             line = $('<div></div>').appendTo(pin).addClass('pnl-input-params').hide();
             $('<div></div>').appendTo(line).valueSpinner({
                 required: true, canEdit: true, binding: 'debounceTimeout', labelText: 'Debounce', fmtMask: '#,##0', dataType: 'number', step: 1,

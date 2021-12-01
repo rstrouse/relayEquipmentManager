@@ -96,7 +96,8 @@ export class GpioController {
                     }
                     pin.label = pinDef.name;
                     if (dir === 'in' && pinDef.debounceTimeout > 0) opts['debounceTimeout'] = pinDef.debounceTimeout;
-                    let stateDir = this.translateState(dir, pinDef.state.name);
+                    let state = pinDef.initialState === 'last' ? pinDef.state.name : pinDef.initialState || pinDef.state.name;
+                    let stateDir = this.translateState(dir, state);
                     if (gp.accessible) {
                         logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${stateDir} on Header ${pinDef.headerId} Edge: ${dir === 'in' ? 'both' : 'none'}. ${JSON.stringify(opts)}`);
                         pin.gpio = new gp(pinout.gpioId, stateDir, dir === 'in' ? 'both' : 'none', opts);
