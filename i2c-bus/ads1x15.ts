@@ -281,7 +281,7 @@ export class ads1x15 extends i2cDeviceBase {
         finally { this.suspendPolling = false; }
     }
     private convertValue(bytes: number[]) {
-        if (this.device.options.adcType === 'adc1015') {
+        if (this.device.options.adcType === 'ads1015') {
             let value = ((bytes[0] & 0xff) << 4) | ((bytes[1] & 0xff) >> 4);
             if ((value & 0x800) !== 0) {
                 value -= 1 << 12;
@@ -306,7 +306,7 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             await this.stopRead();
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.device.options.name = this.device.name = opts.name;
-            if (this.device.options.name === '') this.device.options.name = this.device.options.adcType === 'adc1015' ? 'ADC1015' : 'ADC1115';
+            if (this.device.options.name === '') this.device.options.name = this.device.options.adcType === 'ads1015' ? 'ADS1015' : 'ADS1115';
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
             if (typeof opts.adcType !== 'undefined') {
                 this.device.options.adcType = opts.adcType;
