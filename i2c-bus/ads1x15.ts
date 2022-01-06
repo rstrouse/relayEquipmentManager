@@ -13,17 +13,17 @@ export class ads1x15 extends i2cDeviceBase {
     public set channels(val) { this.options.channels = val; }
     private suspendPolling: boolean = false;
     private config(channel: any): number {
-        return this.device.options.comparatorReadings // Set comparator readings (or disable)
+
+        return this.device.options.comparatorReadings       // Set comparator readings (or disable)
             | this.device.options.comparatorLatchingMode    // Set latching mode
             | this.device.options.comparatorActiveMode      // Set active/ready mode
             | this.device.options.comparatorMode            // Set comparator mode
             | this.device.options.mode                      // Set operation mode (single, continuous)
             | this.device.options.sps                       // Set sample per seconds
-            | channel.pgaMask                                   // Set PGA/voltage range
-            | ads1x15.mux[channel.id - 1]                       // Set mux (channel or differential bit)
+            | channel.pgaMask                               // Set PGA/voltage range
+            | ads1x15.mux[channel.id - 1]                   // Set mux (channel or differential bit)
             | ads1x15.registers['SINGLE']                   // Set 'start single-conversion' bit
         // 62243 total [243,35]
-
     }
     protected static spsToMilliseconds = {
         ads1015: {
@@ -70,7 +70,7 @@ export class ads1x15 extends i2cDeviceBase {
         0: 0x4000, // Single-ended AIN0
         1: 0x5000, // Single-ended AIN1
         2: 0x6000, // Single-ended AIN2
-        3: 0x7000 // Single-ended AIN3
+        3: 0x7000  // Single-ended AIN3
     }
     public pga: valueMap = new valueMap([
         [6.144, { name: '6.144v', desc: '6.144v', pgaMask: 0x0000 }],
@@ -174,7 +174,7 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof this.device.options.comparatorActiveMode === 'undefined') this.device.options.comparatorActiveMode = ads1x15.comparatorActiveMode['ACTVLOW'];
             if (typeof this.device.options.comparatorMode === 'undefined') this.device.options.comparatorMode = ads1x15.comparatorMode['TRADITIONAL'];
             if (typeof this.device.options.mode === 'undefined') this.device.options.mode = ads1x15.mode['SINGLE'];
-            if (typeof this.device.options.mux === 'undefined') this.device.options.mux = ads1x15.mux['SINGLE_3'];
+            //if (typeof this.device.options.mux === 'undefined') this.device.options.mux = ads1x15.mux['SINGLE_3'];
             if (typeof this.device.values.channels === 'undefined') this.device.values.channels = [];
             if (typeof this.device.name === 'undefined') this.device.name = this.options.name = this.options.adcType.toUpperCase();
             if (typeof this.device.options.adcType !== 'undefined') {
@@ -244,7 +244,7 @@ export class ads1x15 extends i2cDeviceBase {
                 if (channels[i].enabled) {
                     await this.sendInit(channels[i]);
                     let r: number[];
-                    if (this.i2c.isMock) r = [Math.round(Math.random() * (this.device.options.adcType === 'ads1015'? 15 : 127)), Math.round(Math.random() * 256)];
+                    if (this.i2c.isMock) r = [Math.round(Math.random() * (this.device.options.adcType === 'ads1015' ? 15 : 127)), Math.round(Math.random() * 256)];
                     else r = await this.readCommand(ads1x15.registers['CONVERT'])
                     let value = this.convertValue(r);
                     // voltage = value / max * pga = e.g. 29475 / 65355 * 1024
@@ -258,6 +258,7 @@ export class ads1x15 extends i2cDeviceBase {
                     if (typeof valElem !== 'undefined') {
                         valElem.value = value;
                         valElem.voltage = voltage;
+                        valElem.rawBytes = r;
                         valElem.maxValue = this.device.options.adcType === 'ads1015' ? 1 << 12 : 1 << 16;
                     }
                     else {
