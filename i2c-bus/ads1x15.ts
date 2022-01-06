@@ -93,7 +93,7 @@ export class ads1x15 extends i2cDeviceBase {
     }
 
     private static sps = {
-        ads1115: {
+        ads1015: {
             128: 0x0000, // 128 samples per second
             250: 0x0020, // 250 samples per second
             490: 0x0040, // 490 samples per second
@@ -101,8 +101,9 @@ export class ads1x15 extends i2cDeviceBase {
             1600: 0x0080, // 1600 samples per second (default)
             2400: 0x00A0, // 2400 samples per second
             3300: 0x00C0, // 3300 samples per second (also 0x00E0)
+            default: 0x0080
         },
-        ads1015: {
+        ads1115: {
             8: 0x0000, // 8 samples per second
             16: 0x0020, // 16 samples per second
             32: 0x0040, // 32 samples per second
@@ -111,6 +112,7 @@ export class ads1x15 extends i2cDeviceBase {
             250: 0x00A0, // 250 samples per second (default)
             475: 0x00C0, // 475 samples per second
             860: 0x00E0, // 860 samples per second
+            default: 0x00A0
         }
     }
     private static comparatorMode = {
@@ -185,7 +187,7 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof this.device.values.channels === 'undefined') this.device.values.channels = [];
             if (typeof this.device.name === 'undefined') this.device.name = this.options.name = this.options.adcType.toUpperCase();
             if (typeof this.device.options.adcType !== 'undefined') {
-                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1015' ? 250 : 1600];
+                this.device.options.sps = ads1x15.sps[this.device.options.adcType].default; //[this.device.options.adcType === 'ads1015' ? 250 : 1600];
                 this.pollReadings();
             }
             return Promise.resolve(true);
@@ -320,7 +322,7 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
             if (typeof opts.adcType !== 'undefined') {
                 this.device.options.adcType = opts.adcType;
-                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1015' ? 250 : 1600];
+                this.device.options.sps = ads1x15.sps[this.device.options.adcType].default; //[this.device.options.adcType === 'ads1015' ? 250 : 1600];
             }
             if (typeof opts.channels !== 'undefined') this.device.options.channels = opts.channels;
             for (let c of opts.channels) {
