@@ -185,6 +185,7 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof this.device.values.channels === 'undefined') this.device.values.channels = [];
             if (typeof this.device.name === 'undefined') this.device.name = this.options.name = this.options.adcType.toUpperCase();
             if (typeof this.device.options.adcType !== 'undefined') {
+                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1015' ? 250 : 1600];
                 this.pollReadings();
             }
             return Promise.resolve(true);
