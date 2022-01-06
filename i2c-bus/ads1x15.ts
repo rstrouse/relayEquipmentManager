@@ -13,6 +13,13 @@ export class ads1x15 extends i2cDeviceBase {
     public set channels(val) { this.options.channels = val; }
     private suspendPolling: boolean = false;
     private config(channel: any): number {
+        channel.mux = ads1x15.mux[channel.id - 1];
+        // config = 0 | 64 | 
+        // 0x0183 = 387 // No comparator | 1600 samples per second | single-shot mode
+        // gain = 1024
+        // mux = 16384
+        // START_CONVERSION = 32768
+        // config = 50563
 
         return this.device.options.comparatorReadings       // Set comparator readings (or disable)
             | this.device.options.comparatorLatchingMode    // Set latching mode
@@ -86,7 +93,7 @@ export class ads1x15 extends i2cDeviceBase {
     }
 
     private static sps = {
-        ads1015: {
+        ads1115: {
             128: 0x0000, // 128 samples per second
             250: 0x0020, // 250 samples per second
             490: 0x0040, // 490 samples per second
@@ -95,7 +102,7 @@ export class ads1x15 extends i2cDeviceBase {
             2400: 0x00A0, // 2400 samples per second
             3300: 0x00C0, // 3300 samples per second (also 0x00E0)
         },
-        ads1115: {
+        ads1015: {
             8: 0x0000, // 8 samples per second
             16: 0x0020, // 16 samples per second
             32: 0x0040, // 32 samples per second
@@ -209,6 +216,7 @@ export class ads1x15 extends i2cDeviceBase {
     private async sendInit(channel: any): Promise<boolean> {
         try {
             let config = this.config(channel);
+            channel.config = config;
             let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
             await this.timeout(this.getSPSTimeout());
             return Promise.resolve(true);
@@ -311,7 +319,7 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof opts.readInterval === 'number') this.device.options.readInterval = opts.readInterval;
             if (typeof opts.adcType !== 'undefined') {
                 this.device.options.adcType = opts.adcType;
-                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1015' ? 1600 : 32];
+                this.device.options.sps = ads1x15.sps[this.device.options.adcType][this.device.options.adcType === 'ads1015' ? 250 : 1600];
             }
             if (typeof opts.channels !== 'undefined') this.device.options.channels = opts.channels;
             for (let c of opts.channels) {
