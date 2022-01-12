@@ -20,15 +20,33 @@ export class ads1x15 extends i2cDeviceBase {
         // mux = 16384
         // START_CONVERSION = 32768
         // config = 50563
-        let config = this.device.options.comparatorReadings       // Set comparator readings (or disable)
+
+        // ADS1X15_REG_CONFIG_CQUE_NONE    (0x0003) 3 OK
+        // ADS1X15_REG_CONFIG_CLAT_NONLAT  (0x0000) 0
+        // ADS1X15_REG_CONFIG_CPOL_ACTVLOW (0x0000) 0
+        // ADS1X15_REG_CONFIG_CMODE_TRAD   (0x0000) 0
+        // ADS1X15_REG_CONFIG_MODE_SINGLE  (0x0100) 256 OK
+        // 
+        // RATE_ADS1015_1600SPS            (0x0080) 128 m_dataRate OK
+        // GAIN_TWOTHIRDS                  (0x0000) 0 m_gain
+        // ADS1X15_REG_CONFIG_PGA_2_048V   (0x0400) 1024 m_gain
+        
+        // ADS1X15_REG_CONFIG_MUX_SINGLE_0 (0x4000) 16384 OK
+        // ADS1X15_REG_CONFIG_OS_SINGLE    (0x8000) 32768 OK
+
+
+
+        let config = this.device.options.comparatorReadings // Set comparator readings (or disable)
             | this.device.options.comparatorLatchingMode    // Set latching mode
             | this.device.options.comparatorActiveMode      // Set active/ready mode
             | this.device.options.comparatorMode            // Set comparator mode
             | this.device.options.mode                      // Set operation mode (single, continuous)
             | this.device.options.sps                       // Set sample per seconds
-            | channel.pgaMask                               // Set PGA/voltage range
+            //| channel.pgaMask                               // Set PGA/voltage range
             | ads1x15.mux[channel.id - 1]                   // Set mux (channel or differential bit)
             | ads1x15.registers['SINGLE'];                   // Set 'start single-conversion' bit
+
+        if (this.options.deviceType !== 'ads1015') config |= channel.pgaMask;
         return config;
     }
     protected static spsToMilliseconds = {
