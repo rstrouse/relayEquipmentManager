@@ -293,7 +293,8 @@ export class ads1x15 extends i2cDeviceBase {
         finally { this.suspendPolling = false; }
     }
     private convertValue(bytes: number[]) {
-        let value = ((bytes[0] & 0xff) << 8) | ((bytes[1] & 0xff));
+        //let value = ((bytes[0] & 0xff) << 8) | ((bytes[1] & 0xff));
+        let value = (bytes[0] * 256) + bytes[1];
         if (this.device.options.adcType === 'ads1015') {
             value = (value >> 4);
             if (value > 0x07FF) value |= 0xF000;
