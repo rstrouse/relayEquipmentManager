@@ -220,7 +220,7 @@ export class ads1x15 extends i2cDeviceBase {
             let config = this.config(channel);
             logger.info(`${this.options.name}:${channel} Sending Config ${config}`)
             channel.config = config;
-            let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0x0F, config & 0x0F]);
+            let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
             await this.timeout(this.getSPSTimeout());
             return Promise.resolve(true);
         }
