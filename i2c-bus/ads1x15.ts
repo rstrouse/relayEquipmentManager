@@ -46,7 +46,7 @@ export class ads1x15 extends i2cDeviceBase {
             | ads1x15.mux[channel.id - 1]                   // Set mux (channel or differential bit)
             | ads1x15.registers['SINGLE'];                   // Set 'start single-conversion' bit
 
-        if (this.options.deviceType !== 'ads1015') config |= channel.pgaMask;
+        if (this.options.adcType !== 'ads1015') config |= channel.pgaMask;
         return config;
     }
     protected static spsToMilliseconds = {
