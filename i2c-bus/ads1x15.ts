@@ -293,20 +293,27 @@ export class ads1x15 extends i2cDeviceBase {
         finally { this.suspendPolling = false; }
     }
     private convertValue(bytes: number[]) {
+        let value = ((bytes[0] & 0xff) << 8) | ((bytes[1] & 0xff));
         if (this.device.options.adcType === 'ads1015') {
-            let value = ((bytes[0] & 0xff) << 4) | ((bytes[1] & 0xff) >> 4);
-            logger.silly(`${this.options.name} Convert Value ${bytes[0]}:${bytes[1]} --> ${value} || ${((bytes[0] & 0xFF) << 4) | (bytes[1] & 0xFF)}`);
-            if ((value & 0x800) !== 0) {
-                value -= 1 << 12;
-            }
-            return value;
-        } else {
-            let value = ((bytes[0] & 0xff) << 8) | ((bytes[1] & 0xff));
-            if ((value & 0x8000) !== 0) {
-                value -= 1 << 16;
-            }
-            return value;
+            value = (value >> 4);
+            if (value > 0x07FF) value |= 0xF000;
         }
+        logger.silly(`${this.options.name} Convert Value ${bytes[0]}:${bytes[1]} --> ${value}`);
+        return value;
+        //if (this.device.options.adcType === 'ads1015') {
+        //    let value = ((bytes[0] & 0xff) << 4) | ((bytes[1] & 0xff) >> 4);
+        //    logger.silly(`${this.options.name} Convert Value ${bytes[0]}:${bytes[1]} --> ${value} || ${((bytes[0] & 0xFF) << 4) | (bytes[1] & 0xFF)}`);
+        //    if ((value & 0x800) !== 0) {
+        //        value -= 1 << 12;
+        //    }
+        //    return value;
+        //} else {
+        //    let value = ((bytes[0] & 0xff) << 8) | ((bytes[1] & 0xff));
+        //    if ((value & 0x8000) !== 0) {
+        //        value -= 1 << 16;
+        //    }
+        //    return value;
+        //}
     }
     private getVoltageFromValue(value, pga) {
         let max = ads1x15.thresholdValues[this.device.options.adcType];
