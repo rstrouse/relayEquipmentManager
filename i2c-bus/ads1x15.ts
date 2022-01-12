@@ -20,8 +20,7 @@ export class ads1x15 extends i2cDeviceBase {
         // mux = 16384
         // START_CONVERSION = 32768
         // config = 50563
-
-        return this.device.options.comparatorReadings       // Set comparator readings (or disable)
+        let config = this.device.options.comparatorReadings       // Set comparator readings (or disable)
             | this.device.options.comparatorLatchingMode    // Set latching mode
             | this.device.options.comparatorActiveMode      // Set active/ready mode
             | this.device.options.comparatorMode            // Set comparator mode
@@ -29,8 +28,8 @@ export class ads1x15 extends i2cDeviceBase {
             | this.device.options.sps                       // Set sample per seconds
             | channel.pgaMask                               // Set PGA/voltage range
             | ads1x15.mux[channel.id - 1]                   // Set mux (channel or differential bit)
-            | ads1x15.registers['SINGLE']                   // Set 'start single-conversion' bit
-        // 62243 total [243,35]
+            | ads1x15.registers['SINGLE'];                   // Set 'start single-conversion' bit
+        return config;
     }
     protected static spsToMilliseconds = {
         ads1015: {
@@ -219,8 +218,9 @@ export class ads1x15 extends i2cDeviceBase {
     private async sendInit(channel: any): Promise<boolean> {
         try {
             let config = this.config(channel);
+            logger.info(`${this.options.name}:${channel} Sending Config ${config}`)
             channel.config = config;
-            let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xF0, config & 0x0F]);
+            let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0x0F, config & 0x0F]);
             await this.timeout(this.getSPSTimeout());
             return Promise.resolve(true);
         }
