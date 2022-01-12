@@ -312,6 +312,7 @@ export class ads1x15 extends i2cDeviceBase {
         let max = ads1x15.thresholdValues[this.device.options.adcType];
         // positive values must be 1 less than max range value (e.g. full scale of 12 bit ADC => 2^(12-1)-1 => -2048 to 2047)
         max = value > 0 ? max - 1 : max;
+        logger.silly(`${this.options.name} Convert Voltage ${value} / ${max} * ${pga} = ${value / max * pga}`);
         return value / max * pga; // value / mx = % of scale, scale * pga = Volts
     }
 
