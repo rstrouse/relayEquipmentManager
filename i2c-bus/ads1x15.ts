@@ -33,20 +33,15 @@ export class ads1x15 extends i2cDeviceBase {
         
         // ADS1X15_REG_CONFIG_MUX_SINGLE_0 (0x4000) 16384 OK
         // ADS1X15_REG_CONFIG_OS_SINGLE    (0x8000) 32768 OK
-
-
-
         let config = this.device.options.comparatorReadings // Set comparator readings (or disable)
             | this.device.options.comparatorLatchingMode    // Set latching mode
             | this.device.options.comparatorActiveMode      // Set active/ready mode
             | this.device.options.comparatorMode            // Set comparator mode
             | this.device.options.mode                      // Set operation mode (single, continuous)
             | this.device.options.sps                       // Set sample per seconds
-            //| channel.pgaMask                               // Set PGA/voltage range
+            | channel.pgaMask                               // Set PGA/voltage range
             | ads1x15.mux[channel.id - 1]                   // Set mux (channel or differential bit)
             | ads1x15.registers['SINGLE'];                   // Set 'start single-conversion' bit
-
-        if (this.options.adcType !== 'ads1015') config |= channel.pgaMask;
         return config;
     }
     protected static spsToMilliseconds = {
@@ -170,10 +165,17 @@ export class ads1x15 extends i2cDeviceBase {
     }
     protected async readCommand(command: number): Promise<number[]> {
         try {
-            let r = await this.i2c.readI2cBlock(this.device.address, 0, 2);  // read val
+            let r = await this.i2c.readI2cBlock(this.device.address, command, 2);  // read val
             return Promise.resolve(r.buffer.toJSON().data);
         }
         catch (err) { logger.error(`${this.device.name} Read Command: ${err.message}`); }
+    }
+    protected async readRegister(command: number): Promise<number> {
+        try {
+            let arr = await this.readCommand(command);
+            return (arr[0] * 256) + arr[1];
+        }
+        catch (err) { logger.error(`${this.device.name} Read Register: ${err.message}`); }
     }
     public async stopRead() {
         if (typeof this._timerRead !== 'undefined')
@@ -236,10 +238,15 @@ export class ads1x15 extends i2cDeviceBase {
     private async sendInit(channel: any): Promise<boolean> {
         try {
             let config = this.config(channel);
-            logger.info(`${this.options.name}:${channel} Sending Config ${config}`)
+            logger.info(`${this.options.name}:${channel.id} Sending Config ${config}`)
             channel.config = config;
             let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
-            await this.timeout(this.getSPSTimeout());
+            // Check the config register.
+            for (let i = 0; i < 10; i++) {
+                await this.timeout(this.getSPSTimeout());
+                let cfg = await this.readRegister(ads1x15.registers['CONFIG']);
+                if ((cfg & 0x8000) === 0) break;
+            }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
