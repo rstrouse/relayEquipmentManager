@@ -288,7 +288,7 @@ export class Controller extends ConfigItem {
             this._timerDirty = null;
         }
         if (this._isDirty) {
-            logger.silly(`Setting Dirty... ${val} ${new Date().getTime() - this._lastPersisted.getTime()}`);
+            //logger.silly(`Setting Dirty... ${val} ${new Date().getTime() - this._lastPersisted.getTime()}`);
             if (new Date().getTime() - this._lastPersisted.getTime() > 10000) //TODO: Set this higher as we don't need to write it every 10 seconds.
                 this.persist();
             else

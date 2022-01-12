@@ -294,7 +294,8 @@ export class ads1x15 extends i2cDeviceBase {
     }
     private convertValue(bytes: number[]) {
         if (this.device.options.adcType === 'ads1015') {
-            let value = ((bytes[0] & 0xff) << 4) | ((bytes[1] & 0xff) >> 4);
+            let value = ((bytes[0] & 0xff) << 8) | ((bytes[1] & 0xff) >> 4);
+            logger.silly(`${this.options.name} Convert Value ${bytes[0]}:${bytes[1]} --> ${value}`);
             if ((value & 0x800) !== 0) {
                 value -= 1 << 12;
             }
