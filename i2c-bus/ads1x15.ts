@@ -172,7 +172,7 @@ export class ads1x15 extends i2cDeviceBase {
     }
     protected async readRegister(command: number): Promise<number> {
         try {
-            let arr = await this.readCommand(command);
+            let arr = await this.i2c.readI2cBlock(this.device.address, command, 2).buffer.toJSON().data;
             return (arr[0] * 256) + arr[1];
         }
         catch (err) { logger.error(`${this.device.name} Read Register: ${err.message}`); }
