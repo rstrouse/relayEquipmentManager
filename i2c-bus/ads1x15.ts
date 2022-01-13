@@ -173,7 +173,6 @@ export class ads1x15 extends i2cDeviceBase {
     protected async readRegister(command: number): Promise<number> {
         try {
             let ret = await this.i2c.readI2cBlock(this.device.address, command, 2);
-            console.log(ret);
             let arr = ret.buffer.toJSON().data;
             return (arr[0] * 256) + arr[1];
         }
@@ -240,14 +239,14 @@ export class ads1x15 extends i2cDeviceBase {
     private async sendInit(channel: any): Promise<boolean> {
         try {
             let config = this.config(channel);
-            logger.info(`${this.options.name}:${channel.id} Sending Config ${config}`)
+            logger.verbose(`${this.options.name}:${channel.id} Sending Config ${config}`)
             channel.config = config;
             let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
             // Check the config register.
             for (let i = 0; i < 10; i++) {
                 await this.timeout(this.getSPSTimeout());
                 let cfg = await this.readRegister(ads1x15.registers['CONFIG']);
-                if ((cfg & 0x8000) === 0) break;
+                if ((cfg & 0x8000) !== 0) break;
             }
             return Promise.resolve(true);
         }
