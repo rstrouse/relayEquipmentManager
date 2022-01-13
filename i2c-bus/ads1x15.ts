@@ -240,7 +240,22 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             let config = this.config(channel);
             logger.verbose(`${this.options.name}:${channel.id} Sending Config ${config}`)
-            channel.config = config;
+            //channel.config = config;
+            // Unpack the config register.
+            channel.config = {
+                value: config,
+                os: ((config & 0x8000) >>> 15).toString(2),
+                inMultiplexer: ((config & 0x7000) >>> 12).toString(2),
+                pga: ((config & 0x0E00) >>> 9).toString(2),
+                mode: ((config & 0x0100) >>> 8).toString(2),
+                dataRate: ((config & 0x00E0) >>> 5).toString(2),
+                compMode: ((config & 0x0010) >>> 4).toString(2),
+                compPolarity: ((config & 0x0008) >>> 3).toString(2),
+                compLatch: ((config & 0x0004) >>> 2).toString(2),
+                compQueue: ((config & 0x0003) >>> 0).toString(2)
+            }
+
+
             let w = await this.sendCommand([ads1x15.registers['CONFIG'], (config >> 8) & 0xFF, config & 0xFF]);
             // Check the config register.
             for (let i = 0; i < 10; i++) {
