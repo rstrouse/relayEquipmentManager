@@ -252,6 +252,14 @@ export class ads1x15 extends i2cDeviceBase {
         }
         catch (err) { this.logError(err); }
     }
+    public async readAllRegisters() {
+        try {
+            let reg = typeof this.options.registers !== 'undefined' ? this.options.registers : this.options.registers = {};
+            reg.config = await this.readRegister(0x01);
+            reg.lowTheshold = await this.readRegister(0x10);
+            reg.highThreshold = await this.readRegister(0x11);
+        } catch (err) { logger.error(`${this.device.name} Error reading all registers: ${err.message}`); }
+    }
     public getValue(prop) {
         let obj = this.device.values;
         let p = prop;
@@ -313,6 +321,7 @@ export class ads1x15 extends i2cDeviceBase {
             }
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.device.values });
             this.emitFeeds();
+            await this.readAllRegisters();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
