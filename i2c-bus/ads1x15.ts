@@ -172,6 +172,8 @@ export class ads1x15 extends i2cDeviceBase {
     }
     protected async readRegister(command: number): Promise<number> {
         try {
+            let ret = await this.i2c.readI2cBlock(this.device.address, command, 2);
+            console.log(ret);
             let arr = await this.i2c.readI2cBlock(this.device.address, command, 2).buffer.toJSON().data;
             return (arr[0] * 256) + arr[1];
         }
