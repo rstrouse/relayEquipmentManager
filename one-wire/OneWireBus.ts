@@ -101,12 +101,12 @@ export class oneWireController {
                 let oneWireInterface = oneWireInterfaceBuf.toString();
                 logger.info(`oneWireInterface: ${oneWireInterface}`);
                 if (!oneWireInterface.includes('w1_gpio')) {
-                    logger.error(`1-Wire interface not loaded on os.  Please enable through OS config.`);
+                    logger.warn(`1-Wire interface not loaded on os.  Please enable through OS config to use 1-Wire devices.`);
                     return Promise.reject(`1-Wire interface not loaded on os.  Please enable through OS config.`);
                 };
             }
             catch (err) {
-                logger.error(`stderr: ${err}`);
+                logger.silly(`stderr: ${err}`);
                 return Promise.reject(`1-Wire interface not loaded on os.  Please enable through OS config. ${err}`);
             }
 

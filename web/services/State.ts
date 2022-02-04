@@ -71,7 +71,7 @@ export class StateRoute {
         app.get('/state/device/:binding', async (req, res, next) => {
             try {
                 let ret = await cont.getDeviceState(req.params.binding);
-                return res.status(200).send(ret);
+                return res.status(200).send(typeof ret==='number'?ret.toString():ret);
             }
             catch (err) { next(err); }
         });

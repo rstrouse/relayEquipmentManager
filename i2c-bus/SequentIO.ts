@@ -790,15 +790,16 @@ export class SequentMegaIND extends SequentIO {
                     logger.error(`${this.device.name} error getting I/O channel ${prop}`);
                     return;
                 }
+                if (p.includes('4_20.') || p.includes('0_10.') || p.includes('digital.') || p.includes('drain.')){p=p.replace('.', '');} // If the prop gets sent in as in0_10.x convert back to in0_108 format.
                 let parr = p.split('.');
-                let sord = parr[parr.length - 1];
+                let sord = p[parr[0].length - 1];
                 let ord = parseInt(sord, 10);
                 if (isNaN(ord) || ord <= 0 || ord >= 5) {
                     logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
                     return;
                 }
                 let chan = iarr[ord - 1];
-                return chan;
+                return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
         }
     }
 }
@@ -1043,6 +1044,7 @@ export class SequentMegaBAS extends SequentIO {
                     logger.error(`${this.device.name} error getting I/O channel ${prop}`);
                     return;
                 }
+                if (p.includes('4_20.') || p.includes('0_10.')){p=p.replace('.', '');} // If the prop gets sent in as in0_10.x convert back to in0_108 format.
                 let parr = p.split('.');
 
                 let sord = p[parr[0].length - 1];
