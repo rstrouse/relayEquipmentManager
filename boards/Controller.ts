@@ -2328,8 +2328,8 @@ export class I2cBus extends ConfigItem {
             if (typeof bus === 'undefined') return Promise.reject(new Error(`getDeviceState: Bus not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
             let dev = bus.devices.find(elem => elem.device.id === bind.deviceId);
             if (typeof dev === 'undefined') return Promise.reject(new Error(`getDeviceState: Device not initialized ${bind.busId} ${bind.deviceId} - ${bind.binding}`));
-            //return { status: dev.deviceStatus, state: await dev.getDeviceState(bind) };
-            return await dev.getDeviceState(bind);
+            return { status: dev.deviceStatus, state: await dev.getDeviceState(bind) };
+            //return await dev.getDeviceState(bind); // RSG: 2.3.22 why does getDeviceState return status and state???
         } catch (err) { return Promise.reject(err); }
     }
     public async setDevice(dev): Promise<I2cDevice> {
