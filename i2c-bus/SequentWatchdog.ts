@@ -467,6 +467,7 @@ export class SequentWatchdog extends i2cDeviceBase {
             case 'tempk':
             case 'inputvoltage':
             case 'pivoltage':
+            case 'raspiVolts':
                 return super.calcMedian(prop, values);
             case 'fwversion':
                 return this.info.fwVersion;
@@ -479,6 +480,7 @@ export class SequentWatchdog extends i2cDeviceBase {
             case 'watchdogRestarts':
                 return this.values.watchdogRestarts;
             case 'scriptResult':
+            case 'scriptFnVal':
                 return this.values.scriptFnVal;
             default:
 
