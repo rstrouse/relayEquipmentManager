@@ -28,7 +28,7 @@
           "maxSamples": 50
         },
         {
-          "name": "piVoltage",
+          "name": "raspiVolts",
           "desc": "Raspberry Pi Voltage",
           "maxSamples": 50
         },
@@ -53,7 +53,7 @@
           "maxSamples": 1
         },
         {
-          "name": "scriptResult",
+          "name": "scriptFnVal",
           "desc": "Script Result",
           "maxSamples": 1
         }
