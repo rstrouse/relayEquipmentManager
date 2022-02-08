@@ -65,6 +65,11 @@
           "name": "blink",
           "desc": "Blinky Light",
           "maxSamples": 50
+        },
+        {
+          "name": "fanPower",
+          "desc": "Fan Power",
+          "maxSamples": 50
         }
       ],
       "inputs": [
