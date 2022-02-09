@@ -51,12 +51,13 @@ export class SequentWatchdog extends i2cDeviceBase {
                 this.device.options.units = this.device.values.units = 'C';
             }
             if (typeof this.options.scriptFn !== 'undefined' && this.options.scriptFn.length > 0)
-            this.evalScript = new Function('options', 'values', 'info', 'exec', this.options.scriptFn);
-            // options
-            await this.getDeviceInformation();
-
-            // readings
-            await this.takeReadings();
+                this.evalScript = new Function('options', 'values', 'info', 'exec', this.options.scriptFn);
+            if (this.device.isActive) {
+                // options
+                await this.getDeviceInformation();
+                // readings
+                await this.takeReadings();
+            }
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
         finally {

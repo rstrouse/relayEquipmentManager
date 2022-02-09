@@ -326,15 +326,16 @@ export class AtlasEZOorp extends AtlasEZO {
         try {
             this.stopPolling();
             this.options.name = await this.getName();
-            await this.getInfo();
-            await this.getLedEnabled();
-            this.options.isProtocolLocked = await this.isProtocolLocked();
-            await this.getCalibrated();
-            //this.options.status = await this.getStatus();
-            this.options.calibration = await this.exportCalibration();
-            this.options.readInterval = this.options.readInterval || deviceType.readings.orp.interval.default;
-            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.options.name;
+            if (this.device.isActive) {
+                await this.getInfo();
+                await this.getLedEnabled();
+                this.options.isProtocolLocked = await this.isProtocolLocked();
+                await this.getCalibrated();
+                this.options.calibration = await this.exportCalibration();
+                this.options.readInterval = this.options.readInterval || deviceType.readings.orp.interval.default;
+                if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+                else this.device.name = this.options.name;
+            }
             this.pollDeviceInformation();
             this.pollReadings();
             return Promise.resolve(true);
@@ -491,18 +492,20 @@ export class AtlasEZOpH extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            this.options.name = await this.getName();
-            await this.getInfo();
-            this.options.isProtocolLocked = await this.isProtocolLocked();
-            await this.getLedEnabled();
-            await this.getExtendedScale();
-            await this.getCalibrated();
-            await this.getSlope();
-            await this.getTempCompensation();
-            this.options.calibration = await this.exportCalibration();
-            this.options.readInterval = this.options.readInterval || deviceType.readings.pH.interval.default;
-            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.escapeName(this.options.name);
+            if (this.device.isActive) {
+                this.options.name = await this.getName();
+                await this.getInfo();
+                this.options.isProtocolLocked = await this.isProtocolLocked();
+                await this.getLedEnabled();
+                await this.getExtendedScale();
+                await this.getCalibrated();
+                await this.getSlope();
+                await this.getTempCompensation();
+                this.options.calibration = await this.exportCalibration();
+                this.options.readInterval = this.options.readInterval || deviceType.readings.pH.interval.default;
+                if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+                else this.device.name = this.escapeName(this.options.name);
+            }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -750,22 +753,24 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            this.dispense.units = 'mL';
-            this._pollInformationInterval = 10000;
-            this.options.name = await this.getName();
-            await this.getInfo();
-            this.options.isProtoLocked = await this.isProtocolLocked();
-            await this.getLedEnabled();
-            await this.getParameterInfo();
-            if (!this.options.parameters.pumpVolume) await this.enableParameter('V', true);
-            if (!this.options.parameters.pumpTotal) await this.enableParameter('TV', true);
-            if (!this.options.parameters.pumpAbsolute) await this.enableParameter('ATV', true);
-            await this.getCalibrated();
-            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.escapeName(this.options.name);
-            this.options.readInterval = this.options.readInterval || deviceType.readings.dispensed.interval.default;
-            // Initialize the tank level before moving on.
-            this.setTankAttributes({ level: this.tank.level || 0 });
+            if (this.device.isActive) {
+                this.dispense.units = 'mL';
+                this._pollInformationInterval = 10000;
+                this.options.name = await this.getName();
+                await this.getInfo();
+                this.options.isProtoLocked = await this.isProtocolLocked();
+                await this.getLedEnabled();
+                await this.getParameterInfo();
+                if (!this.options.parameters.pumpVolume) await this.enableParameter('V', true);
+                if (!this.options.parameters.pumpTotal) await this.enableParameter('TV', true);
+                if (!this.options.parameters.pumpAbsolute) await this.enableParameter('ATV', true);
+                await this.getCalibrated();
+                if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+                else this.device.name = this.escapeName(this.options.name);
+                this.options.readInterval = this.options.readInterval || deviceType.readings.dispensed.interval.default;
+                // Initialize the tank level before moving on.
+                this.setTankAttributes({ level: this.tank.level || 0 });
+            }
             this.pollDeviceInformation();
             // This device does not have readings to poll if the pump is not running so we will set a timeout to get the device
             // pumping information.  If it is running it will ask for it again.
@@ -889,6 +894,7 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async getDispenseStatus(): Promise<{ dispensing: boolean, volume?: number, continuous: boolean, reverse: boolean, maxRate: number, mode: { name: string, desc: string } }> {
         try {
+            if (!this.device.isActive) return this.dispense;
             if (this.suspendPolling) { this.suspendPolling = true; return Promise.resolve(this.dispense); }
             this.suspendPolling = true;
             let result = await this.execCommand('D,?', 300);
@@ -1207,17 +1213,19 @@ export class AtlasEZOprs extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            this.options.name = await this.getName();
-            await this.getInfo();
-            this.options.isProtoLocked = await this.isProtocolLocked();
-            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.options.name;
-            await this.getLedEnabled();
-            this.options.status = await this.getStatus();
-            this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
-            await this.getUnits();
-            await this.getDecPlaces();
-            await this.getAlarm();
+            if (this.device.isActive) {
+                this.options.name = await this.getName();
+                await this.getInfo();
+                this.options.isProtoLocked = await this.isProtocolLocked();
+                if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+                else this.device.name = this.options.name;
+                await this.getLedEnabled();
+                this.options.status = await this.getStatus();
+                this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
+                await this.getUnits();
+                await this.getDecPlaces();
+                await this.getAlarm();
+            }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -1448,18 +1456,20 @@ export class AtlasEZOrtd extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            // NAME,? always returns an empty string.  This doesn't work on RTD.
-            //this.device.name = this.options.name = (typeof this.options.name === 'undefined' || this.options.name === '') ? deviceType.name : this.options.name;
-            await this.getInfo();
-            this.options.isProtocolLocked = await this.isProtocolLocked();
-            await this.getLedEnabled();
-            await this.getCalibrated();
-            //this.options.status = await this.getStatus();
-            await this.getScale();
-            this.options.calibration = await this.exportCalibration();
-            this.options.readInterval = this.options.readInterval || deviceType.readings.temperature.interval.default;
-            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.options.name;
+            if (this.device.isActive) {
+                // NAME,? always returns an empty string.  This doesn't work on RTD.
+                //this.device.name = this.options.name = (typeof this.options.name === 'undefined' || this.options.name === '') ? deviceType.name : this.options.name;
+                await this.getInfo();
+                this.options.isProtocolLocked = await this.isProtocolLocked();
+                await this.getLedEnabled();
+                await this.getCalibrated();
+                //this.options.status = await this.getStatus();
+                await this.getScale();
+                this.options.calibration = await this.exportCalibration();
+                this.options.readInterval = this.options.readInterval || deviceType.readings.temperature.interval.default;
+                if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+                else this.device.name = this.options.name;
+            }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -1605,21 +1615,23 @@ export class AtlasEZOrtd extends AtlasEZO {
 export class AtlasEZOec extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
-            this.stopPolling();
-            this.options.name = await this.getName();
-            await this.getInfo();
-            await this.getLedEnabled();
-            this.options.isProtocolLocked = await this.isProtocolLocked();
-            await this.getCalibrated();
-            await this.getProbeType();
-            await this.getParameterInfo();
-            await this.getTDSFactor();
-            await this.getTempCompensation();
-            //this.options.status = await this.getStatus();
-            this.options.calibration = await this.exportCalibration();
-            this.options.readInterval = this.options.readInterval || deviceType.readings.conductivity.interval.default;
-            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.options.name;
+            if (this.device.isActive) {
+                this.stopPolling();
+                this.options.name = await this.getName();
+                await this.getInfo();
+                await this.getLedEnabled();
+                this.options.isProtocolLocked = await this.isProtocolLocked();
+                await this.getCalibrated();
+                await this.getProbeType();
+                await this.getParameterInfo();
+                await this.getTDSFactor();
+                await this.getTempCompensation();
+                //this.options.status = await this.getStatus();
+                this.options.calibration = await this.exportCalibration();
+                this.options.readInterval = this.options.readInterval || deviceType.readings.conductivity.interval.default;
+                if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+                else this.device.name = this.options.name;
+            }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -2045,15 +2057,17 @@ export class AtlasEZOhum extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
-            this.options.readInterval = this.options.readInterval || deviceType.readings.humidity.interval.default;
-            this.options.name = await this.getName();
-            await this.getInfo();
-            await this.getLedEnabled();
-            this.options.isProtocolLocked = await this.isProtocolLocked();
-            await this.getParameterInfo();
-            await this.getAlarm();
-            if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
-            else this.device.name = this.options.name;
+            if (this.device.isActive) {
+                this.options.readInterval = this.options.readInterval || deviceType.readings.humidity.interval.default;
+                this.options.name = await this.getName();
+                await this.getInfo();
+                await this.getLedEnabled();
+                this.options.isProtocolLocked = await this.isProtocolLocked();
+                await this.getParameterInfo();
+                await this.getAlarm();
+                if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
+                else this.device.name = this.options.name;
+            }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }

@@ -44,11 +44,13 @@ export class SequentSmartFan extends i2cDeviceBase {
             }
             if (typeof this.options.fanPowerFn !== 'undefined' && this.options.fanPowerFn.length > 0)
                 this.evalFanPower = new Function('options', 'values', 'info', this.options.fanPowerFn);
-            await this.getHwFwVer();
-            await this.getFanPower();
-            await this.getFanBlink();
-            await this.getFanSafeTemp();
-            await this.getStatus();
+            if (this.device.isActive) {
+                await this.getHwFwVer();
+                await this.getFanPower();
+                await this.getFanBlink();
+                await this.getFanSafeTemp();
+                await this.getStatus();
+            }
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
         finally {

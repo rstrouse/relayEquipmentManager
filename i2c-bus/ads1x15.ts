@@ -296,6 +296,7 @@ export class ads1x15 extends i2cDeviceBase {
     public async takeReadings(): Promise<boolean> {
         try {
             this.suspendPolling = true;
+            if (!this.device.isActive) return true;
             let pArr = [];
             if (typeof this.device.options.channels === 'undefined') return;
             let channels = this.device.options.channels;

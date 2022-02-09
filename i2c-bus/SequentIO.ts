@@ -405,8 +405,10 @@ export class SequentMegaIND extends SequentIO {
             this.options.readInterval = Math.max(500, this.options.readInterval);
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
-            await this.getHwFwVer();
-            await this.getStatus();
+            if (this.device.isActive) {
+                await this.getHwFwVer();
+                await this.getStatus();
+            }
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 4);
             this.ensureIOChannels('OUT 0-10', 'AOUT', this.out0_10, 4);
@@ -414,7 +416,7 @@ export class SequentMegaIND extends SequentIO {
             this.ensureIOChannels('OUT 4-20', '420OUT', this.out4_20, 4);
             this.ensureIOChannels('IN Digital', 'DIN', this.inDigital, 4);
             this.ensureIOChannels('OUT Open Drain', 'ODOUT', this.outDrain, 4);
-            await this.getRS485Port();
+            if (this.device.isActive) await this.getRS485Port();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -822,12 +824,14 @@ export class SequentMegaBAS extends SequentIO {
             this.options.readInterval = Math.max(500, this.options.readInterval);
             if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
-            await this.getHwFwVer();
-            await this.getStatus();
+            if (this.device.isActive) {
+                await this.getHwFwVer();
+                await this.getStatus();
+            }
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 8);
             this.ensureIOChannels('OUT 0-10', 'AOUT', this.out0_10, 4);
-            await this.getRS485Port();
+            if (this.device.isActive) await this.getRS485Port();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
