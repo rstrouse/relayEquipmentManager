@@ -218,12 +218,18 @@ export class AtlasEZO extends i2cDeviceBase {
             this.suspendPolling = true;
             let result = await this.execCommand('Status', 300);
             if (this.i2c.isMock) return Promise.resolve(true);
-            let arrDims = result.split(',');
-            this.device.info.vcc = parseFloat(arrDims[2] || '0');
-            this.device.info.lastRestart = this.transformRestart((arrDims[1] || 'U').toUpperCase());
-            return Promise.resolve(true);
+            if (typeof result !== 'undefined') {
+                let arrDims = result.split(',');
+                this.device.info.vcc = parseFloat(arrDims[2] || '0');
+                this.device.info.lastRestart = this.transformRestart((arrDims[1] || 'U').toUpperCase());
+            }
+            else {
+                logger.warn(`${this.device.name} could not retrieve status result was empty`);
+                return false;
+            }
+            return true;
         }
-        catch (err) { this.logError(err, `Error getting device status:`); return Promise.reject(err); }
+        catch (err) { this.logError(err, `${this.device.name} error getting device status:`); return Promise.resolve(false); }
         finally { this.suspendPolling = false; }
     }
     public async getLedEnabled(): Promise<boolean> {
@@ -1220,7 +1226,7 @@ export class AtlasEZOprs extends AtlasEZO {
                 if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
                 else this.device.name = this.options.name;
                 await this.getLedEnabled();
-                this.options.status = await this.getStatus();
+                await this.getStatus();
                 this.options.readInterval = this.options.readInterval || deviceType.readings.pressure.interval.default;
                 await this.getUnits();
                 await this.getDecPlaces();
@@ -1463,7 +1469,7 @@ export class AtlasEZOrtd extends AtlasEZO {
                 this.options.isProtocolLocked = await this.isProtocolLocked();
                 await this.getLedEnabled();
                 await this.getCalibrated();
-                //this.options.status = await this.getStatus();
+                await this.getStatus();
                 await this.getScale();
                 this.options.calibration = await this.exportCalibration();
                 this.options.readInterval = this.options.readInterval || deviceType.readings.temperature.interval.default;
@@ -1626,7 +1632,7 @@ export class AtlasEZOec extends AtlasEZO {
                 await this.getParameterInfo();
                 await this.getTDSFactor();
                 await this.getTempCompensation();
-                //this.options.status = await this.getStatus();
+                await this.getStatus();
                 this.options.calibration = await this.exportCalibration();
                 this.options.readInterval = this.options.readInterval || deviceType.readings.conductivity.interval.default;
                 if (typeof this.options.name !== 'string' || this.options.name.length === 0) await this.setName(deviceType.name);
@@ -1733,22 +1739,25 @@ export class AtlasEZOec extends AtlasEZO {
     public async getCalibrated(): Promise<boolean> {
         try {
             let result = await this.execCommand('Cal,?', 300);
-            let arrDims = result.split(',');
-            this.options.calibrationMode = parseInt(arrDims[1] || '0', 10);
-            if (typeof this.options.calibration === 'undefined') this.options.calibration = {};
-            if (typeof this.options.calibration.points === 'undefined') this.options.calibration.points = { dry: false, single: null, low: null, high: null };
-            if (this.options.calibrationMode === 2) {
-                this.options.calibration.points.single = null;
-                this.options.calibration.points.dry = true;
+            if (typeof result !== 'undefined') {
+                let arrDims = result.split(',');
+                this.options.calibrationMode = parseInt(arrDims[1] || '0', 10);
+                if (typeof this.options.calibration === 'undefined') this.options.calibration = {};
+                if (typeof this.options.calibration.points === 'undefined') this.options.calibration.points = { dry: false, single: null, low: null, high: null };
+                if (this.options.calibrationMode === 2) {
+                    this.options.calibration.points.single = null;
+                    this.options.calibration.points.dry = true;
+                }
+                else if (this.options.calibrationMode === 1) {
+                    this.options.calibration.points.dry = true;
+                    this.options.calibration.points.high = null;
+                }
+                if (this.options.calibrationMode === 0) {
+                    if (!utils.makeBool(this.options.suspendTempFeed)) this.options.calibration.points.single = this.options.calibration.points.low = this.options.calibration.points.high = null;
+                    if (typeof this.options.calibration.points.dry === 'undefined') this.options.calibration.points.dry = false;
+                }
             }
-            else if (this.options.calibrationMode === 1) {
-                this.options.calibration.points.dry = true;
-                this.options.calibration.points.high = null;
-            }
-            if (this.options.calibrationMode === 0) {
-                if(!utils.makeBool(this.options.suspendTempFeed)) this.options.calibration.points.single = this.options.calibration.points.low = this.options.calibration.points.high = null;
-                if (typeof this.options.calibration.points.dry === 'undefined') this.options.calibration.points.dry = false;
-            }
+            else logger.warn(`${this.device.name} error getting calibration status result was undefined.`);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1764,8 +1773,11 @@ export class AtlasEZOec extends AtlasEZO {
     public async getProbeType(): Promise<boolean> {
         try {
             let result = await this.execCommand('K,?', 300);
-            let arrDims = result.split(',');
-            this.options.probeType = this.values.probeType = parseFloat(arrDims[1] || '1');
+            if (typeof result !== 'undefined') {
+                let arrDims = result.split(',');
+                this.options.probeType = this.values.probeType = parseFloat(arrDims[1] || '1');
+            }
+            else logger.warn(`${this.device.name} error getting probe type result was undefined`);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1773,13 +1785,15 @@ export class AtlasEZOec extends AtlasEZO {
     public async getParameterInfo(): Promise<boolean> {
         try {
             let result = await this.execCommand('O,?', 300);
-            let arrDims = result.toUpperCase().split(',');
-            if (typeof this.options.parameters === 'undefined') this.options.parameters = {};
-            
-            this.options.parameters.conductivity = arrDims.indexOf('EC') >= 0;
-            this.options.parameters.dissolvedSolids = arrDims.indexOf('TDS') >= 0;
-            this.options.parameters.salinity = arrDims.indexOf('S') > 0;
-            this.options.parameters.specificGravity = arrDims.indexOf('SG') > 0;
+            if (typeof result !== 'undefined') {
+                let arrDims = result.toUpperCase().split(',');
+                if (typeof this.options.parameters === 'undefined') this.options.parameters = {};
+                this.options.parameters.conductivity = arrDims.indexOf('EC') >= 0;
+                this.options.parameters.dissolvedSolids = arrDims.indexOf('TDS') >= 0;
+                this.options.parameters.salinity = arrDims.indexOf('S') > 0;
+                this.options.parameters.specificGravity = arrDims.indexOf('SG') > 0;
+            }
+            else logger.warn(`${this.device.name} error getting parameter info result was undefined`);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1865,9 +1879,12 @@ export class AtlasEZOec extends AtlasEZO {
     public async getTempCompensation(): Promise<boolean> {
         try {
             let result = await this.execCommand('T,?', 300);
-            let arrDims = result.split(',');
-            this.values.temperature = parseFloat(arrDims[1] || '25');
-            if (this.values.temperature < 0) await this.setTempCompensation(25);
+            if (typeof result !== 'undefined') {
+                let arrDims = result.split(',');
+                this.values.temperature = parseFloat(arrDims[1] || '25');
+                if (this.values.temperature < 0) await this.setTempCompensation(25);
+            }
+            else logger.warn(`${this.device.name} error getting temperature compensation result was undefined`);
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(true);
         }

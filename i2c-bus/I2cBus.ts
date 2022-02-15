@@ -524,7 +524,7 @@ export class i2cDeviceBase implements IDevice {
         this.feeds = [];
         for (let i = 0; i < this.device.feeds.length; i++) {
             let f = this.device.feeds.getItemByIndex(i);
-            this.feeds.push(new Feed(f));
+            if(f.id > 0) this.feeds.push(new Feed(f));
         }
     }
     public async resetTriggers() {

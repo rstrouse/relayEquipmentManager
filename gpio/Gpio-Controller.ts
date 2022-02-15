@@ -279,7 +279,8 @@ export class gpioPinComms implements IDevice {
             this.feeds.length = 0;
             let pin = cont.gpio.pins.getPinById(this.headerId, this.pinId);
             for (let i = 0; i < pin.feeds.length; i++) {
-                this.feeds.push(new Feed(pin.feeds.getItemByIndex(i)));
+                let f = pin.feeds.getItemByIndex(i);
+                if(f.id > 0) this.feeds.push(new Feed(f));
             }
         } catch (err) { return logger.error(`Error resetting feed for device: ${err.message}.`); }
     }

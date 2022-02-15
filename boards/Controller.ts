@@ -30,11 +30,13 @@ export class DeviceBinding {
     public id: number; // for generic devices
     public params: string[];
     constructor(binding: string) {
-        let arr = binding.split(':');
-        this.type = arr[0];
-        this.busId = this.typeId = parseInt(arr[1], 10);
-        this.deviceId = this.id = parseInt(arr[2], 10);
-        this.params = arr.length > 2 ? arr.slice(3) : [];
+        if (typeof binding !== 'undefined') {
+            let arr = binding.split(':');
+            if (arr.length > 0) this.type = arr[0];
+            if (arr.length > 1) this.busId = this.typeId = parseInt(arr[1], 10);
+            if (arr.length > 2) this.deviceId = this.id = parseInt(arr[2], 10);
+            this.params = arr.length > 2 ? arr.slice(3) : [];
+        }
         this.binding = binding;
     }
 }
@@ -259,6 +261,13 @@ export class Controller extends ConfigItem {
         this.genericDevices = new GenericDeviceController(this.data, 'genericDevices')
         this.data.configVersion = cfgVer;
         this.connections = new ConnectionSourceCollection(this.data, 'connections');
+        this.gpio.cleanupConfigData();
+        this.spi0.cleanupConfigData();
+        this.spi1.cleanupConfigData();
+        this.i2c.cleanupConfigData();
+        this.oneWire.cleanupConfigData();
+        this.genericDevices.cleanupConfigData();
+
     }
     public async stopAsync(): Promise<Controller> {
         try {
@@ -536,20 +545,19 @@ export class Controller extends ConfigItem {
         devices.push(...this.genericDevices.getDeviceInputs());
         return devices;
     }
-    public getDeviceByBinding(binding: string) {
-        let arr = binding.split(':');
-        if (arr.length < 3) return;
-        switch (arr[0]) {
+    public getDeviceByBinding(binding: string | DeviceBinding) {
+        let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
+        switch (bind.type) {
             case 'spi':
-                return this[`spi${arr[1]}`].channels.getItemById(parseInt(arr[2], 10));
+                return this[`spi${bind.busId}`].channels.getItemById(bind.deviceId);
             case 'i2c':
-                return this.i2c.getDeviceById(parseInt(arr[1], 10), parseInt(arr[2], 10));
+                return this.i2c.getDeviceById(bind.busId, bind.deviceId);
             case 'gpio':
-                return this.gpio.pins.getItemById(parseInt(arr[2], 10));
+                return this.gpio.pins.getPinById(bind.busId, bind.deviceId);
             case 'generic':
-                return this.genericDevices.getDevice(binding);
+                return this.genericDevices.getDevice(bind);
             case 'oneWire':
-                return this.oneWire.getDevice(binding);
+                return this.oneWire.getDevice(bind);
         }
     }
     public getInternalConnection() {
@@ -685,28 +693,54 @@ export class Controller extends ConfigItem {
         catch (err) { return Promise.reject(err); }
     }
     public async setDeviceFeed(obj: any) {
-        let dev = this.getDeviceByBinding(obj.deviceBinding);
-        let srv = connBroker.findServer(obj.connectionId);
-        let type = obj.deviceBinding.split(':')[0];
-        let feed;
-        switch (type) {
-            case 'i2c': {
+        let binding = new DeviceBinding(obj.deviceBinding);
+        let dev = this.getDeviceByBinding(binding);
+        switch (binding.type) {
+            case 'i2c':
                 // feed = (dev as I2cDevice).getDeviceFeed(obj);
                 (dev as I2cDevice).setDeviceFeed(obj);
+                // So when we are doing this by binding the feeds are not reset.  We need to reset the feeds here.
+                i2c.resetDeviceFeeds(binding.busId, binding.deviceId);
                 break;
-            }
-            case 'gpio': {
+            case 'gpio':
                 (dev as GpioPin).setDeviceFeed(obj);
                 break;
-            }
             case 'spi':
+                (dev as SpiChannel).setDeviceFeed(obj);
+                break;
             case 'generic':
-            case 'oneWire':  
-                {
-                    break;
-                }
+                (dev as GenericDevice).setDeviceFeed(obj);
+                break;
+            case 'oneWire':
+                (dev as OneWireDevice).setDeviceFeed(obj);
+                break;
         }
     }
+    public async verifyDeviceFeed(obj: any) {
+        let binding = new DeviceBinding(obj.deviceBinding);
+        let dev = this.getDeviceByBinding(binding);
+        switch (binding.type) {
+            case 'i2c':
+                // feed = (dev as I2cDevice).getDeviceFeed(obj);
+                (dev as I2cDevice).verifyDeviceFeed(obj);
+                // So when we are doing this by binding the feeds are not reset.  We need to reset the feeds here.
+                i2c.resetDeviceFeeds(binding.busId, binding.deviceId);
+                break;
+            case 'gpio':
+                (dev as GpioPin).verifyDeviceFeed(obj);
+                break;
+            case 'spi':
+                (dev as SpiChannel).verifyDeviceFeed(obj);
+                break;
+            case 'generic':
+                (dev as GenericDevice).verifyDeviceFeed(obj);
+                break;
+            case 'oneWire':
+                (dev as OneWireDevice).verifyDeviceFeed(obj);
+                break;
+        }
+    }
+
     public async validateRestore(rest: any): Promise<any> {
         try {
             let ctx: any = {
@@ -805,12 +839,17 @@ export class DeviceFeedCollection extends ConfigItemCollection<DeviceFeed> {
             if (this.getItemByIndex(i).connectionId === id) this.removeItemByIndex(i);
         }
     }
+    public removeInvalidIds() {
+        for (let i = this.length - 1; i >= 0; i--) {
+            let f = this.getItemByIndex(i);
+            if (f.id <= 0) this.removeItemByIndex(i);
+        }
+    }
     public removeInternalReferences(binding: string): number {
         let rem = 0;
         for (let i = this.length - 1; i >= 0; i--) {
             let ref = this.getItemByIndex(i);
             if (typeof ref.deviceBinding !== 'string') continue;
-            console.log(binding);
             if (ref.deviceBinding.startsWith(binding)) {
                 this.removeItemByIndex(i);
                 rem++;
@@ -934,6 +973,12 @@ export class Gpio extends ConfigItem {
             this.data.exported = [];
         // this.initFeeds();
         return data;
+    }
+    public cleanupConfigData() {
+        for (let i = 0; i < this.pins.length; i++) {
+            let p = this.pins.getItemByIndex(i);
+            p.cleanupConfigData();
+        }
     }
     public upgrade(ver) { this.pins.upgrade(ver); }
     public setExported(gpioId: number) {
@@ -1197,6 +1242,9 @@ export class GpioPin extends ConfigItem {
         if (typeof this.data.initialState === 'undefined') this.data.initialState = 'last';
         return data;
     }
+    public cleanupConfigData() {
+        this.feeds.removeInvalidIds();
+    }
     public upgrade(ver) {
         this.triggers.upgrade(ver);
     }
@@ -1417,11 +1465,39 @@ export class GpioPin extends ConfigItem {
             return trig;
         } catch (err) { return Promise.reject(new Error(`Error Setting pin trigger ${err.message}`)); }
     }
+    public async verifyDeviceFeed(data): Promise<DeviceFeed> {
+        try {
+            let feed: DeviceFeed;
+            // Theoretically you shouldn't set this up for multiple feeds but if they do then we will update all of them.
+            for (let i = 0; i < this.feeds.length; i++) {
+                let f: DeviceFeed = this.feeds.getItemByIndex(i);
+                let bOptions = false;
+                if (typeof f.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && f.options.id === data.options.id) bOptions = true;
+                if (f.connectionId === data.connectionId &&
+                    bOptions &&
+                    f.sendValue === data.sendValue &&
+                    f.eventName === data.eventName &&
+                    f.property === data.property) {
+                    feed = f;
+                    // Ok so we have a feed that matches our needs.  We need to set it.
+                    data.id = f.id;
+                    await this.setDeviceFeed(data);
+                }
+            }
+            if (typeof feed === 'undefined') {
+                // There is not a feed that matches our needs so we need to add one.  Setting the id to -1 will trigger an add.
+                data.id = -1;
+                feed = await this.setDeviceFeed(data);
+            }
+            return feed;
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
-            if (isNaN(feedId))
-                return Promise.reject(new Error(`The feed identifier is not valid.`));
+            if (isNaN(feedId)) return Promise.reject(new Error(`The feed identifier is not valid.`));
             let feed: DeviceFeed;
             let connectionId;
             let connection;
@@ -1438,8 +1514,7 @@ export class GpioPin extends ConfigItem {
                 feed = this.getDeviceFeed(data); // try to find feed with matching props; useful if data sent from njsPC
                 feedId = (this.feeds.getMaxId() || 0) + 1;
                 connectionId = parseInt(data.connectionId, 10);
-                if (isNaN(connectionId))
-                    return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
+                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied ${data.connectionId}.`));
             }
             connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
             if (connectionId !== -1 && typeof connection === 'undefined')
@@ -1870,6 +1945,12 @@ export class I2cController extends ConfigItem {
         if (typeof this.data.detected === 'undefined') this.data.detected = [];
         return data;
     }
+    public cleanupConfigData() {
+        for (let i = 0; i < this.buses.length; i++) {
+            let b = this.buses.getItemByIndex(i);
+            b.cleanupConfigData();
+        }
+    }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
@@ -2061,7 +2142,7 @@ export class I2cController extends ConfigItem {
         try {
             let busId;
             let busNumber;
-            let bus;
+            let bus: I2cBus;
             if (typeof data.busId !== 'undefined') {
                 busId = parseInt(data.busId, 10);
                 if (isNaN(busId)) return Promise.reject(new Error(`A valid i2c bus id was not provided ${data.busId}`));
@@ -2082,7 +2163,7 @@ export class I2cController extends ConfigItem {
         try {
             let busId;
             let busNumber;
-            let bus;
+            let bus: I2cBus;
             if (typeof data.busId !== 'undefined') {
                 busId = parseInt(data.busId, 10);
                 if (isNaN(busId)) return Promise.reject(new Error(`A valid i2c bus id was not provided ${data.busId}`));
@@ -2217,6 +2298,12 @@ export class I2cBus extends ConfigItem {
         if (typeof this.data.isActive === 'undefined') this.isActive = true;
         if (typeof this.data.devices === 'undefined') this.data.devices = [];
         return data;
+    }
+    public cleanupConfigData() {
+        for (let i = 0; i < this.devices.length; i++) {
+            let d = this.devices.getItemByIndex(i);
+            d.cleanupConfigData();
+        }
     }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
@@ -2656,6 +2743,9 @@ export class I2cDevice extends ConfigItem {
         if (typeof this.data.info === 'undefined') this.info = {};
         return data;
     }
+    public cleanupConfigData() {
+        this.feeds.removeInvalidIds();
+    }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get name(): string { return this.data.name; }
@@ -2692,6 +2782,34 @@ export class I2cDevice extends ConfigItem {
     public getDeviceType() {
         return cont.analogDevices.find(elem => elem.id === this.typeId);
     }
+    public async verifyDeviceFeed(data): Promise<DeviceFeed> {
+        try {
+            let feed: DeviceFeed;
+            // Theoretically you shouldn't set this up for multiple feeds but if they do then we will update all of them.
+            for (let i = 0; i < this.feeds.length; i++) {
+                let f:DeviceFeed = this.feeds.getItemByIndex(i);
+                let bOptions = false;
+                if (typeof f.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && f.options.id === data.options.id) bOptions = true;
+                if (f.connectionId === data.connectionId &&
+                    bOptions &&
+                    f.sendValue === data.sendValue &&
+                    f.eventName === data.eventName &&
+                    f.property === data.property) {
+                    feed = f;
+                    // Ok so we have a feed that matches our needs.  We need to set it.
+                    data.id = f.id;
+                    await this.setDeviceFeed(data);
+                }
+            }
+            if (typeof feed === 'undefined') {
+                // There is not a feed that matches our needs so we need to add one.  Setting the id to -1 will trigger an add.
+                data.id = -1;
+                feed = await this.setDeviceFeed(data);
+            }
+            return feed;
+        }
+        catch (err) { return Promise.reject(err); }
+    }
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -2714,7 +2832,7 @@ export class I2cDevice extends ConfigItem {
                 // We are adding.
                 feedId = (this.feeds.getMaxId() || 0) + 1;
                 connectionId = parseInt(data.connectionId, 10);
-                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
+                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied ${data.connectionId}.`));
             }
             connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
             if (connectionId !== -1 && typeof connection === 'undefined') {
@@ -2725,6 +2843,7 @@ export class I2cDevice extends ConfigItem {
             feed.connectionId = connectionId;
             feed.set(data);
             feed.id = feedId;
+            
             // Set this on the bus.
             return Promise.resolve(feed);
         }
@@ -2746,7 +2865,7 @@ export class I2cDevice extends ConfigItem {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
             if (isNaN(feedId)) return;
             let feed: DeviceFeed;
-            if (feedId !== -1) {
+            if (feedId >= 0) {
                 // Search by feed id
                 return this.feeds.find(elem => elem.id === feedId);
             }
@@ -2890,6 +3009,12 @@ export class SpiController extends ConfigItem {
         if (typeof this.data.channels === 'undefined') this.data.channels = [];
         return data;
     }
+    public cleanupConfigData() {
+        for (let i = 0; i < this.channels.length; i++) {
+            let c = this.channels.getItemByIndex(i);
+            c.cleanupConfigData();
+        }
+    }
     public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
     public set isActive(val: boolean) { this.setDataVal('isActive', val); }
     public get busNumber(): number { return this.data.busNumber; }
@@ -3030,6 +3155,9 @@ export class SpiChannel extends ConfigItem {
         if (typeof this.data.feeds === 'undefined') this.data.feeds = [];
         return data;
     }
+    public cleanupConfigData() {
+        this.feeds.removeInvalidIds();
+    }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
@@ -3074,6 +3202,34 @@ export class SpiChannel extends ConfigItem {
             }
         } catch (err) { logger.error(`Error restoring spi channel #${this.id}`); }
     }
+    public async verifyDeviceFeed(data): Promise<DeviceFeed> {
+        try {
+            let feed: DeviceFeed;
+            // Theoretically you shouldn't set this up for multiple feeds but if they do then we will update all of them.
+            for (let i = 0; i < this.feeds.length; i++) {
+                let f: DeviceFeed = this.feeds.getItemByIndex(i);
+                let bOptions = false;
+                if (typeof f.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && f.options.id === data.options.id) bOptions = true;
+                if (f.connectionId === data.connectionId &&
+                    bOptions &&
+                    f.sendValue === data.sendValue &&
+                    f.eventName === data.eventName &&
+                    f.property === data.property) {
+                    feed = f;
+                    // Ok so we have a feed that matches our needs.  We need to set it.
+                    data.id = f.id;
+                    await this.setDeviceFeed(data);
+                }
+            }
+            if (typeof feed === 'undefined') {
+                // There is not a feed that matches our needs so we need to add one.  Setting the id to -1 will trigger an add.
+                data.id = -1;
+                feed = await this.setDeviceFeed(data);
+            }
+            return feed;
+        }
+        catch (err) { return Promise.reject(err); }
+    }
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -3095,7 +3251,7 @@ export class SpiChannel extends ConfigItem {
                 feedId = (this.feeds.getMaxId() || 0) + 1;
                 connectionId = parseInt(data.connectionId, 10);
                 if (isNaN(connectionId))
-                    return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
+                    return Promise.reject(new Error(`The feed connection identifier was not supplied ${data.connectionId}.`));
             }
             connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
             if (connectionId !== -1 && typeof connection === 'undefined')
@@ -3206,6 +3362,12 @@ export class GenericDeviceController extends ConfigItem {
         if (typeof this.data.detected === 'undefined') this.data.detected = [];
         if (typeof this.data.options === 'undefined') this.data.options = {};
         return data;
+    }
+    public cleanupConfigData() {
+        for (let i = 0; i < this.devices.length; i++) {
+            let dev = this.devices.getItemByIndex(i);
+            dev.cleanupConfigData();
+        }
     }
     // public get id(): number { return this.data.id; }
     // public set id(val: number) { this.setDataVal('id', val); }
@@ -3476,6 +3638,9 @@ export class GenericDevice extends ConfigItem {
         if (typeof this.data.triggers === 'undefined') this.data.triggers = [];
         if (typeof this.data.feeds === 'undefined') this.data.feeds = [];
     }
+    public cleanupConfigData() {
+        this.feeds.removeInvalidIds();
+    }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get name(): string { return this.data.name; }
@@ -3525,6 +3690,34 @@ export class GenericDevice extends ConfigItem {
             gdc.resetDeviceTriggers(this.id);
         } catch (err) { return Promise.reject(new Error(`Error deleting connection from Generic device ${this.id}-${this.name}`)); }
     }
+    public async verifyDeviceFeed(data): Promise<DeviceFeed> {
+        try {
+            let feed: DeviceFeed;
+            // Theoretically you shouldn't set this up for multiple feeds but if they do then we will update all of them.
+            for (let i = 0; i < this.feeds.length; i++) {
+                let f: DeviceFeed = this.feeds.getItemByIndex(i);
+                let bOptions = false;
+                if (typeof f.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && f.options.id === data.options.id) bOptions = true;
+                if (f.connectionId === data.connectionId &&
+                    bOptions &&
+                    f.sendValue === data.sendValue &&
+                    f.eventName === data.eventName &&
+                    f.property === data.property) {
+                    feed = f;
+                    // Ok so we have a feed that matches our needs.  We need to set it.
+                    data.id = f.id;
+                    await this.setDeviceFeed(data);
+                }
+            }
+            if (typeof feed === 'undefined') {
+                // There is not a feed that matches our needs so we need to add one.  Setting the id to -1 will trigger an add.
+                data.id = -1;
+                feed = await this.setDeviceFeed(data);
+            }
+            return feed;
+        }
+        catch (err) { return Promise.reject(err); }
+    }
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -3542,7 +3735,7 @@ export class GenericDevice extends ConfigItem {
                 // We are adding.
                 feedId = (this.feeds.getMaxId() || 0) + 1;
                 connectionId = parseInt(data.connectionId, 10);
-                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
+                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied ${data.connectionId}.`));
             }
             connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
             if (connectionId !== -1 && typeof connection === 'undefined') return Promise.reject(new Error(`The feed connection was not found at id ${connectionId}`));
@@ -3683,6 +3876,12 @@ export class OneWireController extends ConfigItem {
         if (typeof this.data.buses === 'undefined') this.data.buses = [];
         if (typeof this.data.detected === 'undefined') this.data.detected = [];
         return data;
+    }
+    public cleanupConfigData() {
+        for (let i = 0; i < this.buses.length; i++) {
+            let b = this.buses.getItemByIndex(i);
+            b.cleanupConfigData();
+        }
     }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
@@ -4025,6 +4224,12 @@ export class OneWireBus extends ConfigItem {
         if (typeof this.data.isActive === 'undefined') this.isActive = true;
         if (typeof this.data.devices === 'undefined') this.data.devices = [];
         return data;
+    }
+    public cleanupConfigData() {
+        for (let i = 0; i < this.devices.length; i++) {
+            let d = this.devices.getItemByIndex(i);
+            d.cleanupConfigData();
+        }
     }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
@@ -4468,6 +4673,9 @@ export class OneWireDevice extends ConfigItem {
         if (typeof this.data.info === 'undefined') this.info = {};
         return data;
     }
+    public cleanupConfigData() {
+        this.feeds.removeInvalidIds();
+    }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
     public get name(): string { return this.data.name; }
@@ -4504,6 +4712,34 @@ export class OneWireDevice extends ConfigItem {
     public getDeviceType() {
         return cont.analogDevices.find(elem => elem.id === this.typeId);
     }
+    public async verifyDeviceFeed(data): Promise<DeviceFeed> {
+        try {
+            let feed: DeviceFeed;
+            // Theoretically you shouldn't set this up for multiple feeds but if they do then we will update all of them.
+            for (let i = 0; i < this.feeds.length; i++) {
+                let f: DeviceFeed = this.feeds.getItemByIndex(i);
+                let bOptions = false;
+                if (typeof f.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && f.options.id === data.options.id) bOptions = true;
+                if (f.connectionId === data.connectionId &&
+                    bOptions &&
+                    f.sendValue === data.sendValue &&
+                    f.eventName === data.eventName &&
+                    f.property === data.property) {
+                    feed = f;
+                    // Ok so we have a feed that matches our needs.  We need to set it.
+                    data.id = f.id;
+                    await this.setDeviceFeed(data);
+                }
+            }
+            if (typeof feed === 'undefined') {
+                // There is not a feed that matches our needs so we need to add one.  Setting the id to -1 will trigger an add.
+                data.id = -1;
+                feed = await this.setDeviceFeed(data);
+            }
+            return feed;
+        }
+        catch (err) { return Promise.reject(err); }
+    }
     public async setDeviceFeed(data): Promise<DeviceFeed> {
         try {
             let feedId = typeof data.id !== 'undefined' ? parseInt(data.id, 10) : typeof data.feedId !== 'undefined' ? parseInt(data.feedId, 10) : -1;
@@ -4526,7 +4762,7 @@ export class OneWireDevice extends ConfigItem {
                 // We are adding.
                 feedId = (this.feeds.getMaxId() || 0) + 1;
                 connectionId = parseInt(data.connectionId, 10);
-                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied.`));
+                if (isNaN(connectionId)) return Promise.reject(new Error(`The feed connection identifier was not supplied ${data.connectionId}.`));
             }
             connection = connectionId !== -1 ? cont.connections.find(elem => elem.id === connectionId) : undefined;
             if (connectionId !== -1 && typeof connection === 'undefined') {

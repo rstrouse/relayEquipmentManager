@@ -607,6 +607,13 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+        app.put('/config/verifyFeed', async (req, res, next) => {
+            try {
+                await cont.verifyDeviceFeed(req.body);
+                res.status(200).send(cont.getExtended());
+            }
+            catch (err) { next(err); }
+        });
         app.put('/state/setPinState', async (req, res, next) => {
             try {
                 let pin = await cont.gpio.setPinStateAsync(parseInt(req.body.headerId, 10), parseInt(req.body.gpioId, 10), req.body);
