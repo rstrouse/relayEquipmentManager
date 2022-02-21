@@ -1298,6 +1298,9 @@ export class AtlasEZOprs extends AtlasEZO {
             this.suspendPolling = true;
             let result = '10.2';
             if (!this.i2c.isMock) result = await this.execCommand('R', 900);
+            else {
+                result = (10 + Math.random()).toFixed(2);
+            }
             let val = parseFloat(result);
             this.values.pressure = val;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
@@ -1694,7 +1697,6 @@ export class AtlasEZOec extends AtlasEZO {
                 });
         }
     }
-
     public setValue(prop: string, value) {
         switch (prop) {
             case 'tempC':
@@ -1705,7 +1707,6 @@ export class AtlasEZOec extends AtlasEZO {
                 break;
         }
     }
-
     public async setOptions(opts): Promise<any> {
         try {
             this.suspendPolling = true;
@@ -1784,27 +1785,37 @@ export class AtlasEZOec extends AtlasEZO {
     }
     public async getParameterInfo(): Promise<boolean> {
         try {
-            let result = await this.execCommand('O,?', 300);
-            if (typeof result !== 'undefined') {
-                let arrDims = result.toUpperCase().split(',');
-                if (typeof this.options.parameters === 'undefined') this.options.parameters = {};
-                this.options.parameters.conductivity = arrDims.indexOf('EC') >= 0;
-                this.options.parameters.dissolvedSolids = arrDims.indexOf('TDS') >= 0;
-                this.options.parameters.salinity = arrDims.indexOf('S') > 0;
-                this.options.parameters.specificGravity = arrDims.indexOf('SG') > 0;
+            if (!this.i2c.isMock) {
+                let result = await this.execCommand('O,?', 300);
+                if (typeof result !== 'undefined') {
+                    let arrDims = result.toUpperCase().split(',');
+                    if (typeof this.options.parameters === 'undefined') this.options.parameters = {};
+                    this.options.parameters.conductivity = arrDims.indexOf('EC') >= 0;
+                    this.options.parameters.dissolvedSolids = arrDims.indexOf('TDS') >= 0;
+                    this.options.parameters.salinity = arrDims.indexOf('S') > 0;
+                    this.options.parameters.specificGravity = arrDims.indexOf('SG') > 0;
+                }
+                else logger.warn(`${this.device.name} error getting parameter info result was undefined`);
             }
-            else logger.warn(`${this.device.name} error getting parameter info result was undefined`);
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
     }
     public async setParameterInfo(opts): Promise<boolean> {
         try {
-            if (typeof opts.conductivity !== 'undefined' && utils.makeBool(opts.conductivity) !== this.options.parameters.conductivity) await this.execCommand(`O,EC,${utils.makeBool(opts.conductivity) ? '1' : '0'}`, 300);
-            if (typeof opts.dissolvedSolids !== 'undefined' && utils.makeBool(opts.dissolvedSolids) !== this.options.parameters.dissolvedSolids) await this.execCommand(`O,TDS,${utils.makeBool(opts.dissolvedSolids) ? '1' : '0'}`, 300);
-            if (typeof opts.salinity !== 'undefined' && utils.makeBool(opts.salinity) !== this.options.parameters.salinity) await this.execCommand(`O,S,${utils.makeBool(opts.salinity) ? '1' : '0'}`, 300);
-            if (typeof opts.specificGravity !== 'undefined' && utils.makeBool(opts.specificGravity) !== this.options.parameters.specificGravity) await this.execCommand(`O,SG,${utils.makeBool(opts.specificGravity) ? '1' : '0'}`, 300);
-            await this.getParameterInfo();
+            if (this.i2c.isMock) {
+                if (typeof opts.conductivity !== 'undefined') this.options.parameters.conductivity = utils.makeBool(opts.conductivity);
+                if (typeof opts.dissolvedSolids !== 'undefined') this.options.parameters.dissolvedSolids = utils.makeBool(opts.dissolvedSolids);
+                if (typeof opts.salinity !== 'undefined') this.options.parameters.salinity = utils.makeBool(opts.salinity);
+                if (typeof opts.specificGravity !== 'undefined') this.options.parameters.specificGravity = utils.makeBool(opts.specificGravity);
+            }
+            else {
+                if (typeof opts.conductivity !== 'undefined' && utils.makeBool(opts.conductivity) !== this.options.parameters.conductivity) await this.execCommand(`O,EC,${utils.makeBool(opts.conductivity) ? '1' : '0'}`, 300);
+                if (typeof opts.dissolvedSolids !== 'undefined' && utils.makeBool(opts.dissolvedSolids) !== this.options.parameters.dissolvedSolids) await this.execCommand(`O,TDS,${utils.makeBool(opts.dissolvedSolids) ? '1' : '0'}`, 300);
+                if (typeof opts.salinity !== 'undefined' && utils.makeBool(opts.salinity) !== this.options.parameters.salinity) await this.execCommand(`O,S,${utils.makeBool(opts.salinity) ? '1' : '0'}`, 300);
+                if (typeof opts.specificGravity !== 'undefined' && utils.makeBool(opts.specificGravity) !== this.options.parameters.specificGravity) await this.execCommand(`O,SG,${utils.makeBool(opts.specificGravity) ? '1' : '0'}`, 300);
+                await this.getParameterInfo();
+            }
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); }
@@ -1824,7 +1835,6 @@ export class AtlasEZOec extends AtlasEZO {
         }
         catch (err) { this.logError(err); }
     }
-
     public async calibrate(data): Promise<I2cDevice> {
         try {
             this.suspendPolling = true;
@@ -1878,7 +1888,7 @@ export class AtlasEZOec extends AtlasEZO {
     }
     public async getTempCompensation(): Promise<boolean> {
         try {
-            let result = await this.execCommand('T,?', 300);
+            let result = this.i2c.isMock ? `T,${this.values.temperature || 25}` : await this.execCommand('T,?', 300);
             if (typeof result !== 'undefined') {
                 let arrDims = result.split(',');
                 this.values.temperature = parseFloat(arrDims[1] || '25');
@@ -1893,7 +1903,7 @@ export class AtlasEZOec extends AtlasEZO {
     public async setTempCompensation(value: number): Promise<boolean> {
         try {
             if (!utils.makeBool(this.options.suspendTempFeed)) {
-                await this.execCommand(`T,${value.toFixed(1)}`, 300);
+                if (!this.i2c.isMock) await this.execCommand(`T,${value.toFixed(1)}`, 300);
                 this.values.temperature = value;
             }
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
@@ -1941,45 +1951,46 @@ export class AtlasEZOec extends AtlasEZO {
             if (typeof tempCompensation !== 'undefined' && this.version < 2.13 && !utils.makeBool(this.options.suspendTempFeed)) {
                 if (tempCompensation !== this.values.temperature) await this.setTempCompensation(tempCompensation);
             }
-            // This is the expected order of data coming from the probe.
-            //EC,TDS,S,SG
+            // If no output values are selected then we want to bail here because it will 
+            //throw a no values error.
             if (!this.options.parameters.conductivity && !this.options.parameters.dissolvedSolids
                 && !this.options.parameters.salinity && !this.options.parameters.specificGravity) {
-                if (!this.i2c.isMock) return Promise.resolve(0);
-                // Return here otherwise we get a bs error.
-                //this.values.conductivity = this.values.dissolvedSolids = this.values.salinity = this.values.specificGravity = null;
-                //return Promise.resolve(0);
+                if (!this.i2c.isMock) return 0;
             }
-
-            let result = typeof tempCompensation !== 'undefined' && this.version >= 2.13 && !utils.makeBool(this.options.suspendTempFeed) ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 600);
             if (!this.i2c.isMock) {
+                // This is the expected order of data coming from the probe.
+                //EC,TDS,S,SG
+                let result = typeof tempCompensation !== 'undefined' && this.version >= 2.13 && !utils.makeBool(this.options.suspendTempFeed) ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 600);
                 let arrDims = result.split(',');
                 this.values.conductivity = this.options.parameters.conductivity ? parseFloat(arrDims[0]) : null;
                 this.values.dissolvedSolids = this.options.parameters.dissolvedSolids ? parseFloat(arrDims[1]) : null;
                 this.values.salinity = this.options.parameters.salinity ? parseFloat(arrDims[2]) : null;
                 this.values.specificGravity = this.options.parameters.specificGravity ? parseFloat(arrDims[3]) : null;
+                if (typeof tempCompensation !== 'undefined') this.values.temperature = tempCompensation;
+                if (!this.options.parameters.conductivity && this.options.parameters.dissolvedSolids) this.values.conductivity = this.options.tdsFactor !== 0 ? Math.round(this.values.dissolvedSolids / this.options.tdsFactor) : null;
+                if (!this.options.parameters.dissolvedSolids) {
+                    this.values.dissolvedSolids = isNaN(this.values.conductivity) ? null : this.values.conductivity * this.options.tdsFactor;
+                }
+                if (!this.options.parameters.salinity) {
+                    this.values.salinity = isNaN(this.values.conductivity) ? null : this.toSalinity(this.values.conductivity, this.values.temperature);
+                }
+                this.values.saltLevel = this.values.salinity * 1000;
+                if (!this.options.parameters.specificGravity) {
+                    this.values.specificGravity = Math.round(this.toDensity(this.values.salinity, this.values.temperature) / 1000);
+                }
+                if (!utils.makeBool(this.options.suspendTempFeed)) await this.getTempCompensation();
             }
             else {
-                this.values.conductivity = 6724;
-                this.values.dissolvedSolids = 3630.96;
-                this.values.salinity = 3.676;
-                this.values.specificGravity = 1.04
+                if (typeof this.values.conductivity === 'undefined') this.values.conductivity = 6200;
+                let chg = Math.round(Math.random() > .5 ? -(Math.random() * 20) : (Math.random() * 20));
+                this.values.conductivity = Math.max(5700, Math.min(7700, this.values.conductivity + chg));
+                this.values.dissolvedSolids = this.values.conductivity * this.options.tdsFactor;
+                this.values.salinity = this.toSalinity(this.values.conductivity, this.values.temperature);
+                this.values.saltLevel = this.values.salinity * 1000;
+                this.values.specificGravity = Math.round((this.toDensity(this.values.salinity, this.values.temperature) / 1000) * 100) / 100;
             }
-            if (typeof tempCompensation !== 'undefined') this.values.temperature = tempCompensation;
-            if (!this.options.parameters.conductivity && this.options.parameters.dissolvedSolids) this.values.conductivity = this.options.tdsFactor !== 0 ? Math.round(this.values.dissolvedSolids / this.options.tdsFactor) : null;
-            if (!this.options.parameters.dissolvedSolids) {
-                this.values.dissolvedSolids = isNaN(this.values.conductivity) ? null : this.values.conductivity * this.options.tdsFactor;
-            }
-            if (!this.options.parameters.salinity) {
-                this.values.salinity = isNaN(this.values.conductivity) ? null : this.toSalinity(this.values.conductivity, this.values.temperature);
-            }
-            this.values.saltLevel = this.values.salinity * 1000;
-            if (!this.options.parameters.specificGravity) {
-                this.values.specificGravity = Math.round(this.toDensity(this.values.salinity, this.values.temperature) / 1000);
-            }
-            if(!utils.makeBool(this.options.suspendTempFeed)) await this.getTempCompensation();
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
-            return Promise.resolve(this.values.conductivity);
+            return this.values.conductivity;
         }
         catch (err) { this.logError(err); }
     }
@@ -2176,7 +2187,7 @@ export class AtlasEZOhum extends AtlasEZO {
             if (!['C', 'F'].includes(value.toUpperCase())) return Promise.reject(new Error(`Cannot set units to ${value}`));
             let units = this.values.units || 'C';
             this.values.units = value.toUpperCase();
-            this.options.units = units.toUpperCase();
+            this.options.units = value.toUpperCase();
             this.values.temperature = typeof this.values.temperature === 'number' ? utils.convert.temperature.convertUnits(this.values.temperature, units, value) : null;
             this.values.dewpoint = typeof this.values.dewpoint === 'number' ? utils.convert.temperature.convertUnits(this.values.dewpoint, units, value) : null;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
@@ -2249,9 +2260,11 @@ export class AtlasEZOhum extends AtlasEZO {
                 }
             }
             else {
-                this.values.humidity = 30;
-                this.values.temperature = 50;
-                this.values.dewpoint = 37;
+                let chg = Math.random() < .5 ? -Math.random() : Math.random();
+                this.values.humidity = Math.round(Math.max(10, Math.min(100, (this.values.humidity || 30) + chg)) * 100) / 100;
+                let t = Math.round(Math.max(Math.min(40, utils.convert.temperature.convertUnits(this.values.temperature || 25, units, 'C') + chg), 10) * 1000) / 1000;
+                this.values.temperature = utils.convert.temperature.convertUnits(t, 'C', units);
+                this.values.dewpoint = utils.convert.temperature.convertUnits(t - 7, 'C', units);
             }
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(this.values.conductivity);

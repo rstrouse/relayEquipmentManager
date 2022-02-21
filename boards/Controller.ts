@@ -865,6 +865,7 @@ export class DeviceFeed extends ConfigItem {
             this.isActive = false;
         if (typeof this.data.changesOnly === 'undefined')
             this.changesOnly = true;
+        if (typeof this.data.sampling === 'undefined') this.data.sampling = 1;
         return data;
     }
     public get id(): number { return this.data.id; }

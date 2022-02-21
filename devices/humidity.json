@@ -93,6 +93,29 @@
                     "labelText": "LED Enabled",
                     "style": { "marginLeft": "1rem" }
                   }
+                },
+                {
+                  "bind": "options.readInterval",
+                  "dataType": "int",
+                  "default": false,
+                  "field": {
+                    "binding": "options.readInterval",
+                    "type": "valueSpinner",
+                    "labelText": "Read Interval",
+                    "min": 2000,
+                    "max": 99000,
+                    "canEdit": true,
+                    "fmtMask": "#,##0",
+                    "emptyMask": "--",
+                    "labelAttrs": {
+                      "style": { "paddingRight": ".25rem" }
+                    },
+                    "inputAttrs": {
+                      "style": { "width": "4.5rem" }
+                    },
+                    "units": "ms",
+                    "style": { "marginLeft": ".25rem", "display": "block" }
+                  }
                 }
               ]
             },
