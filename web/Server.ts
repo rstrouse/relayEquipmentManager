@@ -138,7 +138,7 @@ export class HttpServer extends ProtoServer {
     public server: http.Server;
     public sockServer: SocketIoServer<ClientToServerEvents, ServerToClientEvents>;
     private _nameSpace: Namespace;
-    private _sockets: RemoteSocket<ServerToClientEvents>[] = [];
+    private _sockets: RemoteSocket<ServerToClientEvents, any>[] = [];
     public emitToClients(evt: string, ...data: any) {
         if (this.isRunning) {
             this._nameSpace.emit(evt, ...data);
