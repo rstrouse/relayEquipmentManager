@@ -586,6 +586,13 @@ export class i2cRelay extends i2cDeviceBase {
         }
         return val;
     }
+    public setValue(prop: string, value) {
+        switch (prop) {
+            case 'relayState':
+                this.setRelayState(value);
+                break;
+        }
+    }
     public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
         try {
             let relay = this.relays.find(elem => { return elem.id === opts.id });
