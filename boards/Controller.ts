@@ -2788,9 +2788,10 @@ export class I2cDevice extends ConfigItem {
             let feed: DeviceFeed;
             // Theoretically you shouldn't set this up for multiple feeds but if they do then we will update all of them.
             for (let i = 0; i < this.feeds.length; i++) {
-                let f:DeviceFeed = this.feeds.getItemByIndex(i);
+                let f: DeviceFeed = this.feeds.getItemByIndex(i);
+                if (typeof f === 'undefined') continue;
                 let bOptions = false;
-                if (typeof f.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && f.options.id === data.options.id) bOptions = true;
+                if (typeof f.options !== 'undefined' && typeof f.options.id !== 'undefined' && typeof data.options.id !== 'undefined' && f.options.id === data.options.id) bOptions = true;
                 if (f.connectionId === data.connectionId &&
                     bOptions &&
                     f.sendValue === data.sendValue &&
