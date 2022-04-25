@@ -33,9 +33,9 @@ export class GpioController {
             return this;
         } catch (err) { logger.error(`Error stopping GPIO controller :${err.message}`); }
     }
-    public reset() {
-        this.stopAsync();
-        this.init();
+    public async reset() {
+        await this.stopAsync();
+        await this.init();
     }
     private translateState(direction: string, state: string) {
         switch (state) {

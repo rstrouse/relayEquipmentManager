@@ -924,8 +924,14 @@ export class Feed {
     constructor(feed: DeviceFeed) {
         this.server = connBroker.findServer(feed.connectionId);
         this.feed = feed;
-        if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0)
-            this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
+        if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0) {
+            try {
+                this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
+            } catch (err) {
+                logger.error(`Script error processing payload expression ${err.message}:\n`);
+                console.log(feed.payloadExpression);
+            }
+        }
     }
     public async send(dev: any) {
         try {

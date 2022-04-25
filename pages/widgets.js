@@ -4099,6 +4099,7 @@ $.ui.position.fieldTip = {
                 inputAttrs: { style: { width: "5rem" } }
             })
             line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(dlg).checkbox({ labelText: 'Reverse Bias', binding: 'reverseBias' });
             dataBinder.bind(dlg, channel);
             dlg.css({ overflow: 'visible' });
         },

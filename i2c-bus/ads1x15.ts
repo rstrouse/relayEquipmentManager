@@ -314,7 +314,7 @@ export class ads1x15 extends i2cDeviceBase {
                     // 65355 = max
                     // 4.096 = pga
                     // 21,265 / 32,767 * 4.096
-                    let voltage = this.getVoltageFromValue(value, channels[i].pga);
+                    let voltage = this.getVoltageFromValue(value, channels[i].pga, channels[i].reverseBias);
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
                     if (typeof valElem !== 'undefined') {
                         valElem.value = value;
@@ -367,12 +367,13 @@ export class ads1x15 extends i2cDeviceBase {
         //    return value;
         //}
     }
-    private getVoltageFromValue(value, pga) {
+    private getVoltageFromValue(value, pga, reverseBias) {
         let max = ads1x15.thresholdValues[this.device.options.adcType];
         // positive values must be 1 less than max range value (e.g. full scale of 12 bit ADC => 2^(12-1)-1 => -2048 to 2047)
         max = value > 0 ? max - 1 : max;
         logger.silly(`${this.options.name} Convert Voltage ${value} / ${max} * ${pga} = ${value / max * pga}`);
-        return value / max * pga; // value / mx = % of scale, scale * pga = Volts
+        let volts = value / max * pga; // value / mx = % of scale, scale * pga = Volts
+        return reverseBias ? pga - volts : volts;
     }
 
     public async setOptions(opts): Promise<any> {
