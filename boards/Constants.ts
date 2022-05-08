@@ -77,7 +77,7 @@ export class valueMaps {
     ]);
     public connectionTypes: valueMap = new valueMap([
         [-1, {name: 'internal', desc: 'Internal', inst: 'Internal connection to defined devices'}],
-        [0, { name: 'njspc', desc: 'nodejs-PoolController', inst: 'Socket connection to nodejs-PoolController server.', urn:'urn:schemas-upnp-org:device:PoolController:1', bindings:'njspc.json' }],
+        [0, { name: 'njspc', desc: 'nodejs-PoolController', inst: 'Socket connection to nodejs-PoolController server.', urn:'urn:schemas-tagyoureit-org:device:PoolController:1', bindings:'njspc.json' }],
         [1, { name: 'webSocket', desc: 'Web Socket', inst: 'Web socket connection.', bindings:'webservice.json' }],
         //[2, { name: 'wsEndpoint', desc: 'Service Endpoint', inst: 'End points that can be called from an external process.' }],
         [3, { name: 'mqttClient', desc: 'MQTT Client', inst: 'A client connection to an MQTT broker.' }]

@@ -319,7 +319,7 @@ export class SsdpServer extends ProtoServer {
             this.modelName = `REM v${cont.appVersion}`;
             this.modelNumber = `REM${cont.appVersion.replace(/\./g, '-')}`;
             // todo: should probably check if http/https is enabled at this point
-            let port = config.getSection('web').servers.http.port || 7777;
+            let port = config.getSection('web').servers.http.port || 8080;
             this.upnpPath = 'http://' + webApp.ip() + ':' + port + '/upnp.xml';
             let SSDP = ssdp.Server;
             this.server = new SSDP({
