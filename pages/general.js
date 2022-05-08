@@ -222,7 +222,7 @@
                         for (var i = 0; i < servers.length; i++) {
                             var serv = servers[i];
                             var divSelection = $('<div></div>').addClass('picButton').addClass('REM').addClass('server').addClass('btn').css({ maxWidth: '227px', height: '97px', verticalAlign: 'middle', minWidth: '210px' }).appendTo(line);
-                            $('<div></div>').addClass('body-text').css({ textAlign: 'center' }).appendTo(divSelection).append('<i class="fab fa-node-js" style="font-size:30pt;color:green;vertical-align:middle;"></i>').append('<span style="vertical-align:middle;"> REM Controller</span>');
+                            $('<div></div>').addClass('body-text').css({ textAlign: 'center' }).appendTo(divSelection).append('<i class="fab fa-node-js" style="font-size:30pt;color:green;vertical-align:middle;"></i>').append(`<span style="vertical-align:middle;">${server.desc}</span>`);
                             var hostname = serv.hostnames && typeof serv.hostnames !== 'undefined' && serv.hostnames.length === 1 ? serv.hostnames[0] : serv.hostname;
                             var ipadddress = serv.hostname;
                             serv.resolvedHost = hostname;
