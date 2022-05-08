@@ -360,7 +360,7 @@ export class SsdpServer extends ProtoServer {
                 <modelNumber>${this.modelNumber}</modelNumber>
                 <modelDescription>Mult-protocol device manager</modelDescription>
                 <serialNumber>${this.serialNumber}</serialNumber>
-                <UDN>uuid::${this.deviceUUID}::${this.deviceType}</UDN>
+                <UDN>${this.deviceUUID}::${this.deviceType}</UDN>
                 <serviceList></serviceList>
                 <deviceList></deviceList>
             </device>
