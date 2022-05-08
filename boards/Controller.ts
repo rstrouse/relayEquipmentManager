@@ -244,6 +244,7 @@ export class ConfigItemCollection<T> implements IConfigItemCollection {
 
 export class Controller extends ConfigItem {
     constructor(data) { super(data); this.cfgPath = path.posix.join(process.cwd(), '/data/controllerConfig.json'); }
+    public appVersion: string;
     public init() {
         let cfg = this.loadConfigFile(this.cfgPath, {});
         let cfgDefault = this.loadConfigFile(path.posix.join(process.cwd(), '/defaultController.json'), {});
@@ -267,6 +268,7 @@ export class Controller extends ConfigItem {
         this.i2c.cleanupConfigData();
         this.oneWire.cleanupConfigData();
         this.genericDevices.cleanupConfigData();
+        this.appVersion = JSON.parse(fs.readFileSync(path.posix.join(process.cwd(), '/package.json'), 'utf8')).version;
 
     }
     public async stopAsync(): Promise<Controller> {

@@ -17,12 +17,13 @@ import { Timestamp } from '../boards/Constants';
 import extend = require("extend");
 import { ConfigRoute } from "./services/Config";
 import { StateRoute } from "./services/State";
-
+import { cont } from "../boards/Controller";
 // This class serves data and pages for
 // external interfaces as well as an internal dashboard.
 export class WebServer {
     private _servers: ProtoServer[] = [];
     private family = 'IPv4';
+    private _httpPort: number;
     constructor() { }
     public init() {
         let cfg = config.getSection('web');
@@ -31,16 +32,18 @@ export class WebServer {
             let c = cfg.servers[s];
             switch (s) {
                 case 'http':
-                    srv = new HttpServer();
+                    srv = new HttpServer(s, s);
+                    if (c.enabled !== false) this._httpPort = c.port;
                     break;
                 case 'https':
-                    srv = new Http2Server();
+                    srv = new Http2Server(s, s);
+                    if (c.enabled !== false) this._httpPort = c.port;
                     break;
                 case 'mdns':
-                    srv = new MdnsServer();
+                    srv = new MdnsServer(s, s);
                     break;
                 case 'ssdp':
-                    srv = new SsdpServer();
+                    srv = new SsdpServer(s, s);
                     break;
             }
             if (typeof srv !== 'undefined') {
@@ -74,12 +77,19 @@ export class WebServer {
             this._servers[i].emitToChannel(channel, evt, ...data);
         }
     }
-    public get mdnsServer(): MdnsServer { return this._servers.find(elem => elem instanceof MdnsServer) as MdnsServer; }
-    public deviceXML() { } // override in SSDP
-    public stop() {
-        for (let s in this._servers) {
-            if (typeof this._servers[s].stop() === 'function') this._servers[s].stop();
-        }
+    public async stopAsync() {
+        try {
+            // We want to stop all the servers in reverse order so let's pop them out.
+            for (let s in this._servers) {
+                try {
+                    let serv = this._servers[s];
+                    if (typeof serv.stopAsync === 'function') {
+                        await serv.stopAsync();
+                    }
+                    this._servers[s] = undefined;
+                } catch (err) { console.log(`Error stopping server ${s}: ${err.message}`); }
+            }
+        } catch (err) { `Error stopping servers` }
     }
     private getInterface() {
         const networkInterfaces = os.networkInterfaces();
@@ -98,26 +108,31 @@ export class WebServer {
             }
         }
     }
-    public ip() {
-        return typeof this.getInterface() === 'undefined' ? '0.0.0.0' : this.getInterface().address;
-    }
-    public mac() {
-        return typeof this.getInterface() === 'undefined' ? '00:00:00:00' : this.getInterface().mac;
-    }
+    public ip() { return typeof this.getInterface() === 'undefined' ? '0.0.0.0' : this.getInterface().address; }
+    public mac() { return typeof this.getInterface() === 'undefined' ? '00:00:00:00' : this.getInterface().mac; }
+    public httpPort(): number { return this._httpPort }
+    public findServer(name: string): ProtoServer { return this._servers.find(elem => elem.name === name); }
 }
 class ProtoServer {
+    constructor(name: string, type: string) { this.name = name; this.type = type; }
+    public name: string;
+    public type: string;
+    public uuid: string;
+    public remoteConnectionId: string;
     // base class for all servers.
     public isRunning: boolean = false;
+    public get isConnected() { return this.isRunning; }
     public emitToClients(evt: string, ...data: any) { }
     public emitToChannel(channel: string, evt: string, ...data: any) { }
-    public stop() { }
+    public async init(obj: any) { };
+    public async stopAsync() { }
     protected _dev: boolean = process.env.NODE_ENV !== 'production';
-    // todo: how do we know if the client is using IPv4/IPv6?
 }
 export class Http2Server extends ProtoServer {
     public server: http2.Http2Server;
     public app: Express.Application;
-    public init(cfg) {
+    public async init(cfg) {
+        this.uuid = cfg.uuid;
         if (cfg.enabled) {
             this.app = express();
             // TODO: create a key and cert at some time but for now don't fart with it.
@@ -191,7 +206,7 @@ export class HttpServer extends ProtoServer {
         });
         sock.on('echo', (msg) => { sock.emit('echo', msg); });
     }
-    public init(cfg) {
+    public async init(cfg) {
         if (cfg.enabled) {
             this.app = express();
 
@@ -249,6 +264,15 @@ export class HttpServer extends ProtoServer {
             this.app.use('/codejar', express.static(path.join(process.cwd(), '/node_modules/codejar/'), { maxAge: '60d' }));
             this.app.use('/prismjs', express.static(path.join(process.cwd(), '/node_modules/prismjs/'), { maxAge: '60d' }));
             this.app.use('/themes', express.static(path.join(process.cwd(), '/themes/'), { maxAge: '1d' }));
+            this.app.use('/upnp.xml', async (req, res, next) => {
+                try {
+                    // Put together the upnp device description.
+                    let ssdp = webApp.findServer('ssdp') as SsdpServer;
+                    if (typeof ssdp === 'undefined') throw new Error(`SSDP Server not initialized.  No upnp information available.`);
+                    res.status(200).set('Content-Type', 'text/xml').send(ssdp.deviceXML());
+                } catch (err) { next(err); }
+            });
+
             this.app.get('/config/:section', (req, res) => {
                 return res.status(200).send(config.getSection(req.params.section));
             });
@@ -279,25 +303,34 @@ export class HttpServer extends ProtoServer {
 export class SsdpServer extends ProtoServer {
     // Simple service discovery protocol
     public server: any; //node-ssdp;
-    public init(cfg) {
+    public deviceUUID: string;
+    public upnpPath: string;
+    public modelName: string;
+    public modelNumber: string;
+    public serialNumber: string;
+    public deviceType = 'urn:schemas-rstrouse-org:device:relayEquipmentManager:1';
+    public async init(cfg) {
+        this.uuid = cfg.uuid;
         if (cfg.enabled) {
             let self = this;
-
             logger.info('Starting up SSDP server');
-            var udn = 'uuid:47bb9628-362e-4dd9-8f8F-' + webApp.mac();
+            this.deviceUUID = 'uuid:BA759957-E2F3-4E90-9226-' + webApp.mac().replace(/:/g, '');
+            this.serialNumber = webApp.mac();
+            this.modelName = `REM v${cont.appVersion}`;
+            this.modelNumber = `REM${cont.appVersion.replace(/\./g, '-')}`;
             // todo: should probably check if http/https is enabled at this point
-            var port = config.getSection('web').servers.http.port || 8080;
-            //console.log(port);
-            let location = 'http://' + webApp.ip() + ':' + port + '/device';
-            var SSDP = ssdp.Server;
+            let port = config.getSection('web').servers.http.port || 7777;
+            this.upnpPath = 'http://' + webApp.ip() + ':' + port + '/upnp.xml';
+            let SSDP = ssdp.Server;
             this.server = new SSDP({
+                //customLogger: (...args) => console.log.apply(null, args),
                 logLevel: 'INFO',
-                udn: udn,
-                location: location,
+                udn: this.deviceUUID,
+                location: this.upnpPath,
                 sourcePort: 1900
             });
-            this.server.addUSN('urn:schemas-upnp-org:device:REMController:1');
-
+            this.server.addUSN('upnp:rootdevice'); // This line will make the server show up in windows.
+            this.server.addUSN(this.deviceType);
             // start the server
             this.server.start()
                 .then(function () {
@@ -310,30 +343,37 @@ export class SsdpServer extends ProtoServer {
             });
         }
     }
-    public deviceXML() {
-        let ver = '1.0';
+    public deviceXML(): string {
         let XML = `<?xml version="1.0"?>
-                        <root xmlns="urn:schemas-upnp-org:RelayEqiupmentManager-1-0">
-                            <specVersion>
-                                <major>${ver.split('.')[0]}</major>
-                                <minor>${ver.split('.')[1]}</minor>
-                                <patch>${ver.split('.')[2]}</patch>
-                            </specVersion>
-                            <device>
-                                <deviceType>urn:echo:device:relayEquipmentManager:1</deviceType>
-                                <friendlyName>Relay Equipment Manager</friendlyName> 
-                                <manufacturer>rstouse</manufacturer>
-                                <manufacturerURL>https://github.com/rstrouse/relayEquipmentManager</manufacturerURL>
-                                <modelDescription>An application to expose GPIO to poolController.</modelDescription>
-                                <serialNumber>0</serialNumber>
-                    			<UDN>7BEA57DD-1600-45B1-B379-C907C18F5994-${webApp.mac()}</UDN>
-                                <serviceList></serviceList>
-                            </device>
-                        </root>`;
+        <root xmlns="urn:schemas-upnp-org:device-1-0">
+            <specVersion>
+                <major>1</major>
+                <minor>0</minor>
+            </specVersion>
+            <device>
+                <deviceType>${this.deviceType}</deviceType>
+                <friendlyName>Relay Equipment Manager</friendlyName> 
+                <manufacturer>rstrouse</manufacturer>
+                <manufacturerURL>https://github.com/rstrouse/relayEquipmentManager</manufacturerURL>
+                <presentationURL>http://${webApp.ip()}:${webApp.httpPort()}</presentationURL>
+                <modelName>${this.modelName}</modelName>
+                <modelNumber>${this.modelNumber}</modelNumber>
+                <modelDescription>Mult-protocol device manager</modelDescription>
+                <serialNumber>${this.serialNumber}</serialNumber>
+                <UDN>uuid::${this.deviceUUID}::${this.deviceType}</UDN>
+                <serviceList></serviceList>
+                <deviceList></deviceList>
+            </device>
+        </root>`;
         return XML;
     }
-    public stop() {
-        this.server.stop();
+    public async stopAsync() {
+        try {
+            if (typeof this.server !== 'undefined') {
+                this.server.stop();
+                logger.info(`Stopped SSDP server: ${this.name}`);
+            }
+        } catch (err) { logger.error(`Error stopping SSDP server ${err.message}`); }
     }
 }
 export class MdnsServer extends ProtoServer {
@@ -341,7 +381,7 @@ export class MdnsServer extends ProtoServer {
     public server;
     public mdnsEmitter = new EventEmitter();
     private queries = [];
-    public init(cfg) {
+    public async init(cfg) {
         if (cfg.enabled) {
             logger.info('Starting up MDNS server');
             this.server = multicastdns({ loopback: true });
