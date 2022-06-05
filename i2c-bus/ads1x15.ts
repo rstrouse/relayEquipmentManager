@@ -389,7 +389,8 @@ export class ads1x15 extends i2cDeviceBase {
             if (typeof opts.channels !== 'undefined') this.device.options.channels = opts.channels;
             for (let c of opts.channels) {
 
-                c.pgaMask = this.pga.get(c.pga).pgaMask;
+                let pmap = this.pga.get(c.pga || 2.048) || { pgaMask: 0x0400 };
+                c.pgaMask = pmap.pgaMask;
             }
             this.channels.sort((a, b) => { return a.id - b.id; });
             this.pollReadings();

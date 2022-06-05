@@ -766,6 +766,7 @@ export class i2cRelay extends i2cDeviceBase {
                             await this.setRelayState({ id: relayId, state: state });
                             //logger.info(`Sequencing relay: ${ relay.name } state: ${ state } delay: ${ seq.timeout + (state ? onDelay : offDelay) }`)
                             if (seq.timeout) await utils.wait(seq.timeout + (state ? onDelay : offDelay));
+                            newState = state;
                         }
                         logger.info(`Sent a total of Ons:${nOns} and Offs:${nOffs} to relay`);
                         this.readContinuous();
