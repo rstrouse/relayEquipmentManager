@@ -1249,6 +1249,8 @@ export class GpioPin extends ConfigItem {
         if (typeof this.data.triggers === 'undefined')
             this.data.triggers = [];
         if (typeof this.data.initialState === 'undefined') this.data.initialState = 'last';
+        if (typeof this.data.sequenceOnDelay !== 'number') this.data.sequenceOnDelay = 0;
+        if (typeof this.data.sequenceOffDelay !== 'number') this.data.sequenceOffDelay = 0;
         return data;
     }
     public cleanupConfigData() {
@@ -1275,6 +1277,10 @@ export class GpioPin extends ConfigItem {
     public set name(val: string) { this.setDataVal('name', val); }
     public get debounceTimeout(): number { return this.data.debounceTimeout; }
     public set debounceTimeout(val: number) { this.setDataVal('debounceTimeout', val); }
+    public get sequenceOnDelay(): number { return this.data.sequenceOnDelay; }
+    public set sequenceOnDelay(val: number) { this.setDataVal('sequenceOnDelay', val); }
+    public get sequenceOffDelay(): number { return this.data.sequenceOffDelay; }
+    public set sequenceOffDelay(val: number) { this.setDataVal('sequenceOffDelay', val); }
     public get initialState(): string { return this.data.initialState; }
     public set initialState(val: string) { this.setDataVal('initialState', val); }
     public get triggers(): GpioPinTriggerCollection { return new GpioPinTriggerCollection(this.data, 'triggers'); }
@@ -1322,12 +1328,16 @@ export class GpioPin extends ConfigItem {
             let onv = this.getMapVal('on', vMaps.pinStates);
             let offv = this.getMapVal('off', vMaps.pinStates);
             logger.debug(`Starting sequence: ${data.length}`);
+            let don = this.sequenceOnDelay || 0;
+            let doff = this.sequenceOffDelay || 0;
             for (let i = 0; i < data.length; i++) {
                 let seq = data[i];
                 let mv = utils.makeBool(seq.state || seq.isOn) ? onv : offv;
+                let delay = utils.makeBool(seq.state || seq.isOn) ? don : doff;
                 await gpioCont.writePinAsync(this.headerId, this.id, mv.gpio);
+                if (seq.timeout) delay += seq.timeout;
                 logger.debug(`Setting sequence val:${mv.gpio}`);
-                if (seq.timeout) await utils.wait(seq.timeout);
+                if (delay) await utils.wait(delay);
             }
             resolve(this);
         })

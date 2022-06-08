@@ -109,8 +109,8 @@
                     });
                 }
                 else {
-                    pin.find('div.pnl-input-params').hide();
-                    pin.find('div.pnl-output-params').show();
+                    pin.find('.pnl-input-params').hide();
+                    pin.find('.pnl-output-params').show();
                     el.find('div#tabsGpioPin').each(function () {
                         this.showTab('tabPinTriggers', true);
                     });
@@ -124,6 +124,22 @@
                 columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Pin Direction', style: { width: '250px' } }],
                 items: [{ name: 'on', desc: 'On' }, { name: 'off', desc: 'Off'}, { name: 'last', desc: 'Last State' }], inputAttrs: { style: { width: '7rem' } }, labelAttrs: { style: { width: '7rem' } }
             });
+            line = $('<div></div>').appendTo(pin).addClass('pnl-output-params');
+            let grp = $('<fieldset></fieldset>').appendTo(line);
+            $('<legend></legend>').appendTo(grp).text('Sequence Delays');
+            $('<div></div>').appendTo(grp).html(`Use the delay settings below to add a delay for relay on/off sequences.  This will insert an additional delay time to ensure the relay does not cycle too fast.`).addClass('script-advanced-instructions').css({ maxWidth: '17rem' });
+            line = $('<div></div>').appendTo(grp);
+
+            $('<div></div>').appendTo(grp).valueSpinner({
+                required: false, canEdit: true, binding: 'sequenceOnDelay', labelText: 'On Delay', fmtMask: '#,##0', dataType: 'number', step: 1,
+                min: 0, max: 10000, units: `ms`, inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '5rem' } }
+            });
+            line = $('<div></div>').appendTo(grp);
+            $('<div></div>').appendTo(line).valueSpinner({
+                required: false, canEdit: true, binding: 'sequenceOffDelay', labelText: 'Off Delay', fmtMask: '#,##0', dataType: 'number', step: 1,
+                min: 0, max: 10000, units: `ms`, inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '5rem' } }
+            });
+
             line = $('<div></div>').appendTo(pin).addClass('pnl-input-params').hide();
             $('<div></div>').appendTo(line).valueSpinner({
                 required: true, canEdit: true, binding: 'debounceTimeout', labelText: 'Debounce', fmtMask: '#,##0', dataType: 'number', step: 1,
