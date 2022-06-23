@@ -3598,6 +3598,7 @@ $.ui.position.fieldTip = {
             }
         },
         _destroy: function () {
+            var self = this, o = self.options, el = self.element;
             o.jar.destroy();
             o.jar = undefined;
         }
