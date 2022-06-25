@@ -1177,7 +1177,7 @@
                         "canEdit": "true",
                         "value": 3.3,
                         "min": 0,
-                        "max": 12,
+                        "max": 48,
                         "step": 0.1,
                         "dataType": "number",
                         "fmtMask": "0.0###",
