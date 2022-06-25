@@ -129,12 +129,12 @@
                     },
                     "labelAttrs": {
                       "style": {
-                        "width": "4.5rem"
+                        "width": "4rem"
                       }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "2.5rem",
+                        "width": "3rem",
                         "textAlign": "right"
                       }
                     }
@@ -156,12 +156,12 @@
                     },
                     "labelAttrs": {
                       "style": {
-                        "width": "4.5rem"
+                        "width": "4rem"
                       }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "2.5rem",
+                        "width": "3rem",
                         "textAlign": "right"
                       }
                     },
@@ -199,12 +199,12 @@
                     },
                     "labelAttrs": {
                       "style": {
-                        "width": "4.5rem"
+                        "width": "4rem"
                       }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "2.5rem",
+                        "width": "3rem",
                         "textAlign": "right"
                       }
                     }
@@ -226,12 +226,12 @@
                     },
                     "labelAttrs": {
                       "style": {
-                        "width": "4.5rem"
+                        "width": "4rem"
                       }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "2.5rem",
+                        "width": "3rem",
                         "textAlign": "right"
                       }
                     },
@@ -269,12 +269,12 @@
                     },
                     "labelAttrs": {
                       "style": {
-                        "width": "4.5rem"
+                        "width": "4rem"
                       }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "2.5rem",
+                        "width": "3rem",
                         "textAlign": "right"
                       }
                     }
@@ -296,12 +296,12 @@
                     },
                     "labelAttrs": {
                       "style": {
-                        "width": "4.5rem"
+                        "width": "4rem"
                       }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "2.5rem",
+                        "width": "3rem",
                         "textAlign": "right"
                       }
                     },
@@ -339,12 +339,12 @@
                     },
                     "labelAttrs": {
                       "style": {
-                        "width": "4.5rem"
+                        "width": "4rem"
                       }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "2.5rem",
+                        "width": "3rem",
                         "textAlign": "right"
                       }
                     }
@@ -366,12 +366,12 @@
                     },
                     "labelAttrs": {
                       "style": {
-                        "width": "4.5rem"
+                        "width": "4rem"
                       }
                     },
                     "inputAttrs": {
                       "style": {
-                        "width": "2.5rem",
+                        "width": "3rem",
                         "textAlign": "right"
                       }
                     },
@@ -426,7 +426,22 @@
                     "options": {
                       "maxChannels": 4
                     }
+                  },
+                  {
+                    "name": "proni1115",
+                    "desc": "Pimoroni ADS1115",
+                    "options": {
+                      "maxChannels": 4
+                    }
+                  },
+                  {
+                    "name": "proni1015",
+                    "desc": "Pimoroni ADS1015",
+                    "options": {
+                      "maxChannels": 4
+                    }
                   }
+
                 ]
               }
             }

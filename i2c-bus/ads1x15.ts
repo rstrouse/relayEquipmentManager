@@ -63,7 +63,27 @@ export class ads1x15 extends i2cDeviceBase {
             250: 1000 / 250,
             475: 1000 / 475,
             860: 1000 / 860,
+        },
+        proni1015: {
+            128: 1000 / 128,
+            250: 1000 / 250,
+            490: 1000 / 490,
+            920: 1000 / 920,
+            1600: 1000 / 1600,
+            2400: 1000 / 2400,
+            3300: 1000 / 3300,
+        },
+        proni1115: {
+            8: 1000 / 8,
+            16: 1000 / 16,
+            32: 1000 / 32,
+            64: 1000 / 64,
+            128: 1000 / 128,
+            250: 1000 / 250,
+            475: 1000 / 475,
+            860: 1000 / 860,
         }
+
     };
 
     // Pointer Register
@@ -125,7 +145,29 @@ export class ads1x15 extends i2cDeviceBase {
             475: 0x00C0, // 475 samples per second
             860: 0x00E0, // 860 samples per second
             default: 0x00A0
+        },
+        proni1015: {
+            128: 0x0000, // 128 samples per second
+            250: 0x0020, // 250 samples per second
+            490: 0x0040, // 490 samples per second
+            920: 0x0060, // 920 samples per second
+            1600: 0x0080, // 1600 samples per second (default)
+            2400: 0x00A0, // 2400 samples per second
+            3300: 0x00C0, // 3300 samples per second (also 0x00E0)
+            default: 0x0080
+        },
+        proni1115: {
+            8: 0x0000, // 8 samples per second
+            16: 0x0020, // 16 samples per second
+            32: 0x0040, // 32 samples per second
+            64: 0x0060, // 64 samples per second
+            128: 0x0080, // 128 samples per second
+            250: 0x00A0, // 250 samples per second (default)
+            475: 0x00C0, // 475 samples per second
+            860: 0x00E0, // 860 samples per second
+            default: 0x00A0
         }
+
     }
     private static comparatorMode = {
         'TRADITIONAL': 0x0000, // Traditional comparator with hysteresis (default)
@@ -148,7 +190,9 @@ export class ads1x15 extends i2cDeviceBase {
     }
     private static thresholdValues = {
         'ads1015': 2048.0,  // 2^(12-1) // 12bit, -2048 to 2047
-        'ads1115': 32768.0  // 2^(16-1) // 16bit, -32768 to 32767
+        'ads1115': 32768.0,  // 2^(16-1) // 16bit, -32768 to 32767
+        'proni1015': 2048.0,
+        'proni1115': 32768.0
     }
     private static CONFIG_DEFAULT = 0x8583;  // Stop/Reset continuous readings
 
@@ -315,6 +359,16 @@ export class ads1x15 extends i2cDeviceBase {
                     // 4.096 = pga
                     // 21,265 / 32,767 * 4.096
                     let voltage = this.getVoltageFromValue(value, channels[i].pga, channels[i].reverseBias);
+                    // Pimoroni craziness
+                    // 2,642 = value
+                    // 32768 = max
+                    // 4.096 = pga
+                    // 2,642 / 32,767 * 4.096
+                    // .3303 = volts
+                    // .3303 / 3.3 = .1000909090909091 adjusted max
+                    if (this.device.options.adcType.startsWith('proni')) {
+                        voltage = (voltage / 3.3) * 25.85;
+                    }
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
                     if (typeof valElem !== 'undefined') {
                         valElem.value = value;
@@ -327,6 +381,7 @@ export class ads1x15 extends i2cDeviceBase {
                         this.device.values.channels.push(res);
                     }
                     this.device.values.channels.sort((a, b) => { return a.id - b.id; });
+
                 }
                 else {
                     let valElem = this.device.values.channels.find(elem => { return elem.id === channels[i].id });
