@@ -116,6 +116,33 @@
                 {
                   "field": {
                     "type": "staticField",
+                    "labelText": "Value",
+                    "binding": "values.channels[0].value",
+                    "dataType": "number",
+                    "fmtMask": "#,##0",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
                     "labelText": "Voltage",
                     "binding": "values.channels[0].voltage",
                     "dataType": "number",
@@ -152,6 +179,33 @@
                     "labelAttrs": {
                       "style": {
                         "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Value",
+                    "binding": "values.channels[1].value",
+                    "dataType": "number",
+                    "fmtMask": "#,##0",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
                       }
                     }
                   }
@@ -202,6 +256,33 @@
                 {
                   "field": {
                     "type": "staticField",
+                    "labelText": "Value",
+                    "binding": "values.channels[2].value",
+                    "dataType": "number",
+                    "fmtMask": "#,##0",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
                     "labelText": "Voltage",
                     "binding": "values.channels[2].voltage",
                     "dataType": "number",
@@ -238,6 +319,33 @@
                     "labelAttrs": {
                       "style": {
                         "width": "5rem"
+                      }
+                    }
+                  }
+                },
+                {
+                  "field": {
+                    "type": "staticField",
+                    "labelText": "Value",
+                    "binding": "values.channels[3].value",
+                    "dataType": "number",
+                    "fmtMask": "#,##0",
+                    "emptyMask": "---",
+                    "style": {
+                      "display": "block",
+                      "marginLeft": "1rem",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "width": "4.5rem"
+                      }
+                    },
+                    "inputAttrs": {
+                      "style": {
+                        "width": "2.5rem",
+                        "textAlign": "right"
                       }
                     }
                   }
