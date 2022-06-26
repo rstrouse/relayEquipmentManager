@@ -113,7 +113,7 @@ export class ads1x15 extends i2cDeviceBase {
     }
     public pga: valueMap = new valueMap([
         [6.144, { name: '6.144v', desc: '6.144v', pgaMask: 0x0000 }],
-        [4.096, { name: '4.096v', desc: '4.196v', pgaMask: 0x0200 }],
+        [4.096, { name: '4.096v', desc: '4.096v', pgaMask: 0x0200 }],
         [2.048, { name: '2.048v', desc: '2.048v', pgaMask: 0x0400 }], // default
         [1.024, { name: '1.024v', desc: '1.024v', pgaMask: 0x0600 }],
         [0.512, { name: '0.512v', desc: '0.512v', pgaMask: 0x0800 }],
