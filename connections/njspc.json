@@ -478,6 +478,84 @@
           }
         }
       ]
+    },
+    {
+      "name": "panelMode",
+      "bindings": [
+        {
+          "binding": "isOn",
+          "type": "boolean"
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "pickList",
+            "bindColum": 0,
+            "displayColumn": 1,
+            "binding": "options.mode",
+            "labelText": "Mode",
+            "columns": [
+              {
+                "hidden": true,
+                "binding": "mode",
+                "text": "mode"
+              },
+              {
+                "hidden": false,
+                "binding": "desc",
+                "text": "Mode"
+              }
+            ],
+            "items": [
+              {
+                "mode": "toggle",
+                "desc": "Toggle"
+              },
+              {
+                "mode": "auto",
+                "desc": "Auto"
+              },
+              {
+                "mode": "service",
+                "desc": "Service"
+              },
+              {
+                "mode": "timeout",
+                "desc": "Timeout"
+              }
+            ],
+            "inputAttrs": { "style": { "width": "5rem" } },
+            "labelAttrs": { "style": { "width": "7rem" } }
+          }
+        },
+        {
+          "field": {
+            "type": "valueSpinner",
+            "binding": "options.timeout",
+            "labelText": "Timeout",
+            "min": 0,
+            "max": 99999,
+            "step": 1,
+            "canEdit": true,
+            "dataType": "number",
+            "fmtMask": "#,##0",
+            "emptyMask": "0",
+            "units": "minutes",
+            "inputAttrs": { "style": { "width": "5rem" } },
+            "labelAttrs": { "style": { "width": "4rem" } }
+          }
+        },
+        {
+          "field": {
+            "type": "inputField",
+            "binding": "options.timeUnits",
+            "value": "min",
+            "style":  {"display":  "none"}
+          }
+        }
+      ]
     }
+
   ]
 }
