@@ -1694,7 +1694,7 @@ export class DataTrigger extends ConfigItem {
             for (let i = 0; i < data.bindings.length; i++) {
                 let b = data.bindings[i];
                 if (!utils.makeBool(b.isActive)) continue;
-                let op = vMaps.operators.transform(b.operator);
+                let op = vMaps.operators.transformByName(b.operator);
                 if (n !== 0)
                     expression += ' && ';
                 expression += `${dataName}.${b.binding} ${op.op} `;

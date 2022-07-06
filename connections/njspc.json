@@ -202,7 +202,22 @@
           "type": "boolean"
         }
       ]
+    },
+    {
+      "name": "panelMode",
+      "hasId": false,
+      "bindings": [
+        {
+          "label": "Mode",
+          "binding": "mode.name",
+          "type": "string",
+          "inputStyle": {
+            "width": "5rem"
+          }
+        }
+      ]
     }
+
   ],
   "feeds": [
     {

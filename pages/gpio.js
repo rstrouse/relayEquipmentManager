@@ -611,7 +611,7 @@
                 }
                 line = $('<div></div>').addClass('trigger-binding').attr('data-bindingname', bind.binding).appendTo(div);
                 $('<input type="hidden"></input>').appendTo(line).attr('data-bind', binding + '.binding').val(bind.binding);
-                $('<div></div>').appendTo(line).checkbox({ labelText: bind.binding, bind: binding + '.isActive', style: { width: '7rem' } }).on('changed', function (evt) {
+                $('<div></div>').appendTo(line).checkbox({ labelText: bind.binding, bind: binding + '.isActive', style: { whiteSpace: 'nowrap', minWidth: '7rem' }, labelAttrs: { style: { marginRight: '.25rem' } } }).on('changed', function (evt) {
                     var l = $(evt.target).parent();
                     var ddOp = l.find('div[data-bind$=".operator"]');
                     var fld = l.find('div[data-bind$=".bindValue"]');
