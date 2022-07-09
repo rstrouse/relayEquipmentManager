@@ -323,8 +323,16 @@
                     "name": "pcf8574",
                     "desc": "PCF8574 Based",
                     "options": {
-                      "idType": "bit",
+                      "idType": "pcf857x",
                       "maxRelays": 8
+                    }
+                  },
+                  {
+                    "name": "pcf8575",
+                    "desc": "PCF8575 Based",
+                    "options": {
+                      "idType": "pcf857x",
+                      "maxRelays": 16
                     }
                   },
                   {

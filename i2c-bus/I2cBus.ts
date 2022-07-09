@@ -325,6 +325,15 @@ export class i2cBus {
         }
         catch (err) { return Promise.reject(err); }
     }
+    public async write(address: number, length: number, buffer: Buffer): Promise<{ bytesWritten: number, buffer: Buffer }> {
+        try {
+            let ret = await this._i2cBus.i2cWrite(address, length, buffer);
+            this.setCommSuccess(address);
+            return ret;
+        }
+        catch (err) { return Promise.reject(err); }
+
+    }
     public async resetAsync(bus): Promise<void> {
         try {
             await this.closeAsync();
