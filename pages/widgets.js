@@ -3105,7 +3105,7 @@ $.ui.position.fieldTip = {
             el[0].saveRow = function (data) { return self.saveRow(data); };
             el[0].clear = function () { self.clear(); }
             el[0].actions = function (val) { return self.actions(val); };
-            el[0].val = function (val) { return self.val(val); }
+            el[0].val = function (val) { return self.val(val); };
         },
         _getColumn: function (nCol) { return this.options.columns[nCol]; },
         _createCaption: function () {
@@ -3167,6 +3167,8 @@ $.ui.position.fieldTip = {
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
+            console.log(`VAL CALLED and they want their data back`);
+            console.log(val);
             if (typeof val !== 'undefined') {
                 self.clear();
                 for (data in val) {
@@ -3259,6 +3261,7 @@ $.ui.position.fieldTip = {
         _initList: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('slist-list');
+            if (typeof o.cssClass !== 'undefined') el.addClass(o.cssClass);
             var caption = self._createCaption().appendTo(el);
             var header = self._createHeader().appendTo(el);
             var body = self._createBody().appendTo(el);

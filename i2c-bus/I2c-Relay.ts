@@ -79,8 +79,31 @@ export class i2cRelay extends i2cDeviceBase {
                 { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' }
             ]
         },
-        pcf8574: { read: [], write: [], config: [] }, // There are no configuration, read, or write bytes for the PCF series
-        pcf8575: { read: [], write: [], config: [] },
+        sequent8v3: {
+            state: [0x01],
+            write: [0x01],
+            config: [
+                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' }
+            ]
+        },
+        sequent8IND: {
+            state: [0x01],
+            write: [0x01],
+            config: [
+                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' }
+            ]
+        },
+        pcf8574: {
+            read: [], write: [], config: [
+                { name: 'P0x', register: 0x00, desc: 'I/O value 1-8' }
+            ]
+        }, // There are no configuration, read, or write bytes for the PCF series
+        pcf8575: {
+            read: [], write: [], config: [
+                { name: 'P0x', register: 0x00, desc: 'I/O value 1-8' },
+                { name: 'P1x', register: 0x00, desc: 'I/O value 9-16' }
+            ]
+        },
         seeed: { read: [0x06], write: [0x06], config: [] }
     };
     protected _latchTimers = {};
@@ -102,7 +125,30 @@ export class i2cRelay extends i2cDeviceBase {
             switch (this.device.options.controllerType) {
                 case 'pcf8574':
                 case 'pcf8575':
-                    // There are no configuration registers to initialize for these.
+                    // There are no config registers for the is IO extender but we will be pushing these on the interface.
+                    let cb = i2cRelay.commandBytes[this.device.options.controllerType] || { state: [], init: [], config: [] };
+                    if (typeof this.device.info.registers === 'undefined') this.device.info.registers = [];
+                    let regP0 = this.device.info.registers.find(elem => elem.name === 'P0x');
+                    if (typeof regP0 === 'undefined') {
+                        regP0 = extend({ name: 'P0x', register: 0x00, desc: 'I/0 value 1-8', value: 0x00 }, cb.config.find(elem => elem.name === 'P0x'));
+                        this.device.info.registers.push(regP0);
+                    }
+                    for (let i = 0; i < 8 && i < this.relays.length; i++) {
+                        let relay = this.relays[i];
+                        if (relay.enabled && relay.state === true) regP0.value |= (1 << (relay.id - 1));
+                    }
+                    if (this.device.options.controllerType === 'pcf8575') {
+                        // There are no configuration registers to initialize for these.
+                        let regP1 = this.device.info.registers.find(elem => elem.name === 'P1x');
+                        if (typeof regP1 === 'undefined') {
+                            regP0 = extend({ name: 'P1x', register: 0x00, desc: 'I/0 value 9-16', value: 0x00 }, cb.config.find(elem => elem.name === 'P1x'));
+                            this.device.info.registers.push(regP0);
+                        }
+                        for (let i = 8; i < 16 && i < this.relays.length; i++) {
+                            let relay = this.relays[i];
+                            if (relay.enabled && relay.state === true) regP1.value |= (1 << (relay.id - 8));
+                        }
+                    }
                     break;
                 case 'mcp23017':
                     // Set the registers to output for all the relays we have.
@@ -146,6 +192,8 @@ export class i2cRelay extends i2cDeviceBase {
                     break;
                 case 'sequent8':
                 case 'sequent4':
+                case 'sequent8IND':
+                case 'sequent8v3':
                     {
                         await this.readConfigRegisters();
                         let reg = this.device.info.registers.find(elem => elem.name === 'CFG') || { value: 0x00 };
@@ -506,6 +554,13 @@ export class i2cRelay extends i2cDeviceBase {
                                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
                             }
                         }
+                        let regP0 = this.device.info.registers.find(elem => elem.name === 'P0x') || { value: 0x00 };
+                        let regP1 = this.device.info.registers.find(elem => elem.name === 'P1x') || { value: 0x00 };
+                        if (regP0.value !== (bitmask & 0xFF) || regP1.value !== (bitmask & 0xFF00) >> 8) {
+                            regP0.value = bitmask & 0xFF;
+                            regP1.value = (bitmask & 0xFF00) >> 8;
+                            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+                        }
                     }
                     break;
                 case 'bit':
@@ -587,6 +642,11 @@ export class i2cRelay extends i2cDeviceBase {
                     {
                         let bitmask = this.i2c.isMock ? this._relayBitmask1 : this.options.controllerType === 'pcf8574' ? await this.readByte() : await this.readWord();
                         byte = bitmask & (1 << (relay.id - 1));
+                        let regP0 = this.device.info.registers.find(elem => elem.name === 'P0x') || { value: 0x00 };
+                        let regP1 = this.device.info.registers.find(elem => elem.name === 'P1x') || { value: 0x00 };
+                        regP0.value = bitmask & 0xFF;
+                        regP1.value = (bitmask & 0xFF00) >> 8;
+                        webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                     }
                     break;
                 case 'bit':

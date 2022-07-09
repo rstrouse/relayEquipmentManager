@@ -233,46 +233,59 @@
               }
             },
             {
-              "bind": "info.registers",
+              "dataType": "panel",
               "field": {
-                "caption": "Registers",
-                "type": "selectList",
-                "bind": "info.registers",
-                "columns": [
-                  {
-                    "binding": "name",
-                    "text": "Name",
-                    "style": {
-                      "width": "52px",
-                      "whiteSpace": "nowrap",
-                      "overflow": "hidden",
-                      "textOverflow": "ellipsis"
-                    }
-                  },
-                  {
-                    "binding": "value",
-                    "text": "Val",
-                    "style": {
-                      "width": "24px",
-                      "whiteSpace": "nowrap",
-                      "overflow": "hidden",
-                      "textOverflow": "ellipsis",
-                      "textAlign": "center"
-                    }
-                  },
-                  {
-                    "binding": "desc",
-                    "text": "Description",
-                    "style": {
-                      "width": "217px",
-                      "whiteSpace": "nowrap",
-                      "overflow": "hidden",
-                      "textOverflow": "ellipsis"
-                    }
+                "type": "div",
+                "style": {
+                  "display": "inline-block",
+                  "paddingTop": "7px"
+                },
+                "cssClass": "i2cDeviceInformation"
+              },
+              "options": [
+                {
+                  "bind": "info.registers",
+                  "field": {
+                    "caption": "Registers",
+                    "type": "selectList",
+                    "bind": "info.registers",
+                    "columns": [
+                      {
+                        "binding": "name",
+                        "text": "Name",
+                        "style": {
+                          "width": "52px",
+                          "whiteSpace": "nowrap",
+                          "overflow": "hidden",
+                          "textOverflow": "ellipsis"
+                        }
+                      },
+                      {
+                        "binding": "value",
+                        "text": "Val",
+                        "style": {
+                          "width": "24px",
+                          "whiteSpace": "nowrap",
+                          "overflow": "hidden",
+                          "textOverflow": "ellipsis",
+                          "textAlign": "center"
+                        }
+                      },
+                      {
+                        "binding": "desc",
+                        "text": "Description",
+                        "style": {
+                          "width": "217px",
+                          "whiteSpace": "nowrap",
+                          "overflow": "hidden",
+                          "textOverflow": "ellipsis"
+                        }
+                      }
+                    ],
+                    "style": { "fontSize": "8pt" }
                   }
-                ],
-                "style": { "fontSize": "8pt" }
-              }
+                }
+              ]
             }
           ]
         },
