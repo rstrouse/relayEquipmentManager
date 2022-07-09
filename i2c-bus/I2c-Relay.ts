@@ -252,21 +252,25 @@ export class i2cRelay extends i2cDeviceBase {
     protected async readBuffer(bytes:number): Promise<{ bytesRead: number, buffer: Buffer }> {
         try {
             let r: { bytesRead: number, buffer: Buffer } = await this.i2c.read(this.device.address, bytes);
-            logger.info(`${this.device.address} - ${this.device.name} Executed read buffer ${r.bytesRead} [${r.buffer.join(',')}]`);
+            logger.info(`${this.device.address} - ${this.device.name} Executed read buffer 0x${this.device.address.toString(16)} ${r.bytesRead} [${r.buffer.join(',')}]`);
             return r;
         } catch(err) { logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} ReadBuffer: ${err.message}`); this.hasFault = true; }
     }
     protected async writeBuffer(bytes: number, buffer: Buffer): Promise<{ bytesWritten: number, buffer: Buffer }> {
         try {
-            let r: { bytesWritten: number, buffer } = await this.i2c.write(this.device.address, bytes, buffer);
+            let r: { bytesWritten: number, buffer: Buffer } = await this.i2c.write(this.device.address, bytes, buffer);
+            logger.info(`${this.device.address} - ${this.device.name} Executed write buffer 0x${this.device.address.toString(16)} ${ r.bytesWritten }[${ r.buffer.join(',') }]`);
             return r;
         } catch (err) { logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} ReadBuffer: ${err.message}`); this.hasFault = true; }
     }
 
     protected async readWord(): Promise<number> {
         try {
-            let r = await this.readBuffer(2);
-            return r.buffer.readUInt16BE();
+            let w = await this.i2c.readWord(this.device.address, this.device.address + 1);
+            logger.info(`${this.device.address} - ${this.device.name} Executed Read Word 0x${this.device.address.toString(16)} ${w}`);
+            return w;
+            //let r = await this.readBuffer(2);
+            //return r.buffer.readUInt16BE();
         }
         catch (err) { logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} ReadWord: ${err.message}`); this.hasFault = true; }
     }
@@ -279,9 +283,11 @@ export class i2cRelay extends i2cDeviceBase {
     }
     protected async writeWord(word: number): Promise<{ bytesWritten: number, buffer: Buffer }> {
         try {
-            let buffer = Buffer.from([(word >> 8) & 0xFF, word & 0xFF]);
-            let r = await this.writeBuffer(2, buffer);
-            return r;
+            await this.i2c.writeWord(this.device.address, this.device.address, word);
+            return { bytesWritten: 2, buffer: Buffer.from([(word & 0xFF00) >> 8, (word & 0x00FF)]) };
+            //let buffer = Buffer.from([(word >> 8) & 0xFF, word & 0xFF]);
+            //let r = await this.writeBuffer(2, buffer);
+            //return r;
         }
         catch (err) { logger.error(`${this.device.address} writeWord: ${err.message}`); this.hasFault = true; }
     }
