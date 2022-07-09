@@ -837,7 +837,11 @@ export class i2cRelay extends i2cDeviceBase {
                                 else if (current)
                                 bitmask |= (1 << (r.id - 1));
                         }
-                        if (this.i2c.isMock) this._relayBitmask1 = bitmask;
+                        if (this.i2c.isMock) {
+                            this._relayBitmask1 = bitmask & 0xFF;
+                            if (this.options.controllerType !== 'pcf8574') this._relayBitmask2 = (bitmask & 0xFF00) >> 8;
+
+                        }
                         else this.options.controllerType === 'pcf8574' ? await this.writeByte(bitmask) : await this.writeWord(bitmask);
                         if (relay.state !== newState) {
                             relay.state = newState;
