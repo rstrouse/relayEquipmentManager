@@ -249,9 +249,10 @@ export class i2cRelay extends i2cDeviceBase {
         catch (err) {
             logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} Read Command: ${ err.message }`); this.hasFault = true; }
     }
-    protected async readBuffer(bytes:number): Promise<{ bytesWritten: number, buffer: Buffer }> {
+    protected async readBuffer(bytes:number): Promise<{ bytesRead: number, buffer: Buffer }> {
         try {
-            let r: { bytesWritten: number, buffer } = await this.i2c.read(this.device.address, bytes);
+            let r: { bytesRead: number, buffer: Buffer } = await this.i2c.read(this.device.address, bytes);
+            logger.info(`${this.device.address} - ${this.device.name} Executed read buffer ${r.bytesRead} [${r.buffer.join(',')}]`);
             return r;
         } catch(err) { logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} ReadBuffer: ${err.message}`); this.hasFault = true; }
     }
