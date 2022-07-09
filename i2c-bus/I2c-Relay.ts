@@ -266,11 +266,11 @@ export class i2cRelay extends i2cDeviceBase {
 
     protected async readWord(): Promise<number> {
         try {
-            let w = await this.i2c.readWord(this.device.address, this.device.address + 1);
-            logger.info(`${this.device.address} - ${this.device.name} Executed Read Word 0x${this.device.address.toString(16)} ${w}`);
-            return w;
-            //let r = await this.readBuffer(2);
-            //return r.buffer.readUInt16BE();
+            //let w = await this.i2c.readWord(this.device.address, this.device.address + 1);
+            //logger.info(`${this.device.address} - ${this.device.name} Executed Read Word 0x${this.device.address.toString(16)} ${w}`);
+            //return w;
+            let r = await this.readBuffer(2);
+            return r.buffer.readUInt16LE();
         }
         catch (err) { logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} ReadWord: ${err.message}`); this.hasFault = true; }
     }
@@ -283,11 +283,11 @@ export class i2cRelay extends i2cDeviceBase {
     }
     protected async writeWord(word: number): Promise<{ bytesWritten: number, buffer: Buffer }> {
         try {
-            await this.i2c.writeWord(this.device.address, this.device.address, word);
-            return { bytesWritten: 2, buffer: Buffer.from([(word & 0xFF00) >> 8, (word & 0x00FF)]) };
-            //let buffer = Buffer.from([(word >> 8) & 0xFF, word & 0xFF]);
-            //let r = await this.writeBuffer(2, buffer);
-            //return r;
+            //await this.i2c.writeWord(this.device.address, this.device.address, word);
+            //return { bytesWritten: 2, buffer: Buffer.from([(word & 0xFF00) >> 8, (word & 0x00FF)]) };
+            let buffer = Buffer.from([word & 0xFF, (word >> 8) & 0xFF]);
+            let r = await this.writeBuffer(2, buffer);
+            return r;
         }
         catch (err) { logger.error(`${this.device.address} writeWord: ${err.message}`); this.hasFault = true; }
     }
