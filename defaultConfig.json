@@ -1,4 +1,5 @@
 ﻿{
+  "development": false,
   "web": {
     "servers": {
       "http": {
@@ -27,7 +28,7 @@
     "app": {
       "enabled": true,
       "level": "info",
-      "logToFile":  false
+      "logToFile": false
     }
   },
   "appVersion": "1.0.0"

@@ -16,6 +16,7 @@ import { spi0, spi1, SpiAdcBus, SpiAdcChannel } from '../spi-adc/SpiAdcBus';
 import { SpiAdcChips } from '../spi-adc/SpiAdcChips';
 import { webApp } from '../web/Server';
 import { utils, valueMap, vMaps } from './Constants';
+import { config } from "../config/Config";
 
 interface IConfigItemCollection {
     set(data);
@@ -378,9 +379,10 @@ export class Controller extends ConfigItem {
         return this._spiAdcChips;
     }
     public get analogDevices() {
-        //if (typeof this._analogDevices === 'undefined') {
-        this._analogDevices = AnalogDevices.loadDefintions();
-        //}
+        if (config.development || typeof this._analogDevices === 'undefined' || !this._analogDevices) {
+            console.log('Loading devices');
+            this._analogDevices = AnalogDevices.loadDefintions();
+        }
         return this._analogDevices;
     }
     /**************************************************
@@ -832,7 +834,6 @@ export class Controller extends ConfigItem {
         this.oneWire.removeInternalReferences(binding);
     }
 }
-
 export class DeviceFeedCollection extends ConfigItemCollection<DeviceFeed> {
     constructor(data: any, name?: string) { super(data, name || 'feeds'); }
     public createItem(data: any): DeviceFeed { return new DeviceFeed(data); }
@@ -965,7 +966,7 @@ export class Feed {
                     options: this.feed.options
                 });
                 this.lastSent = v;
-                logger.verbose(`Feed sending ${this.feed.property}: ${JSON.stringify(v)}`);
+                logger.verbose(`Feed sending ${this.feed.property}: ${JSON.stringify(v)} to ${this.feed.deviceBinding}`);
             }
         }
         catch (err) { logger.error(`Error sending device feed: ${err.message}`); }
@@ -1977,7 +1978,6 @@ export class I2cController extends ConfigItem {
     public get detected(): any[] { return this.data.detected; }
     public set detected(val: any[]) { this.data.detected = val; }
     public get buses(): I2cBusCollection { return new I2cBusCollection(this.data, 'buses'); }
-
     public getExtended() {
         let c = this.get(true);
         c.buses = this.buses.toExtendedArray();
@@ -1988,7 +1988,6 @@ export class I2cController extends ConfigItem {
             for (let i = 0; i < this.buses.length; i++) await this.buses.getItemByIndex(i).deleteConnectionAsync(id);
         } catch (err) { return Promise.reject(new Error(`Error removing connection from i2c controller`)); }
     }
-
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -2013,7 +2012,6 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public async getDevice(binding: string | DeviceBinding): Promise<any> {
         try {
             let bind = typeof binding === 'string' ? new DeviceBinding(binding) : binding;
@@ -2092,7 +2090,6 @@ export class I2cController extends ConfigItem {
         }
         catch (err) { return Promise.reject(err); }
     }
-
     public async setDevice(dev): Promise<I2cDevice> {
         try {
             let busId = (typeof dev.busId !== 'undefined') ? parseInt(dev.busId, 10) : undefined;
@@ -2298,7 +2295,6 @@ export class I2cController extends ConfigItem {
             bus.removeInternalReferences(binding);
         }
     }
-
 }
 export class I2cBusCollection extends ConfigItemCollection<I2cBus> {
     constructor(data: any, name?: string) { super(data, name) }
@@ -2837,6 +2833,8 @@ export class I2cDevice extends ConfigItem {
             let feed: DeviceFeed;
             let connectionId;
             let connection;
+             
+
             // search for existing feed; also acts as to not allow duplicate feeds
             feed = this.getDeviceFeed(data); // try to find feed with matching data; useful if data is sent from njsPC
             if (typeof feed !== 'undefined') {

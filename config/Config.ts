@@ -1,5 +1,6 @@
 ﻿import * as path from "path";
 import * as fs from "fs";
+import { utils } from "../boards/Constants";
 const extend = require("extend");
 import { logger } from "../logger/Logger";
 class Config {
@@ -8,6 +9,7 @@ class Config {
     private _isInitialized: boolean = false;
     private _fileTime: Date = new Date(0);
     private _isLoading: boolean = false;
+    public get development() { return utils.makeBool(this._cfg.development); }
     constructor() {
         let self = this;
         this.cfgPath = path.posix.join(process.cwd(), "/config.json");
