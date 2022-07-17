@@ -2,6 +2,7 @@
   "name": "BeagleBone",
   "desc": "Black and Blue Models",
   "icon": "fas fa-paw",
+  "overlays": [],
   "headers": [
     {
       "id": 1,
@@ -11,6 +12,7 @@
       "sex": "female",
       "bgcolor": "black",
       "align": "left",
+      "overlays": [],
       "pins": [
         {
           "id": 1,
@@ -275,6 +277,7 @@
       "sex": "female",
       "bgcolor": "black",
       "align": "right",
+      "overlays": [],
       "pins": [
         {
           "id": 1,

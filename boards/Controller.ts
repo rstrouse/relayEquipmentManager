@@ -380,7 +380,6 @@ export class Controller extends ConfigItem {
     }
     public get analogDevices() {
         if (config.development || typeof this._analogDevices === 'undefined' || !this._analogDevices) {
-            console.log('Loading devices');
             this._analogDevices = AnalogDevices.loadDefintions();
         }
         return this._analogDevices;
