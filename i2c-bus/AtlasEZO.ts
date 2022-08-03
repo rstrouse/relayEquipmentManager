@@ -1075,6 +1075,16 @@ export class AtlasEZOpmp extends AtlasEZO {
             return true;
         } catch (err) { this.logError(err); }
     }
+    public async clearCalibration(): Promise<I2cDevice> {
+        try {
+            this.suspendPolling = true;
+            await this.execCommand(`Cal,clear`, 300);
+            await this.getCalibrated();
+            return Promise.resolve(this.device);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
     public async getCalibrated(): Promise<boolean> {
         try {
             let opts = { volume: false, time: false };
