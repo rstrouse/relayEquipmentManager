@@ -756,6 +756,7 @@ export class AtlasEZOpH extends AtlasEZO {
     }
 }
 export class AtlasEZOpmp extends AtlasEZO {
+    public latchTimer: NodeJS.Timeout;
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
@@ -950,6 +951,8 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async stopDispense(): Promise<boolean> {
         try {
+            if (this.latchTimer) clearTimeout(this.latchTimer);
+            this.latchTimer = null;
             await this.execCommand('X', 300);
             this.values.mode = this.transformDispenseMode('off', false);
             this.values.paused = false;
@@ -1044,6 +1047,8 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async startDispense(opts:any): Promise<boolean> {
         try {
+            if (this.latchTimer) clearTimeout(this.latchTimer);
+            this.latchTimer = null;
             if (typeof opts === 'undefined' || typeof opts.dispense === 'undefined') return Promise.reject(new Error('Cannot dispense EZO-PMP. Dispense options not provided'));
             let reverse = utils.makeBool(opts.dispense.reverse);
             let flowRate = (reverse) ? Math.abs(parseFloat(opts.dispense.flowRate)) * -1 : parseFloat(opts.dispense.flowRate);
@@ -1052,6 +1057,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             switch (opts.dispense.method) {
                 case 'continuous':
                     await this.dispenseContinuous(utils.makeBool(opts.dispense.reverse));
+                    if (typeof opts.latch === 'number') setTimeout(() => { this.stopDispense(); }, opts.timeout);
                     break;
                 case 'volume':
                     if (isNaN(volume)) return Promise.reject(new Error(`Cannot dispense EZO-PMP by volume. Invalid volume ${opts.dispense.volume}`));
@@ -1245,8 +1251,8 @@ export class AtlasEZOpmp extends AtlasEZO {
             if (data.state === true || data.isOn === true) {
                 // We are dosing.  Unlike the demand calc setpoint
                 // we are not changing the original command.
-                if (this.dispense.dispensing !== true)
-                    await this.startDispense(data);
+                if (typeof data.dispense === 'undefined') data.dispense = { mode: 'continuous' };
+                await this.startDispense(data);
             }
             else {
                 if (this.dispense.dispensing) await this.stopDispense();
