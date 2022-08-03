@@ -1214,6 +1214,21 @@ export class AtlasEZOpmp extends AtlasEZO {
             return this.dispense.dispensing;
         } catch (err) { return Promise.reject(err); }
     }
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            if (data.state === true || data.isOn === true) {
+                // We are dosing.  Unlike the demand calc setpoint
+                // we are not changing the original command.
+                if (this.dispense.dispensing !== true)
+                    await this.startDispense(data);
+            }
+            else {
+                if (this.dispense.dispensing) await this.stopDispense();
+            }
+            return extend(true, {}, this.dispense);
+        } catch (err) { return Promise.reject(err); }
+    }
+
 }
 export class AtlasEZOprs extends AtlasEZO {
     public async initAsync(deviceType): Promise<boolean> {
