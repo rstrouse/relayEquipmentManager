@@ -932,7 +932,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             return Promise.resolve(this.dispense);
         }
         catch (err) { logger.error(new Error(`Could not get dispense status: ${typeof err !== 'undefined' ? err.message : ''}`)); }
-        finally { if (this.dispense.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, this.options.readInterval); this.suspendPolling = false; }
+        finally { if (this.dispense.dispensing) this._timerRead = setTimeout(() => { this.getDispenseStatus(); }, 1000); this.suspendPolling = false; }
     }
     public async getVolumeDispensed(): Promise<boolean> {
         try {
