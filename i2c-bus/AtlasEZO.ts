@@ -1056,7 +1056,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             switch (opts.dispense.method) {
                 case 'continuous':
                     await this.dispenseContinuous(utils.makeBool(opts.dispense.reverse));
-                    if (typeof opts.latch === 'number') setTimeout(() => { this.stopDispense(); }, opts.timeout);
+                    if (typeof opts.latch === 'number') this.latchTimer = setTimeout(() => { this.stopDispense(); }, opts.timeout);
                     break;
                 case 'volume':
                     if (isNaN(volume)) return Promise.reject(new Error(`Cannot dispense EZO-PMP by volume. Invalid volume ${opts.dispense.volume}`));
@@ -1248,6 +1248,9 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
             if (data.state === true || data.isOn === true) {
+                if (this.latchTimer) clearTimeout(this.latchTimer);
+                this.latchTimer = null;
+
                 // We are dosing.  Unlike the demand calc setpoint
                 // we are not changing the original command.
                 if (typeof data.dispense === 'undefined') data.dispense = { method: 'continuous' };
