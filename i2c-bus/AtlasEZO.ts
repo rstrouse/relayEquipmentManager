@@ -978,52 +978,67 @@ export class AtlasEZOpmp extends AtlasEZO {
     }
     public async dispenseContinuous(reverse: boolean = false): Promise<boolean> {
         try {
-            await this.execCommand(`D,${utils.makeBool(reverse) ? '-*' : '*'}`, 300);
-            this.dispense.continuous = true;
-            this.dispense.dispensing = true;
-            this.dispense.reverse = reverse;
-            this.dispense.paused = false;
-            this.dispense.volume = null;
-            this.dispense.dispenseTime = null;
-            this.dispense.flowRate = null;
-            this.dispense.mode = this.transformDispenseMode('continuous', false);
+            if (this.dispense.dispensing === true) {
+                await this.getVolumeDispensed();
+            }
+            else {
+                await this.execCommand(`D,${utils.makeBool(reverse) ? '-*' : '*'}`, 300);
+                this.dispense.continuous = true;
+                this.dispense.dispensing = true;
+                this.dispense.reverse = reverse;
+                this.dispense.paused = false;
+                this.dispense.volume = null;
+                this.dispense.dispenseTime = null;
+                this.dispense.flowRate = null;
+                this.dispense.mode = this.transformDispenseMode('continuous', false);
+            }
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
-            this.getDispenseStatus();
-            return Promise.resolve(true);
+            await this.getDispenseStatus();
+            return true;
         }
         catch (err) { this.logError(err); }
     }
     public async dispenseVolume(volume: number, minutes?:number): Promise<boolean> {
         try {
-            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)},${minutes.toFixed(2)}`, 300);
-            this.dispense.dispensing = true;
-            this.dispense.reverse = volume < 0;
-            this.dispense.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
-            this.dispense.paused = false;
-            this.dispense.continuous = false;
-            this.dispense.volume = volume;
-            this.dispense.flowRate = null;
-            this.dispense.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'volOverTime' : 'vol', false);
+            if (this.dispense.dispensing === true) {
+                await this.getVolumeDispensed();
+            }
+            else {
+                typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`D,${volume.toFixed(2)}`, 300) : await this.execCommand(`D,${volume.toFixed(2)},${minutes.toFixed(2)}`, 300);
+                this.dispense.dispensing = true;
+                this.dispense.reverse = volume < 0;
+                this.dispense.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
+                this.dispense.paused = false;
+                this.dispense.continuous = false;
+                this.dispense.volume = volume;
+                this.dispense.flowRate = null;
+                this.dispense.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'volOverTime' : 'vol', false);
+            }
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
-            this.getDispenseStatus();
-            return Promise.resolve(true);
+            await this.getDispenseStatus();
+            return true;
         }
         catch (err) { this.logError(err); }
     }
     public async dispenseFlowRate(rate: number, minutes?: number): Promise<boolean> {
         try {
-            typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)},*`, 300) : await this.execCommand(`DC,${rate.toFixed(2)},${minutes.toFixed(2)}`, 300);
-            this.dispense.flowRate = rate;
-            this.dispense.dispensing = true;
-            this.dispense.continuous = false;
-            this.dispense.reverse = rate < 0;
-            this.dispense.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
-            this.dispense.volume = null;
-            this.dispense.paused = false;
-            this.dispense.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'flowOverTime' : 'flowRate', false);
+            if (this.dispense.dispensing === true) {
+                await this.getVolumeDispensed();
+            }
+            else {
+                typeof minutes === 'undefined' || minutes <= 0 ? await this.execCommand(`DC,${rate.toFixed(2)},*`, 300) : await this.execCommand(`DC,${rate.toFixed(2)},${minutes.toFixed(2)}`, 300);
+                this.dispense.flowRate = rate;
+                this.dispense.dispensing = true;
+                this.dispense.continuous = false;
+                this.dispense.reverse = rate < 0;
+                this.dispense.dispenseTime = typeof minutes !== 'undefined' ? minutes : null;
+                this.dispense.volume = null;
+                this.dispense.paused = false;
+                this.dispense.mode = this.transformDispenseMode(typeof minutes !== 'undefined' ? 'flowOverTime' : 'flowRate', false);
+            }
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             this.getDispenseStatus();
-            return Promise.resolve(true);
+            return true;
         }
         catch (err) { this.logError(err); }
     }
@@ -1033,6 +1048,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             let reverse = utils.makeBool(opts.dispense.reverse);
             let flowRate = (reverse) ? Math.abs(parseFloat(opts.dispense.flowRate)) * -1 : parseFloat(opts.dispense.flowRate);
             let volume = (reverse) ? Math.abs(parseFloat(opts.dispense.volume)) * -1 : parseFloat(opts.dispense.volume);
+            if (this.dispense.dispensing !== true) this.dispense.startVolume = this.dispense.totalVolume.total || 0;
             switch (opts.dispense.method) {
                 case 'continuous':
                     await this.dispenseContinuous(utils.makeBool(opts.dispense.reverse));
@@ -1056,7 +1072,7 @@ export class AtlasEZOpmp extends AtlasEZO {
                     await this.dispenseFlowRate(parseFloat(opts.dispense.flowRate), parseFloat(opts.dispense.time));
                     break;
             }
-            return Promise.resolve(true);
+            return true;
         } catch (err) { this.logError(err); }
     }
     public async getCalibrated(): Promise<boolean> {
