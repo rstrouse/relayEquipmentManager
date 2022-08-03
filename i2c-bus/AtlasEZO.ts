@@ -1056,7 +1056,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             switch (opts.dispense.method) {
                 case 'continuous':
                     await this.dispenseContinuous(utils.makeBool(opts.dispense.reverse));
-                    if (typeof opts.latch === 'number') this.latchTimer = setTimeout(() => { this.stopDispense(); }, opts.timeout);
+                    if (typeof opts.latch === 'number') this.latchTimer = setTimeout(() => { this.stopDispense(); }, opts.latch);
                     break;
                 case 'volume':
                     if (isNaN(volume)) return Promise.reject(new Error(`Cannot dispense EZO-PMP by volume. Invalid volume ${opts.dispense.volume}`));
@@ -1262,6 +1262,15 @@ export class AtlasEZOpmp extends AtlasEZO {
             return extend(true, { state: this.dispense.dispensing || false }, this.dispense);
         } catch (err) { return Promise.reject(err); }
     }
+    public async closeAsync(): Promise<void> {
+        try {
+            await super.closeAsync();
+            await this.stopDispense();
+            return Promise.resolve();
+        }
+        catch (err) { return this.logError(err); }
+    }
+
 
 }
 export class AtlasEZOprs extends AtlasEZO {
