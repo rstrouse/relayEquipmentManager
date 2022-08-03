@@ -1251,7 +1251,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             if (data.state === true || data.isOn === true) {
                 // We are dosing.  Unlike the demand calc setpoint
                 // we are not changing the original command.
-                if (typeof data.dispense === 'undefined') data.dispense = { mode: 'continuous' };
+                if (typeof data.dispense === 'undefined') data.dispense = { method: 'continuous' };
                 await this.startDispense(data);
             }
             else {
