@@ -982,7 +982,6 @@ export class AtlasEZOpmp extends AtlasEZO {
     public async dispenseContinuous(reverse: boolean = false): Promise<boolean> {
         try {
             if (this.dispense.dispensing === true) {
-                await this.getVolumeDispensed();
             }
             else {
                 await this.execCommand(`D,${utils.makeBool(reverse) ? '-*' : '*'}`, 300);
@@ -1257,7 +1256,7 @@ export class AtlasEZOpmp extends AtlasEZO {
             else {
                 if (this.dispense.dispensing) await this.stopDispense();
             }
-            return extend(true, {}, this.dispense);
+            return extend(true, { state: this.dispense.dispensing || false }, this.dispense);
         } catch (err) { return Promise.reject(err); }
     }
 
