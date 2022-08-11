@@ -965,7 +965,15 @@ export class Feed {
                     options: this.feed.options
                 });
                 this.lastSent = v;
-                logger.verbose(`Feed sending ${this.feed.property}: ${JSON.stringify(v)} to ${this.feed.deviceBinding}`);
+                if (typeof this.feed.property !== 'undefined'){ // socket
+                    logger.verbose(`Feed ${this.server.server.type.name}/${this.server.server.name} sending ${this.feed.property}: ${JSON.stringify(v)} to ${this.feed.deviceBinding}`);
+                }
+                else if (typeof this.feed.eventName !== 'undefined') { // mqtt
+                    logger.verbose(`Feed ${this.server.server.type.name}/${this.server.server.name} sending ${this.feed.sendValue}: ${JSON.stringify(v)} to ${this.feed.eventName}`);
+                }
+                else {
+
+                }
             }
         }
         catch (err) { logger.error(`Error sending device feed: ${err.message}`); }
