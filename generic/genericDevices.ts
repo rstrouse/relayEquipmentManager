@@ -189,8 +189,10 @@ export class GenericDeviceBase implements IDevice {
             let replaceSymbols = /(?:\]\.|\[|\.)/g
             let _prop = prop.replace(replaceSymbols, ',').split(',');
             let val = this.device.values;
-            for (let i = 0; i < _prop.length; i++) {
-                val = val[_prop[i]];
+            if (_prop.length === 1 && _prop[0] !== 'all') {
+                for (let i = 0; i < _prop.length; i++) {
+                    val = val[_prop[i]];
+                }
             }
             return val;
         } catch (err) { logger.error(`${this.device.name} error getting device value ${prop}: ${err.message}`); }
