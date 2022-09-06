@@ -478,7 +478,7 @@ export class i2cDeviceBase implements IDevice {
             }
             return Promise.resolve(d);
         }
-        catch (err) { logger.error(err); }
+        catch (err) { logger.error(`Error creating device ${dev.name} at address ${dev.address} and type ${dev.typeId}:${err.message}.`); }
     }
     constructor(i2c, dev: I2cDevice) {
         this.i2c = i2c;

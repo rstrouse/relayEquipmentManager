@@ -17,7 +17,6 @@
     "@types/node": "^12.20.50",
     "@typescript-eslint/eslint-plugin": "^5.22.0",
     "@typescript-eslint/parser": "^5.22.0",
-    "eslint": "^8.15.0",
     "eslint-config-defaults": "^9.0.0",
     "eslint-config-standard": "^16.0.3",
     "eslint-plugin-import": "^2.26.0",

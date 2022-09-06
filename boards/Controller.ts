@@ -561,6 +561,8 @@ export class Controller extends ConfigItem {
                 return this.genericDevices.getDevice(bind);
             case 'oneWire':
                 return this.oneWire.getDevice(bind);
+            case 'default':
+                logger.error(`No device binding found for ${JSON.stringify(binding)}`);
         }
     }
     public getInternalConnection() {
