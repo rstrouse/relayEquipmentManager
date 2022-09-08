@@ -3167,13 +3167,13 @@ $.ui.position.fieldTip = {
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;
-            console.log(`VAL CALLED and they want their data back`);
-            console.log(val);
+            //console.log(`VAL CALLED and they want their data back`);
+            //console.log(val);
             if (typeof val !== 'undefined') {
                 self.clear();
                 for (data in val) {
                     self.addRow(val[data]);
-                    console.log(val[data]);
+                    //console.log(val[data]);
                 }
             }
         },
@@ -3671,7 +3671,7 @@ $.ui.position.fieldTip = {
                 ]
             });
             $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(relay.id);
-            $('<div></div>').appendTo(dlg).html('Enable this relay if you are controlling it from REM.  Changes to the relay will not be saved until you press the save button on the previous screen.');
+            $('<div></div>').appendTo(dlg).html('Enable this relay if you are controlling it from REM.  Disabled relays will not respond to commands.');
             $('<hr></hr>').appendTo(dlg);
             var line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxLength: 16, style: { width: "14rem" } } });

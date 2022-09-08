@@ -1,5 +1,6 @@
 ﻿//MEGA-IND
 //MEGA-IO
+//SEQ-4RelInd
 import { logger } from "../logger/Logger";
 import { vMaps, valueMap, utils } from "../boards/Constants";
 import { setTimeout, clearTimeout } from "timers";
@@ -8,6 +9,7 @@ import { Buffer } from "buffer";
 import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";
 import { I2cDevice, DeviceBinding } from "../boards/Controller";
+import { LatchTimers } from "../devices/AnalogDevices";
 export class SequentIO extends i2cDeviceBase {
     protected regs = {
         rs485Settings: 65,
@@ -19,7 +21,10 @@ export class SequentIO extends i2cDeviceBase {
         calStatus: 171,
         calValue: 60,
         calChannel: 62,
-        calKey: 63
+        calKey: 63,
+        relayCfg: 3,
+        relayIn: 0,
+        relayOut: 1
     };
     protected _timerRead: NodeJS.Timeout;
     protected _infoRead: NodeJS.Timeout;
@@ -72,6 +77,15 @@ export class SequentIO extends i2cDeviceBase {
                 }
                 return false;
         }
+    }
+    protected ensureRelays(label, arr, count) {
+        try {
+            for (let i = 1; i <= count; i++) {
+                if (typeof arr.find(elem => elem.id === i) === 'undefined') arr.push({ id: i, name: `${label} #${i}`, enabled: false, invert: false, sequenceOnDelay: 0, sequenceOffDelay: 0, initState: '' });
+            }
+            arr.sort((a, b) => { return a.id - b.id });
+            arr.length = count;
+        } catch (err) { logger.error(`${this.device.name} error setting up relays`) }
     }
     protected ensureIOChannels(label, type, arr, count) {
         try {
@@ -328,6 +342,16 @@ export class SequentIO extends i2cDeviceBase {
         try {
             for (let i = 0; i < arr.length; i++) {
                 let t = target.find(elem => elem.id == arr[i].id);
+                if (typeof t !== 'undefined') {
+                    utils.setObjectProperties(arr[i], t);
+                }
+            }
+        } catch (err) { return Promise.reject(err); }
+    }
+    protected async setRelayOptions(arr) {
+        try {
+            for (let i = 0; i < arr.length; i++) {
+                let t = this.relays.find(elem => elem.id == arr[i].id);
                 if (typeof t !== 'undefined') {
                     utils.setObjectProperties(arr[i], t);
                 }
@@ -1060,5 +1084,364 @@ export class SequentMegaBAS extends SequentIO {
                 let chan = iarr[ord - 1];
                 return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
         }
+    }
+}
+export class Sequent4RelIND extends SequentIO {
+    protected calDefinitions = {}
+    protected inMaskMap = [0x08, 0x04, 0x02, 0x01];
+    protected inChMap = [3, 2, 1, 0];
+    protected relayMaskMap = [0x80, 0x40, 0x20, 0x10];
+    protected relayChMap = [7, 6, 5, 4];
+    protected _latchTimers = {};
+    protected latches = new LatchTimers();
+    protected _relayBitmask1 = 0;
+    public get inDigital(): any[] { return typeof this.inputs.inDigital === 'undefined' ? this.inputs.inDigital = [] : this.inputs.inDigital; }
+    public async initAsync(deviceType): Promise<boolean> {
+        try {
+            this.stopPolling();
+            if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 3000;
+            this.options.readInterval = Math.max(500, this.options.readInterval);
+            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
+            else this.device.name = this.device.options.name;
+            // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
+            this.ensureIOChannels('IN Digital', 'DIN', this.inDigital, 4);
+            this.ensureRelays('Relay', this.relays, 4);
+            this.initRegisters();
+            return Promise.resolve(true);
+        }
+        catch (err) { this.logError(err); return Promise.resolve(false); }
+        finally { setTimeout(() => { this.pollReadings(); }, 5000); }
+    }
+    public ensureRegisters() {
+        if (typeof this.info.registers === 'undefined') this.info.registers = [];
+        if (typeof this.info.registers.find(elem => elem.register === this.regs.relayCfg) === 'undefined') this.info.registers.push({ name: 'IOCFG', register: 3, desc: 'Configuration', value: 0 });
+        if (typeof this.info.registers.find(elem => elem.register === this.regs.relayIn) === 'undefined') this.info.registers.push({ name: 'IOVAL', register: 0, desc: 'Input Values', value: 0 });
+    }
+    public async initRegisters(): Promise<boolean> {
+        try {
+            let reg = this.info.registers.find(elem => elem.register === this.regs.relayCfg);
+            let val = (this.i2c.isMock) ? 0x0f : await this.i2c.readByte(this.device.address, this.regs.relayCfg);
+            if (val !== 0x0f) {
+                await this.i2c.writeByte(this.device.address, this.regs.relayCfg, 0x0f);
+                val = (this.i2c.isMock) ? 0x0f : await this.i2c.readByte(this.device.address, this.regs.relayCfg);
+            }
+            if (reg.value !== val) {
+                webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+            }
+            reg.value = val;
+            return val === 0x0f;
+        } catch (err) { this.logError(err, `Error initializing ${this.device.name} registers`); }
+    }
+    public async getStatus(): Promise<boolean> { return true; }
+    public async takeReadings(): Promise<boolean> {
+        try {
+            // Read all the active inputs and outputs
+            let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn) || { name: 'IOVAL', register: 0, desc: 'Input Values', value: 0 };
+            let val = (this.i2c.isMock) ? ((255 * Math.random()) & 0x0f) | (reg.value & 0xf0) : await this.i2c.readByte(this.device.address, this.regs.relayIn);
+            let id = 0;
+            for (let i = 3; i >= 0; i--) {
+                // Read the input.
+                let input = this.inDigital[id++];
+                if (input.enabled) {
+                    let v = utils.makeBool((1 << i) & val);
+                    if (input.value !== v) {
+                        input.value = v;
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inDigital: [input]} } });
+                    }
+                }
+            }
+            id = 0;
+            for (let i = 7; i >= 4; i--) {
+                // Read the relay.
+                let relay = this.relays[id++];
+                if (relay.enabled) {
+                    let v = utils.makeBool((1 << i) & val);
+                    if (relay.invert === true) v = !v;
+                    if (relay.state !== v) {
+                        relay.state = v;
+                        relay.tripTime = new Date().getTime();
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+                    }
+                }
+            }
+            if (reg.value !== val)
+                webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+            reg.value = val;
+            this.emitFeeds();
+            return true;
+        }
+        catch (err) { this.logError(err, 'Error taking device readings'); }
+    }
+    public async setOptions(opts): Promise<any> {
+        try {
+            this.suspendPolling = true;
+            if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
+            if (typeof opts.relays !== 'undefined') {
+                this.relays = opts.relays;
+                await this.initRegisters();
+            }
+            return Promise.resolve(this.options);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
+    public async setIOChannels(data): Promise<any> {
+        try {
+            if (typeof data.values !== 'undefined') {
+                return await this.setValues(data.values);
+            }
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+    }
+    public async setValues(vals): Promise<any> {
+        try {
+            this.suspendPolling = true;
+            if (typeof vals.inputs !== 'undefined') {
+                if (typeof vals.inputs.inDigital !== 'undefined') await this.setIOChannelOptions(vals.inputs.inDigital, this.inDigital);
+            }
+            if (typeof vals.relays !== 'undefined') {
+                await this.setRelayOptions(vals.relays);
+            }
+            return Promise.resolve(this.options);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
+    public getDeviceDescriptions(dev) {
+        let desc = [];
+        for (let i = 0; i < this.inDigital.length; i++) {
+            let chan = this.inDigital[i];
+            desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:inDigital:${i + 1}`, category: 'Digital Input' });
+        }
+        for (let i = 0; i < this.relays.length; i++) {
+            let relay = this.relays[i];
+            desc.push({ type: 'i2c', isActive: this.device.isActive, name: relay.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:${relay.id}`, category: 'Relays' });
+        }
+        return desc;
+    }
+    public getValue(prop: string) {
+        // Steps to getting to our value.
+        // 1. Determine whether input or output.
+        // 2. Determine which array we are coming from.
+        // 3. Map the IO number to the value.
+        let p = prop.toLowerCase();
+        if (p === 'indigitalall') {
+            let vals = [];
+            for (let i = 0; i < this.inDigital.length; i++) {
+                vals.push(this.inDigital[i].value);
+            }
+            return vals;
+        }
+        else if (p.startsWith('indigital')) {
+            let ord = parseInt(p.substring(8), 10);
+            if (!isNaN(ord) && this.inDigital.length > ord) {
+                logger.verbose(`Get Digital Input Value ${this.relays[ord - 1].state}`)
+                return this.inDigital[ord - 1].value;
+            }
+            else {
+                logger.error(`Error getting ${this.device.name} digital input value for ${prop}`);
+            }
+        }
+        else if (p === 'relayvalall') {
+            let vals = [];
+            for (let i = 0; i < this.relays.length; i++) {
+                vals.push(this.relays[i].state);
+            }
+            return vals;
+        }
+        else if (p.startsWith('relayval')) {
+            let ord = parseInt(p.substring(8), 10);
+            if (!isNaN(ord) && this.relays.length > ord) {
+                logger.verbose(`Get Relay Value ${this.relays[ord - 1].state}`)
+                return this.relays[ord - 1].state;
+            }
+            else {
+                logger.error(`Error getting ${this.device.name} relay value for ${prop}`);
+            }
+        }
+        else if (p.startsWith('relayobj')) {
+            let ord = parseInt(p.substring(8), 10);
+            if (!isNaN(ord) && this.relays.length > ord) {
+                return this.relays[ord - 1];
+            }
+            else {
+                logger.error(`Error getting ${this.device.name} relay object for ${prop}`);
+            }
+        }
+        else
+            logger.error(`Error getting ${this.device.name} value for ${prop}`);
+        return;
+    }
+    
+    protected async setRelayStates(states) {
+        try {
+            // We need only the upper nibble of this byte.  So set the lower nibble to 0.  These are input values.
+            let byte = states & 0xf0;
+            let tries = 0;
+            let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn) || { name: 'IOVAL', register: 0, desc: 'Input Values', value: 0 };
+            // Not sure why but the Sequent command line code retries 10 times if it does not get the relay set.
+            while (tries++ < 10 && byte != (reg.value & 0xf0)) {
+                if (!this.i2c.isMock) await this.i2c.writeByte(this.device.address, this.regs.relayOut, byte);
+                else reg.value = states;
+                await this.takeReadings();
+                if (tries > 1) logger.warn(`Retry #${tries - 1} setting relay states ${this.device.name} expected ${byte} but got ${reg.value & 0xf0}`);
+            }
+            if ((reg.value & 0xf0) !== byte) logger.error(`Error setting relay states ${this.device.name} register did not echo ${reg.value & 0xf0} <> ${byte}`);
+        }
+        catch (err) { logger.error(`Error setting relay states ${this.device.name}`); }
+    }
+    protected encodeRelayBit(byte, id, state) { return state ? byte |= (1 << this.relayChMap[id - 1]) : byte &= ~(1 << this.relayChMap[id - 1]); }
+    protected async initRelayStates() {
+        this.relays.sort((a, b) => { return a.id - b.id; });
+        try {
+            await this.takeReadings();
+            let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn);
+            let rval = reg.value;
+            for (let i = 0; i < this.relays.length; i++) {
+                let r = this.relays[i];
+                let state = false;
+                if (r.initState === 'on') state = true;
+                else if (r.initState === 'off') state = false;
+                else if (r.initState === 'last') state = utils.makeBool(r.state);
+                else if (r.invert === true) state = true;
+                let target = r.invert === true ? !utils.makeBool(state) : utils.makeBool(state);
+                // Now lets set the bit.
+                if(r.enabled) rval = this.encodeRelayBit(reg.value, r.id, target);
+            }
+            await this.setRelayStates(rval);
+        } catch (err) { logger.error(`Error initializing relay states ${this.device.name}`); }
+    }
+    public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
+        let relay = this.relays.find(elem => { return elem.id === opts.id });
+        let oldState = relay.state;
+        if (typeof relay === 'undefined') return Promise.reject(new Error(`${this.device.name} - Invalid Relay id: ${opts.id}`));
+        try {
+            let newState = utils.makeBool(opts.state);
+            let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn);
+            await this.takeReadings();
+            let target = newState;
+            if (relay.invert === true) target = !newState;
+            let states = this.encodeRelayBit(reg.value, relay.id, target);
+            await this.setRelayStates(states);
+            return relay;
+        }
+        catch (err) { return Promise.reject(err) };
+    }
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            //i2c:${ this.i2c.busId }:${ this.device.id }: inDigital.${ i + 1 }
+            // We need to know what relay we are referring to.
+            // i2c:1:24:3
+            // i2c:1:24:inDigital:1 <= This is an example of an input we need to reject if the user is attempting to set a digital input.
+            let relayId = parseInt(bind.params[0], 10);
+            if (isNaN(relayId)) {
+                if (bind.params.length > 0 && bind.params[0].toLowerCase() === 'indigital') return Promise.reject(new Error(`setDeviceState: Inputs are read only ${bind.params[0]}`));
+                return Promise.reject(new Error(`setDeviceState: Invalid relay Id ${bind.params[0]}`));
+            }
+            let relay = this.relays.find(elem => elem.id === relayId);
+            if (typeof relay === 'undefined') return Promise.reject(new Error(`setDeviceState: Could not find relay Id ${bind.params[0]}`));
+            if (!relay.enabled) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] is not enabled.`));
+            let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
+            if (isNaN(latch)) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`));
+            this.latches.clearLatch(relayId);
+            let newState;
+            switch (typeof data) {
+                case 'boolean':
+                    newState = data;
+                    break;
+                case 'number':
+                    newState = data === 1 ? true : data === 0 ? false : relay.state;
+                    break;
+                case 'string':
+                    switch (data.toLowerCase()) {
+                        case 'tripped':
+                        case 'true':
+                        case 'on':
+                        case '1':
+                            newState = true;
+                        case 'untripped':
+                        case 'false':
+                        case '0':
+                        case 'off':
+                            newState = false;
+                            break;
+                    }
+                    break;
+                case 'object':
+                    if (Array.isArray(data) && data.length > 0) {
+                        this.suspendPolling = true;
+                        let nOffs = 0;
+                        let nOns = 0;
+                        // This is a sequence.
+                        // [{isOn: true, timeout: 1000}, {isOn: false, timeout: 1000}]
+                        let onDelay = relay.sequenceOnDelay || 0;
+                        let offDelay = relay.sequenceOffDelay || 0;
+                        for (let i = 0; i < data.length; i++) {
+                            let seq = data[i];
+                            let state = utils.makeBool(seq.state || seq.isOn);
+                            if (!state) nOffs++;
+                            else nOns++;
+                            await this.setRelayState({ id: relayId, state: state });
+                            //logger.info(`Sequencing relay: ${ relay.name } state: ${ state } delay: ${ seq.timeout + (state ? onDelay : offDelay) }`)
+                            if (seq.timeout) await utils.wait(seq.timeout + (state ? onDelay : offDelay));
+                            newState = state;
+                        }
+                        logger.info(`Sent a total of Ons:${nOns} and Offs:${nOffs} to relay`);
+                        this.suspendPolling = false;
+                    }
+                    else {
+                        if (typeof data.state !== 'undefined') newState = utils.makeBool(data.state);
+                        else if (typeof data.isOn !== 'undefined') newState = utils.makeBool(data.isOn);
+                        else if (typeof data.isDiverted !== 'undefined') newState = utils.makeBool(data.isDiverted);
+                        else newState = false;
+                    }
+                    break;
+                default:
+                    newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
+                    break;
+            }
+            let oldState = relay.state;
+            if (newState !== oldState) {
+                await this.setRelayState({ id: relayId, state: newState });
+            }
+            if (latch > 0) {
+                this.latches.setLatch(relayId, async () => {
+                    try {
+                        await this.setRelayState({ id: relayId, state: !newState })
+                        logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
+                    } catch (err) { logger.error(`Error processing latch timer`); }
+                }, latch);
+            }
+            return extend(true, {}, relay, { oldState: oldState, latchDuration: new Date().getTime() - relay.tripTime });
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what relay we are referring to.
+            // i2c:1:24:3
+            // i2c:1:24:inDigital:1 <= This is an example of an input we need to reject if the user is attempting to set a digital input.
+            if (bind.params.length === 0) return Promise.reject(new Error(`getDeviceState: You must supply an input or relay to get its state`));
+            await this.takeReadings();
+            if (bind.params[0].toLowerCase() === 'indigital') {
+                if (bind.params.length < 2) return Promise.reject(new Error(`getDeviceState: You must supply a digital input id to get its state`));
+                let inputId = parseInt(bind.params[1], 10);
+                let input = this.inDigital.find(elem => elem.id === inputId);
+                if (typeof input === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find digital input Id ${bind.params[1]}`));
+                if (!input.enabled) return Promise.reject(new Error(`getDeviceState: Input [${input.name}] is not enabled.`));
+                return input.value;
+            }
+            else {
+                let relayId = parseInt(bind.params[0], 10);
+                if (isNaN(relayId)) {
+                    return Promise.reject(new Error(`getDeviceState: Invalid relay Id ${bind.params[0]}`));
+                }
+                let relay = this.relays.find(elem => elem.id === relayId);
+                if (typeof relay === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find relay Id ${bind.params[0]}`));
+                if (!relay.enabled) return Promise.reject(new Error(`getDeviceState: Relay [${relay.name}] is not enabled.`));
+                return relay.state;
+            }
+        } catch (err) { return Promise.reject(err); }
     }
 }

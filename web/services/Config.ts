@@ -307,6 +307,13 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+        app.put('/config/i2c/:busNumber/:deviceId/saveRelay', async (req, res, next) => {
+            try {
+                let dev = cont.i2c.getDeviceById(parseInt(req.params.busNumber, 10), parseInt(req.params.deviceId, 10));
+
+
+            } catch (err) { next(err); }
+        });
         app.put('/config/i2c/:busNumber/:deviceAddress/deviceCommand/:command', async (req, res, next) => {
             try {
                 let result = await cont.i2c.runDeviceCommand(parseInt(req.params.busNumber, 10), parseInt(req.params.deviceAddress, 10), req.params.command, req.body);

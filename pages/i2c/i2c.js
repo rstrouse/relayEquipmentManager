@@ -1030,7 +1030,6 @@
             return div;
         }
     });
-
     $.widget('pic.pnlI2cFeeds', {
         options: {},
         _create: function () {
@@ -1400,11 +1399,19 @@
                     idType.val(evt.newItem.options.idType);
                 });
             });
-            line = $('<div></div>').appendTo(line);
-            $('<hr></hr>').appendTo(line);
+            if (o.controllerTypes.length === 1) {
+                line.css({ display: 'none' });
+            }
+            else {
+                line = $('<div></div>').appendTo(line);
+                $('<hr></hr>').appendTo(line);
+            }
             line = $('<div></div>').appendTo(line);
             $('<div></div>').appendTo(el).css({ width: '21rem' }).relayBoard({ binding: 'values.relays' })
                 .on('saveRelay', function (evt) {
+                    var dev = dataBinder.fromElement(el.parents('div.pnl-i2c-device:first'));
+                    $.putLocalService(`/config/i2c/${dev.busNumber}/${dev.address}/deviceCommand/setRelayOptions`, [evt.relay], 'Saving Relay...', function (res, status, xhr) {
+                    });
                 })
                 .on('clickRelay', function (evt) {
                     console.log(evt);
@@ -1413,6 +1420,12 @@
                         evt.currentTarget.setRelay(res);
                     });
                 });
+            if (o.controllerTypes.length === 1) {
+                el.find('div.relay-board').each(function () {
+                    this.relayCount(o.controllerTypes[0].options.maxRelays);
+                    idType.val(o.controllerTypes[0].options.idType);
+                });
+            }
         },
         val: function (val) {
             var self = this, o = self.options, el = self.element;

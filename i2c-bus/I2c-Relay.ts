@@ -309,6 +309,7 @@ export class i2cRelay extends i2cDeviceBase {
             for (let i = 0; i < this.relays.length; i++) {
                 vals.push(this.relays[i].state);
             }
+            return vals;
         }
         else if (name.startsWith('relayval')) {
             let ord = parseInt(name.substring(8), 10);
@@ -713,6 +714,16 @@ export class i2cRelay extends i2cDeviceBase {
         }
         catch (err) { logger.error(err); Promise.reject(err); }
     }
+    protected async setRelayOptions(arr) {
+        try {
+            for (let i = 0; i < arr.length; i++) {
+                let t = this.relays.find(elem => elem.id == arr[i].id);
+                if (typeof t !== 'undefined') {
+                    utils.setObjectProperties(arr[i], t);
+                }
+            }
+        } catch (err) { return Promise.reject(err); }
+    }
     public async setValues(vals): Promise<any> {
         try {
             await this.stopReadContinuous();
@@ -940,7 +951,7 @@ export class i2cRelay extends i2cDeviceBase {
                     }
                     break;
                 case 'object':
-                    if (isArray(data) && data.length > 0) {
+                    if (Array.isArray(data) && data.length > 0) {
                         this.stopReadContinuous();
                         let nOffs = 0;
                         let nOns = 0;
