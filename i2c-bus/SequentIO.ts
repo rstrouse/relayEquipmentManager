@@ -1119,6 +1119,7 @@ export class Sequent4RelIND extends SequentIO {
     }
     public async initRegisters(): Promise<boolean> {
         try {
+            if (typeof this.info.registers === 'undefined') this.ensureRegisters();
             let reg = this.info.registers.find(elem => elem.register === this.regs.relayCfg);
             let val = (this.i2c.isMock) ? 0x0f : await this.i2c.readByte(this.device.address, this.regs.relayCfg);
             if (val !== 0x0f) {
@@ -1136,6 +1137,7 @@ export class Sequent4RelIND extends SequentIO {
     public async takeReadings(): Promise<boolean> {
         try {
             // Read all the active inputs and outputs
+            if (typeof this.info.registers === 'undefined') this.ensureRegisters();
             let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn) || { name: 'IOVAL', register: 0, desc: 'Input Values', value: 0 };
             let val = (this.i2c.isMock) ? ((255 * Math.random()) & 0x0f) | (reg.value & 0xf0) : await this.i2c.readByte(this.device.address, this.regs.relayIn);
             let id = 0;

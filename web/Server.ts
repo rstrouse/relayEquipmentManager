@@ -336,7 +336,7 @@ export class SsdpServer extends ProtoServer {
                 .then(function () {
                     logger.silly('SSDP/UPnP Server started.');
                     self.isRunning = true;
-                });
+                }).catch(err => logger.error(`Error starting SSDP Server ${err.message}`));
 
             this.server.on('error', function (e) {
                 logger.error('error from SSDP:', e);

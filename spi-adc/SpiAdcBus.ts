@@ -13,6 +13,7 @@ export class SpiAdcBus {
     public busNumber: number;
     constructor(busNumber: number) {
         try {
+            this.busNumber = busNumber;
             switch (process.platform) {
                 case 'linux':
                     this._spiBus = require('spi-device');
@@ -21,8 +22,6 @@ export class SpiAdcBus {
                     this._spiBus = new mockSpi();
                     break;
             }
-            this.busNumber = busNumber;
-            //console.log(`Successfully created SPI Bus #${busNumber} Interface`);
         } catch (err) { console.log(err); }
     }
     public async initAsync(def: SpiController) {
