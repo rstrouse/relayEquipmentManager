@@ -1164,6 +1164,7 @@ export class Sequent4RelIND extends SequentIO {
             let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn) || { name: 'IOVAL', register: 0, desc: 'Input Values', value: 0 };
             let val = (this.i2c.isMock) ? ((255 * Math.random()) & 0x0f) | (reg.value & 0xf0) : await this.readCommand(this.regs.relayIn);
             let id = 0;
+            if (this.hasFault) val = 0x0f;
             for (let i = 3; i >= 0; i--) {
                 // Read the input.
                 let input = this.inDigital[id++];
