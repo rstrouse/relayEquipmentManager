@@ -117,6 +117,13 @@
             });
             return divOuter;
         },
+        setConnected: function (connected) {
+            var overlay = $('div[id=connectOverlay]');
+            if (connected === true && overlay.length > 0) overlay.remove();
+            else if (!connected && overlay.length === 0) {
+                overlay = $('<div id="connectOverlay" style="background-color:lavender;opacity:.4;z-index:501"></div>').addClass('ui-widget-overlay').addClass('ui-front').appendTo(document.body);
+            }
+        },
         _initServices: function () {
             var self = this, o = self.options, el = self.element;
             o.socket = io('/', { reconnectionDelay: 2000, reconnection: true, reconnectionDelayMax: 20000 });
@@ -185,9 +192,11 @@
                 $('div.picController').each(function () {
                     this.setConnectionError({ status: { val: 255, name: 'error', desc: 'Connection Error' } });
                 });
-                el.find('div.picControlPanel').each(function () {
-                    $(this).addClass('picDisconnected');
-                });
+                self.setConnected(false);
+                //el.addClass('picDisconnected');
+                //el.find('div.dashContainer').each(function () {
+                //    $(this).addClass('picDisconnected');
+                //});
                 el.find(`.pnl-i2c-device`).each(function () {
                     this.setConnected(false);
                 });
@@ -211,9 +220,14 @@
             o.socket.on('connect', function (sock) {
                 console.log({ msg: 'socket connected:', sock: sock });
                 o.isConnected = true;
-                el.find('div.picControlPanel').each(function () {
-                    $(this).removeClass('picDisconnected');
+                $.getLocalService(`/devices/state`, null, 'Loading Socket Data...', function (data, status, xhr) {
+                    console.log(data);
                 });
+                self.setConnected(true);
+                //el.removeClass('picDisconnected');
+                //el.find('div.dashContainer').each(function () {
+                //    $(this).removeClass('picDisconnected');
+                //});
                 el.find(`.pnl-i2c-device`).each(function () {
                     this.setConnected(true);
                 });

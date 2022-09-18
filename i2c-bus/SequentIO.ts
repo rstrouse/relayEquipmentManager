@@ -1096,7 +1096,7 @@ export class Sequent4RelIND extends SequentIO {
     protected latches = new LatchTimers();
     protected _relayBitmask1 = 0;
     public get inDigital(): any[] { return typeof this.inputs.inDigital === 'undefined' ? this.inputs.inDigital = [] : this.inputs.inDigital; }
-    protected toHexString(bytes: number[]) { return bytes.reduce((output, elem) => (output + '0x' + ('0' + elem.toString(16)).slice(-2)) + ' ', ''); }
+    protected toHexString(bytes: number[] | number) { return Array.isArray(bytes) ? bytes.reduce((output, elem) => (output + '0x' + ('0' + elem.toString(16)).slice(-2)) + ' ', '') : '0x' + ('0' + bytes.toString(16)).slice(-2); }
     protected async sendCommand(command: number[]): Promise<{ bytesWritten: number, buffer: Buffer }> {
         try {
             let buffer = Buffer.from(command);
@@ -1128,7 +1128,8 @@ export class Sequent4RelIND extends SequentIO {
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN Digital', 'DIN', this.inDigital, 4);
             this.ensureRelays('Relay', this.relays, 4);
-            this.initRegisters();
+            await this.initRegisters();
+            await this.initRelayStates();
             return Promise.resolve(true);
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
@@ -1167,7 +1168,9 @@ export class Sequent4RelIND extends SequentIO {
                 // Read the input.
                 let input = this.inDigital[id++];
                 if (input.enabled) {
-                    let v = utils.makeBool((1 << i) & val);
+                    // NOTE: This bit is set when the input is off.  This is a bit
+                    // of a goober thing.  The same is not true for the relays.
+                    let v = !utils.makeBool((1 << i) & val);
                     if (input.value !== v) {
                         input.value = v;
                         webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inDigital: [input]} } });
@@ -1188,8 +1191,7 @@ export class Sequent4RelIND extends SequentIO {
                     }
                 }
             }
-            if (reg.value !== val)
-                webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+            if (reg.value !== val) webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
             reg.value = val;
             this.emitFeeds();
             return true;
@@ -1204,6 +1206,7 @@ export class Sequent4RelIND extends SequentIO {
                 this.relays = opts.relays;
                 await this.initRegisters();
             }
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
             return Promise.resolve(this.options);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
@@ -1303,10 +1306,19 @@ export class Sequent4RelIND extends SequentIO {
             let byte = states & 0xf0;
             let tries = 0;
             let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn) || { name: 'IOVAL', register: 0, desc: 'Input Values', value: 0 };
+            this.relays.sort((a, b) => { return a.id - b.id; });
             // Not sure why but the Sequent command line code retries 10 times if it does not get the relay set.
             while (tries++ < 10 && byte != (reg.value & 0xf0)) {
                 if (!this.i2c.isMock) await this.sendCommand([this.regs.relayOut, byte]);
                 else reg.value = states;
+                for (let i = 0; i < this.relays.length; i++) {
+                    let r = this.relays[i];
+                    let state = ((byte >> 4) & (1 << i));
+                    if (state !== r.state) {
+                        r.state = state;
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [r] });
+                    }
+                }
                 await this.takeReadings();
                 if (tries > 1) logger.warn(`Retry #${tries - 1} setting relay states ${this.device.name} expected ${byte} but got ${reg.value & 0xf0}`);
             }
@@ -1314,7 +1326,7 @@ export class Sequent4RelIND extends SequentIO {
         }
         catch (err) { logger.error(`Error setting relay states ${this.device.name}`); }
     }
-    protected encodeRelayBit(byte, id, state) { return state ? byte |= (1 << this.relayChMap[id - 1]) : byte &= ~(1 << this.relayChMap[id - 1]); }
+    protected encodeRelayBit(byte, id, state) { return state ? byte |= (this.relayMaskMap[id - 1]) : byte &= ~(this.relayMaskMap[id - 1]); }
     protected async initRelayStates() {
         this.relays.sort((a, b) => { return a.id - b.id; });
         try {
@@ -1323,6 +1335,7 @@ export class Sequent4RelIND extends SequentIO {
             let rval = reg.value;
             for (let i = 0; i < this.relays.length; i++) {
                 let r = this.relays[i];
+                if (!r.enabled) continue;
                 let state = false;
                 if (r.initState === 'on') state = true;
                 else if (r.initState === 'off') state = false;
@@ -1330,10 +1343,13 @@ export class Sequent4RelIND extends SequentIO {
                 else if (r.invert === true) state = true;
                 let target = r.invert === true ? !utils.makeBool(state) : utils.makeBool(state);
                 // Now lets set the bit.
-                if(r.enabled) rval = this.encodeRelayBit(reg.value, r.id, target);
+                rval = this.encodeRelayBit(rval, r.id, target);
+                if (target !== r.state) {
+                    logger.info(`${this.device.name} Init Relay State [${r.id}] ${this.toHexString(this.relayMaskMap[r.id - 1])}: ${this.toHexString(reg.value)} ===> ${this.toHexString(rval)}`)
+                }
             }
             await this.setRelayStates(rval);
-        } catch (err) { logger.error(`Error initializing relay states ${this.device.name}`); }
+        } catch (err) { logger.error(`Error initializing relay states ${this.device.name}: ${err}`); }
     }
     public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
         let relay = this.relays.find(elem => { return elem.id === opts.id });

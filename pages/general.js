@@ -4,7 +4,7 @@
         _create: function () {
             var self = this, o = self.options, el = self.element;
             self._buildControls();
-            el[0].checkChanged = function () { return self.checkChanged(); }
+            el[0].checkChanged = function () { return self.checkChanged(); };
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;

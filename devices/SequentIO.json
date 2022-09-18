@@ -2003,6 +2003,29 @@
                   }
                 },
                 {
+                  "bind": "options.readInterval",
+                  "dataType": "int",
+                  "default": false,
+                  "field": {
+                    "binding": "options.readInterval",
+                    "type": "valueSpinner",
+                    "labelText": "Read Interval",
+                    "min": 500,
+                    "max": 99000,
+                    "canEdit": true,
+                    "fmtMask": "#,##0",
+                    "emptyMask": "--",
+                    "labelAttrs": {
+                      "style": { "paddingRight": ".25rem" }
+                    },
+                    "inputAttrs": {
+                      "style": { "width": "4.5rem" }
+                    },
+                    "units": "ms",
+                    "style": { "marginLeft": "0rem" }
+                  }
+                },
+                {
                   "dataType": "panel",
                   "field": {
                     "type": "fieldset",

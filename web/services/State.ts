@@ -14,6 +14,13 @@ import { oneWire } from "../../one-wire/OneWireBus";
 
 export class StateRoute {
     public static initRoutes(app: express.Application) {
+        app.get('/devices/state', async (req, res, next) => {
+            try {
+                res.status(200).send(cont.get(true));
+
+
+            } catch (err) { next(err); }
+        });
         app.get('/devices/all', (req, res) => {
             let devs = cont.analogDevices;
             let devices = [];
