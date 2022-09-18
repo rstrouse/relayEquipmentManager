@@ -1096,6 +1096,28 @@ export class Sequent4RelIND extends SequentIO {
     protected latches = new LatchTimers();
     protected _relayBitmask1 = 0;
     public get inDigital(): any[] { return typeof this.inputs.inDigital === 'undefined' ? this.inputs.inDigital = [] : this.inputs.inDigital; }
+    protected toHexString(bytes: number[]) { return bytes.reduce((output, elem) => (output + '0x' + ('0' + elem.toString(16)).slice(-2)) + ' ', ''); }
+    protected async sendCommand(command: number[]): Promise<{ bytesWritten: number, buffer: Buffer }> {
+        try {
+            let buffer = Buffer.from(command);
+            let w = await this.i2c.writeCommand(this.device.address, buffer);
+            logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
+            this.hasFault = false;
+            return Promise.resolve(w);
+        }
+        catch (err) { logger.error(`${this.device.address} ${command}: ${err.message}`); this.hasFault = true; }
+    }
+    protected async readCommand(command: number): Promise<number> {
+        try {
+            let r = await this.i2c.readByte(this.device.address, command);
+            logger.debug(`${this.device.address} - ${this.device.name} Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
+            this.hasFault = false;
+            return Promise.resolve(r);
+        }
+        catch (err) {
+            logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} Read Command: ${err.message}`); this.hasFault = true;
+        }
+    }
     public async initAsync(deviceType): Promise<boolean> {
         try {
             this.stopPolling();
@@ -1121,10 +1143,10 @@ export class Sequent4RelIND extends SequentIO {
         try {
             if (typeof this.info.registers === 'undefined') this.ensureRegisters();
             let reg = this.info.registers.find(elem => elem.register === this.regs.relayCfg);
-            let val = (this.i2c.isMock) ? 0x0f : await this.i2c.readByte(this.device.address, this.regs.relayCfg);
+            let val = (this.i2c.isMock) ? 0x0f : await this.readCommand(this.regs.relayCfg);
             if (val !== 0x0f) {
-                await this.i2c.writeByte(this.device.address, this.regs.relayCfg, 0x0f);
-                val = (this.i2c.isMock) ? 0x0f : await this.i2c.readByte(this.device.address, this.regs.relayCfg);
+                await this.sendCommand([this.regs.relayCfg, 0x0f]);
+                val = (this.i2c.isMock) ? 0x0f : await this.readCommand(this.regs.relayCfg);
             }
             if (reg.value !== val) {
                 webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
@@ -1139,7 +1161,7 @@ export class Sequent4RelIND extends SequentIO {
             // Read all the active inputs and outputs
             if (typeof this.info.registers === 'undefined') this.ensureRegisters();
             let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn) || { name: 'IOVAL', register: 0, desc: 'Input Values', value: 0 };
-            let val = (this.i2c.isMock) ? ((255 * Math.random()) & 0x0f) | (reg.value & 0xf0) : await this.i2c.readByte(this.device.address, this.regs.relayIn);
+            let val = (this.i2c.isMock) ? ((255 * Math.random()) & 0x0f) | (reg.value & 0xf0) : await this.readCommand(this.regs.relayIn);
             let id = 0;
             for (let i = 3; i >= 0; i--) {
                 // Read the input.
@@ -1283,7 +1305,7 @@ export class Sequent4RelIND extends SequentIO {
             let reg = this.info.registers.find(elem => elem.register === this.regs.relayIn) || { name: 'IOVAL', register: 0, desc: 'Input Values', value: 0 };
             // Not sure why but the Sequent command line code retries 10 times if it does not get the relay set.
             while (tries++ < 10 && byte != (reg.value & 0xf0)) {
-                if (!this.i2c.isMock) await this.i2c.writeByte(this.device.address, this.regs.relayOut, byte);
+                if (!this.i2c.isMock) await this.sendCommand([this.regs.relayOut, byte]);
                 else reg.value = states;
                 await this.takeReadings();
                 if (tries > 1) logger.warn(`Retry #${tries - 1} setting relay states ${this.device.name} expected ${byte} but got ${reg.value & 0xf0}`);
