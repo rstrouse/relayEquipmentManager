@@ -400,14 +400,21 @@ export class Controller extends ConfigItem {
         let allCons = this.connections.toArray();
         let conns = allCons.filter(elem => elem.type.name === data.type);
         let hostnames: string[] = (typeof data.hostnames !== 'undefined') ? data.hostnames : [];
+        let loopback = utils.makeBool(data.loopback);
+        if (loopback) logger.info(`Requesting a loopback connection`);
         let c: ConnectionSource;
-        for (let i = 0; i < conns.length; i++){
-            if (conns[i].ipAddress === data.ipAddress && conns[i].port === data.port) c = conns[i] as ConnectionSource;
-            else if (hostnames.includes(conns[i].ipAddress) && conns[i].port === data.port) c = conns[i] as ConnectionSource;
+        for (let i = 0; i < conns.length; i++) {
+            let conn = conns[i]
+            if (loopback) {
+                if (conn.port === data.port && (conn.ipAddress.toLowerCase() === 'localhost' || conn.ipAddress === '127.0.0.1')) c = conn as ConnectionSource;
+            }
+            else if (conn.ipAddress === data.ipAddress && conn.port === data.port) c = conn as ConnectionSource;
+            else if (hostnames.includes(conns[i].ipAddress) && conns[i].port === data.port) c = conn as ConnectionSource;
         }
         // if connection is undefined; or address/port do not match, and server is not localhost; set data and reset server
         if (typeof c === 'undefined') {
-            if (hostnames.length === 1) data.ipAddress = hostnames[0];
+            if (loopback) data.ipAddress = hostnames.length == 1 ? 'localhost' : '127.0.0.1';
+            else if (hostnames.length === 1) data.ipAddress = hostnames[0];
             c = await this.setConnectionAsync(data);
             setTimeout(async () => { await cont.reset() }, 200); // reset server after req is returned
         };

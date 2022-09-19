@@ -360,6 +360,7 @@ class SocketServerConnection extends ServerConnection {
             let url = this.server.url;
             this._sock = io(url, { reconnectionDelay: 2000, reconnection: true, reconnectionDelayMax: 20000 });
             this._sock.on('connect_error', (err) => { logger.error(`Error connecting to ${this.server.name} ${url}: ${err.message}`); });
+            this._sock.on('error', (err) => { logger.error(`Socket Error ${this.server.name} ${url}: ${err.message}`); })
             this._sock.on('close', (sock) => { this.isOpen = false; logger.info(`Socket ${this.server.name} ${url} closed`); });
             this._sock.on('reconnecting', (sock) => { logger.info(`Reconnecting to ${this.server.name} : ${url}`); });
             this._sock.on('connect', (sock) => {
@@ -459,8 +460,11 @@ class MqttConnection extends ServerConnection {
     constructor(server: ConnectionSource) { super(server); }
     public async disconnect() {
         try {
-            if (typeof this._mqtt !== 'undefined') this._mqtt.removeAllListeners();
-            this._mqtt.end(false);
+            if (typeof this._mqtt !== 'undefined') {
+                this._mqtt.removeAllListeners();
+                this._mqtt.on('error', err => logger.error(`MQTT Error: ${err}`));
+                this._mqtt.end(false);
+            }
             this.isOpen = false;
             super.disconnect();
         } catch (err) { logger.error(`Error disconnecting MQTT ${this.server.name}`); }
