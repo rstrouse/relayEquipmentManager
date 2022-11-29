@@ -515,7 +515,7 @@
                 bindColumn: 0, displayColumn: 1, items: [{ val: 'http:', name: 'http:', desc: 'The Equipment Manager is communicating without an SSL certificate' },
                 { val: 'https:', name: 'https:', desc: 'The Equipment Manager is communicating using an SSL certificate.' }]
             });
-            $('<div></div>').appendTo(line).inputField({ labelText: '', binding: binding + 'ipAddress', inputAttrs: { maxlength: 20 }, labelAttrs: { style: { width: '0px' } } });
+            $('<div></div>').appendTo(line).inputField({ labelText: '', binding: binding + 'ipAddress', inputAttrs: { style: {width: '18rem'} }, labelAttrs: { style: { width: '0px' } } });
             $('<div></div>').appendTo(line).inputField({ labelText: ':', dataType: 'int', binding: binding + 'port', inputAttrs: { maxlength: 7 }, labelAttrs: { style: { marginLeft: '.15rem', marginRigt: '.15rem' } } });
             line = $('<div></div>').appendTo(el);
             $('<div></div>').appendTo(line).inputField({ labelText: 'User Name', binding: binding + 'userName', labelAttrs: { style: { width: '5.5rem' } }, inputAttrs: { maxlength: 20 } });
@@ -540,7 +540,7 @@
                 bindColumn: 0, displayColumn: 1, items: [{ val: 'mqtt:', name: 'mqtt:', desc: 'Communication with the broker over TCP socket.' },
                 { val: 'mqtts:', name: 'mqtts:', desc: 'Communication with the broker over a TLS connection.' }]
             });
-            $('<div></div>').appendTo(line).inputField({ labelText: '', binding: binding + 'ipAddress', inputAttrs: { maxlength: 20 }, labelAttrs: { style: { width: '0px' } } });
+            $('<div></div>').appendTo(line).inputField({ labelText: '', binding: binding + 'ipAddress', inputAttrs: { style: {width:'18rem'} }, labelAttrs: { style: { width: '0px' } } });
             $('<div></div>').appendTo(line).inputField({ labelText: ':', dataType: 'int', binding: binding + 'port', inputAttrs: { maxlength: 7 }, labelAttrs: { style: { marginLeft: '.15rem', marginRigt: '.15rem' } } });
             line = $('<div></div>').appendTo(el);
             $('<div></div>').appendTo(line).inputField({ labelText: 'User Name', binding: binding + 'userName', labelAttrs: { style: { width: '5.5rem' } }, inputAttrs: { maxlength: 20 } });
