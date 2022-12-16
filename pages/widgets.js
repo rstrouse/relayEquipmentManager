@@ -3106,6 +3106,7 @@ $.ui.position.fieldTip = {
             el[0].clear = function () { self.clear(); }
             el[0].actions = function (val) { return self.actions(val); };
             el[0].val = function (val) { return self.val(val); };
+            el[0].selectByKey = function (key) { return self.selectByKey(key); }
         },
         _getColumn: function (nCol) { return this.options.columns[nCol]; },
         _createCaption: function () {
@@ -3197,20 +3198,35 @@ $.ui.position.fieldTip = {
             //self._createActionButton('fas fa-trash', 'Remove ' + o.itemName).addClass('btn-remove').appendTo(btn);
             return row;
         },
+        _findRowByKey: function (key) {
+            var self = this, o = self.options, el = self.element;
+            var row;
+            if (typeof o.key !== 'undefined') {
+                // See if the key exists.
+                el.find('table.slist-table:first > tbody > tr').each(function () {
+                    if (key === $(this).data('key')) {
+                        row = $(this);
+                        return false;
+                    }
+                });
+            }
+            return row;
+        },
         saveRow: function (data) {
             var self = this, o = self.options, el = self.element;
             if (typeof o.key !== 'undefined') {
                 // See if the key exists.
                 var key = data[o.key];
                 var row;
-                el.find('table.slist-table:first > tbody > row').each(function () {
+                el.find('table.slist-table:first > tbody > tr').each(function () {
+                    //console.log({ key: key, row: row });
                     if (key === $(this).data('key')) {
                         row = $(this);
                         dataBinder.bind(row, data);
                         return false;
                     }
                 });
-                return (typeof row === 'undefined') ? addRow(data) : row;
+                return (typeof row === 'undefined') ? self.addRow(data) : row;
             }
             else
                 self.addRow(data);
@@ -3273,12 +3289,18 @@ $.ui.position.fieldTip = {
             self.actions(o.actions);
             if (typeof o.style !== 'undefined') el.css(o.style);
         },
+        selectByKey: function (key) {
+            var self = this, o = self.options, el = self.element;
+            self.selectRow(self._findRowByKey(key));
+        },
         selectRow: function (row) {
             var self = this, o = self.options, el = self.element;
             el.find('table.slist-table > tbody > tr.selected').removeClass('selected');
-            row.addClass('selected');
             var evt = $.Event('selected');
-            evt.dataKey = row.data('key');
+            if (typeof row !== 'undefined') {
+                row.addClass('selected');
+                evt.dataKey = row.data('key');
+            }
             el.trigger(evt);
         }
 

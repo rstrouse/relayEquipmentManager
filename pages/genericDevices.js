@@ -10,11 +10,11 @@
             // var tabs = $('<div class="picTabPanel"></div>').appendTo(el);
             el.addClass('pnl-generic-devices');
             $.getLocalService('/config/options/genericDevices', null, function (data, status, xhr) {
-                var outer = $('<div></div>').appendTo(el).addClass('control-panel');
-                var head = $('<div></div>').appendTo(outer).addClass('pnl-settings-header').addClass('control-panel-title');
-                $('<span></span>').appendTo(head).addClass('header-text').text('Manage Generic Devices');
-                $('<br></br>').appendTo(outer);
-                var devices = $('<div></div>').appendTo(outer).pnlDevices();
+                //var outer = $('<div></div>').appendTo(el).addClass('control-panel');
+                //var head = $('<div></div>').appendTo(outer).addClass('pnl-settings-header').addClass('control-panel-title');
+                //$('<span></span>').appendTo(head).addClass('header-text').text('Manage Generic Devices');
+                //$('<br></br>').appendTo(outer);
+                var devices = $('<div></div>').appendTo(el).pnlDevices().css({ display: 'inline-block', marginRight: '.5rem' });
 
                 // o.deviceTypes = data.deviceTypes;
                 devices[0].dataBind(data.genericDevices.devices);
@@ -33,14 +33,28 @@
             var self = this, o = self.options, el = self.element;
             self._buildControls();
             el[0].dataBind = function (genDev) { self.dataBind(genDev); }
-            el[0].reloadGenericDevices = function() {self._reloadGenericDevices();}
+            el[0].reloadGenericDevices = function () { self._reloadGenericDevices(); }
+            el[0].selectDeviceById = function (id) { self._selectDeviceById(id); }
+            el[0].saveDevice = function (device) { self._saveDevice(device); }
         },
         _reloadGenericDevices() {
             var self = this, o = self.options, el = self.element;
             $.getLocalService('/config/options/genericDevices', null, function (genDev, status, xhr) {
-                console.log(genDev);
+                //console.log(genDev);
                 self.dataBind(genDev.genericDevices.devices);
             });
+        },
+        _selectDeviceById: function (deviceId) {
+            var self = this, o = self.options, el = self.element;
+            el.find('div.slist-list:first')[0].selectByKey(deviceId);
+        },
+        _saveDevice: function (device) {
+            var self = this, o = self.options, el = self.element;
+            var list = el.find('div.slist-list:first')[0];
+            if (typeof device !== 'undefined') {
+                list.saveRow(device);
+                //list.selectByKey(device.id);
+            }
         },
         _createDeviceDialog: function (id, title, deviceTypes) {
             console.log(deviceTypes)
@@ -54,11 +68,14 @@
                         text: 'Save', icon: '<i class="fas fa-save"></i>',
                         click: function () {
                             var device = dataBinder.fromElement(dlg);
+                            device.options = { name: device.name };
                             if (dataBinder.checkRequired(dlg, true)) {
                                 $.putLocalService('/config/genericDevices/device', device, 'Saving Generic Device...', function (genDev, status, xhr) {
                                     // $.pic.modalDialog.closeDialog(self);
                                     $.pic.modalDialog.closeDialog($.find('div#create-generic-device'));
-                                    self._reloadGenericDevices();
+                                    //self._reloadGenericDevices();
+                                    self._saveDevice(genDev);
+                                    setTimeout(() => { self._selectDeviceById(genDev.id) }, 1);
                                 });
                             }
                         }
@@ -89,15 +106,15 @@
                 // c.device = e.newItem;
 
                 // need to close panel in addition to disable
-                dlg.find('div.picPickList[data-bind="typeId"]')[0].disabled(true);
-                dlg.find('div.picPickList[data-bind="typeId"]')[0].blur();
-                dlg.find('div.pnl-generic-device-details').each(function () { this.dataBind({deviceType: c}); });
+                //dlg.find('div.picPickList[data-bind="typeId"]')[0].disabled(true);
+                //dlg.find('div.picPickList[data-bind="typeId"]')[0].blur();
+                //dlg.find('div.pnl-generic-device-details').each(function () { this.dataBind({deviceType: c}); });
             });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive' });
             line = $('<div></div>').appendTo(dlg);
             $('<input type="hidden"></input>').appendTo(line).attr('data-bind', 'id').attr('data-datatype', 'int');
-            // $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxlength: 24 }, labelAttrs: { style: { width: '5.5rem' } } });
-            $('<div></div>').appendTo(dlg).pnlDeviceDetails({ deviceType: {options: {}} })
+            $('<div></div>').appendTo(line).inputField({ labelText: 'Name', binding: 'name', inputAttrs: { maxlength: 24 }, labelAttrs: { style: { width: '5.5rem' } } });
+            //$('<div></div>').appendTo(dlg).pnlDeviceDetails({ deviceType: {options: {}} })
             dlg.css({ overflow: 'visible' });
             return dlg;
         },
@@ -105,10 +122,33 @@
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-generic-devices-crud').addClass('list-outer');
             el.attr('data-bind', o.binding)
+            $('<div></div>').appendTo(el).selectList({
+                id: 'genericDeviceList',
+                key: 'id',
+                canCreate: true,
+                actions: { canCreate: true },
+                caption: 'Devices', itemName: 'GenericDevice',
+                columns: [{ binding: 'options.name', text: 'Name', style: { width: '177px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+                { binding: 'deviceType.name', text: 'Type', style: { width: '197px' } }]
+            }).on('selected', function (evt) {
+                $.getLocalService('/config/options/genericDevices', null, function (data, status, xhr) {
+                    let device = data.genericDevices.devices.find(el => el.id === evt.dataKey);
+                    $('#pnl-edit-generic-device').remove();
+                    if (typeof device !== 'undefined')  $('<div></div>').appendTo('.pnl-generic-devices').pnlDeviceTab(device);
+                });
+            }).on('additem', function (evt) {
+                $.getLocalService('/config/options/genericDevices', null, function (data, status, xhr) {
+                    $('#pnl-edit-generic-device').remove();
+                    var dlg = self._createDeviceDialog('dlgAddGenericDevice', 'Add a new Generic Device', data.deviceTypes);
+                    dataBinder.bind(dlg, { isActive: true });
+                });
+            });
+            /*
             $('<div></div>').appendTo(el).crudList({
                 key: 'id', actions: { canCreate: true, canEdit: true, canRemove: true },
                 caption: 'Devices', itemName: 'GenericDevice',
-                columns: [{ binding: 'options.name', text: 'Name', style: { width: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, { binding: 'deviceType.category', text: 'Type', style: { width: '177px' } }]
+                columns: [{ binding: 'options.name', text: 'Name', style: { width: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } },
+                { binding: 'deviceType.category', text: 'Type', style: { width: '177px' } }]
             }).on('additem', function (evt) {
                 $.getLocalService('/config/options/genericDevices', null, function (data, status, xhr) {
                     $('#pnl-edit-generic-device').remove();
@@ -151,11 +191,11 @@
                 });
 
             });
-
+            */
         },
         dataBind: function (data) {
             var self = this, o = self.options, el = self.element;
-            var list = el.find('div.crud-list:first')[0];
+            var list = el.find('div.slist-list:first')[0];
             list.clear();
             for (var i = 0; i < data.length; i++) {
                 //console.log(data[i]);
@@ -198,7 +238,8 @@
             $('<div></div>').appendTo(tabBar[0].addTab({ id: 'tabFeeds', text: 'Feeds' })).pnlDeviceFeeds(o)[0].dataBind(o.feeds);
             tabBar[0].selectTabById('tabOptions');
             el.attr('id', 'pnl-edit-generic-device');
-            el.addClass('.pnl-edit-generic-device')
+            el.addClass('pnl-edit-generic-device');
+            el.css({ display: 'inline-block' });
             $('<input type="hidden"></input>').appendTo(el).attr('data-bind', "id").attr('data-datatype', 'int');
         }
     });
@@ -214,6 +255,7 @@
             var self = this, o = self.options, el = self.element;
             $('.pnl-generic-device-details').empty();
             el.addClass('pnl-generic-device-details');
+            templateBuilder.createObjectOptions(el, o.deviceType);
             self.dataBind();
             if (typeof o.id !== 'undefined'){
                 var btnPnl = $('<div class="btn-panel"></div>').appendTo(el);
@@ -232,8 +274,9 @@
                 if (isNaN(dev.id)) delete dev.id;
                 $.putLocalService('/config/genericDevices/device', dev, 'Saving Generic Device...', function (genDev, status, xhr) {
                     self.dataBind(genDev);
-                    $.find('div.pnl-generic-devices-crud:first')[0].reloadGenericDevices();
-                    $('#pnl-edit-generic-device').remove();
+                    $.find('div.pnl-generic-devices-crud:first')[0].saveDevice(genDev);
+                    //$.find('div.pnl-generic-devices-crud:first')[0].reloadGenericDevices();
+                    //$('#pnl-edit-generic-device').remove();
                 });
             }
         },
@@ -272,10 +315,11 @@
                 }
             }
             console.log(o);
-            el.parents('div.control-panel:first').find('div.control-panel-title').text(`Edit ${o.deviceType.name}`);
-            templateBuilder.createObjectOptions(el, o.deviceType);
+            if (typeof o.deviceType !== 'undefined') {
+                el.parents('div.control-panel:first').find('div.control-panel-title').text(`Edit ${o.deviceType.name}`);
+                el.attr('data-typeId', o.deviceType.id);
+            }
             dataBinder.bind(el, o);
-            el.attr('data-typeId', o.deviceType.id);
             el.attr('data-id', o.id);
         }
     });
@@ -285,7 +329,7 @@
         _create: function () {
             var self = this, o = self.options, el = self.element;
             self._buildControls();
-            el[0].dataBind = function (feeds) { self.dataBind(feeds); }
+            el[0].dataBind = function (triggers) { self.dataBind(triggers); }
         },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;

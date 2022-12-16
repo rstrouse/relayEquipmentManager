@@ -650,7 +650,7 @@ export class SequentMegaIND extends SequentIO {
             // Ch2: 46
             // Ch3: 48
             // Ch4: 50
-            let val = await this.readWord(44 + (2 * (id - 1))) / 1000;
+            let val = this.i2c.isMock ? 4 + (16 * Math.random()) : await this.readWord(44 + (2 * (id - 1))) / 1000;
             let io = this.in4_20[id - 1];
             if (io.value !== val) {
                 io.value = val;

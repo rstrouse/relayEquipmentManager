@@ -604,6 +604,146 @@
         }
       ],
       "interfaces": [ "i2c" ]
+    },
+    {
+      "id": 101,
+      "name": "IXIAN pH Transmitter",
+      "deviceClass": "GenericDeviceBase",
+      "module": "./genericDevices",
+      "convertValue": "device.values.pH = Math.round((14 * ((device.values.adcValue - 4) / 16)) * 1000) / 1000;",
+      "inputs": [
+        {
+          "name": "adcValue",
+          "desc": "ADC Value",
+          "dataType": "number"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "ph",
+          "desc": "pH",
+          "maxSamples": 50
+        },
+        {
+          "name": "all",
+          "desc": "All Values",
+          "maxSamples": 50
+        }
+      ],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block"
+            }
+          },
+          "options": [
+            {
+              "bind": "options.name",
+              "dataType": "string",
+              "default": "",
+              "field": {
+                "type": "inputField",
+                "required": false,
+                "bind": "options.name",
+                "labelText": "Name",
+                "canEdit": true,
+                "inputAttrs": {
+                  "maxLength": 24,
+                  "style": {
+                    "width": "16rem"
+                  }
+                },
+                "style": {
+                  "display": "inline-block"
+                }
+              }
+            },
+            {
+              "dataType": "boolean",
+              "default": true,
+              "field": {
+                "type": "checkbox",
+                "bind": "isActive",
+                "labelText": "Is Active",
+                "style": { "display": "inline-block" }
+              }
+            },
+            {
+              "dataType": "panel",
+              "field": {
+                "type": "fieldset",
+                "legend": "Readings",
+                "cssClass": "genericReadingValues",
+                "style": {
+                  "display": "block",
+                  "verticalAlign": "top"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "display": "block",
+                      "fontSize": ".8rem",
+                      "lineHeight": "1.2"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Current",
+                        "binding": "values.adcValue",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0###",
+                        "emptyMask": "--.-",
+                        "units": "mA",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": { "display": "block" }
+                      }
+
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "pH",
+                        "binding": "values.pH",
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0###",
+                        "emptyMask": "--.-",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        },
+                        "style": { "display": "block" }
+
+                      }
+                    },
+
+                    {
+                      "field": {
+                        "binding": "values.units",
+                        "type": "span",
+                        "cssClass": "picSpinner-units picUnits"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [ "generic" ]
     }
   ]
 }
