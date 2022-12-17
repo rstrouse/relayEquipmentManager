@@ -608,15 +608,31 @@
     {
       "id": 101,
       "name": "IXIAN pH Transmitter",
-      "deviceClass": "GenericDeviceBase",
-      "module": "./genericDevices",
+      "deviceClass": "IxianPhDevice",
+      "module": "./IxianDevices",
       "convertValue": "device.values.pH = Math.round((14 * ((device.values.adcValue - 4) / 16)) * 1000) / 1000;",
       "inputs": [
         {
           "name": "adcValue",
           "desc": "ADC Value",
           "dataType": "number"
+        },
+        {
+          "name": "tempF",
+          "desc": "Temperature in Fahrenheit",
+          "dataType": "number"
+        },
+        {
+          "name": "tempC",
+          "desc": "Temperature in Celcius",
+          "dataType": "number"
+        },
+        {
+          "name": "tempK",
+          "desc": "Temperature in Kelvin",
+          "dataType": "number"
         }
+
       ],
       "outputs": [
         {
@@ -728,13 +744,38 @@
 
                       }
                     },
-
                     {
                       "field": {
-                        "binding": "values.units",
-                        "type": "span",
-                        "cssClass": "picSpinner-units picUnits"
-                      }
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "staticField",
+                            "labelText": "Temperature",
+                            "binding": "values.temperature",
+                            "dataType": "number",
+                            "fmtMask": "#,##0.00",
+                            "units": "&deg;",
+                            "emptyMask": "--.-",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            },
+                            "style": { "display": "inline-block" }
+                          }
+                        },
+                        {
+                          "field": {
+                            "type": "span",
+                            "binding": "values.tempUnits",
+                            "cssClass": "picStatic-units picUnits"
+
+                          }
+                        }
+                      ]
+
                     }
                   ]
                 }

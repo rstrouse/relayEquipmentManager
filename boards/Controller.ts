@@ -730,7 +730,7 @@ export class Controller extends ConfigItem {
     }
     public async verifyDeviceFeed(obj: any) {
         let binding = new DeviceBinding(obj.deviceBinding);
-        let dev = this.getDeviceByBinding(binding);
+        let dev = await this.getDeviceByBinding(binding);
         switch (binding.type) {
             case 'i2c':
                 // feed = (dev as I2cDevice).getDeviceFeed(obj);
@@ -746,6 +746,7 @@ export class Controller extends ConfigItem {
                 break;
             case 'generic':
                 (dev as GenericDevice).verifyDeviceFeed(obj);
+                gdc.resetDeviceFeeds(binding.deviceId);
                 break;
             case 'oneWire':
                 (dev as OneWireDevice).verifyDeviceFeed(obj);
@@ -963,6 +964,7 @@ export class Feed {
             let v = typeof this.translatePayload === 'function' ? this.translatePayload(this, value) : value;
             // Really all that is going on below is verifying the differences between what we sent previously
             // and what the current value is.
+            //console.log({ v: v, last: this.lastSent });
             if (!this.feed.changesOnly ||
                 (typeof v === 'undefined' && typeof this.lastSent !== 'undefined') ||
                 (typeof v === 'object' ? JSON.stringify(this.lastSent) !== JSON.stringify(v) : v !== this.lastSent)) {
@@ -973,7 +975,7 @@ export class Feed {
                     deviceBinding: this.feed.deviceBinding,
                     options: this.feed.options
                 });
-                this.lastSent = v;
+                this.lastSent = typeof v === 'object' ? extend(true, {}, v) : v;
                 if (typeof this.feed.property !== 'undefined'){ // socket
                     logger.verbose(`Feed ${this.server.server.type.name}/${this.server.server.name} sending ${this.feed.property}: ${JSON.stringify(v)} to ${this.feed.deviceBinding}`);
                 }
