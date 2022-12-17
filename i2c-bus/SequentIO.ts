@@ -583,8 +583,40 @@ export class SequentMegaIND extends SequentIO {
             // Ch2: 38
             // Ch3: 40
             // Ch4: 42
+
+/*
+	I2C_MEM_RELAY_VAL = 0,//reserved 4 bits for open-drain and 4 bits for leds
+	I2C_MEM_RELAY_SET = 1,
+	I2C_MEM_RELAY_CLR = 2,
+	I2C_MEM_OPTO_IN_VAL = 3,
+
+	I2C_MEM_U0_10_OUT_VAL1 = 4,
+	I2C_MEM_U0_10_OUT_VAL2 = I2C_MEM_U0_10_OUT_VAL1 + UI_VAL_SIZE = 6,
+	I2C_MEM_U0_10_OUT_VAL3 = I2C_MEM_U0_10_OUT_VAL2 + UI_VAL_SIZE = 8,
+	I2C_MEM_U0_10_OUT_VAL4 = I2C_MEM_U0_10_OUT_VAL3 + UI_VAL_SIZE = 10,
+	I2C_MEM_I4_20_OUT_VAL1 = I2C_MEM_U0_10_OUT_VAL4 + UI_VAL_SIZE = 12,
+	I2C_MEM_I4_20_OUT_VAL2 = I2C_MEM_I4_20_OUT_VAL1 + UI_VAL_SIZE = 14,
+	I2C_MEM_I4_20_OUT_VAL3 = I2C_MEM_I4_20_OUT_VAL2 + UI_VAL_SIZE = 16,
+	I2C_MEM_I4_20_OUT_VAL4 = I2C_MEM_I4_20_OUT_VAL3 + UI_VAL_SIZE = 18,
+	I2C_MEM_OD_PWM1 = I2C_MEM_I4_20_OUT_VAL4 + UI_VAL_SIZE = 20,
+	I2C_MEM_OD_PWM2 = I2C_MEM_OD_PWM1 + UI_VAL_SIZE = 22,
+	I2C_MEM_OD_PWM3 = I2C_MEM_OD_PWM2 + UI_VAL_SIZE = 24,
+	I2C_MEM_OD_PWM4 = I2C_MEM_OD_PWM3 + UI_VAL_SIZE = 26,
+
+	I2C_MEM_U0_10_IN_VAL1 = I2C_MEM_OD_PWM4 + UI_VAL_SIZE = 28,
+	I2C_MEM_U0_10_IN_VAL2 = I2C_MEM_U0_10_IN_VAL1 + UI_VAL_SIZE = 30,
+    I2C_MEM_U0_10_IN_VAL3 = I2C_MEM_U0_10_IN_VAL2 + UI_VAL_SIZE = 32,
+	I2C_MEM_U0_10_IN_VAL4 = I2C_MEM_U0_10_IN_VAL3 + UI_VAL_SIZE = 34,
+	I2C_MEM_U_PM_10_IN_VAL1 = I2C_MEM_U0_10_IN_VAL4 + UI_VAL_SIZE = 36,
+	I2C_MEM_U_PM_10_IN_VAL2 = I2C_MEM_U_PM_10_IN_VAL1 + UI_VAL_SIZE = 38,
+	I2C_MEM_U_PM_10_IN_VAL3 = I2C_MEM_U_PM_10_IN_VAL2 + UI_VAL_SIZE = 40,
+	I2C_MEM_U_PM_10_IN_VAL4 = I2C_MEM_U_PM_10_IN_VAL3 + UI_VAL_SIZE = 42,
+
+*/
+
+
             let io = this.in0_10[id - 1];
-            let val = (this.i2c.isMock) ? 10 * Math.random() : await this.readWord(((io.plusMinus === true) ? 28 : 36) + (2 * (id - 1))) / 1000;
+            let val = (this.i2c.isMock) ? 10 * Math.random() : await this.readWord(((io.plusMinus === true) ? 36 : 28) + (2 * (id - 1))) / 1000;
             if (io.plusMinus === true) val -= 10;
             if (io.value !== val) {
                 io.value = val;
