@@ -1838,7 +1838,7 @@
     {
       "id": 903,
       "enabled": true,
-      "name": "Sequent 4 relays 4 inputs",
+      "name": "Sequent 4rel4in v1",
       "deviceClass": "Sequent4RelIND",
       "module": "./SequentIO",
       "hasReset": false,
@@ -2048,7 +2048,7 @@
                             "binding": "name",
                             "text": "Name",
                             "style": {
-                              "width": "52px",
+                              "width": "70px",
                               "whiteSpace": "nowrap",
                               "overflow": "hidden",
                               "textOverflow": "ellipsis"
@@ -2070,6 +2070,358 @@
                             "text": "Description",
                             "style": {
                               "width": "217px",
+                              "whiteSpace": "nowrap",
+                              "overflow": "hidden",
+                              "textOverflow": "ellipsis"
+                            }
+                          }
+                        ],
+                        "style": { "fontSize": "8pt" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Digital Inputs",
+                "id": "tabDigitalIn",
+                "cssClass": "i2cReadingValues",
+                "attrs": {
+                  "data-bindingcontext": "io-channels"
+                }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "panel",
+                    "class": "ioChannels",
+                    "direction": "in",
+                    "total": 4,
+                    "ioType": "digital",
+                    "binding": "values.inputs.inDigital"
+                  },
+                  "fieldEvents": {
+                    "saveIOChannel": {
+                      "type": "putservice",
+                      "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                      "message": "Saving Digital Input...",
+                      "callContext": "io-channels"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Relays",
+                "id": "tabRelays",
+                "cssClass": "i2cReadingValues"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "24rem" },
+                    "html": "Enable each relay you are going to control or monitor state.  This Sequent I/O board can utilize up to 4 relays.<hr style=\"margin:2px\"></hr>Only the relays you identify here will be available for triggers and feeds.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "panel",
+                    "class": "pnlI2cRelay",
+                    "controllerTypes": [
+                      {
+                        "name": "sequent4",
+                        "desc": "Sequent 4",
+                        "options": {
+                          "idType": "sequent4",
+                          "maxRelays": 4
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        "i2c"
+      ]
+    },
+    {
+      "id": 904,
+      "enabled": true,
+      "name": "Sequent 4rel4in v4",
+      "deviceClass": "Sequent4Rel4In",
+      "module": "./SequentIO",
+      "hasReset": false,
+      "hasChangeAddress": false,
+      "readings": {
+        "out0_10": {
+          "label": "0-10mA output",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "outputs": [
+        {
+          "name": "relayVal1",
+          "desc": "Value for relay #1",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal2",
+          "desc": "Value for relay #2",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal3",
+          "desc": "Value for relay #3",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal4",
+          "desc": "Value for relay #4",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj1",
+          "desc": "Object for relay #1",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj2",
+          "desc": "Object for relay #2",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj3",
+          "desc": "Object for relay #3",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj4",
+          "desc": "Object for relay #4",
+          "maxSamples": 1
+        },
+        {
+          "name": "inDigital1",
+          "desc": "Digital in #1",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital2",
+          "desc": "Digital in #2",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital3",
+          "desc": "Digital in #3",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital4",
+          "desc": "Digital in #4",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital1.value",
+          "desc": "Digital in #1 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital2.value",
+          "desc": "Digital in #2 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital3.value",
+          "desc": "Digital in #3 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital4.value",
+          "desc": "Digital in #4 state",
+          "maxSamples": 50
+        }
+      ],
+      "inputs": [
+        {
+          "name": "relayState",
+          "desc": "Relay State Value",
+          "dataType": "boolean",
+          "instructions": "<hr style=\"margin:1px\"></hr>The incoming data should represent a boolean true/false or an object { state: boolean, latch:number }.  If a latch is supplied the relay will unlatch after the number of ms expires.",
+          "options": [
+            {
+              "bind": "channelId",
+              "dataType": "number",
+              "default": "",
+              "field": {
+                "type": "valueSpinner",
+                "required": false,
+                "bind": "channelId",
+                "labelText": "Relay #",
+                "min": 1,
+                "max": 16,
+                "inputAttrs": {
+                  "maxLength": 24,
+                  "style": { "width": "3rem" }
+                },
+                "labelAttrs": {
+                  "style": { "width": "7rem" }
+                },
+                "style": { "display": "block" }
+              }
+            }
+
+          ]
+        }
+      ],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "tabBar",
+            "style": {
+              "display": "inline-block"
+            }
+          },
+          "tabs": [
+            {
+              "field": {
+                "text": "General",
+                "id": "tabGeneral"
+              },
+              "options": [
+                {
+                  "dataType": "string",
+                  "default": "",
+                  "field": {
+                    "type": "inputField",
+                    "required": false,
+                    "bind": "options.name",
+                    "labelText": "Name",
+                    "inputAttrs": {
+                      "maxLength": 16,
+                      "style": {
+                        "width": "16rem"
+                      }
+                    },
+                    "style": {
+                      "display": "block"
+                    }
+                  }
+                },
+                {
+                  "bind": "options.readInterval",
+                  "dataType": "int",
+                  "default": false,
+                  "field": {
+                    "binding": "options.readInterval",
+                    "type": "valueSpinner",
+                    "labelText": "Read Interval",
+                    "min": 500,
+                    "max": 99000,
+                    "canEdit": true,
+                    "fmtMask": "#,##0",
+                    "emptyMask": "--",
+                    "labelAttrs": {
+                      "style": { "paddingRight": ".25rem" }
+                    },
+                    "inputAttrs": {
+                      "style": { "width": "4.5rem" }
+                    },
+                    "units": "ms",
+                    "style": { "marginLeft": "0rem" }
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Device Info",
+                    "style": {
+                      "display": "block",
+                      "verticalAlign": "top"
+                    },
+                    "cssClass": "i2cDeviceInformation"
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Hardware",
+                        "binding": "info.hwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Firmware",
+                        "binding": "info.fwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "bind": "info.registers",
+                      "field": {
+                        "caption": "Registers",
+                        "type": "selectList",
+                        "bind": "info.registers",
+                        "columns": [
+                          {
+                            "binding": "name",
+                            "text": "Name",
+                            "style": {
+                              "width": "97px",
+                              "whiteSpace": "nowrap",
+                              "overflow": "hidden",
+                              "textOverflow": "ellipsis"
+                            }
+                          },
+                          {
+                            "binding": "value",
+                            "text": "Val",
+                            "style": {
+                              "width": "107px",
+                              "whiteSpace": "nowrap",
+                              "overflow": "hidden",
+                              "textOverflow": "ellipsis",
+                              "textAlign": "center"
+                            }
+                          },
+                          {
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": {
+                              "width": "177px",
                               "whiteSpace": "nowrap",
                               "overflow": "hidden",
                               "textOverflow": "ellipsis"
