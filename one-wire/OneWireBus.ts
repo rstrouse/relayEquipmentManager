@@ -524,7 +524,7 @@ export class OneWireDeviceBase implements IDevice {
     }
     public async writeFile(file: string, data: any): Promise<void> {
         try {
-            let res = execSync(`echo ${data} | sudo tee -a ${this.devicePath}/${file}`);
+            let res = execSync(`echo ${data} | tee -a ${this.devicePath}/${file}`);
             console.log(`result: ${res}`);
             this.hasFault = false;
         }
