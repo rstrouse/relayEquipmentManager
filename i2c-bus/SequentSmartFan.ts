@@ -1,4 +1,5 @@
 ﻿//SMART FAN
+import * as fs from 'fs';
 import { logger } from "../logger/Logger";
 import { vMaps, valueMap, utils } from "../boards/Constants";
 import { setTimeout, clearTimeout } from "timers";
@@ -6,7 +7,7 @@ import * as extend from "extend";
 import { Buffer } from "buffer";
 import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";
-import { I2cDevice, DeviceBinding } from "../boards/Controller";
+import { I2cDevice, DeviceBinding, cont } from "../boards/Controller";
 export class SequentSmartFan extends i2cDeviceBase {
     protected regs = {
         I2C_MEM_FAN_POWER: 0,
@@ -24,6 +25,8 @@ export class SequentSmartFan extends i2cDeviceBase {
 
         SLAVE_BUFF_SIZE: 108
     };
+    protected powerPin: GpioPin;
+    protected cliVer:number = 1;
     protected _timerRead: NodeJS.Timeout;
     protected _infoRead: NodeJS.Timeout;
     protected _suspendPolling: number = 0;
@@ -34,6 +37,7 @@ export class SequentSmartFan extends i2cDeviceBase {
     public evalFanPower: Function;
     public async initAsync(deviceType): Promise<boolean> {
         try {
+            if (deviceType.id === 1002) this.cliVer = 4;
             this.stopPolling();
             if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 3000;
             this.options.readInterval = Math.max(500, this.options.readInterval);
@@ -46,6 +50,16 @@ export class SequentSmartFan extends i2cDeviceBase {
                 this.evalFanPower = new Function('options', 'values', 'info', this.options.fanPowerFn);
             if (this.device.isActive) {
                 await this.getHwFwVer();
+                // If this is a cliVer >= 4 we need to export a gpio pin for the fan control.  Another stupid present from Sequent.
+                if (this.cliVer >= 4) {
+                    this.powerPin = await cont.gpio.setPinAsync(1, 32,
+                        {
+                            isActive: true,
+                            name: `${this.device.name} Power`, direction: 'output',
+                            isInverted: false, initialState: 'off', debounceTimeout: 0
+                        }
+                    );
+                }
                 await this.getFanPower();
                 await this.getFanBlink();
                 await this.getFanSafeTemp();
@@ -93,19 +107,37 @@ export class SequentSmartFan extends i2cDeviceBase {
                 this.info.hwVersion = `0.1 Mock`
             }
             else {
-                let hwBuf = await this.i2c.readI2cBlock(this.device.address, this.regs.hwVersion, 2);
                 let fwBuf = await this.i2c.readI2cBlock(this.device.address, this.regs.fwVersion, 2);
-                let hw = hwBuf.buffer.toJSON().data;
-                let fw = fwBuf.buffer.toJSON().data;
-                this.info.hwVersion = `${hw[0] + (hw[1] > 0 ? hw[1] / 100.0 : '.00')}`;
-                this.info.fwVersion = `${fw[0] + (fw[1] > 0 ? fw[1] / 100.0 : '.00')}`;
+                if (fwBuf.bytesRead === 2) {
+                    let hwBuf = await this.i2c.readI2cBlock(this.device.address, this.regs.hwVersion, 2);
+                    let hw = hwBuf.buffer.toJSON().data;
+                    let fw = fwBuf.buffer.toJSON().data;
+                    this.info.hwVersion = `${hw[0] + (hw[1] > 0 ? hw[1] / 100.0 : '.00')}`;
+                    this.info.fwVersion = `${fw[0] + (fw[1] > 0 ? fw[1] / 100.0 : '.00')}`;
+                }
+                else {
+                    // Sequent did it again.  The completely revised the smart fan so it does not return this information on later
+                    // versions.
+                    this.info.hwVersion = `4.0`;
+                    this.info.fwVersion = '1.0';
+                    this.cliVer = 4;
+                }
             }
         } catch (err) { logger.error(`${this.device.name} error getting firmware version: ${err.message}`); }
     }
     protected async getFanPower() {
         try {
-            let fanPower = (this.i2c.isMock) ? Math.round(Math.random() * 100) : await this.i2c.readByte(this.device.address, this.regs.I2C_MEM_FAN_POWER);
-            this.values.fanPower = fanPower;
+            if (this.cliVer === 4) {
+                // On version 4 the PWM fan power is not returned in the same way.  We are reading the device register for this.
+                let buff = this.i2c.read(this.device.address, 1);
+                if (buff.bytesRead === 1) {
+                    this.values.fanPower = Math.round((255 - buff.buffer.readInt8(0)) / 2.55);
+                }
+            }
+            else {
+                let fanPower = (this.i2c.isMock) ? Math.round(Math.random() * 100) : await this.i2c.readByte(this.device.address, this.regs.I2C_MEM_FAN_POWER);
+                this.values.fanPower = fanPower;
+            }
 
         } catch (err) { logger.error(`${this.device.name} error getting fan power: ${err.message}`); }
     }
@@ -129,10 +161,18 @@ export class SequentSmartFan extends i2cDeviceBase {
             }
             this.values.fanPowerFnVal = _val;
             if (val !== this.values.fanPower) {
-                let buffer = Buffer.from([val]);
-                buffer.writeUInt8(val, 0);
-                await this.i2c.writeI2cBlock(this.device.address, this.regs.I2C_MEM_FAN_POWER, 1, buffer);
-                this.values.fanPower = val;
+                if (this.cliVer < 4) {
+                    let buffer = Buffer.from([val]);
+                    buffer.writeUInt8(val, 0);
+                    await this.i2c.writeI2cBlock(this.device.address, this.regs.I2C_MEM_FAN_POWER, 1, buffer);
+                    this.values.fanPower = val;
+                }
+                else {
+                    // Sequent occupuys a gpio pin to turn on and off the fan.
+                    if (typeof this.powerPin !== 'undefined') await this.powerPin.setStateAsync(val > 0);
+                    let buffer = Buffer.from([Math.round(255 - Math.max(val * 2.55, 255))]);
+                    this.i2c.write(this.device.address, 1, buffer);
+                }
             }
         }
         catch (err) { logger.error(`${this.device.name} error setting fan power: ${err.message}`); }
@@ -140,16 +180,36 @@ export class SequentSmartFan extends i2cDeviceBase {
     protected async getFanTemp() {
         try {
             let fanTemp: number;
+            let cpuTemp: number;
             if (this.i2c.isMock) {
                 fanTemp = utils.convert.temperature.convertUnits(72 + (Math.round((5 * Math.random()) * 100) / 100), 'f', this.values.units)
+                cpuTemp = await this.getCpuTemp();
             }
             else {
-                fanTemp = await this.i2c.readByte(this.device.address, this.regs.I2C_MEM_INT_TEMP);
-                fanTemp = utils.convert.temperature.convertUnits(fanTemp, 'C', this.values.units);
+                if (this.cliVer >= 4) {
+                    fanTemp = cpuTemp = await this.getCpuTemp();
+                }
+                else {
+                    fanTemp = await this.i2c.readByte(this.device.address, this.regs.I2C_MEM_INT_TEMP);
+                    fanTemp = utils.convert.temperature.convertUnits(fanTemp, 'C', this.values.units);
+                    cpuTemp = await this.getCpuTemp();
+                }
             }
             this.values.fanTemp = fanTemp;
+            this.values.cpuTemp = cpuTemp;
 
         } catch (err) { logger.error(`${this.device.name} error getting fan temperature: ${err.message}`); }
+    }
+    protected async getCpuTemp(): Promise<number> {
+        try {
+            if (this.i2c.isMock) {
+                return utils.convert.temperature.convertUnits(72 + (Math.round((5 * Math.random()) * 100) / 100), 'f', this.values.units);
+            }
+            if (fs.existsSync('/sys/class/thermal/thermal_zone0/temp')) {
+                let buffer = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp');
+                return utils.convert.temperature.convertUnits(parseInt(buffer.toString().trim(), 10) / 1000, 'C', this.values.units);
+            }
+        } catch (err) { logger.error(`${this.device.name} error getting cpu temp: ${err.message}`); }
     }
     protected async getFanSafeTemp() {
         try {

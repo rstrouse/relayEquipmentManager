@@ -5,7 +5,7 @@
     {
       "id": 1001,
       "enabled": true,
-      "name": "Sequent Smart Fan",
+      "name": "Sequent Smart Fan < v4",
       "deviceClass": "SequentSmartFan",
       "module": "./SequentSmartFan",
       "hasReset": false,
@@ -91,95 +91,61 @@
       ],
       "options": [
         {
+          "dataType": "panel",
           "field": {
-            "text": "General",
-            "id": "tabGeneral"
+            "type": "tabBar",
+            "style": {
+              "display": "inline-block"
+            }
           },
-          "options": [
+          "tabs": [
             {
-              "dataType": "string",
-              "default": "",
               "field": {
-                "type": "inputField",
-                "required": false,
-                "bind": "options.name",
-                "labelText": "Name",
-                "inputAttrs": {
-                  "maxLength": 16,
-                  "style": {
-                    "width": "16rem"
-                  }
-                },
-                "style": {
-                  "display": "block"
-                }
-              }
-            },
-            {
-              "dataType": "panel",
-              "field": {
-                "type": "fieldset",
-                "legend": "Device Info",
-                "style": {
-                  "display": "block",
-                  "verticalAlign": "top"
-                },
-                "cssClass": "i2cDeviceInformation"
+                "text": "General",
+                "id": "tabGeneral"
               },
               "options": [
                 {
+                  "dataType": "string",
+                  "default": "",
                   "field": {
-                    "type": "staticField",
-                    "labelText": "Hardware",
-                    "binding": "info.hwVersion",
-                    "style": {
-                      "display": "block",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    },
-                    "labelAttrs": {
+                    "type": "inputField",
+                    "required": false,
+                    "bind": "options.name",
+                    "labelText": "Name",
+                    "inputAttrs": {
+                      "maxLength": 16,
                       "style": {
-                        "width": "5.5rem"
+                        "width": "16rem"
                       }
+                    },
+                    "style": {
+                      "display": "block"
                     }
                   }
                 },
                 {
+                  "dataType": "panel",
                   "field": {
-                    "type": "staticField",
-                    "labelText": "Firmware",
-                    "binding": "info.fwVersion",
+                    "type": "fieldset",
+                    "legend": "Device Info",
                     "style": {
                       "display": "block",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
+                      "verticalAlign": "top"
                     },
-                    "labelAttrs": {
-                      "style": {
-                        "width": "5.5rem"
-                      }
-                    }
-                  }
-                },
-                {
-                  "field": {
-                    "type": "div",
-                    "style": {
-                      "display": "block",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    }
+                    "cssClass": "i2cDeviceInformation"
                   },
                   "options": [
                     {
                       "field": {
                         "type": "staticField",
-                        "labelText": "CPU Temp",
-                        "binding": "info.cpuTemp",
-                        "dataType": "number",
-                        "fmtMask": "#,##0.0#",
-                        "emptyMask": "--.-",
-                        "units": "&deg;",
+                        "labelText": "Hardware",
+                        "binding": "info.hwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
                         "labelAttrs": {
                           "style": {
                             "width": "5.5rem"
@@ -189,9 +155,163 @@
                     },
                     {
                       "field": {
-                        "binding": "values.units",
-                        "type": "span",
-                        "cssClass": "picSpinner-units picUnits"
+                        "type": "staticField",
+                        "labelText": "Firmware",
+                        "binding": "info.fwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Readings",
+                    "cssClass": "i2cReadingValues",
+                    "style": {
+                      "display": "block",
+                      "verticalAlign": "top"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem"
+                        }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "staticField",
+                            "labelText": "CPU Temp",
+                            "binding": "values.cpuTemp",
+                            "dataType": "number",
+                            "fmtMask": "#,##0.0#",
+                            "emptyMask": "--.-",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "7rem",
+                                "fontSize": ".8rem"
+                              }
+                            },
+                            "style": {
+                              "fontSize": ".8rem",
+                              "line-height": "1.2"
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem"
+                        }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "staticField",
+                            "labelText": "Fan Temp",
+                            "binding": "values.fanTemp",
+                            "dataType": "number",
+                            "fmtMask": "#,##0.0###",
+                            "emptyMask": "--.-",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "7rem",
+                                "fontSize": ".8rem",
+                                "line-height": "1.2"
+                              }
+                            },
+                            "style": {
+                              "fontSize": ".8rem",
+                              "line-height": "1.2"
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          },
+                          "style": {
+                            "fontSize": ".8rem",
+                            "display": "block",
+                            "line-height": "1.2"
+                          }
+
+                        }
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Fan Power",
+                        "binding": "values.fanPower",
+                        "dataType": "number",
+                        "fmtMask": "#,##0",
+                        "emptyMask": "--.-",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "7rem",
+                            "fontSize": ".8rem"
+                          }
+                        },
+                        "style": {
+                          "fontSize": ".8rem",
+                          "display": "block",
+                          "line-height": "1.2"
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Script Result",
+                        "binding": "values.fanPowerFnVal",
+                        "dataType": "number",
+                        "fmtMask": "#,##0",
+                        "emptyMask": "--.-",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "7rem",
+                            "fontSize": ".8rem",
+                            "line-height": "1.2"
+                          }
+                        },
+                        "style": {
+                          "fontSize": ".8rem",
+                          "display": "block",
+                          "line-height": "1.2"
+                        }
                       }
                     }
                   ]
@@ -199,37 +319,154 @@
               ]
             },
             {
-              "dataType": "panel",
               "field": {
-                "type": "fieldset",
-                "legend": "Readings",
-                "cssClass": "i2cReadingValues",
-                "style": {
-                  "display": "block",
-                  "verticalAlign": "top"
-                }
+                "text": "Settings",
+                "id": "tabSettings"
               },
               "options": [
                 {
+                  "dataType": "panel",
                   "field": {
-                    "type": "div",
+                    "type": "fieldset",
+                    "legend": "Settings",
                     "style": {
-                      "display": "block",
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
+                    },
+                    "attrs": {
+                      "data-bindingcontext": "settings"
                     }
                   },
                   "options": [
                     {
                       "field": {
-                        "type": "staticField",
-                        "labelText": "Fan Temp",
-                        "binding": "values.fanTemp",
-                        "dataType": "number",
-                        "fmtMask": "#,##0.0###",
-                        "emptyMask": "--.-",
-                        "units": "&deg;",
+                        "type": "pickList",
+                        "labelText": "Units",
+                        "binding": "options.units",
+                        "bindColumn": 0,
+                        "displayColumn": 1,
+                        "style": {
+                          "display": "block",
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
                         "labelAttrs": {
+                          "style": {
+                            "width": "3rem"
+                          }
+                        },
+                        "columns": [
+                          {
+                            "hidden": true,
+                            "binding": "name",
+                            "text": "name",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          },
+                          {
+                            "hidden": false,
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "name": "F",
+                            "desc": "Fahrenheit"
+                          },
+                          {
+                            "name": "C",
+                            "desc": "Celsius"
+                          },
+                          {
+                            "name": "K",
+                            "desc": "Kelvin"
+                          }
+                        ],
+                        "inputAttrs": {
+                          "style": {
+                            "width": "7rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "width": "23rem",
+                          "margin-left": "-0.5rem",
+                          "margin-right": "-0.5rem"
+
+                        },
+                        "html": "The Fan Safe Temp is a safety feature that will shut down the Pi if the temperature is exceeded.  Range is 30-80&deg;C, 86-176&deg;F, or 303&deg;K to 353&deg;K",
+                        "cssClass": "script-advanced-instructions"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "display": "block",
+                          "lineHeight": "1.2"
+                        }
+                      },
+                      "options": [
+                        {
+                          "default": 80,
+                          "field": {
+                            "binding": "options.fanSafeTemp",
+                            "type": "valueSpinner",
+                            "labelText": "Fan Safe Temp",
+                            "canEdit": true,
+                            "min": 30,
+                            "max": 353,
+                            "fmtMask": "#,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "8.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "default": 4,
+                      "field": {
+                        "binding": "options.readInterval",
+                        "type": "valueSpinner",
+                        "labelText": "Polling Interval",
+                        "canEdit": true,
+                        "min": 3000,
+                        "max": 100000,
+                        "step": 1000,
+                        "fmtMask": "##,##0",
+                        "units": "ms",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "8.5em"
+                          }
+                        },
+                        "style": {
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "inputAttrs": {
                           "style": {
                             "width": "5rem"
                           }
@@ -238,79 +475,39 @@
                     },
                     {
                       "field": {
-                        "binding": "values.units",
-                        "type": "span",
-                        "cssClass": "picSpinner-units picUnits"
-                      }
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "dataType": "boolean",
+                          "default": false,
+                          "field": {
+                            "type": "checkbox",
+                            "bind": "options.blink",
+                            "labelText": "Blinky Light"
+                          }
+                        }
+                      ]
                     }
                   ]
-                },
-                {
-                  "field": {
-                    "type": "staticField",
-                    "labelText": "Fan Power",
-                    "binding": "values.fanPower",
-                    "dataType": "number",
-                    "fmtMask": "#,##0",
-                    "emptyMask": "--.-",
-                    "units": "%",
-                    "labelAttrs": {
-                      "style": {
-                        "width": "5rem",
-                        "fontSize": ".8rem",
-                        "lineHeight": "1.2"
-                      }
-                    },
-                    "style": {
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2"
-                    }
-                  }
-                },
-                {
-                  "field": {
-                    "type": "staticField",
-                    "labelText": "Script Result",
-                    "binding": "values.fanPowerFnVal",
-                    "dataType": "number",
-                    "fmtMask": "#,##0",
-                    "emptyMask": "--.-",
-                    "units": "%",
-                    "labelAttrs": {
-                      "style": {
-                        "width": "5rem",
-                        "fontSize": ".8rem",
-                        "lineHeight": "1.2"
-                      }
-                    },
-                    "style": {
-                      "fontSize": ".8rem",
-                      "lineHeight": "1.2",
-                      "display": "block"
-                    }
-                  }
                 }
+
               ]
             },
             {
-              "dataType": "panel",
               "field": {
-                "type": "fieldset",
-                "legend": "Settings",
-                "style": {
-                },
-                "attrs": {
-                  "data-bindingcontext": "settings"
-                }
+                "text": "Script",
+                "id": "tabFanScript",
+                "style": { "width": "27rem" }
               },
               "options": [
                 {
                   "field": {
                     "type": "div",
                     "style": {
-                      "width": "21rem"
+                      "width": "27rem"
                     },
-                    "html": "The Fan Safe Temp is a safety feature that will shut down the Pi if the temperature is exceeded.  Range is 30-80&deg;C, 86-176&deg;F, or 303&deg;K to 353&deg;K",
+                    "html": "The script determines how to set the fan power. See <a href='https://github.com/rstrouse/relayEquipmentManager/wiki/Sequent-Microsystems-Boards#sequent-smart-fan' target='_blank'>Sequent Smart Fan Wiki</a> for instructions.",
                     "cssClass": "script-advanced-instructions"
                   }
                 },
@@ -320,39 +517,149 @@
                     "style": {
                       "display": "block",
                       "lineHeight": "1.2"
-                    }
+                    },
+                    "class": "script-editor",
+                    "binding": "test-binding"
                   },
                   "options": [
                     {
-                      "default": 80,
+                      "default": "return 0;",
                       "field": {
-                        "binding": "options.fanSafeTemp",
-                        "type": "valueSpinner",
-                        "labelText": "Fan Safe Temp",
+                        "binding": "options.fanPowerFn",
+                        "type": "scriptEditor",
+                        "labelText": "Fan Power Function",
+                        "prefix": "(options, values, info) => {",
+                        "suffix": "}",
+                        "codeStyle": "{ maxHeight: '300px', overflow: 'auto' }",
                         "canEdit": true,
-                        "min": 30,
-                        "max": 353,
-                        "fmtMask": "#,##0",
-                        "units": "&deg;",
-                        "labelAttrs": {
-                          "style": {
-                            "width": "8.5em"
-                          }
-                        },
                         "style": {
                           "marginLeft": ".25rem",
                           "marginBottom": ".25rem"
                         }
                       }
-                    },
-                    {
-                      "field": {
-                        "binding": "values.units",
-                        "type": "span",
-                        "cssClass": "picSpinner-units picUnits"
-                      }
                     }
                   ]
+                }
+              ]
+            }
+          ]
+        }
+
+
+      ],
+      "interfaces": [ "i2c" ]
+    },
+    {
+      "id": 1002,
+      "enabled": true,
+      "name": "Sequent Smart Fan v4+",
+      "deviceClass": "SequentSmartFan",
+      "module": "./SequentSmartFan",
+      "hasReset": false,
+      "hasChangeAddress": false,
+      "readings": {
+        "fanTemp": {
+          "label": "Fan Temperature",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "outputs": [
+        {
+          "name": "cpuTempC",
+          "desc": "CPU Temperature C",
+          "maxSamples": 50
+        },
+        {
+          "name": "cpuTempF",
+          "desc": "CPU Temperature F",
+          "maxSamples": 50
+        },
+        {
+          "name": "cpuTempK",
+          "desc": "CPU Temperature K",
+          "maxSamples": 50
+        },
+        {
+          "name": "fanTempC",
+          "desc": "FAN Temperature C",
+          "maxSamples": 50
+        },
+        {
+          "name": "fanTempF",
+          "desc": "FAN Temperature F",
+          "maxSamples": 50
+        },
+        {
+          "name": "fanTempK",
+          "desc": "FAN Temperature K",
+          "maxSamples": 50
+        },
+        {
+          "name": "piVoltage",
+          "desc": "Raspberry Pi Voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "fwversion",
+          "desc": "Firmware Version",
+          "maxSamples": 50
+        },
+        {
+          "name": "blink",
+          "desc": "Blinky Light",
+          "maxSamples": 50
+        },
+        {
+          "name": "fanPower",
+          "desc": "Fan Power",
+          "maxSamples": 50
+        }
+      ],
+      "inputs": [
+        {
+          "name": "fanPower",
+          "desc": "Fan Power",
+          "dataType": "number"
+        }
+      ],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "tabBar",
+            "style": {
+              "display": "inline-block"
+            }
+          },
+          "tabs": [
+            {
+              "field": {
+                "text": "General",
+                "id": "tabGeneral"
+              },
+              "options": [
+                {
+                  "dataType": "string",
+                  "default": "",
+                  "field": {
+                    "type": "inputField",
+                    "required": false,
+                    "bind": "options.name",
+                    "labelText": "Name",
+                    "inputAttrs": {
+                      "maxLength": 16,
+                      "style": {
+                        "width": "16rem"
+                      }
+                    },
+                    "style": {
+                      "display": "block"
+                    }
+                  }
                 },
                 {
                   "field": {
@@ -363,7 +670,7 @@
                     "displayColumn": 1,
                     "style": {
                       "display": "block",
-                      "marginLeft": ".25rem",
+                      "marginTop": ".25rem",
                       "marginBottom": ".25rem"
                     },
                     "labelAttrs": {
@@ -411,54 +718,165 @@
                   }
                 },
                 {
+                  "dataType": "panel",
                   "field": {
-                    "type": "div"
+                    "type": "fieldset",
+                    "legend": "Device Info",
+                    "style": {
+                      "display": "block",
+                      "verticalAlign": "top"
+                    },
+                    "cssClass": "i2cDeviceInformation"
                   },
                   "options": [
                     {
-                      "dataType": "boolean",
-                      "default": false,
                       "field": {
-                        "type": "checkbox",
-                        "bind": "options.blink",
-                        "labelText": "Blinky Light"
+                        "type": "staticField",
+                        "labelText": "Hardware",
+                        "binding": "info.hwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Firmware",
+                        "binding": "info.fwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        }
                       }
                     }
                   ]
                 },
                 {
-                  "default": 4,
+                  "dataType": "panel",
                   "field": {
-                    "binding": "options.readInterval",
-                    "type": "valueSpinner",
-                    "labelText": "Polling Interval",
-                    "canEdit": true,
-                    "min": 3000,
-                    "max": 100000,
-                    "step": 1000,
-                    "fmtMask": "##,##0",
-                    "units": "ms",
-                    "labelAttrs": {
-                      "style": {
-                        "width": "8.5em"
+                    "type": "fieldset",
+                    "legend": "Readings",
+                    "cssClass": "i2cReadingValues",
+                    "style": {
+                      "display": "block",
+                      "verticalAlign": "top"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem"
+                        }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "staticField",
+                            "labelText": "CPU Temp",
+                            "binding": "values.cpuTemp",
+                            "dataType": "number",
+                            "fmtMask": "#,##0.0#",
+                            "emptyMask": "--.-",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "7rem",
+                                "fontSize": ".8rem"
+                              }
+                            },
+                            "style": {
+                              "fontSize": ".8rem",
+                              "line-height": "1.2"
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Fan Power",
+                        "binding": "values.fanPower",
+                        "dataType": "number",
+                        "fmtMask": "#,##0",
+                        "emptyMask": "--.-",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "7rem",
+                            "fontSize": ".8rem"
+                          }
+                        },
+                        "style": {
+                          "fontSize": ".8rem",
+                          "display": "block",
+                          "line-height": "1.2"
+                        }
                       }
                     },
-                    "style": {
-                      "marginLeft": ".25rem",
-                      "marginBottom": ".25rem"
-                    },
-                    "inputAttrs": {
-                      "style": {
-                        "width": "5rem"
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Script Result",
+                        "binding": "values.fanPowerFnVal",
+                        "dataType": "number",
+                        "fmtMask": "#,##0",
+                        "emptyMask": "--.-",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "7rem",
+                            "fontSize": ".8rem",
+                            "line-height": "1.2"
+                          }
+                        },
+                        "style": {
+                          "fontSize": ".8rem",
+                          "display": "block",
+                          "line-height": "1.2"
+                        }
                       }
                     }
-                  }
-                },
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Script",
+                "id": "tabFanScript",
+                "style": { "width": "27rem" }
+              },
+              "options": [
                 {
                   "field": {
                     "type": "div",
                     "style": {
-                      "width": "21rem"
+                      "width": "27rem"
                     },
                     "html": "The script determines how to set the fan power. See <a href='https://github.com/rstrouse/relayEquipmentManager/wiki/Sequent-Microsystems-Boards#sequent-smart-fan' target='_blank'>Sequent Smart Fan Wiki</a> for instructions.",
                     "cssClass": "script-advanced-instructions"
@@ -481,8 +899,8 @@
                         "binding": "options.fanPowerFn",
                         "type": "scriptEditor",
                         "labelText": "Fan Power Function",
-                        "prefix": "(options, values, info) => {", 
-                        "suffix": "}", 
+                        "prefix": "(options, values, info) => {",
+                        "suffix": "}",
                         "codeStyle": "{ maxHeight: '300px', overflow: 'auto' }",
                         "canEdit": true,
                         "style": {
@@ -497,10 +915,10 @@
             }
           ]
         }
+
+
       ],
-      "interfaces": [
-        "i2c"
-      ]
+      "interfaces": [ "i2c" ]
     }
   ]
 }
