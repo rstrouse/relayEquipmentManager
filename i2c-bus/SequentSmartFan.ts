@@ -7,7 +7,7 @@ import * as extend from "extend";
 import { Buffer } from "buffer";
 import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";
-import { I2cDevice, DeviceBinding, cont } from "../boards/Controller";
+import { I2cDevice, DeviceBinding, cont, GpioPin } from "../boards/Controller";
 export class SequentSmartFan extends i2cDeviceBase {
     protected regs = {
         I2C_MEM_FAN_POWER: 0,
@@ -169,7 +169,7 @@ export class SequentSmartFan extends i2cDeviceBase {
                 }
                 else {
                     // Sequent occupuys a gpio pin to turn on and off the fan.
-                    if (typeof this.powerPin !== 'undefined') await this.powerPin.setStateAsync(val > 0);
+                    if (typeof this.powerPin !== 'undefined') await this.powerPin.setPinStateAsync(val > 0);
                     let buffer = Buffer.from([Math.round(255 - Math.max(val * 2.55, 255))]);
                     this.i2c.write(this.device.address, 1, buffer);
                 }
