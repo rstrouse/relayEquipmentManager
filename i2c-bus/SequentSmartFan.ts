@@ -106,6 +106,10 @@ export class SequentSmartFan extends i2cDeviceBase {
                 this.info.fwVersion = `1.0 Mock`;
                 this.info.hwVersion = `0.1 Mock`
             }
+            else if (this.cliVer >= 4) {
+                this.info.hwVersion = `4.0`;
+                this.info.fwVersion = '1.0';
+            }
             else {
                 let fwBuf = await this.i2c.readI2cBlock(this.device.address, this.regs.fwVersion, 2);
                 if (fwBuf.bytesRead === 2) {
@@ -127,11 +131,15 @@ export class SequentSmartFan extends i2cDeviceBase {
     }
     protected async getFanPower() {
         try {
-            if (this.cliVer === 4) {
+            if (this.cliVer >= 4) {
                 // On version 4 the PWM fan power is not returned in the same way.  We are reading the device register for this.
-                let buff = this.i2c.read(this.device.address, 1);
+                let buff = await this.i2c.read(this.device.address, 1);
+                console.log(buff);
                 if (buff.bytesRead === 1) {
                     this.values.fanPower = Math.round((255 - buff.buffer.readInt8(0)) / 2.55);
+                }
+                else {
+                    this.values.fanPower = 0;
                 }
             }
             else {
@@ -239,7 +247,7 @@ export class SequentSmartFan extends i2cDeviceBase {
     }
     protected async getFanBlink() {
         try {
-            if (!this.i2c.isMock) {
+            if (!this.i2c.isMock && this.cliVer < 4) {
                 let blink = !utils.makeBool(await this.i2c.readByte(this.device.address, this.regs.I2C_MEM_BLINK_OFF));
                 this.options.blink = blink;
 
@@ -248,7 +256,7 @@ export class SequentSmartFan extends i2cDeviceBase {
     }
     protected async setFanBlink(val: boolean) {
         try {
-            if (!this.i2c.isMock) {
+            if (!this.i2c.isMock && this.cliVer < 4) {
                 let buffer = Buffer.from([0]);
                 buffer.writeUInt8(val ? 0 : 1, 0); // inverse blink logic
                 await this.i2c.writeI2cBlock(this.device.address, this.regs.I2C_MEM_BLINK_OFF, 1, buffer);
