@@ -671,7 +671,9 @@
                     "style": {
                       "display": "block",
                       "marginTop": ".25rem",
-                      "marginBottom": ".25rem"
+                      "marginBottom": ".25rem",
+                      "verticalAlign": "middle"
+
                     },
                     "labelAttrs": {
                       "style": {
@@ -798,12 +800,14 @@
                             "labelAttrs": {
                               "style": {
                                 "width": "7rem",
-                                "fontSize": ".8rem"
+                                "fontSize": ".8rem",
+                                "verticalAlign": "middle"
                               }
                             },
                             "style": {
                               "fontSize": ".8rem",
-                              "line-height": "1.2"
+                              "line-height": "1.2",
+                              "verticalAlign": "middle"
                             }
                           }
                         },
