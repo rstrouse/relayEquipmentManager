@@ -135,7 +135,9 @@ export class SequentSmartFan extends i2cDeviceBase {
                 // On version 4 the PWM fan power is not returned in the same way.  We are reading the device register for this.
                 let buff = await this.i2c.read(this.device.address, 1);
                 if (buff.bytesRead === 1) {
-                    this.values.fanPower = Math.round((255 - buff.buffer.readInt8(0)) / 2.55);
+                    let pwr = buff.buffer.readInt8(0);
+                    logger.verbose(`${this.device.name} getFanPower = ${pwr}`);
+                    this.values.fanPower = Math.round((255 - pwr) / 2.55);
                 }
                 else {
                     this.values.fanPower = 0;
