@@ -179,8 +179,9 @@ export class SequentSmartFan extends i2cDeviceBase {
                 else {
                     // Sequent occupies a gpio pin to turn on and off the fan.
                     if (typeof this.powerPin !== 'undefined') await this.powerPin.setPinStateAsync(val > 0);
-                    let buffer = Buffer.from([Math.round(255 - Math.max(val * 2.55, 255))]);
-                    this.i2c.write(this.device.address, 1, buffer);
+                    let pwr = Math.round(255 - Math.max(val * 2.55, 255));
+                    let buffer = Buffer.from([pwr]);
+                    logger.verbose(`${this.device.name} setFanPower = ${pwr}`);
                     await this.i2c.writeI2cBlock(this.device.address, this.regs.I2C_MEM_FAN_POWER, 1, buffer);
                 }
             }
