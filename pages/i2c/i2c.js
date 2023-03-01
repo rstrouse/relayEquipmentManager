@@ -517,6 +517,27 @@
             }
             if (typeof fld !== 'undefined' && typeof opt.field !== 'undefined') {
                 if (opt.field.fieldEvents !== 'undefined') {
+                    for (var eventName in opt.field.fieldEvents) {
+                        var fevent = opt.field.fieldEvents[eventName];
+                        if (typeof fevent === 'string') {
+                            console.log('Adding field event:' + fevent);
+                            fld.on(eventName, new Function('evt', fevent));
+                        }
+                        else if (typeof fevent === 'object') {
+                            fld.on(eventName, (evt) => {
+                                if (typeof fevent.confirm === 'object') {
+                                    var confirm = $.pic.modalDialog.createConfirm("dlgConfirmEvent", $.extend(true, {}, {
+                                        title: 'Confirm Action',
+                                        message: 'Are you sure you want to do this?'
+                                    }, fevent.confirm)).on('confirmed', function (e) { self._callServiceEvent(evt, fevent); });
+                                }
+                                else
+                                    self._callServiceEvent(evt, fevent);
+                            });
+                        }
+                    }
+                }
+                if (typeof opt.fieldEvents) {
                     for (var eventName in opt.fieldEvents) {
                         var fevent = opt.fieldEvents[eventName];
                         if (typeof fevent === 'string') {
@@ -536,7 +557,6 @@
                             });
                         }
                     }
-
                 }
             }
             return fld;

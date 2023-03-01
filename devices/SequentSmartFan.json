@@ -294,7 +294,7 @@
                     {
                       "field": {
                         "type": "staticField",
-                        "labelText": "Script Result",
+                        "labelText": "Target Power",
                         "binding": "values.fanPowerFnVal",
                         "dataType": "number",
                         "fmtMask": "#,##0",
@@ -338,6 +338,22 @@
                   "options": [
                     {
                       "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "dataType": "boolean",
+                          "default": false,
+                          "field": {
+                            "type": "checkbox",
+                            "bind": "options.useCPUTemp",
+                            "labelText": "Use Internal CPU Temp"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "field": {
                         "type": "pickList",
                         "labelText": "Units",
                         "binding": "options.units",
@@ -350,7 +366,7 @@
                         },
                         "labelAttrs": {
                           "style": {
-                            "width": "3rem"
+                            "width": "5rem"
                           }
                         },
                         "columns": [
@@ -496,47 +512,532 @@
             },
             {
               "field": {
-                "text": "Script",
-                "id": "tabFanScript",
-                "style": { "width": "27rem" }
+                "text": "Fan Curve",
+                "id": "tabFanCurve",
+                "style": { "width": "30rem" }
               },
               "options": [
                 {
                   "field": {
-                    "type": "div",
+                    "type": "pickList",
+                    "labelText": "Fan Curve",
+                    "binding": "options.fanCurve.curve",
+                    "bindColumn": 0,
+                    "displayColumn": 1,
                     "style": {
-                      "width": "27rem"
+                      "display": "block",
+                      "marginLeft": ".25rem",
+                      "marginBottom": ".25rem"
                     },
-                    "html": "The script determines how to set the fan power. See <a href='https://github.com/rstrouse/relayEquipmentManager/wiki/Sequent-Microsystems-Boards#sequent-smart-fan' target='_blank'>Sequent Smart Fan Wiki</a> for instructions.",
-                    "cssClass": "script-advanced-instructions"
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "columns": [
+                      {
+                        "hidden": true,
+                        "binding": "name",
+                        "text": "name",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      },
+                      {
+                        "hidden": false,
+                        "binding": "desc",
+                        "text": "Description",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      }
+                    ],
+                    "items": [
+                      {
+                        "name": "linear",
+                        "desc": "Linear"
+                      },
+                      {
+                        "name": "log",
+                        "desc": "Logarithmic"
+                      },
+                      {
+                        "name": "exp",
+                        "desc": "Exponential"
+                      },
+                      {
+                        "name": "custom",
+                        "desc": "Custom Script"
+                      }
+                    ],
+                    "inputAttrs": {
+                      "style": {
+                        "width": "7rem"
+                      }
+                    },
+                    "fieldEvents": {
+                      "selchanged": "console.log(evt); $(evt.currentTarget).parent().find(`.fan-curve`).each(function() { this.style.display = $(this).hasClass(`fan-curve-${evt.newItem.name}`) ? 'block' : 'none';});"
+                    }
                   }
                 },
                 {
                   "field": {
-                    "type": "div",
+                    "type": "fieldset",
+                    "legend": "Linear Fan Curve",
+                    "cssClass": "fan-curve fan-curve-linear",
                     "style": {
-                      "display": "block",
-                      "lineHeight": "1.2"
                     },
-                    "class": "script-editor",
-                    "binding": "test-binding"
+                    "attrs": {
+                      "data-bindingcontext": "settings"
+                    }
                   },
                   "options": [
                     {
-                      "default": "return 0;",
                       "field": {
-                        "binding": "options.fanPowerFn",
-                        "type": "scriptEditor",
-                        "labelText": "Fan Power Function",
-                        "prefix": "(options, values, info) => {",
-                        "suffix": "}",
-                        "codeStyle": "{ maxHeight: '300px', overflow: 'auto' }",
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "binding": "options.fanCurve.linear.start",
+                            "type": "valueSpinner",
+                            "labelText": "Start Temp",
+                            "canEdit": true,
+                            "min": 0,
+                            "max": 500,
+                            "step": 1,
+                            "fmtMask": "##,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "binding": "options.fanCurve.linear.end",
+                            "type": "valueSpinner",
+                            "labelText": "End Temp",
+                            "canEdit": true,
+                            "min": 0,
+                            "max": 500,
+                            "step": 1,
+                            "fmtMask": "##,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "binding": "options.fanCurve.linear.min",
+                        "type": "valueSpinner",
+                        "labelText": "Min Power",
                         "canEdit": true,
+                        "min": 0,
+                        "max": 100,
+                        "step": 1,
+                        "fmtMask": "##,##0",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5em"
+                          }
+                        },
                         "style": {
                           "marginLeft": ".25rem",
                           "marginBottom": ".25rem"
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
                         }
                       }
+                    }
+
+
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Logarithmic Fan Curve",
+                    "cssClass": "fan-curve fan-curve-log",
+                    "style": {
+                    },
+                    "attrs": {
+                      "data-bindingcontext": "settings"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "binding": "options.fanCurve.log.start",
+                            "type": "valueSpinner",
+                            "labelText": "Start Temp",
+                            "canEdit": true,
+                            "min": 0,
+                            "max": 500,
+                            "step": 1,
+                            "fmtMask": "##,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "pickList",
+                        "labelText": "Ramp",
+                        "binding": "options.fanCurve.log.ramp",
+                        "bindColumn": 0,
+                        "displayColumn": 1,
+                        "style": {
+                          "display": "block",
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        },
+                        "columns": [
+                          {
+                            "hidden": true,
+                            "binding": "name",
+                            "text": "name",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          },
+                          {
+                            "hidden": false,
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "name": "slow",
+                            "desc": "Slow"
+                          },
+                          {
+                            "name": "medium",
+                            "desc": "Medium"
+                          },
+                          {
+                            "name": "fast",
+                            "desc": "Fast"
+                          }
+                        ],
+                        "inputAttrs": {
+                          "style": {
+                            "width": "6.4rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "binding": "options.fanCurve.log.min",
+                        "type": "valueSpinner",
+                        "labelText": "Min Power",
+                        "canEdit": true,
+                        "min": 0,
+                        "max": 100,
+                        "step": 1,
+                        "fmtMask": "##,##0",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5em"
+                          }
+                        },
+                        "style": {
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Exponential Fan Curve",
+                    "cssClass": "fan-curve fan-curve-exp",
+
+                    "style": {
+                    },
+                    "attrs": {
+                      "data-bindingcontext": "settings"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "binding": "options.fanCurve.exp.start",
+                            "type": "valueSpinner",
+                            "labelText": "Start Temp",
+                            "canEdit": true,
+                            "min": 0,
+                            "max": 500,
+                            "step": 1,
+                            "fmtMask": "##,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "pickList",
+                        "labelText": "Ramp",
+                        "binding": "options.fanCurve.exp.ramp",
+                        "bindColumn": 0,
+                        "displayColumn": 1,
+                        "style": {
+                          "display": "block",
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        },
+                        "columns": [
+                          {
+                            "hidden": true,
+                            "binding": "name",
+                            "text": "name",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          },
+                          {
+                            "hidden": false,
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "name": "slow",
+                            "desc": "Slow"
+                          },
+                          {
+                            "name": "medium",
+                            "desc": "Medium"
+                          },
+                          {
+                            "name": "fast",
+                            "desc": "Fast"
+                          }
+                        ],
+                        "inputAttrs": {
+                          "style": {
+                            "width": "6.4rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "binding": "options.fanCurve.exp.min",
+                        "type": "valueSpinner",
+                        "labelText": "Min Power",
+                        "canEdit": true,
+                        "min": 0,
+                        "max": 100,
+                        "step": 1,
+                        "fmtMask": "##,##0",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5em"
+                          }
+                        },
+                        "style": {
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Custom Fan Curve",
+                    "cssClass": "fan-curve fan-curve-custom",
+                    "style": {
+                    },
+                    "attrs": {
+                      "data-bindingcontext": "settings"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "width": "27rem"
+                        },
+                        "html": "The script determines how to set the fan power. See <a href='https://github.com/rstrouse/relayEquipmentManager/wiki/Sequent-Microsystems-Boards#sequent-smart-fan' target='_blank'>Sequent Smart Fan Wiki</a> for instructions.",
+                        "cssClass": "script-advanced-instructions"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "display": "block",
+                          "lineHeight": "1.2"
+                        },
+                        "class": "script-editor",
+                        "binding": "test-binding"
+                      },
+                      "options": [
+                        {
+                          "default": "return 0;",
+                          "field": {
+                            "binding": "options.fanPowerFn",
+                            "type": "scriptEditor",
+                            "labelText": "Fan Power Function",
+                            "prefix": "(options, values, info) => {",
+                            "suffix": "}",
+                            "codeStyle": "{ maxHeight: '300px', overflow: 'auto' }",
+                            "canEdit": true,
+                            "style": {
+                              "marginLeft": "-.5rem",
+                              "marginRight": "-.5rem",
+                              "marginBottom": ".25rem"
+                            }
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -544,8 +1045,6 @@
             }
           ]
         }
-
-
       ],
       "interfaces": [ "i2c" ]
     },
@@ -845,7 +1344,7 @@
                     {
                       "field": {
                         "type": "staticField",
-                        "labelText": "Script Result",
+                        "labelText": "Target Power",
                         "binding": "values.fanPowerFnVal",
                         "dataType": "number",
                         "fmtMask": "#,##0",
@@ -871,47 +1370,532 @@
             },
             {
               "field": {
-                "text": "Script",
-                "id": "tabFanScript",
-                "style": { "width": "27rem" }
+                "text": "Fan Curve",
+                "id": "tabFanCurve",
+                "style": { "width": "30rem" }
               },
               "options": [
                 {
                   "field": {
-                    "type": "div",
+                    "type": "pickList",
+                    "labelText": "Fan Curve",
+                    "binding": "options.fanCurve.curve",
+                    "bindColumn": 0,
+                    "displayColumn": 1,
                     "style": {
-                      "width": "27rem"
+                      "display": "block",
+                      "marginLeft": ".25rem",
+                      "marginBottom": ".25rem"
                     },
-                    "html": "The script determines how to set the fan power. See <a href='https://github.com/rstrouse/relayEquipmentManager/wiki/Sequent-Microsystems-Boards#sequent-smart-fan' target='_blank'>Sequent Smart Fan Wiki</a> for instructions.",
-                    "cssClass": "script-advanced-instructions"
+                    "labelAttrs": {
+                      "style": {
+                        "width": "5rem"
+                      }
+                    },
+                    "columns": [
+                      {
+                        "hidden": true,
+                        "binding": "name",
+                        "text": "name",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      },
+                      {
+                        "hidden": false,
+                        "binding": "desc",
+                        "text": "Description",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      }
+                    ],
+                    "items": [
+                      {
+                        "name": "linear",
+                        "desc": "Linear"
+                      },
+                      {
+                        "name": "log",
+                        "desc": "Logarithmic"
+                      },
+                      {
+                        "name": "exp",
+                        "desc": "Exponential"
+                      },
+                      {
+                        "name": "custom",
+                        "desc": "Custom Script"
+                      }
+                    ],
+                    "inputAttrs": {
+                      "style": {
+                        "width": "7rem"
+                      }
+                    },
+                    "fieldEvents": {
+                      "selchanged": "console.log(evt); $(evt.currentTarget).parent().find(`.fan-curve`).each(function() { this.style.display = $(this).hasClass(`fan-curve-${evt.newItem.name}`) ? 'block' : 'none';});"
+                    }
                   }
                 },
                 {
                   "field": {
-                    "type": "div",
+                    "type": "fieldset",
+                    "legend": "Linear Fan Curve",
+                    "cssClass": "fan-curve fan-curve-linear",
                     "style": {
-                      "display": "block",
-                      "lineHeight": "1.2"
                     },
-                    "class": "script-editor",
-                    "binding": "test-binding"
+                    "attrs": {
+                      "data-bindingcontext": "settings"
+                    }
                   },
                   "options": [
                     {
-                      "default": "return 0;",
                       "field": {
-                        "binding": "options.fanPowerFn",
-                        "type": "scriptEditor",
-                        "labelText": "Fan Power Function",
-                        "prefix": "(options, values, info) => {",
-                        "suffix": "}",
-                        "codeStyle": "{ maxHeight: '300px', overflow: 'auto' }",
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "binding": "options.fanCurve.linear.start",
+                            "type": "valueSpinner",
+                            "labelText": "Start Temp",
+                            "canEdit": true,
+                            "min": 0,
+                            "max": 500,
+                            "step": 1,
+                            "fmtMask": "##,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "binding": "options.fanCurve.linear.end",
+                            "type": "valueSpinner",
+                            "labelText": "End Temp",
+                            "canEdit": true,
+                            "min": 0,
+                            "max": 500,
+                            "step": 1,
+                            "fmtMask": "##,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "binding": "options.fanCurve.linear.min",
+                        "type": "valueSpinner",
+                        "labelText": "Min Power",
                         "canEdit": true,
+                        "min": 0,
+                        "max": 100,
+                        "step": 1,
+                        "fmtMask": "##,##0",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5em"
+                          }
+                        },
                         "style": {
                           "marginLeft": ".25rem",
                           "marginBottom": ".25rem"
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
                         }
                       }
+                    }
+
+
+
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Logarithmic Fan Curve",
+                    "cssClass": "fan-curve fan-curve-log",
+                    "style": {
+                    },
+                    "attrs": {
+                      "data-bindingcontext": "settings"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "binding": "options.fanCurve.log.start",
+                            "type": "valueSpinner",
+                            "labelText": "Start Temp",
+                            "canEdit": true,
+                            "min": 0,
+                            "max": 500,
+                            "step": 1,
+                            "fmtMask": "##,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "pickList",
+                        "labelText": "Ramp",
+                        "binding": "options.fanCurve.log.ramp",
+                        "bindColumn": 0,
+                        "displayColumn": 1,
+                        "style": {
+                          "display": "block",
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        },
+                        "columns": [
+                          {
+                            "hidden": true,
+                            "binding": "name",
+                            "text": "name",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          },
+                          {
+                            "hidden": false,
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "name": "slow",
+                            "desc": "Slow"
+                          },
+                          {
+                            "name": "medium",
+                            "desc": "Medium"
+                          },
+                          {
+                            "name": "fast",
+                            "desc": "Fast"
+                          }
+                        ],
+                        "inputAttrs": {
+                          "style": {
+                            "width": "6.4rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "binding": "options.fanCurve.log.min",
+                        "type": "valueSpinner",
+                        "labelText": "Min Power",
+                        "canEdit": true,
+                        "min": 0,
+                        "max": 100,
+                        "step": 1,
+                        "fmtMask": "##,##0",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5em"
+                          }
+                        },
+                        "style": {
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Exponential Fan Curve",
+                    "cssClass": "fan-curve fan-curve-exp",
+
+                    "style": {
+                    },
+                    "attrs": {
+                      "data-bindingcontext": "settings"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div"
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "binding": "options.fanCurve.exp.start",
+                            "type": "valueSpinner",
+                            "labelText": "Start Temp",
+                            "canEdit": true,
+                            "min": 0,
+                            "max": 500,
+                            "step": 1,
+                            "fmtMask": "##,##0",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "5.5em"
+                              }
+                            },
+                            "style": {
+                              "marginLeft": ".25rem",
+                              "marginBottom": ".25rem"
+                            },
+                            "inputAttrs": {
+                              "style": {
+                                "width": "5rem"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+
+                      ]
+                    },
+                    {
+                      "field": {
+                        "type": "pickList",
+                        "labelText": "Ramp",
+                        "binding": "options.fanCurve.exp.ramp",
+                        "bindColumn": 0,
+                        "displayColumn": 1,
+                        "style": {
+                          "display": "block",
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        },
+                        "columns": [
+                          {
+                            "hidden": true,
+                            "binding": "name",
+                            "text": "name",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          },
+                          {
+                            "hidden": false,
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": {
+                              "whiteSpace": "nowrap"
+                            }
+                          }
+                        ],
+                        "items": [
+                          {
+                            "name": "slow",
+                            "desc": "Slow"
+                          },
+                          {
+                            "name": "medium",
+                            "desc": "Medium"
+                          },
+                          {
+                            "name": "fast",
+                            "desc": "Fast"
+                          }
+                        ],
+                        "inputAttrs": {
+                          "style": {
+                            "width": "6.4rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "binding": "options.fanCurve.exp.min",
+                        "type": "valueSpinner",
+                        "labelText": "Min Power",
+                        "canEdit": true,
+                        "min": 0,
+                        "max": 100,
+                        "step": 1,
+                        "fmtMask": "##,##0",
+                        "units": "%",
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5em"
+                          }
+                        },
+                        "style": {
+                          "marginLeft": ".25rem",
+                          "marginBottom": ".25rem"
+                        },
+                        "inputAttrs": {
+                          "style": {
+                            "width": "5rem"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Custom Fan Curve",
+                    "cssClass": "fan-curve fan-curve-custom",
+                    "style": {
+                    },
+                    "attrs": {
+                      "data-bindingcontext": "settings"
+                    }
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "width": "27rem"
+                        },
+                        "html": "The script determines how to set the fan power. See <a href='https://github.com/rstrouse/relayEquipmentManager/wiki/Sequent-Microsystems-Boards#sequent-smart-fan' target='_blank'>Sequent Smart Fan Wiki</a> for instructions.",
+                        "cssClass": "script-advanced-instructions"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "display": "block",
+                          "lineHeight": "1.2"
+                        },
+                        "class": "script-editor",
+                        "binding": "test-binding"
+                      },
+                      "options": [
+                        {
+                          "default": "return 0;",
+                          "field": {
+                            "binding": "options.fanPowerFn",
+                            "type": "scriptEditor",
+                            "labelText": "Fan Power Function",
+                            "prefix": "(options, values, info) => {",
+                            "suffix": "}",
+                            "codeStyle": "{ maxHeight: '300px', overflow: 'auto' }",
+                            "canEdit": true,
+                            "style": {
+                              "marginLeft": "-.5rem",
+                              "marginRight": "-.5rem",
+                              "marginBottom": ".25rem"
+                            }
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -919,8 +1903,6 @@
             }
           ]
         }
-
-
       ],
       "interfaces": [ "i2c" ]
     }
