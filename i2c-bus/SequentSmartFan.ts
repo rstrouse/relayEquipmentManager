@@ -181,7 +181,7 @@ export class SequentSmartFan extends i2cDeviceBase {
                     let pwr = Math.round(255 - Math.max(val * 2.55, 255));
                     if (typeof this.powerPin !== 'undefined') await this.powerPin.setPinStateAsync(pwr > 0);
                     let buffer = Buffer.from([pwr]);
-                    logger.verbose(`${this.device.name} setFanPower = ${pwr}`);
+                    logger.verbose(`${this.device.name} setFanPower = ${pwr} val = ${val}`);
                     await this.i2c.writeI2cBlock(this.device.address, this.regs.I2C_MEM_FAN_POWER, 1, buffer);
                 }
             }
