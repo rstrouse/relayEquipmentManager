@@ -208,6 +208,9 @@ export class SequentSmartFan extends i2cDeviceBase {
             }
             this.values.fanTemp = fanTemp;
             this.values.cpuTemp = cpuTemp;
+            this.values.fanTempF = this.values.cpuTempF = utils.convert.temperature.convertUnits(cpuTemp, this.values.units, 'F');
+            this.values.fanTempC = this.values.cpuTempC = utils.convert.temperature.convertUnits(cpuTemp, this.values.units, 'C');
+            this.values.fanTempK = this.values.cpuTempK = utils.convert.temperature.convertUnits(cpuTemp, this.values.units, 'K');
 
         } catch (err) { logger.error(`${this.device.name} error getting fan temperature: ${err.message}`); }
     }
