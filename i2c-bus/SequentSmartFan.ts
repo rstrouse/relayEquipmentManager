@@ -266,7 +266,7 @@ export class SequentSmartFan extends i2cDeviceBase {
             val = Math.max(_val, curve.min)
         }
         this.values.fanPowerFnVal = _val;
-        return Math.max(Math.min(val, 100), 0);
+        return Math.round(Math.max(Math.min(val, 100), 0));
     }
     protected async setFanPower() {
         try {
@@ -283,7 +283,7 @@ export class SequentSmartFan extends i2cDeviceBase {
                 else {
                     // Sequent occupies a gpio pin to turn on and off the fan.
                     let pwr = Math.round(255 - Math.min(val * 2.55, 255));
-                    if (typeof this.powerPin !== 'undefined') await this.powerPin.setPinStateAsync(pwr > 0);
+                    if (typeof this.powerPin !== 'undefined') await this.powerPin.setPinStateAsync(val > 0);
                     let buffer = Buffer.from([pwr]);
                     logger.verbose(`${this.device.name} setFanPower = ${pwr} val = ${val}`);
                     if (!this.i2c.isMock)
