@@ -56,16 +56,16 @@ export class SequentSmartFan extends i2cDeviceBase {
         return this.options.fanCurve;
     }
     protected changeUnits(from: string, to: string) {
-        if (from === to) return;
-        console.log(`Changing units from ${from} to ${to}`);
+        //if (from === to) return;
+        //console.log(`Changing units from ${from} to ${to}`);
         let fc = this.fanCurve;
         let ct = utils.convert.temperature.convertUnits;
-        console.log(fc);
+        //console.log(fc);
         this.options.fanCurve.linear.start = utils.convert.temperature.convertUnits(fc.linear.start, from, to);
         this.options.fanCurve.linear.end = utils.convert.temperature.convertUnits(fc.linear.end, from, to);
         this.options.fanCurve.exp.start = utils.convert.temperature.convertUnits(fc.exp.start, from, to);
         this.options.fanCurve.log.start = utils.convert.temperature.convertUnits(fc.log.start, from, to);
-        console.log(fc);
+        //console.log(fc);
         this.options.fanSafeTemp = ct(this.options.fanSafeTemp, from, to);
         this.values.cpuTemp = ct(this.values.cpuTemp, from, to);
         this.values.fanTemp = ct(this.values.fanTemp, from, to);
@@ -234,32 +234,34 @@ export class SequentSmartFan extends i2cDeviceBase {
         }
         else if (this.fanCurve.curve === 'log') {
             let curve = this.fanCurve.log;
-            let b = 1.6;
+            let b = 1.06;
             switch (curve.ramp) {
                 case 'slow':
-                    b = 1.8;
+                    b = 1.08;
                 case 'medium':
-                    b = 1.6;
+                    b = 1.06;
                 case 'fast':
-                    b = 1.2;
+                    b = 1.04;
             }
-            _val = (Math.log(Math.max(.001, this.values.cpuTemp - curve.start)) * (1 / Math.log(b)));
+            _val = Math.log(Math.max(.001, this.values.cpuTemp - curve.start)) / Math.log(b);
+
+            //_val = (Math.log(Math.max(.001, this.values.cpuTemp - curve.start)) * (1 / Math.log(b)));
             _val = Math.max(Math.min(_val, 100), 0);
             val = Math.max(_val, curve.min);
         }
         else if (this.fanCurve.curve === 'exp') {
             let curve = this.fanCurve.exp;
             if (this.values.cpuTemp > curve.start) {
-                let b = 1.1;
+                let b = 1.07;
                 switch (curve.ramp) {
                     case 'slow':
-                        b = 1.077;
+                        b = 1.07;
                         break;
                     case 'medium':
                         b = 1.1;
                         break;
                     case 'fast':
-                        b = 1.2;
+                        b = 1.15;
                         break;
                 }
                 _val = Math.pow(b, (this.values.cpuTemp - curve.start)) + curve.min - 1;
