@@ -236,7 +236,7 @@ export class SequentSmartFan extends i2cDeviceBase {
             let curve = this.fanCurve.log;
             let b = 1.06;
             let temp = utils.convert.temperature.convertUnits(this.values.cpuTemp, this.values.units, 'C');
-            let start = utils.convert.temperature.convertUnits(curve.start, this.values.unts, 'C');
+            let start = utils.convert.temperature.convertUnits(curve.start, this.values.units, 'C');
 
             switch (curve.ramp) {
                 case 'slow':
@@ -254,7 +254,7 @@ export class SequentSmartFan extends i2cDeviceBase {
         else if (this.fanCurve.curve === 'exp') {
             let curve = this.fanCurve.exp;
             let temp = utils.convert.temperature.convertUnits(this.values.cpuTemp, this.values.units, 'C');
-            let start = utils.convert.temperature.convertUnits(curve.start, this.values.unts, 'C');
+            let start = utils.convert.temperature.convertUnits(curve.start, this.values.units, 'C');
             if (temp > start) {
                 let b = 1.07;
                 switch (curve.ramp) {
