@@ -57,16 +57,19 @@ export class SequentSmartFan extends i2cDeviceBase {
     }
     protected changeUnits(from: string, to: string) {
         if (from === to) return;
+        console.log(`Changing units from ${from} to ${to}`);
         let fc = this.fanCurve;
         let ct = utils.convert.temperature.convertUnits;
-        fc.linear.start = ct(fc.linear.start, from, to);
-        fc.linear.end = ct(fc.linear.end, from, to);
-        fc.exp.start = ct(fc.exp.start, from, to);
-        fc.log.start = ct(fc.log.start, from, to);
+        console.log(fc);
+        this.options.fanCurve.linear.start = utils.convert.temperature.convertUnits(fc.linear.start, from, to);
+        this.options.fanCurve.linear.end = utils.convert.temperature.convertUnits(fc.linear.end, from, to);
+        this.options.fanCurve.exp.start = utils.convert.temperature.convertUnits(fc.exp.start, from, to);
+        this.options.fanCurve.log.start = utils.convert.temperature.convertUnits(fc.log.start, from, to);
+        console.log(fc);
         this.options.fanSafeTemp = ct(this.options.fanSafeTemp, from, to);
         this.values.cpuTemp = ct(this.values.cpuTemp, from, to);
         this.values.fanTemp = ct(this.values.fanTemp, from, to);
-        this.values.units = to;
+        this.options.units = this.values.units = to;
         webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
     }
     public evalFanPower: Function;
@@ -118,7 +121,6 @@ export class SequentSmartFan extends i2cDeviceBase {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
             if (typeof opts.fanSafeTemp !== 'undefined' && opts.fanSafeTemp !== this.options.fanSafeTemp) await this.setFanSafeTemp(opts.fanSafeTemp);
-            if (typeof opts.units !== 'undefined' && this.options.units !== opts.units) this.setUnits(opts.units);
             if (typeof opts.blink !== 'undefined' && opts.blink !== this.options.blink) await this.setFanBlink(opts.blink);
             if (typeof opts.readInterval !== 'undefined') this.options.readInterval = opts.readInterval;
             if (typeof opts.useCPUTemp !== 'undefined') this.options.useCPUTemp = opts.useCPUTemp;
@@ -144,6 +146,8 @@ export class SequentSmartFan extends i2cDeviceBase {
                     if (typeof curve.min !== 'undefined') fc.log.min = curve.min;
                 }
             }
+            if (typeof opts.units !== 'undefined' && this.options.units !== opts.units) this.setUnits(opts.units);
+
             if (typeof opts.fanPowerFn !== 'undefined' && opts.fanPowerFn !== this.options.fanPowerFn) {
                 this.evalFanPower = new Function('options', 'values', 'info', opts.fanPowerFn);
                 this.options.fanPowerFn = opts.fanPowerFn;
