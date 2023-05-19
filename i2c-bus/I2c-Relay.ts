@@ -974,10 +974,7 @@ export class i2cRelay extends i2cDeviceBase {
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();
-                            //this.info.registers.find(x => x.register === 0x01).value = byte;
-                            if (this.i2c.isMock) {
-                                this.info.registers.find(x => x.register === 0x00).value = this.encodeSequent(byte, map);
-                            }
+                            this.info.registers.find(x => x.register === 0x00).value = this.encodeSequent(byte, map);
                             webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                         }
                     }
@@ -1003,7 +1000,6 @@ export class i2cRelay extends i2cDeviceBase {
                             this.info.registers.find(x => x.register === 0x00).value = byte;
                             webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                         }
-                        console.log(`Setting relay State!!!!! ${byte}`);
                     }
 
                     break;
@@ -1090,12 +1086,13 @@ export class i2cRelay extends i2cDeviceBase {
                 await this.sendCommand(command);
                 if (relay.state !== newState) {
                     relay.tripTime = new Date().getTime();
-                    if (this.i2c.isMock) 
-                        webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+                    webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                 }
                 relay.state = newState;
             }
-            if (relay.state !== oldState) webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+            if (relay.state !== oldState) {
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+            }
             await this.emitFeeds();
             return Promise.resolve(relay);
         }
