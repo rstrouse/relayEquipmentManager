@@ -4438,13 +4438,17 @@ $.ui.position.fieldTip = {
                 elemStatus.find('.io-channel-value').show();
                 elemStatus.find('.io-channel-value-units').show();
                 if (c.enabled) {
-                    elemChannel.find('span.io-channel-value').text(dataBinder.formatValue(channel.state || channel.value, 'number', '#,##0.0##', '--.-'));
+                    if (channel.units === 'mV') elemChannel.find('span.io-channel-value').text(dataBinder.formatValue(channel.state || channel.value, 'number', '#,##0', '----'));
+                    else elemChannel.find('span.io-channel-value').text(dataBinder.formatValue(channel.state || channel.value, 'number', '#,##0.0##', '--.-'));
                     if (typeof channel.units !== 'undefined') {
                         elemChannel.find('span.io-channel-value-units').html(self.convertUnitsText(channel));
                         //console.log(elemChannel.find('span.io-channel-value-units'));
                     }
                 }
-                else elemChannel.find('span.io-channel-value').text('--.-');
+                else {
+                    if (channel.units === 'mV') elemChannel.find('span.io-channel-value').text('----');
+                    else elemChannel.find('span.io-channel-value').text('--.-');
+                }
             }
             elemChannel.attr('data-iotype', ioType);
 

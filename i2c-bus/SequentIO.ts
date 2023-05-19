@@ -78,6 +78,7 @@ export class SequentIO extends i2cDeviceBase {
                 return false;
         }
     }
+    protected toHexString(bytes: number[] | number) { return Array.isArray(bytes) ? bytes.reduce((output, elem) => (output + '0x' + ('0' + elem.toString(16)).slice(-2)) + ' ', '') : '0x' + ('0' + bytes.toString(16)).slice(-2); }
     protected ensureRelays(label, arr, count) {
         try {
             for (let i = 1; i <= count; i++) {
@@ -112,6 +113,7 @@ export class SequentIO extends i2cDeviceBase {
     public get outputs(): any { return typeof this.values.outputs === 'undefined' ? this.values.outputs = {} : this.values.outputs; }
     public get rs485() { return typeof this.options.rs485 === 'undefined' ? this.options.rs485 = { mode: 0, baud: 1200, stopBits: 1, parity: 0, address: 0 } : this.options.rs485; }
     public get in4_20(): any[] { return typeof this.inputs.in4_20 === 'undefined' ? this.inputs.in4_20 = [] : this.inputs.in4_20; }
+    public get inAnalog(): any[] { return typeof this.inputs.inAnalog === 'undefined' ? this.inputs.inAnalog = [] : this.inputs.inAnalog; }
     public get in0_10(): any[] { return typeof this.inputs.in0_10 === 'undefined' ? this.inputs.in0_10 = [] : this.inputs.in0_10; }
     public get inDigital(): any[] { return typeof this.inputs.inDigital === 'undefined' ? this.inputs.inDigital = [] : this.inputs.inDigital; }
     public get out4_20(): any[] { return typeof this.outputs.out4_20 === 'undefined' ? this.outputs.out4_20 = [] : this.outputs.out4_20; }
@@ -1549,7 +1551,6 @@ export class Sequent4Rel4In extends SequentIO {
     protected latches = new LatchTimers();
     protected _relayBitmask1 = 0;
     public get inDigital(): any[] { return typeof this.inputs.inDigital === 'undefined' ? this.inputs.inDigital = [] : this.inputs.inDigital; }
-    protected toHexString(bytes: number[] | number) { return Array.isArray(bytes) ? bytes.reduce((output, elem) => (output + '0x' + ('0' + elem.toString(16)).slice(-2)) + ' ', '') : '0x' + ('0' + bytes.toString(16)).slice(-2); }
     protected async sendCommand(command: number[]): Promise<{ bytesWritten: number, buffer: Buffer }> {
         try {
             let buffer = Buffer.from(command);
@@ -2013,4 +2014,506 @@ export class Sequent4Rel4In extends SequentIO {
     }
 
 
+}
+export class SequentHomeAuto extends SequentIO {
+    protected registers = {
+        relayVal: { reg: 0x00, name: 'RELAY_VAL', desc: 'Relay Value', r: true, w: true },
+        setRelay: { reg: 0x01, name: 'RELAY_SET', desc: 'Set Relay', r: false, w: true },
+        clearRelay: { reg: 0x02, name: 'RELAY_CLR', desc: 'Clear Relay', r: false, w: true },
+        digitalIn: { reg: 0x03, name: 'DIG_IN', desc: 'Digital In', r: true, w: false },
+        gpioVal: { reg: 0x04, name: 'GPIO_VAL', desc: 'GPIO Value', r: true, w: false },
+        gpioSet: { reg: 0x05, name: 'GPIO_SET', desc: 'Set GPIO', r: true, w: false },
+        gpioClear: { reg: 0x06, name: 'GPIO_CLR', desc: 'Clear GPIO', r: false, w: false },
+        gpioDir: { reg: 0x07, name: 'GPIO_DIR', desc: 'GPIO Direction', r: true, w: false },
+
+        analogValue: { reg: 0x08, name: 'ADC_RAW', desc: 'Analog Raw', r: true, w: false, size: 16 },
+        analogVoltage: { reg: 0x1E, name: 'ADC_MV', desc: 'Analog Millivolts', r: true, w: false, size: 16 },
+        dacValue: { reg: 0x34, name: 'DAC_VAL', desc: 'DAC Value', r: true, w: false, size: 8 },
+        pwmValue: { reg: 0x3C, name: 'PWM_VAL', desc: 'PWM Value', r: true, w: false, size: 8 },
+        risingEdge: { reg: 0x3D, name: 'RISING_EDGE', desc: 'Rising Edge Enable', r: true, w: true },
+        fallingEdge: { reg: 0x3E, name: 'FALLING_EDGE', desc: 'Falling Edge Enable', r: true, w: true },
+        exRisingEdge: { reg: 0x3F, name: 'EXT_RISING_EDGE', desc: 'Ext Rising Edge', r: true, w: true },
+        exFallingEdge: { reg: 0x40, name: 'EXT_FALLING_EDGE', desc: 'Ext Falling Edge', r: true, w: true },
+        optoCounterReset: { reg: 0x41, name: 'DIG_COUNTER_RESET', desc: 'Opto Counter Reset', r: true, w: true },
+        gpioCounterReset: { reg: 0x42, name: 'GPIO_COUNTER_RESET', desc: 'GPIO Counter Reset', r: true, w: true },
+        temperature: { reg: 0x43, name: 'TEMPERATURE', desc: 'Diag Temperature', r: true, w: false },
+        voltage: { reg: 0x44, name: 'VOLTAGE', desc: '3v3 Voltage', r: true, w: false, size: 2 },
+        calVal: { reg: 0x46, name: 'CAL_VAL', desc: 'Calibration Value', r: true, w: false, size: 2 },
+        calChannel: { reg: 0x48, name: 'CAL_CHAN', desc: 'Calibration Channel', r: true, w: true },
+        calKey: { reg: 0x49, name: 'CAL_KEY', desc: 'Calibration Key', r: true, w: false },
+        calStatus: { reg: 0x50, name: 'CAL_STATUS', desc: 'Calibration Status', r: true, w: false },
+        optoEnable: { reg: 0x51, name: 'OPTO_ENABLE', desc: 'Digital In Enable', r: true, w: true },
+        gpioEnable: { reg: 0x52, name: 'GPIO_ENABLE', desc: 'GPIO Enable', r: true, w: true },
+        optoEncReset: { reg: 0x53, name: 'OPTO_ENC_RESET', desc: 'Digital Counter Reset', r: true, w: true },
+        gpioEncReset: { reg: 0x54, name: 'GPIO_ENC_RESET', desc: 'GPIO Counter Reset', r: true, w: true },
+
+        wdtReset: { reg: 0x64, name: 'WDT_RESET', desc: 'Watchdog Reset', r: true, w: true },
+        wdtIntervalSet: { reg: 0x65, name: 'WDT_INTERVAL_SET', desc: 'Watchdog Interval Set', r: true, w: true, size: 2 },
+        wdtIntervalGet: { reg: 0x67, name: 'WDT_INTERVAL_GET', desc: 'Watchdog Interval Get', r: true, w: false, size: 2 },
+        wdtInitIntervalSet: { reg: 0x69, name: 'WDT_INIT_INTERVAL_SET', desc: 'Watchdog Init Interval Set', r: true, w: true, size: 2 },
+        wdtInitIntervalGet: { reg: 0x6B, name: 'WDT_INIT_INTERVAL_GET', desc: 'Watchdog Init Interval Get', r: true, w: false, size: 2 },
+        wdtResetCount: { reg: 0x6D, name: 'WDT_RESET_COUNT', desc: 'Watchdog Reset Count', r: true, w: false, size: 2 },
+        wdtClearCount: { reg: 0x6F, name: 'WDT_CLEAR_RESET', desc: 'Watchdog Clear Reset Count', r: false, w: true, size: 2 },
+        wdtPwrOffIntervalSet: { reg: 0x71, name: 'WDT_PWROFF_INT_SET', desc: 'Watchdog Power Off Interval Set', r: false, w: true, size: 4 },
+        wdtPwrOffIntervalGet: { reg: 0x75, name: 'WDT_PWROFF_INT_GET', desc: 'Watchdog Power Off Interval Get', r: true, w: false, size: 4 },
+
+        hwVerMajor: { reg: 0x78, name: 'HW_VER_MAJOR', desc: 'Hardware Version Major', r: true, w: false },
+        hwVerMinor: { reg: 0x79, name: 'HW_VER_MINOR', desc: 'Hardware Version Minor', r: true, w: false },
+        fwVerMajor: { reg: 0x80, name: 'FW_VER_MAJOR', desc: 'Firmware Version Major', r: true, w: false },
+        fwVerMinor: { reg: 0x81, name: 'FW_VER_MINOR', desc: 'Firmware Version Minor', r: true, w: false },
+        fifoSize: { reg: 0x82, name: 'FIFO_SIZE', desc: 'Debug FIFO Size', r: true, w: false, size: 2 },
+        fifoVal: { reg: 0x84, name: 'FIFO_VAL', desc: 'Debug FIFO Val', r: true, w: false, size: 2 },
+        fifoCmd: { reg: 0x86, name: 'FIFO_CMD', desc: 'Debug FIFO Command', r: true, w: false },
+        optoEdgeCount: { reg: 0x87, name: 'Digital Edge Count', r: true, w: false, size: 2 },
+        pwmFreq: { reg: 0x9D, name: 'PWM Frequency', r: true, w: false, size: 2 },
+        gpioEdgeCount: { reg: 0xAB, name: 'GPIO_EDGE_COUNT', desc: 'GPIO Edge Count', r: true, w: false, size: 16 },
+        optoEncCount: { reg: 0xB3, name: 'OPTO_ENC_COUNT', desc: 'Opto Encoder Count', r: true, w: false, size: 8 },
+        gpioEncCount: { reg: 0xBB, name: 'GPIO_ENC_COUNT', desc: 'GPIO Encoder Count', r: true, w: false, size: 8 },
+        owDevice: { reg: 0xC4, name: 'OW_DEVICE', desc: 'One-wire Device', r: true, w: false },
+        owRomCode: { reg: 0xC5, name: 'OW_ROM_CODE', desc: 'One-wire ROM Code', r: true, w: false, size: 64 },
+        owStart: { reg: 0xCD, name: 'OW_SEARCH_START', desc: 'One-wire Search Start', r: true, w: false },
+        owT1: { reg: 0xCE, name: 'OW_T1', desc: 'One-wire T1', r: true, w: false },
+        owT16: { reg: 0xCD, name: 'OW_T16', desc: 'One-wire T16', r: true, w: false },
+        slaveBuffSize: { reg: 0xED, name: 'SLAVE_BUFF_SIZE', desc: 'Slave Buffer Size', r: true, w: false }
+    }
+    protected async sendCommand(command: number[]): Promise<{ bytesWritten: number, buffer: Buffer }> {
+        try {
+            let buffer = Buffer.from(command);
+            let w = await this.i2c.writeCommand(this.device.address, buffer);
+            logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
+            this.hasFault = false;
+            return Promise.resolve(w);
+        }
+        catch (err) { logger.error(`${this.device.address} ${command}: ${err.message}`); this.hasFault = true; }
+    }
+    protected async readCommand(command: number): Promise<number> {
+        try {
+            let r = await this.i2c.readByte(this.device.address, command);
+            logger.debug(`${this.device.address} - ${this.device.name} Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
+            this.hasFault = false;
+            return Promise.resolve(r);
+        }
+        catch (err) {
+            logger.error(`${this.device.address} - ${this.device.name} Bus #${this.i2c.busNumber} Read Command: ${err.message}`); this.hasFault = true;
+        }
+    }
+    public async initAsync(deviceType): Promise<boolean> {
+        try {
+            this.stopPolling();
+            this.regs.raspiVolts = this.registers.voltage.reg;
+            this.regs.cpuTemp = this.registers.temperature.reg;
+            if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 3000;
+            this.options.readInterval = Math.max(500, this.options.readInterval);
+            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
+            else this.device.name = this.device.options.name;
+            // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
+            this.ensureIOChannels('IN Digital', 'DIN', this.inDigital, 8);
+            this.ensureIOChannels('IN Analog', 'AIN', this.inAnalog, 8);
+            this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 4);
+            this.ensureIOChannels('OUT 0-10', 'AOUT', this.out0_10, 4);
+            this.ensureIOChannels('OUT Open Drain', 'ODOUT', this.outDrain, 4);
+            this.ensureRelays('Relay', this.relays, 8);
+            await this.initRegisters();
+            await this.getHwFwVer();
+            //await this.initRelayStates();
+            return true;
+        }
+        catch (err) { this.logError(err); return Promise.resolve(false); }
+        finally {
+            setTimeout(() => { this.pollDeviceInformation(); }, 2000);
+            setTimeout(() => { this.pollReadings(); }, 5000);
+        }
+    }
+    public ensureRegisters() {
+        if (typeof this.info.registers === 'undefined') this.info.registers = [];
+        for (let r in this.registers) {
+            let reg = this.registers[r];
+            if (reg.r) {
+                let rinfo = this.info.registers.find(elem => elem.register === reg.reg);
+                if (typeof rinfo === 'undefined') {
+                    this.info.registers.push({ name: reg.name, code: r, register: reg.reg, desc: reg.desc, size: reg.size || 1, value: 0 });
+                }
+                else {
+                    rinfo.name = reg.name;
+                    rinfo.code = r;
+                    rinfo.desc = reg.desc;
+                    rinfo.size = reg.size || 1;
+                }
+            }
+        }
+        for (let i = this.info.registers.length - 1; i >= 0; i--) {
+            // Remove any registers that should not be there.
+            let reg = this.registers[this.info.registers[i]['code']];
+            if (typeof reg === 'undefined' || !reg.r) this.info.registers.splice(i, 1);
+        }
+    }
+    public async initRegisters(): Promise<boolean> {
+        try {
+            this.ensureRegisters();
+            for (let i = 0; i < this.info.registers.length - 1; i++) {
+                let reg = this.info.registers[i];
+                if (typeof reg.size === 'undefined' || reg.size === 1) {
+                    let val = (this.i2c.isMock) ? ((255 * Math.random()) & 0x0f) | (reg.value & 0xf0) : await this.readCommand(reg.register);
+                    if (val !== reg.value) {
+                        reg.value = val;
+                    }
+                }
+                else if (reg.size === 2) {
+                    let buf = this.i2c.isMock ? { bytesRead: 2, buffer: Buffer.from([((255 * Math.random()) & 0x0f), ((255 * Math.random()) & 0x0f)]) } : await this.i2c.readI2cBlock(this.device.address, reg.register, 2);
+                    if (buf.bytesRead === 2)
+                        reg.value = buf.buffer.readUint16BE();
+                    else
+                        reg.value = 0;
+                }
+                else if (reg.size > 0) {
+                    let buf: { bytesRead?, buffer?: Buffer } = {};
+                    if (this.i2c.isMock) {
+                        let arr = [];
+                        for (let i = 0; i < reg.size; i++) arr.push((255 * Math.random()) & 0x0f);
+                        buf.bytesRead = reg.size;
+                        buf.buffer = Buffer.from(arr);
+                    }
+                    else
+                        buf = await this.i2c.readI2cBlock(this.device.address, reg.register, reg.size);
+                    let val = '';
+                    for (let i = 0; i < buf.bytesRead; i++) {
+                        if (i !== 0) val += ',';
+                        val += `${buf.buffer.readUint8(i)}`;
+                    }
+                    reg.value = val;
+                }
+            }
+            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+            return true;
+        } catch (err) { this.logError(err, `Error initializing ${this.device.name} registers`); }
+    }
+    protected async setRelayStates(states) {
+        try {
+            // We need only the upper nibble of this byte.  So set the lower nibble to 0.  These are input values.
+            let byte = states & 0xff;
+            let tries = 0;
+            let reg = this.info.registers.find(elem => elem.register === this.registers.relayVal.reg) || { name: 'RELAY_VAL', reg: 0x00, desc: 'Relay Value', value: 0 };
+            this.relays.sort((a, b) => { return a.id - b.id; });
+            // Not sure why but the Sequent command line code retries 10 times if it does not get the relay set.
+            while (tries++ < 10 && byte != (reg.value & 0xff)) {
+                if (!this.i2c.isMock) await this.sendCommand([this.registers.setRelay.reg, byte]);
+                else reg.value = byte;
+                for (let i = 0; i < this.relays.length; i++) {
+                    let r = this.relays[i];
+                    let state = ((byte >> 4) & (1 << i));
+                    if (state !== r.state) {
+                        r.state = state;
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [r] });
+                    }
+                }
+                await this.takeReadings();
+                if (tries > 1) logger.warn(`Retry #${tries - 1} setting relay states ${this.device.name} expected ${byte} but got ${reg.value & 0xf0}`);
+            }
+            if ((reg.value & 0xff) !== byte && !this.i2c.isMock) logger.error(`Error setting relay states ${this.device.name} register did not echo ${reg.value & 0xf0} <> ${byte}`);
+        }
+        catch (err) { logger.error(`Error setting relay states ${this.device.name}`); }
+    }
+    protected encodeRelayBit(byte, id, state) { return state ? byte |= (1 << (id - 1)) : byte &= ~(1 << (id - 1)); }
+    protected async initRelayStates() {
+        this.relays.sort((a, b) => { return a.id - b.id; });
+        try {
+            await this.takeReadings();
+            let reg = this.info.registers.find(elem => elem.register === this.registers.relayVal.reg) || {};
+            let rval = reg.value || 0;
+            for (let i = 0; i < this.relays.length; i++) {
+                let r = this.relays[i];
+                if (!r.enabled) continue;
+                let state = false;
+                if (r.initState === 'on') state = true;
+                else if (r.initState === 'off') state = false;
+                else if (r.initState === 'last') state = utils.makeBool(r.state);
+                else if (r.invert === true) state = true;
+                let target = r.invert === true ? !utils.makeBool(state) : utils.makeBool(state);
+                // Now lets set the bit.
+                rval = this.encodeRelayBit(rval, r.id, target);
+                if (target !== r.state) {
+                    logger.info(`${this.device.name} Init Relay State [${r.id}] ${this.toHexString(1 << (r.id - 1))} : ${this.toHexString(reg.value)} ===> ${this.toHexString(rval)}`)
+                }
+            }
+            await this.setRelayStates(rval);
+        } catch (err) { logger.error(`Error initializing relay states ${this.device.name}: ${err}`); }
+    }
+    public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
+        let relay = this.relays.find(elem => { return elem.id === opts.id });
+        if (typeof relay === 'undefined') return Promise.reject(new Error(`${this.device.name} - Invalid Relay id: ${opts.id}`));
+        try {
+            let newState = utils.makeBool(opts.state);
+            let reg = this.info.registers.find(elem => elem.register === this.registers.relayVal.reg);
+            await this.takeReadings();
+            let target = newState;
+            if (relay.invert === true) target = !newState;
+            let states = this.encodeRelayBit(reg.value, relay.id, target);
+            await this.setRelayStates(states);
+            return relay;
+        }
+        catch (err) { return Promise.reject(err) };
+    }
+    public async getStatus(): Promise<boolean> {
+        try {
+            this.suspendPolling = true;
+            await this.getRaspVolts();
+            await this.getCpuTemp();
+            return true;
+        }
+        catch (err) { logger.error(`Error getting info ${typeof err !== 'undefined' ? err.message : ''}`); return Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
+    protected async get0_10Output(id) {
+        try {
+            this.ensureRegisters();
+            let val = (this.i2c.isMock) ? Math.round(this.out0_10[id - 1].value || 0) * 1000 : await this.readWord(this.registers.dacValue.reg + (2 * (id - 1)));
+            let io = this.out0_10[id - 1];
+            if (Math.round(io.value * 1000) !== val) {
+                io.value = val / 1000;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out0_10: [io] } } });
+            }
+        } catch (err) { logger.error(`${this.device.name} error getting 0-10 output ${id}: ${err.message}`); }
+    }
+    protected async set0_10Output(id, val) {
+        try {
+            // Ch1: 4
+            // Ch2: 6
+            // Ch3: 8
+            // Ch4: 10
+            if (val < 0 || val > 10) throw new Error(`Value must be between 0 and 10`);
+            if (!this.i2c.isMock) await this.writeWord(this.registers.dacValue.reg + (2 * (id - 1)), Math.round(val * 1000));
+            let io = this.out0_10[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { out0_10: [io] } } });
+            }
+        } catch (err) { logger.error(`${this.device.name} error setting 0-10 output ${id}: ${err.message}`); }
+    }
+    protected async getDrainOutput(id) {
+        try {
+            // Ch1: 20
+            // Ch2: 22
+            // Ch3: 24
+            // Ch4: 26
+            let val = this.i2c.isMock ? this.outDrain[id - 1].value || 0 : await this.readWord(this.registers.pwmValue.reg + (2 * (id - 1))) / 100;
+            let io = this.outDrain[id - 1];
+            if (io.value !== val) {
+                io.value = val;
+                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { outputs: { outDrain: [io] } } });
+            }
+        } catch (err) { logger.error(`${this.device.name} error getting open drain output ${id}: ${err.message}`); }
+    }
+    protected async setDrainOutput(id, val) {
+        try {
+            // Ch1: 20
+            // Ch2: 22
+            // Ch3: 24
+            // Ch4: 26
+            if (val < 0 || val > 100) throw new Error('Value must be between 0 and 100');
+            if (!this.i2c.isMock) await this.writeWord(20 + (2 * (id - 1)), Math.round(val * 100));
+            else { this.outDrain[id - 1].value = val; }
+        } catch (err) { logger.error(`${this.device.name} error writing Open Drain output ${id}: ${err.message}`); }
+
+    }
+
+    protected async readDigitalIn(): Promise<boolean> {
+        try {
+
+            // Read all the active inputs
+            if (typeof this.info.registers === 'undefined') this.ensureRegisters();
+            let reg = this.info.registers.find(elem => elem.register === this.registers.digitalIn.reg);
+            let val = (this.i2c.isMock) ? ((255 * Math.random()) & 0xff) : await this.readCommand(reg.register);
+            if (this.hasFault) val = 0xff;
+            for (let i = 0; i < 4; i++) {
+                // Read the input.
+                let input = this.inDigital[i];
+                if (input.enabled) {
+                    let v = utils.makeBool((1 << i) & val);
+                    if (input.value !== v) {
+                        input.value = v;
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inDigital: [input] } } });
+                    }
+                }
+            }
+            if (reg.value !== val) webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+            reg.value = val;
+            return true;
+        }
+        catch (err) { this.logError(err, 'Error reading digital inputs'); }
+    }
+    protected async readAnalogIn(): Promise<boolean> {
+        try {
+            let changed = false;
+            if (typeof this.info.registers === 'undefined') this.ensureRegisters();
+            let regV = this.info.registers.find(elem => elem.register === this.registers.analogVoltage.reg);
+            let regR = this.info.registers.find(elem => elem.register === this.registers.analogValue.reg);
+            for (let i = 0; i < this.inAnalog.length; i++) {
+                let input = this.inAnalog[i];
+                if (this.inAnalog[i].enabled) {
+                    // Read the registers.
+                    let volts = await this.readWord(regV.reg) / 1000;
+                    if (volts !== input.value) changed = true;
+                    if (changed) {
+                        input.value = volts;
+                        input.raw = await this.readWord(regR.reg);
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inAnalog: [input] } } });
+                    }
+                }
+            }
+            return true;
+        }
+        catch (err) { this.logError(err, 'Error reading analog inputs'); }
+    }
+    protected async readRelayStates(): Promise<boolean> {
+        try {
+            // Read all the relays
+            let reg = this.info.registers.find(elem => elem.register === this.registers.relayVal.reg);
+            let val = (this.i2c.isMock) ? reg.value : await this.readCommand(reg.register);
+            if (this.hasFault) val = 0xff;
+            for (let i = 0; i < 4; i++) {
+                // Read the relay.
+                let relay = this.relays[i];
+                if (relay.enabled) {
+                    let v = utils.makeBool((1 << i) & val);
+                    if (relay.invert === true) v = !v;
+                    if (relay.state !== v) {
+                        relay.state = v;
+                        relay.tripTime = new Date().getTime();
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+                    }
+                }
+            }
+            if (reg.value !== val) webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+            reg.value = val;
+            this.emitFeeds();
+            return true;
+        }
+        catch (err) { this.logError(err, 'Error reading relay states'); }
+    }
+    public async takeReadings(): Promise<boolean> {
+        try {
+            await this.readDigitalIn();
+            await this.readRelayStates();
+            await this.readAnalogIn();
+            // Read all the active inputs and outputs.
+            await this.readIOChannels(this.out0_10, this.get0_10Output);
+            await this.readIOChannels(this.outDrain, this.getDrainOutput);
+            this.emitFeeds();
+            return true;
+        }
+        catch (err) { this.logError(err, 'Error taking device readings'); }
+    }
+    public async setOptions(opts): Promise<any> {
+        try {
+            this.suspendPolling = true;
+            if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
+            return Promise.resolve(this.options);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
+    public async setIOChannels(data): Promise<any> {
+        try {
+            if (typeof data.values !== 'undefined') {
+                return await this.setValues(data.values);
+            }
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+    }
+    public async setValues(vals): Promise<any> {
+        try {
+            this.suspendPolling = true;
+            if (typeof vals.inputs !== 'undefined') {
+                if (typeof vals.inputs.inAnalog !== 'undefined') await this.setIOChannelOptions(vals.inputs.inAnalog, this.inAnalog);
+                if (typeof vals.inputs.inDigital !== 'undefined') await this.setIOChannelOptions(vals.inputs.inDigital, this.inDigital);
+            }
+            if (typeof vals.outputs !== 'undefined') {
+                if (typeof vals.outputs.out0_10 !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.out0_10, this.out0_10);
+                    for (let i = 0; i < vals.outputs.out0_10.length; i++) {
+                        let ch = vals.outputs.out0_10[i];
+                        if (ch.enabled) await this.set0_10Output(ch.id, ch.value || 0);
+                    }
+                }
+                if (typeof vals.outputs.outDrain !== 'undefined') {
+                    await this.setIOChannelOptions(vals.outputs.outDrain, this.outDrain);
+                    for (let i = 0; i < vals.outputs.outDrain.length; i++) {
+                        let ch = vals.outputs.outDrain[i];
+                        if (ch.enabled) await this.setDrainOutput(ch.id, ch.value || 0);
+                    }
+                }
+            }
+            return Promise.resolve(this.options);
+        }
+        catch (err) { this.logError(err); Promise.reject(err); }
+        finally { this.suspendPolling = false; }
+    }
+    public getDeviceDescriptions(dev) {
+        let desc = [];
+        let category = typeof dev !== 'undefined' ? dev.category : 'unknown';
+        category = '0-10v Input';
+        for (let i = 0; i < this.in0_10.length; i++) {
+            let chan = this.in0_10[i];
+            switch (chan.type) {
+                case 'T10k':
+                    category = '10k Thermistor';
+                    break;
+                case 'T1k':
+                    category = '1k Thermistor';
+                    break;
+                case 'DIN':
+                    category = 'Dry Contact';
+                    break;
+                default:
+                    category = '0-10v Input';
+                    break;
+            }
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:in0_10.${i + 1}`, category: category });
+        }
+        category = '0-10v Output';
+        for (let i = 0; i < this.out0_10.length; i++) {
+            let chan = this.out0_10[i];
+            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:out0_10.${i + 1}`, category: category });
+        }
+        return desc;
+    }
+    public getValue(prop: string) {
+        // Steps to getting to our value.
+        // 1. Determine whether input or output.
+        // 2. Determine which array we are coming from.
+        // 3. Map the IO number to the value.
+        let p = prop.toLowerCase();
+        switch (p) {
+            case 'cputempc':
+                return this.info.cpuTemp;
+            case 'cputempf':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'F');
+            case 'cputempk':
+                return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
+            case 'pivoltage':
+                return this.info.rapsiVolts;
+            case 'fwversion':
+                return this.info.fwVersion;
+            default:
+                let iarr;
+                if (p.startsWith('out0_10')) iarr = this.out0_10;
+                else if (p.startsWith('in0_10')) iarr = this.in0_10;
+                else if (p.startsWith('outdrain')) iarr = this.outDrain;
+                if (typeof iarr === 'undefined') {
+                    logger.error(`${this.device.name} error getting I/O channel ${prop}`);
+                    return;
+                }
+                if (p.includes('0_10.')) { p = p.replace('.', ''); } // If the prop gets sent in as in0_10.x convert back to in0_108 format.
+                let parr = p.split('.');
+
+                let sord = p[parr[0].length - 1];
+                let ord = parseInt(sord, 10);
+                if (isNaN(ord) || (p.startsWith('in') && (ord <= 0 || ord >= 9)) || (p.startsWith('out') && (ord <= 0 || ord >= 5))) {
+                    logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
+                    return;
+                }
+                let chan = iarr[ord - 1];
+                return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
+        }
+    }
 }

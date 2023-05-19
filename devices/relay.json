@@ -264,7 +264,7 @@
                         "binding": "value",
                         "text": "Val",
                         "style": {
-                          "width": "24px",
+                          "width": "77px",
                           "whiteSpace": "nowrap",
                           "overflow": "hidden",
                           "textOverflow": "ellipsis",
@@ -275,7 +275,7 @@
                         "binding": "desc",
                         "text": "Description",
                         "style": {
-                          "width": "217px",
+                          "width": "177px",
                           "whiteSpace": "nowrap",
                           "overflow": "hidden",
                           "textOverflow": "ellipsis"
@@ -395,9 +395,15 @@
                       "idType": "sequent8",
                       "maxRelays": 8
                     }
+                  },
+                  {
+                    "name": "sequent3IND",
+                    "desc": "Sequent 3 IND",
+                    "options": {
+                      "idType": "sequent3IND",
+                      "maxRelays": 3
+                    }
                   }
-
-
                 ]
               }
             }

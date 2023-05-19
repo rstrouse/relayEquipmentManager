@@ -20,11 +20,21 @@ export class i2cRelay extends i2cDeviceBase {
         { name: 'sequent4', desc: 'Sequent 4', options: { idType: 'sequent4', maxRelays: 4 }   },
         { name: 'sequent8', desc: 'Sequent 8 v2.x', options: { idType: 'sequent8', maxRelays: 8 } },
         { name: 'sequent8v3', desc: 'Sequent 8 v3.0+', options: {idType: 'sequent8', maxRelays: 8 }},
-        { name: 'sequent8IND', desc: 'Sequent 8 IND', options: { idType: 'sequent8', maxRelays: 8 }}
+        { name: 'sequent8IND', desc: 'Sequent 8 IND', options: { idType: 'sequent8', maxRelays: 8 } },
+        { name: 'sequent3IND', desc: 'Sequent 3 IND', options: { idType: 'sequent3IND', maxRelays: 3 } }
     ]
     protected static commandBytes = {
+        dockerPi4: {
+            state: [], write: [],
+            config: [
+                { name: 'REL1', register: 0x01, desc: 'State value for relay 1' },
+                { name: 'REL2', register: 0x02, desc: 'State value for relay 2' },
+                { name: 'REL3', register: 0x03, desc: 'State value for relay 3' },
+                { name: 'REL4', register: 0x04, desc: 'State value for relay 4' },
+            ]
+        },
         mcp23017: {
-            read: [0x12, 0x13],
+            state: [0x12, 0x13],
             write: [0x14, 0x15],
             config: [
                 { name: 'IODIRA', register: 0x00, desc: 'I/O direction for 1-8' },
@@ -45,12 +55,14 @@ export class i2cRelay extends i2cDeviceBase {
                 { name: 'INTFB', register: 0x0f, desc: 'Interrupt condition for 9-16' },
                 { name: 'INTCAPA', register: 0x10, desc: 'Interrupt capture at the time the interrupt occurred for 1-8' },
                 { name: 'INTCAPB', register: 0x11, desc: 'Interrupt capture at the time the interrupt occurred for 9-16' },
+                { name: 'RELA', register: 0x12, desc: 'Relay state for relays 1-8' },
+                { name: 'RELB', register: 0x13, desc: 'Relay state for relays 9-16' },
                 { name: 'OLATA', register: 0x14, desc: 'Output latches for 1-8' },
                 { name: 'OLATB', register: 0x15, desc: 'Output latches for 9-16' }
             ]
         },
         mcp23008: {
-            read: [0x09],
+            state: [0x09],
             write: [0x0a],
             config: [
                 { name: 'IODIR', register: 0x00, desc: 'I/O directions for 1-8' },
@@ -62,49 +74,95 @@ export class i2cRelay extends i2cDeviceBase {
                 { name: 'GPPU', register: 0x06, desc: 'Pull up resistor for 1-8' },
                 { name: 'INTF', register: 0x07, desc: 'Interrupt condition for 1-8' },
                 { name: 'INTCAP', register: 0x08, desc: 'Interrupt capture at the time the interrupt occurred for 1-8' },
+                { name: 'RELA', register: 0x09, desc: 'Relay state for relays 1-8' },
                 { name: 'OLAT', register: 0x0a, desc: 'Output latches for 1-8' },
             ]
         },
         sequent4: {
-            read: [0x01],
+            state: [0x00],
             write: [0x01],
             config: [
-                {name:'CFG', register: 0x03, desc: 'Configuration register for the relay'}
+                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' },
+                { name: 'VAL', register: 0x00, desc: 'Current values' },
+                { name: 'STATE', register: 0x01, desc: 'Pin Logic State' }
+            ]
+        },
+        sequent3IND: {
+            /*
+            I2C_MEM_RELAY_VAL   = 0x00,//reserved 4 bits for open-drain and 4 bits for leds
+            I2C_MEM_RELAY_SET   = 0x01,
+            I2C_MEM_RELAY_CLR   = 0x02,
+    
+            I2C_MEM_DIAG_3V     = 0x03,
+            I2C_MEM_DIAG_3V_1   = 0x04,
+            I2C_MEM_TEMP =      = 0x05,
+            I2C_MODBUS_SETINGS_ADD = 0x06,
+            I2C_NBS1            = 0x07,
+            I2C_MBS2            = 0x08,
+            I2C_MBS3            = 0x09,
+            I2C_MODBUS_ID_OFFSET_ADD = 0x0A,
+            I2C_MEM_REVISION_MAJOR = 0x78,
+            I2C_MEM_REVISION_MINOR = 0x79,
+            */
+            state: [0x00],
+            write: [0x00],
+            config: [
+                { name: 'VAL', register: 0x00, desc: 'Current bitmask value' },
+                { name: 'SET', register: 0x01, desc: 'Set register' },
+                { name: 'CLEAR', register: 0x02, desc: 'Clear register' },
+                { name: '3v3DIAG', register: 0x03, desc: 'Diag register', size: 2 },
+                { name: 'TEMP', register: 0x05, desc: 'Diag register', size: 2 },
+                { name: 'MBS', register: 0x07, desc: 'MODBUS register', size: 5 },
+                { name: 'VER', register: 0x78, desc: 'Version register', size: 2 },
             ]
         },
         sequent8: {
-            state: [0x01],
+            state: [0x00],
             write: [0x01],
             config: [
-                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' }
+                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' },
+                { name: 'VAL', register: 0x00, desc: 'Current values' },
+                { name: 'STATE', register: 0x01, desc: 'Pin Logic State' }
             ]
         },
         sequent8v3: {
-            state: [0x01],
+            state: [0x00],
             write: [0x01],
             config: [
-                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' }
+                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' },
+                { name: 'VAL', register: 0x00, desc: 'Current values' },
+                { name: 'STATE', register: 0x01, desc: 'Pin Logic State' }
             ]
         },
         sequent8IND: {
-            state: [0x01],
+            /*
+            #define RELAY8_INPORT_REG_ADD	0x00
+            #define RELAY8_OUTPORT_REG_ADD	0x01
+            #define RELAY8_POLINV_REG_ADD	0x02
+            #define RELAY8_CFG_REG_ADD		0x03
+            */
+
+            state: [0x00],
             write: [0x01],
             config: [
-                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' }
+                { name: 'CFG', register: 0x03, desc: 'Configuration register for the relay' },
+                { name: 'VAL', register: 0x00, desc: 'Current values' },
+                { name: 'STATE', register: 0x01, desc: 'Pin Logic State' },
+                { name: 'INV', register: 0x02, desc: 'I/O invert'}
             ]
         },
         pcf8574: {
-            read: [], write: [], config: [
+            state: [], write: [], config: [
                 { name: 'P0x', register: 0x00, desc: 'I/O value 1-8' }
             ]
         }, // There are no configuration, read, or write bytes for the PCF series
         pcf8575: {
-            read: [], write: [], config: [
+            state: [], write: [], config: [
                 { name: 'P0x', register: 0x00, desc: 'I/O value 1-8' },
                 { name: 'P1x', register: 0x00, desc: 'I/O value 9-16' }
             ]
         },
-        seeed: { read: [0x06], write: [0x06], config: [] }
+        seeed: { state: [0x06], write: [0x06], config: [] }
     };
     protected _latchTimers = {};
     protected latches = new LatchTimers();
@@ -114,19 +172,30 @@ export class i2cRelay extends i2cDeviceBase {
     public set relays(val) { this.values.relays = val; }
     protected getReadCommandByte(ord: number): number {
         let arr = i2cRelay.commandBytes[this.device.options.controllerType];
-        return typeof arr !== 'undefined' && typeof arr.read !== 'undefined' && arr.read.length > ord ? arr.read[ord] : undefined;
+        return typeof arr !== 'undefined' && typeof arr.state !== 'undefined' && arr.state.length > ord ? arr.state[ord] : undefined;
     }
     protected getWriteCommandByte(ord: number): number {
         let arr = i2cRelay.commandBytes[this.device.options.controllerType];
         return typeof arr !== 'undefined' && typeof arr.write !== 'undefined' && arr.write.length > ord ? arr.write[ord] : undefined;
     }
+    public ensureRegisters(cfg) {
+        if (typeof this.info.registers === 'undefined') this.info.registers = [];
+        let regs = [];
+        for (let i = 0; i < cfg.config.length; i++) {
+            let r = cfg.config[i];
+            let reg = this.info.registers.find(x => x.register === r.register);
+            regs.push(extend({}, r, { value: typeof reg !== 'undefined' ? reg.value : undefined }));
+        }
+        this.info.registers = regs;
+    }
     protected async initRegisters() {
         try {
+            let cb = i2cRelay.commandBytes[this.device.options.controllerType] || { state: [], init: [], config: [] };
+            this.ensureRegisters(cb);
             switch (this.device.options.controllerType) {
                 case 'pcf8574':
                 case 'pcf8575':
                     // There are no config registers for the is IO extender but we will be pushing these on the interface.
-                    let cb = i2cRelay.commandBytes[this.device.options.controllerType] || { state: [], init: [], config: [] };
                     if (typeof this.device.info.registers === 'undefined') this.device.info.registers = [];
                     let regP0 = this.device.info.registers.find(elem => elem.name === 'P0x');
                     if (typeof regP0 === 'undefined') {
@@ -153,6 +222,7 @@ export class i2cRelay extends i2cDeviceBase {
                 case 'mcp23017':
                     // Set the registers to output for all the relays we have.
                     {
+
                         // Set byte mode for I/O control.
                         //await this.sendCommand([0x0a, 0x00]);
                         // Bit value of 0 = output (what we need to control a relay) and bit value 1 = input.
@@ -190,9 +260,16 @@ export class i2cRelay extends i2cDeviceBase {
                         if (!this.i2c.isMock) await this.readConfigRegisters();
                     }
                     break;
+                case 'sequent3IND':
+                    await this.readConfigRegisters();
+                    let reg = this.device.info.registers.find(elem => elem.name === 'CFG') || { value: 0x00 };
+                    if (reg.value !== 0) {
+                        await this.sendCommand([reg.register, 0]);
+                        await this.readConfigRegisters();
+                    }
+                    break;
                 case 'sequent8':
                 case 'sequent4':
-                case 'sequent8IND':
                 case 'sequent8v3':
                     {
                         await this.readConfigRegisters();
@@ -203,6 +280,20 @@ export class i2cRelay extends i2cDeviceBase {
                         }
                     }
                     break;
+                case 'sequent8IND':
+                    {
+                        await this.readConfigRegisters();
+                        let reg = this.device.info.registers.find(elem => elem.name === 'CFG') || { value: 0x00 };
+                        if (reg.value !== 0) {
+                            await this.sendCommand([reg.register, 0]);
+                            await this.sendCommand([0x01, 0x00]);
+                            await this.readConfigRegisters();
+
+                        }
+
+                    }
+                    break;
+
                 default:
                     break;
             }
@@ -220,6 +311,40 @@ export class i2cRelay extends i2cDeviceBase {
                         let cfg = cb.config[i];
                         let byte = await this.readCommand(cfg.register);
                         this.device.info.registers.push(extend({}, cfg, { value: byte }));
+
+                        let reg = this.info.registers[i];
+                        if (typeof cfg.size === 'undefined' || cfg.size === 1) {
+                            let val = (this.i2c.isMock) ? ((255 * Math.random()) & 0x0f) | (reg.value & 0xf0) : await this.readCommand(cfg.register);
+                            if (val !== reg.value) {
+                                reg.value = val;
+                            }
+                        }
+                        else if (reg.size === 2) {
+                            let buf = this.i2c.isMock ? { bytesRead: 2, buffer: Buffer.from([((255 * Math.random()) & 0x0f), ((255 * Math.random()) & 0x0f)]) } : await this.i2c.readI2cBlock(this.device.address, reg.register, 2);
+                            if (buf.bytesRead === 2)
+                                reg.value = buf.buffer.readUint16BE();
+                            else
+                                reg.value = 0;
+                        }
+                        else if (reg.size > 0) {
+                            let buf: { bytesRead?, buffer?: Buffer } = {};
+                            if (this.i2c.isMock) {
+                                let arr = [];
+                                for (let i = 0; i < reg.size; i++) arr.push((255 * Math.random()) & 0x0f);
+                                buf.bytesRead = reg.size;
+                                buf.buffer = Buffer.from(arr);
+                            }
+                            else
+                                buf = await this.i2c.readI2cBlock(this.device.address, reg.register, reg.size);
+                            let val = '';
+                            for (let i = 0; i < buf.bytesRead; i++) {
+                                if (i !== 0) val += ',';
+                                val += `${buf.buffer.readUint8(i)}`;
+                            }
+                            reg.value = val;
+                        }
+
+
                     }
                     break;
             }
@@ -235,13 +360,27 @@ export class i2cRelay extends i2cDeviceBase {
             let w = await this.i2c.writeCommand(this.device.address, buffer);
             logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
             this.hasFault = false;
+            if (this.i2c.isMock) {
+                let reg = this.info.registers.find(x => x.register === command[0]);
+                if (typeof reg !== 'undefined') {
+                    console.log(`SETTING REGISTER ${JSON.stringify(command)}`)
+                    if (command.length === 2) reg.value = command[1];
+                    else if (command.length === 3) reg.value = (command[1] * 256) + command[2];
+                }
+            }
             return Promise.resolve(w);
         }
         catch (err) { logger.error(`${this.device.address} ${command}: ${err.message}`); this.hasFault = true; }
     }
     protected async readCommand(command: number): Promise<number> {
         try {
-            let r = await this.i2c.readByte(this.device.address, command);
+            let r = 0;
+            if (this.i2c.isMock) {
+                let reg = this.info.registers.find(x => x.register === command);
+                r = typeof reg !== 'undefined' ? reg.value || 0 : 0;
+            }
+            else
+                r = await this.i2c.readByte(this.device.address, command);
             logger.debug(`${this.device.address} - ${this.device.name} Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
             this.hasFault = false;
             return Promise.resolve(r);
@@ -374,6 +513,11 @@ export class i2cRelay extends i2cDeviceBase {
             let bytes: number[] = [];
             let orig: number[] = [];
             switch (this.options.idType) {
+                case 'sequent3IND':
+                    orig.push(await this.readCommand(0x00));
+                    bytes = this.makeStartupBitmasks(orig);
+                    await this.sendCommand([0x00, bytes[0]]);
+                    break;
                 case 'sequent8':
                     // 8relind-rpi -- sequent8IND
                     //relayMaskRemap = [0x01, 0x04, 0x40, 0x10, 0x20, 0x80, 0x08, 0x02]
@@ -398,13 +542,11 @@ export class i2cRelay extends i2cDeviceBase {
                     orig.push(this.decodeSequent(await this.readCommand(0x00), map));
                     bytes = this.makeStartupBitmasks(orig);
                     await this.sendCommand([0x01, this.encodeSequent(bytes[0], map)]);
-                    if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(bytes[0], map);
                     break;
                 case 'sequent4':
                     orig.push(this.decodeSequent(await this.readCommand(0x00), [0x80, 0x40, 0x20, 0x10]));
                     bytes = this.makeStartupBitmasks(orig);
                     await this.sendCommand([0x01, this.encodeSequent(bytes[0], [0x80, 0x40, 0x20, 0x10])]);
-                    if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(bytes[0], [0x80, 0x40, 0x20, 0x10]);
                     break;
                 case 'pcf857x':
                     {
@@ -534,9 +676,25 @@ export class i2cRelay extends i2cDeviceBase {
                         }
                     }
                     break;
+                case 'sequent3IND':
+                    {
+                        let byte = await this.readCommand(0x00);
+                        this.relays.sort((a, b) => { return a.id - b.id; });
+                        for (let i = 0; i < this.relays.length; i++) {
+                            let relay = this.relays[i];
+                            let state = utils.makeBool(byte & (1 << (relay.id - 1)));
+                            if (relay.invert === true) state = !state;
+                            if (state !== relay.state) {
+                                relay.state = state;
+                                webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+                            }
+                        }
+                    }
+                    break;
                 case 'sequent8':
                     {
                         let byte = await this.readCommand(0x03);
+                        
                         if (byte !== 0) {
                             await this.sendCommand([0x03, 0x00]);
                             await this.sendCommand([0x01, 0x00]);
@@ -551,8 +709,6 @@ export class i2cRelay extends i2cDeviceBase {
                                 map = [0x01, 0x04, 0x40, 0x10, 0x20, 0x80, 0x08, 0x02];
                                 break;
                         }
-
-                        if (this.i2c.isMock) byte = this._relayBitmask1;
                         byte = this.decodeSequent(byte, map);
                         this.relays.sort((a, b) => { return a.id - b.id; });
                         for (let i = 0; i < this.relays.length; i++) {
@@ -627,6 +783,13 @@ export class i2cRelay extends i2cDeviceBase {
         let cmdByte = relay.id;
         try {
             switch (this.options.idType) {
+                case 'sequent3IND':
+                    {
+                        let byte = await this.readCommand(0x03);
+                        byte = await this.readCommand(0x00);
+                        byte = byte & (1 << (relay.id - 1));
+                    }
+                    break;
                 case 'sequent4':
                     {
                         let byte = await this.readCommand(0x03);
@@ -636,7 +799,6 @@ export class i2cRelay extends i2cDeviceBase {
                         }
                         // These come in the high nibble. Shift them to the low nibble.
                         byte = await this.readCommand(0x00);
-                        if (this.i2c.isMock) byte = this._relayBitmask1;
                         byte = this.decodeSequent(byte, [0x80, 0x40, 0x20, 0x10]);
                         byte = byte & (1 << (relay.id - 1));
                     }
@@ -659,7 +821,6 @@ export class i2cRelay extends i2cDeviceBase {
                         }
                         // These come in the high nibble. Shift them to the low nibble.
                         byte = await this.readCommand(0x00);
-                        if (this.i2c.isMock) byte = this._relayBitmask1;
                         byte = this.decodeSequent(byte, map);
                         byte = byte & (1 << (relay.id - 1));
                     }
@@ -771,7 +932,7 @@ export class i2cRelay extends i2cDeviceBase {
     public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
         try {
             let relay = this.relays.find(elem => { return elem.id === opts.id });
-            let oldState = relay.state;
+            let oldState = relay.state || false;
             let command: number[] = [];
             if (typeof relay === 'undefined') {
                 return Promise.reject(new Error(`${this.device.name} - Invalid Relay id: ${opts.id}`));
@@ -804,12 +965,41 @@ export class i2cRelay extends i2cDeviceBase {
                                 break;
                         }
                         await this.sendCommand([0x01, this.encodeSequent(byte, map)]);
-                        if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(byte, map);
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();
+                            //this.info.registers.find(x => x.register === 0x01).value = byte;
+                            if (this.i2c.isMock) {
+                                this.info.registers.find(x => x.register === 0x00).value = this.encodeSequent(byte, map);
+                            }
+                            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                         }
                     }
+                    break;
+                case 'sequent3IND':
+                    {
+                        await this.readAllRelayStates();
+                        let byte = 0x00;
+                        for (let i = 0; i < this.relays.length; i++) {
+                            let r = this.relays[i];
+                            let current = r.invert === true ? !utils.makeBool(r.state) : utils.makeBool(r.state);
+                            if (relay.id === r.id) {
+                                let target = r.invert === true ? !utils.makeBool(newState) : utils.makeBool(newState);
+                                if (target) byte |= (1 << (r.id - 1));
+                            }
+                            else if (current)
+                                byte |= (1 << (r.id - 1));
+                        }
+                        await this.sendCommand([0x00, byte]);
+                        if (relay.state !== newState) {
+                            relay.state = newState;
+                            relay.tripTime = new Date().getTime();
+                            this.info.registers.find(x => x.register === 0x00).value = byte;
+                            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+                        }
+                        console.log(`Setting relay State!!!!! ${byte}`);
+                    }
+
                     break;
                 case 'sequent4':
                     {
@@ -827,10 +1017,11 @@ export class i2cRelay extends i2cDeviceBase {
                                 byte |= (1 << (r.id - 1));
                         }
                         await this.sendCommand([0x01, this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10])]);
-                        if (this.i2c.isMock) this._relayBitmask1 = this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10]);
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();
+                            if (this.i2c.isMock) this.info.registers.find(x => x.register === 0x00).value = this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10]);
+                            webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                         }
                     }
                     break;
@@ -893,6 +1084,8 @@ export class i2cRelay extends i2cDeviceBase {
                 await this.sendCommand(command);
                 if (relay.state !== newState) {
                     relay.tripTime = new Date().getTime();
+                    if (this.i2c.isMock) 
+                        webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                 }
                 relay.state = newState;
             }
@@ -913,7 +1106,7 @@ export class i2cRelay extends i2cDeviceBase {
     }
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
-            
+            console.log(`setDeviceState`);
             let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
             // We need to know what relay we are referring to.
             // i2c:1:24:3

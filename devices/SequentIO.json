@@ -2504,6 +2504,645 @@
       "interfaces": [
         "i2c"
       ]
+    },
+    {
+      "id": 905,
+      "enabled": true,
+      "name": "Sequent Home Automation v4",
+      "deviceClass": "SequentHomeAuto",
+      "module": "./SequentIO",
+      "hasReset": false,
+      "hasChangeAddress": false,
+      "readings": {
+        "out0_10": {
+          "label": "0-10mA output",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "outputs": [
+        {
+          "name": "relayVal1",
+          "desc": "Value for relay #1",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal2",
+          "desc": "Value for relay #2",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal3",
+          "desc": "Value for relay #3",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal4",
+          "desc": "Value for relay #4",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj1",
+          "desc": "Object for relay #1",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj2",
+          "desc": "Object for relay #2",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj3",
+          "desc": "Object for relay #3",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj4",
+          "desc": "Object for relay #4",
+          "maxSamples": 1
+        },
+        {
+          "name": "inDigital1",
+          "desc": "Digital in #1",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital2",
+          "desc": "Digital in #2",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital3",
+          "desc": "Digital in #3",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital4",
+          "desc": "Digital in #4",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital1.value",
+          "desc": "Digital in #1 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital2.value",
+          "desc": "Digital in #2 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital3.value",
+          "desc": "Digital in #3 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital4.value",
+          "desc": "Digital in #4 state",
+          "maxSamples": 50
+        }
+      ],
+      "inputs": [
+        {
+          "name": "relayState",
+          "desc": "Relay State Value",
+          "dataType": "boolean",
+          "instructions": "<hr style=\"margin:1px\"></hr>The incoming data should represent a boolean true/false or an object { state: boolean, latch:number }.  If a latch is supplied the relay will unlatch after the number of ms expires.",
+          "options": [
+            {
+              "bind": "channelId",
+              "dataType": "number",
+              "default": "",
+              "field": {
+                "type": "valueSpinner",
+                "required": false,
+                "bind": "channelId",
+                "labelText": "Relay #",
+                "min": 1,
+                "max": 16,
+                "inputAttrs": {
+                  "maxLength": 24,
+                  "style": { "width": "3rem" }
+                },
+                "labelAttrs": {
+                  "style": { "width": "7rem" }
+                },
+                "style": { "display": "block" }
+              }
+            }
+
+          ]
+        }
+      ],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "tabBar",
+            "style": {
+              "display": "inline-block"
+            }
+          },
+          "tabs": [
+            {
+              "field": {
+                "text": "General",
+                "id": "tabGeneral"
+              },
+              "options": [
+                {
+                  "dataType": "string",
+                  "default": "",
+                  "field": {
+                    "type": "inputField",
+                    "required": false,
+                    "bind": "options.name",
+                    "labelText": "Name",
+                    "inputAttrs": {
+                      "maxLength": 16,
+                      "style": {
+                        "width": "16rem"
+                      }
+                    },
+                    "style": {
+                      "display": "block"
+                    }
+                  }
+                },
+                {
+                  "bind": "options.readInterval",
+                  "dataType": "int",
+                  "default": false,
+                  "field": {
+                    "binding": "options.readInterval",
+                    "type": "valueSpinner",
+                    "labelText": "Read Interval",
+                    "min": 500,
+                    "max": 99000,
+                    "canEdit": true,
+                    "fmtMask": "#,##0",
+                    "emptyMask": "--",
+                    "labelAttrs": {
+                      "style": { "paddingRight": ".25rem" }
+                    },
+                    "inputAttrs": {
+                      "style": { "width": "4.5rem" }
+                    },
+                    "units": "ms",
+                    "style": { "marginLeft": "0rem" }
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Device Info",
+                    "style": {
+                      "display": "block",
+                      "verticalAlign": "top"
+                    },
+                    "cssClass": "i2cDeviceInformation"
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Hardware",
+                        "binding": "info.hwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Firmware",
+                        "binding": "info.fwVersion",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Voltage",
+                        "binding": "info.volts",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "dataType": "number",
+                        "fmtMask": "#,##0.0##",
+                        "inputAttrs": {
+                          "style": {
+                            "width": "4.5em",
+                            "textAlign": "right"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        },
+                        "units": "volts"
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Temperature",
+                        "binding": "info.temp",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem",
+                          "lineHeight": "1.2"
+                        },
+                        "dataType": "number",
+                        "fmtMask": "#,##0.###",
+                        "inputAttrs": {
+                          "style": {
+                            "width": "4.5em",
+                            "textAlign": "right"
+                          }
+                        },
+                        "labelAttrs": {
+                          "style": {
+                            "width": "5.5rem"
+                          }
+                        },
+                        "units": "&deg;C"
+                      }
+                    },
+                    {
+                      "bind": "info.registers",
+                      "field": {
+                        "caption": "Registers",
+                        "type": "selectList",
+                        "bind": "info.registers",
+                        "columns": [
+                          {
+                            "binding": "name",
+                            "text": "Name",
+                            "style": {
+                              "width": "97px",
+                              "whiteSpace": "nowrap",
+                              "overflow": "hidden",
+                              "textOverflow": "ellipsis"
+                            }
+                          },
+                          {
+                            "binding": "value",
+                            "text": "Val",
+                            "style": {
+                              "width": "107px",
+                              "whiteSpace": "nowrap",
+                              "overflow": "hidden",
+                              "textOverflow": "ellipsis",
+                              "textAlign": "center"
+                            }
+                          },
+                          {
+                            "binding": "desc",
+                            "text": "Description",
+                            "style": {
+                              "width": "177px",
+                              "whiteSpace": "nowrap",
+                              "overflow": "hidden",
+                              "textOverflow": "ellipsis"
+                            }
+                          }
+                        ],
+                        "style": {
+                          "fontSize": "8pt",
+                          "height": "247px",
+                          "overflowY": "auto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Inputs",
+                "id": "tabInputs"
+              },
+              "options": [
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "tabBar",
+                    "style": {
+                      "display": "inline-block"
+                    }
+                  },
+                  "tabs": [
+                    {
+                      "field": {
+                        "text": "Digital",
+                        "id": "tabDigitalIn",
+                        "cssClass": "i2cReadingValues",
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "panel",
+                            "class": "ioChannels",
+                            "direction": "in",
+                            "total": 8,
+                            "ioType": "digital",
+                            "binding": "values.inputs.inDigital",
+                            "style": {
+                              "width": "459px"
+                            }
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving Digital Input...",
+                              "callContext": "io-channels"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "field": {
+                        "text": "Analog",
+                        "id": "tabAnalogIn",
+                        "cssClass": "i2cReadingValues",
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "panel",
+                            "class": "ioChannels",
+                            "direction": "in",
+                            "total": 8,
+                            "ioType": "analog",
+                            "units": "v",
+                            "binding": "values.inputs.inAnalog",
+                            "style": {
+                              "width": "459px"
+                            }
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving Analog Input...",
+                              "callContext": "io-channels"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Outputs",
+                "id": "tabOutputs"
+              },
+              "options": [
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "tabBar",
+                    "style": {
+                      "display": "inline-block"
+                    }
+                  },
+                  "tabs": [
+                    {
+                      "field": {
+                        "text": "DAC 0-10v",
+                        "id": "tab0_10Out",
+                        "cssClass": "i2cReadingValues",
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "panel",
+                            "class": "ioChannels",
+                            "direction": "out",
+                            "total": 4,
+                            "ioType": "analog",
+                            "binding": "values.outputs.out0_10",
+                            "units": "v",
+                            "style": {
+                              "width": "459px"
+                            },
+                            "configTemplate": {
+                              "field": {
+                                "type": "div"
+                              },
+                              "options": [
+                                {
+                                  "field": {
+                                    "type": "div",
+                                    "cssClass": "script-advanced-instructions",
+                                    "html": "Set the current output for the channel."
+                                  }
+                                },
+                                {
+                                  "field": {
+                                    "type": "valueSpinner",
+                                    "binding": "value",
+                                    "canEdit": true,
+                                    "labelText": "Output",
+                                    "min": 0,
+                                    "max": 10,
+                                    "units": "volts",
+                                    "fmtMask": "0.###",
+                                    "emptyMask": "0",
+                                    "dataType": "number",
+                                    "labelAttrs": {
+                                      "style": {
+                                        "width": "3.5rem"
+                                      }
+                                    },
+                                    "inputAttrs": {
+                                      "style": {
+                                        "width": "5rem"
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving 0-10v Output...",
+                              "callContext": "io-channels"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "field": {
+                        "text": "PWM Open Drain",
+                        "id": "tabOpendrainOut",
+                        "cssClass": "i2cReadingValues",
+                        "attrs": {
+                          "data-bindingcontext": "io-channels"
+                        }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "panel",
+                            "class": "ioChannels",
+                            "direction": "out",
+                            "total": 4,
+                            "ioType": "analog",
+                            "units": "%",
+                            "binding": "values.outputs.outDrain",
+                            "style": {
+                              "width": "459px"
+                            },
+                            "configTemplate": {
+                              "field": {
+                                "type": "div"
+                              },
+                              "options": [
+                                {
+                                  "field": {
+                                    "type": "div",
+                                    "cssClass": "script-advanced-instructions",
+                                    "html": "Set the current output for the channel."
+                                  }
+                                },
+                                {
+                                  "field": {
+                                    "type": "valueSpinner",
+                                    "binding": "value",
+                                    "canEdit": true,
+                                    "labelText": "Output",
+                                    "min": 0,
+                                    "max": 100,
+                                    "fmtMask": "0.##",
+                                    "emptyMask": "0",
+                                    "dataType": "number",
+                                    "labelAttrs": {
+                                      "style": {
+                                        "width": "3.5rem"
+                                      }
+                                    },
+                                    "inputAttrs": {
+                                      "style": {
+                                        "width": "5rem"
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            }
+
+                          },
+                          "fieldEvents": {
+                            "saveIOChannel": {
+                              "type": "putservice",
+                              "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                              "message": "Saving PWM Output...",
+                              "callContext": "io-channels"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "field": {
+                "text": "Relays",
+                "id": "tabRelays",
+                "cssClass": "i2cReadingValues",
+                "style": { "textAlign": "center" }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": {
+                      "width": "24rem",
+                      "textAlign": "left"
+                    },
+                    "html": "Enable each relay you are going to control or monitor state.  This Sequent I/O board can utilize up to 8 relays.<hr style=\"margin:2px\"></hr>Only the relays you identify here will be available for triggers and feeds.",
+                    "cssClass": "script-advanced-instructions"
+
+                  }
+                },
+                {
+                  "field": {
+                    "type": "panel",
+                    "class": "pnlI2cRelay",
+                    "style": {
+                      "display": "inline-block",
+                      "textAlign": "left"
+                    },
+                    "controllerTypes": [
+                      {
+                        "name": "sequent8",
+                        "desc": "Sequent 8",
+                        "options": {
+                          "idType": "sequent8",
+                          "maxRelays": 8
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        "i2c"
+      ]
     }
+
   ]
 }
