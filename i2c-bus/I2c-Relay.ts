@@ -360,12 +360,17 @@ export class i2cRelay extends i2cDeviceBase {
             let w = await this.i2c.writeCommand(this.device.address, buffer);
             logger.debug(`Executed send command ${this.toHexString(command)} bytes written:${w}`);
             this.hasFault = false;
-            if (this.i2c.isMock) {
-                let reg = this.info.registers.find(x => x.register === command[0]);
-                if (typeof reg !== 'undefined') {
-                    console.log(`SETTING REGISTER ${JSON.stringify(command)}`)
-                    if (command.length === 2) reg.value = command[1];
-                    else if (command.length === 3) reg.value = (command[1] * 256) + command[2];
+            let reg = this.info.registers.find(x => x.register === command[0]);
+            if (typeof reg !== 'undefined') {
+                if (command.length === 2) reg.value = command[1];
+                else if (command.length === 3) reg.value = (command[1] * 256) + command[2];
+                else {
+                    let val = '';
+                    for (let i = 1; i < command.length; i++) {
+                        if (i !== 1) val += ',';
+                        val += `${command[i]}`;
+                    }
+                    reg.value = val;
                 }
             }
             return Promise.resolve(w);
@@ -375,12 +380,13 @@ export class i2cRelay extends i2cDeviceBase {
     protected async readCommand(command: number): Promise<number> {
         try {
             let r = 0;
+            let reg = this.info.registers.find(x => x.register === command);
             if (this.i2c.isMock) {
-                let reg = this.info.registers.find(x => x.register === command);
                 r = typeof reg !== 'undefined' ? reg.value || 0 : 0;
             }
             else
                 r = await this.i2c.readByte(this.device.address, command);
+            if (typeof reg !== 'undefined') reg.value = r;
             logger.debug(`${this.device.address} - ${this.device.name} Executed read command ${'0x' + ('0' + command.toString(16)).slice(-2)} byte read:${'0x' + ('0' + r.toString(16)).slice(-2)}`);
             this.hasFault = false;
             return Promise.resolve(r);
