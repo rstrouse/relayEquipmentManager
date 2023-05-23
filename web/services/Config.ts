@@ -4,7 +4,7 @@ import * as dns from 'dns';
 import { config } from "../../config/Config";
 import { logger } from "../../logger/Logger";
 import { utils, vMaps } from "../../boards/Constants";
-import { cont, ConfigItem } from "../../boards/Controller";
+import { cont, ConfigItem, SpiController } from "../../boards/Controller";
 import { PinDefinitions } from "../../pinouts/Pinouts";
 import { Client } from "node-ssdp";
 import { connBroker, ConnectionBindings } from "../../connections/Bindings";
@@ -153,12 +153,25 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
-        app.get('/config/options/spi/:controllerId/:channelId/feeds', (req, res) => {
-            let opts = {
-                connections: cont.connections.toExtendedArray()
+        app.get('/config/options/spi/:controllerId/:channelId/feeds', async (req, res, next) => {
+            try {
+                let bus: SpiController;
+                if (parseInt(req.params.controllerId, 10) === 0)
+                    bus = cont.spi0;
+                else if (parseInt(req.params.controllerId, 10) === 1)
+                    bus = cont.spi1;
+                else
+                    return Promise.reject(new Error(`Invalid SPI controller Id ${req.params.controllerId}`));
+
+                let chan = bus.channels.getItemById(parseInt(req.params.channelId, 10) + 1);
+                let opts = {
+                    channel: chan.getExtended(),
+                    connections: cont.connections.toExtendedArray()
+                }
+                opts.connections.unshift(cont.getInternalConnection().getExtended());
+                return res.status(200).send(opts);
             }
-            opts.connections.unshift(cont.getInternalConnection().getExtended());
-            return res.status(200).send(opts);
+            catch (err) { return next(err); }
         });
         app.get('/config/options/i2c/:busNumber/:deviceAddress/feeds', (req, res) => {
             // Get a listing of all the devices that we can feed internally.  These are destinations

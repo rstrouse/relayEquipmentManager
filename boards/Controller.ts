@@ -449,11 +449,18 @@ export class Controller extends ConfigItem {
         } catch (err) { return Promise.reject(new Error(`Error deleting connection: ${err.message}`)); }
     }
     public async setSpiControllerAsync(controllerId: number, data): Promise<SpiController> {
-        return new Promise<SpiController>((resolve, reject) => {
+        return await new Promise<SpiController>( async (resolve, reject) => {
             if (isNaN(controllerId) || controllerId < 0 || controllerId > 1) return reject(new Error(`Invalid SPI Controller Id ${controllerId}`));
             let spi: SpiController = cont['spi' + controllerId];
             if (typeof spi === 'undefined') return reject(new Error(`Could not find controller Id ${controllerId}`));
             spi.set(data);
+            let spiBus: SpiAdcBus;
+            if (controllerId === 0) spiBus = spi0;
+            else if (controllerId === 1) spiBus = spi1;
+            else {
+                return reject(new Error(`Could not find spiBus#${controllerId}`));
+            }
+            await spiBus.resetAsync(spi);
             resolve(spi);
         });
     }
@@ -3184,11 +3191,21 @@ export class SpiChannelCollection extends ConfigItemCollection<SpiChannel> {
     constructor(data: any, name?: string) { super(data, name || 'channels') }
     public createItem(data: any): SpiChannel { return new SpiChannel(data); }
 }
+export class SpiAdcFeed extends Feed {
+    public channelId: number;
+    constructor(feed: DeviceFeed, channelId: number) {
+        super(feed);
+        this.channelId = channelId;
+    }
+}
 export class SpiChannel extends ConfigItem {
     constructor(data) { super(data); }
     public initData(data?: any) {
         if (typeof this.data.isActive === 'undefined') this.isActive = false;
         if (typeof this.data.feeds === 'undefined') this.data.feeds = [];
+        if (typeof this.data.options === 'undefined') this.data.options = {};
+        if (typeof this.data.info === 'undefined') this.data.info = {};
+        if (typeof this.data.values === 'undefined') this.data.values = {};
         return data;
     }
     public cleanupConfigData() {
@@ -3203,6 +3220,11 @@ export class SpiChannel extends ConfigItem {
     public get feeds(): DeviceFeedCollection { return new DeviceFeedCollection(this.data, 'feeds'); }
     public get options(): any { return this.data.options; }
     public set options(val: any) { this.data.options = val; }
+    public get values() { return this.data.values; }
+    public set values(val: any) { this.data.values = val; }
+    public get info() { return this.data.info; }
+    public set info(val: any) { this.data.info = val; }
+   
     public get sampling(): number { return this.data.sampling; }
     public set sampling(val: number) { this.setDataVal('sampling', val); }
     public getExtended() {
@@ -3219,6 +3241,17 @@ export class SpiChannel extends ConfigItem {
             await this.feeds.deleteByConnectionId(id);
             //await this.triggers.deleteByConnectionId(id);
         } catch (err) { return Promise.reject(new Error(`Error deleting connection from SPI channel ${this.id}`)); }
+    }
+    public getValue(prop: string) {
+        switch ((prop || '').toLowerCase()) {
+            case 'all': { return this.values; }
+            case '':
+            case 'adcvalue':
+            case 'raw':
+                return this.values.raw;
+            default:
+                return this.values[prop];
+        }
     }
     public async restore(data) {
         try {
@@ -3344,6 +3377,7 @@ export class SpiChannel extends ConfigItem {
     public removeInternalReferences(binding: string) {
         return this.feeds.removeInternalReferences(binding);
     }
+
 }
 export class ConnectionSourceCollection extends ConfigItemCollection<ConnectionSource> {
     constructor(data: any, name?: string) { super(data, name || 'connections') }

@@ -7,7 +7,200 @@
       "name": "Pressure Transducer",
       "input": "mV",
       "resistor": 10000,
-      "convertValue": "return value;",
+      "convertValue": "device.values.psi = Math.round(parseFloat(Math.max(0, ((value - (device.options.inducerOffset * 1000))/1000) * device.options.psiPerVolt)) * 100)/100;device.values.kPa=utils.convert.pressure.convertUnits(device.values.psi,'psi','kpa');device.values.atm=utils.convert.pressure.convertUnits(device.values.psi,'psi','atm');return value;",
+      "outputs": [
+        {
+          "name": "adcValue",
+          "desc": "ADC Value",
+          "maxSamples": 50
+        },
+        {
+          "name": "volts",
+          "desc": "Volts from the channel",
+          "maxSamples": 50
+        },
+        {
+          "name": "millivolts",
+          "desc": "mV from the channel",
+          "maxSamples": 50
+        },
+        {
+          "name": "psi",
+          "desc": "Presure in psi",
+          "maxSamples": 50
+        },
+        {
+          "name": "kpa",
+          "desc": "Presure in kilopascals",
+          "maxSamples": 50
+        },
+        {
+          "name": "atm",
+          "desc": "Presure in atmoshperes",
+          "maxSamples": 50
+        },
+        {
+          "name": "all",
+          "desc": "All values",
+          "maxSamples": 50
+        }
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            }
+          },
+          "options": [
+            {
+              "bind": "options.inducerOffset",
+              "dataType": "number",
+              "default": 0.5,
+              "field": {
+                "type": "valueSpinner",
+                "bind": "options.inducerOffset",
+                "labelText": "Inducer Offset",
+                "units": "v",
+                "required": true,
+                "canEdit": true,
+                "labelAttrs": {
+                  "style": {
+                    "width": "7rem"
+                  }
+                },
+                "min": 0,
+                "max": 10,
+                "step": 0.1,
+                "style": {
+                  "display": "block"
+                }
+              }
+            },
+            {
+              "bind": "options.psiPerVolt",
+              "dataType": "number",
+              "default": 25,
+              "field": {
+                "bind": "options.psiPerVolt",
+                "type": "valueSpinner",
+                "labelText": "PSI per Volt",
+                "units": "psi",
+                "required": true,
+                "canEdit": true,
+                "labelAttrs": {
+                  "style": {
+                    "width": "7rem"
+                  }
+                },
+                "min": 0,
+                "max": 50,
+                "style": {
+                  "display": "block"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": "1rem",
+              "fontSize": ".8rem"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Pressure",
+                "binding": "values.psi",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
+                "style": {
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "psi",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
+                }
+              }
+            },
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Pressure",
+                "binding": "values.kPa",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
+                "style": {
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "kPa",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
+                }
+
+              }
+            },
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Pressure",
+                "binding": "values.atm",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
+                "style": {
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "atm",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
+                }
+
+              }
+            }
+
+          ]
+        }
+
+      ],
       "interfaces": [
         "spi"
       ]
@@ -520,6 +713,7 @@
       "module": "./genericDevices",
       "_deviceClass": "Transducer",
       "convertValue": "device.values.psi = parseFloat(Math.max(0, ((device.values.voltage - device.options.inducerOffset) * device.options.psiPerVolt)).toFixed(2));",
+      "input": "volts",
       "inputs": [
         {
           "name": "voltage",
@@ -792,8 +986,7 @@
         }
       ],
       "interfaces": [
-        "generic",
-        "spi"
+        "generic"
       ]
     }
   ]

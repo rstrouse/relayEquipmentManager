@@ -6,69 +6,140 @@
       "id": 1,
       "name": "10k Temperature Probe",
       "input": "ohms",
+      "refResistance": 10000,
       "precision": 2,
-      "convertValue": "return maps.thermistor10k.interpolate(value, opts.units);",
-      "options": {
-        "resistance": {
-          "dataType": "number",
-          "default": 10000,
-          "field": {
-            "type": "hidden"
-          }
+      "convertValue": "device.values.tempF = maps.thermistor10k.interpolate(value, opts.units); device.values.tempK = utils.convert.temperature.convertUnits(device.values.tempF, 'F', 'K'); device.values.tempC = utils.convert.temperature.convertUnits(device.values.tempF, 'F', 'C'); return value;",
+      "outputs": [
+        {
+          "name": "adcValue",
+          "desc": "ADC Value",
+          "maxSamples": 50
         },
-        "units": {
-          "dataType": "string",
-          "default": "F",
-          "binding": "units",
+        {
+          "name": "volts",
+          "desc": "Volts from the channel",
+          "maxSamples": 50
+        },
+        {
+          "name": "millivolts",
+          "desc": "mV from the channel",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempF",
+          "desc": "Temperature F",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempC",
+          "desc": "Temperature C",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempK",
+          "desc": "Temperature K",
+          "maxSamples": 50
+        },
+        {
+          "name": "all",
+          "desc": "All values",
+          "maxSamples": 50
+        }
+      ],
+      "options": [
+        {
           "field": {
-            "type": "pickList",
-            "labelText": "Units",
-            "required": true,
-            "canEdit": false,
-            "inputAttrs": {
-              "style": {
-                "width": "2rem"
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": "1rem",
+              "fontSize": ".8rem"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Temperature",
+                "binding": "values.tempF",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
+                "style": {
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "&deg;F",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
+                }
               }
             },
-            "columns": [
-              {
-                "binding": "val",
-                "hidden": true,
-                "text": "Units",
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Temperature",
+                "binding": "values.tempC",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
                 "style": {
-                  "whiteSpace": "nowrap"
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "&deg;C",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
                 }
-              },
-              {
-                "binding": "name",
-                "text": "",
+
+              }
+            },
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Temperature",
+                "binding": "values.tempK",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
                 "style": {
-                  "whiteSpace": "nowrap"
-                }
-              },
-              {
-                "binding": "desc",
-                "text": "Temp Units",
-                "style": {
-                  "whiteSpace": "nowrap"
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "K",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
                 }
               }
-            ],
-            "items": [
-              {
-                "val": "F",
-                "name": "F",
-                "desc": "Fahrenheit"
-              },
-              {
-                "val": "C",
-                "name": "C",
-                "desc": "Celsius"
-              }
-            ]
-          }
+            }
+          ]
         }
-      },
+      ],
       "interfaces": [
         "spi",
         "i2cAdc"
@@ -79,296 +150,201 @@
       "name": "NTC Thermister Probe",
       "input": "ohms",
       "precision": 2,
-      "convertValue": "return maps.thermistor10k.interpolate(value, opts.units);",
-      "options": {
-        "resistance": {
-          "dataType": "number",
-          "default": 10000,
-          "field": {
-            "type": "pickList",
-            "fmtMask": "#,###",
-            "labelText": "Resistance",
-            "required": true,
-            "units": "&#937;",
-            "inputAttrs": {
-              "style": {
-                "width": "4rem"
-              }
-            },
-            "canEdit": true,
-            "columns": [
-              {
-                "binding": "val",
-                "hidden": true,
-                "text": "Units",
-                "style": {
-                  "whiteSpace": "nowrap"
-                }
-              },
-              {
-                "binding": "name",
-                "text": "",
-                "style": {
-                  "whiteSpace": "nowrap"
-                }
-              }
-            ],
-            "items": [
-              {
-                "val": 1,
-                "name": "1&#937;"
-              },
-              {
-                "val": 10,
-                "name": "10&#937;"
-              },
-              {
-                "val": 100,
-                "name": "100&#937;"
-              },
-              {
-                "val": 1000,
-                "name": "1k&#937;"
-              },
-              {
-                "val": 10000,
-                "name": "10k&#937;"
-              },
-              {
-                "val": 100000,
-                "name": "100k&#937;"
-              }
-            ]
-          }
+      "convertValue": "device.values.tempK = utils.convert.temperature.shart(device.options.refResistance, device.options.refTemperature, value, device.options.bCoefficient, 'K');device.values.tempF = utils.convert.temperature.convertUnits(device.values.tempK, 'K', 'F'); device.values.tempC = utils.convert.temperature.convertUnits(device.values.tempK, 'K', 'C'); return value;",
+      "outputs": [
+        {
+          "name": "adcValue",
+          "desc": "ADC Value",
+          "maxSamples": 50
         },
-        "units": {
-          "dataType": "string",
-          "default": "F",
-          "field": {
-            "type": "pickList",
-            "labelText": "Units",
-            "required": true,
-            "canEdit": false,
-            "labelAttrs": {
-              "style": {
-                "marginLeft": ".25rem"
-              }
-            },
-            "inputAttrs": {
-              "style": {
-                "width": "2rem"
-              }
-            },
-            "columns": [
-              {
-                "binding": "val",
-                "hidden": true,
-                "text": "Units",
-                "style": {
-                  "whiteSpace": "nowrap"
-                }
-              },
-              {
-                "binding": "name",
-                "text": "",
-                "style": {
-                  "whiteSpace": "nowrap"
-                }
-              },
-              {
-                "binding": "desc",
-                "text": "Temp Units",
-                "style": {
-                  "whiteSpace": "nowrap"
-                }
-              }
-            ],
-            "items": [
-              {
-                "val": "F",
-                "name": "F",
-                "desc": "Fahrenheit"
-              },
-              {
-                "val": "C",
-                "name": "C",
-                "desc": "Celsius"
-              }
-            ]
-          }
+        {
+          "name": "volts",
+          "desc": "Volts from the channel",
+          "maxSamples": 50
         },
-        "calibration": {
-          "dataType": "object",
-          "default": {
-            "a": {
-              "resistance": 25000,
-              "temp": 41
-            },
-            "b": {
-              "resistance": 10000,
-              "temp": 77
-            },
-            "c": {
-              "resistance": 4000,
-              "temp": 113
-            }
-          },
-          "field": {
-            "type": "fieldset",
-            "style": {
-              "padding": "2px",
-              "display": "inline-block"
-            },
-            "legend": "Calibration"
-          },
-          "options": {
-            "a": {
-              "dataType": "object",
-              "field": {
-                "type": "div"
-              },
-              "options": {
-                "resistance": {
-                  "default": 25000,
-                  "field": {
-                    "type": "valueSpinner",
-                    "min": 0,
-                    "max": 500000,
-                    "canEdit": true,
-                    "units": "&#937;",
-                    "labelText": "A",
-                    "inputAttrs": {
-                      "maxLength": "7rem"
-                    },
-                    "labelAttrs": {
-                      "style": {
-                        "marginRight": ".15rem"
-                      }
-                    }
-                  }
-                },
-                "temp": {
-                  "default": 41,
-                  "field": {
-                    "type": "valueSpinner",
-                    "min": -60,
-                    "max": 200,
-                    "step": 0.1,
-                    "canEdit": true,
-                    "units": "&deg;",
-                    "labelText": "Temp",
-                    "inputAttrs": {
-                      "maxLength": "5rem"
-                    },
-                    "labelAttrs": {
-                      "style": {
-                        "marginRight": ".15rem",
-                        "display": "none"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "b": {
-              "dataType": "object",
-              "field": {
-                "type": "div"
-              },
-              "options": {
-                "resistance": {
-                  "default": 10000,
-                  "field": {
-                    "type": "valueSpinner",
-                    "min": 0,
-                    "max": 500000,
-                    "canEdit": true,
-                    "units": "&#937;",
-                    "labelText": "B",
-                    "inputAttrs": {
-                      "maxLength": "7rem"
-                    },
-                    "labelAttrs": {
-                      "style": {
-                        "marginRight": ".15rem"
-                      }
-                    }
-                  }
-                },
-                "temp": {
-                  "default": 77,
-                  "field": {
-                    "type": "valueSpinner",
-                    "min": -60,
-                    "max": 200,
-                    "step": 0.1,
-                    "canEdit": true,
-                    "units": "&deg;",
-                    "labelText": "Temp",
-                    "inputAttrs": {
-                      "maxLength": "5rem"
-                    },
-                    "labelAttrs": {
-                      "style": {
-                        "marginRight": ".15rem",
-                        "display": "none"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "c": {
-              "dataType": "object",
-              "field": {
-                "type": "div"
-              },
-              "options": {
-                "resistance": {
-                  "default": 4000,
-                  "field": {
-                    "type": "valueSpinner",
-                    "min": 0,
-                    "max": 500000,
-                    "canEdit": true,
-                    "units": "&#937;",
-                    "labelText": "C",
-                    "inputAttrs": {
-                      "maxLength": "7rem"
-                    },
-                    "labelAttrs": {
-                      "style": {
-                        "marginRight": ".15rem"
-                      }
-                    }
-                  }
-                },
-                "temp": {
-                  "default": 113,
-                  "field": {
-                    "type": "valueSpinner",
-                    "min": -60,
-                    "max": 200,
-                    "step": 0.1,
-                    "canEdit": true,
-                    "units": "&deg;",
-                    "labelText": "Temp",
-                    "inputAttrs": {
-                      "maxLength": "5rem"
-                    },
-                    "labelAttrs": {
-                      "style": {
-                        "marginRight": ".15rem",
-                        "display": "none"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+        {
+          "name": "millivolts",
+          "desc": "mV from the channel",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempF",
+          "desc": "Temperature F",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempC",
+          "desc": "Temperature C",
+          "maxSamples": 50
+        },
+        {
+          "name": "tempK",
+          "desc": "Temperature K",
+          "maxSamples": 50
+        },
+        {
+          "name": "all",
+          "desc": "All values",
+          "maxSamples": 50
         }
-      },
+      ],
+      "options": [
+        {
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": ".5rem"
+            }
+          },
+          "options": [
+            {
+              "default": 10000,
+              "field": {
+                "type": "valueSpinner",
+                "dataType": "float",
+                "min": 1,
+                "max": 1000000,
+                "fmtMask": "#,##0.##",
+                "units": "&#937;",
+                "binding": "options.refResistance",
+                "labelText": "Balance Resistor",
+                "canEdit": true,
+                "style": { "display": "block" },
+                "inputAttrs": { "style": { "width": "5.7rem" } },
+                "labelAttrs": { "style": { "width": "8rem" } }
+              }
+            },
+            {
+              "default": 25,
+              "field": {
+                "type": "valueSpinner",
+                "dataType": "float",
+                "min": 1,
+                "max": 100,
+                "fmtMask": "#,##0.##",
+                "units": "&deg;C",
+                "labelText": "Ref Temperature",
+                "binding": "options.refTemperature",
+                "canEdit": true,
+                "style": { "display": "block" },
+                "inputAttrs": { "style": { "width": "4rem" } },
+                "labelAttrs": { "style": { "width": "8rem" } }
+              }
+            },
+            {
+              "default": 4096,
+              "field": {
+                "type": "valueSpinner",
+                "dataType": "float",
+                "min": 1,
+                "max": 1000000,
+                "fmtMask": "#,##0.##",
+                "units": "coeff",
+                "labelText": "B Coefficent",
+                "binding": "options.bCoefficient",
+                "canEdit": true,
+                "style": { "display": "block" },
+                "inputAttrs": { "style": { "width": "5.7rem" } },
+                "labelAttrs": { "style": { "width": "8rem" } }
+              }
+            }
+          ]
+        },
+        {
+          "field": {
+            "type": "div",
+            "style": {
+              "display": "inline-block",
+              "verticalAlign": "top",
+              "marginLeft": "1rem",
+              "fontSize": ".8rem"
+            }
+          },
+          "options": [
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Temperature",
+                "binding": "values.tempF",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
+                "style": {
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "&deg;F",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
+                }
+              }
+            },
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Temperature",
+                "binding": "values.tempC",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
+                "style": {
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "&deg;C",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
+                }
+
+              }
+            },
+            {
+              "field": {
+                "type": "staticField",
+                "labelText": "Temperature",
+                "binding": "values.tempK",
+                "dataType": "number",
+                "fmtMask": "#,##0.000",
+                "style": {
+                  "display": "block",
+                  "fontSize": ".8rem",
+                  "lineHeight": "1.2"
+                },
+                "units": "K",
+                "labelAttrs": {
+                  "style": {
+                    "display": "none"
+                  }
+                },
+                "inputAttrs": {
+                  "style": {
+                    "width": "4rem",
+                    "textAlign": "right"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
       "interfaces": [
         "spi",
         "i2cAdc"

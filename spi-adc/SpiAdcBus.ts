@@ -1,8 +1,9 @@
 ﻿import { logger } from "../logger/Logger";
-import { SpiController, cont, SpiChannel, DeviceFeed } from "../boards/Controller";
+import { SpiController, cont, SpiChannel, SpiAdcFeed, DeviceFeed } from "../boards/Controller";
 import { setTimeout, clearTimeout } from "timers";
 import { AnalogDevices, DeviceStatus } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";
+import { utils } from "../boards/Constants";
 import { connBroker, ServerConnection } from "../connections/Bindings";
 import * as extend from "extend";
 export class SpiAdcBus {
@@ -69,7 +70,8 @@ export class SpiAdcChannel {
     private rawValue: number;
     private convertedValue: number;
     private units: string;
-    public device;
+    public deviceType;
+    public device: SpiChannel;
     public precision: number;
     private _spiDevice;
     public speedHz: number;
@@ -83,19 +85,20 @@ export class SpiAdcChannel {
     public lastComm: number;
     constructor(ct, chan: SpiChannel, refVoltage) {
         this._ct = ct;
+        this.device = chan;
         this.channel = chan.id - 1;
         this._readCommand = new Function('channel', ct.readChannel);
         this._getValue = new Function('buffer', ct.getValue);
-        this.device = cont.analogDevices.find(elem => elem.id === chan.deviceId);
-        this._convertValue = new Function('maps', 'opts', 'value', this.device.convertValue);
+        this.deviceType = cont.analogDevices.find(elem => elem.id === chan.deviceId);
+        this._convertValue = new Function('maps', 'opts', 'value', 'device', 'utils', this.deviceType.convertValue);
         this.deviceOptions = extend(true, {}, chan.options);
         this.maxRawValue = Math.pow(2, this._ct.bits) - 1;
         this.refVoltage = refVoltage;
-        this.precision = this.device.precision;
+        this.precision = this.deviceType.precision;
         this.sampling = chan.sampling || 1;
         for (let i = 0; i < chan.feeds.length; i++) {
             let f = chan.feeds.getItemByIndex(i);
-            if (f.isActive) this.feeds.push(new SpiAdcFeed(chan.id, f));
+            if (f.isActive) this.feeds.push(new SpiAdcFeed(f, chan.id));
         }
     }
     public resetDeviceFeeds(chan: SpiChannel) {
@@ -105,7 +108,7 @@ export class SpiAdcChannel {
         }
         for (let i = 0; i < chan.feeds.length; i++) {
             let f = chan.feeds.getItemByIndex(i);
-            if (f.isActive) this.feeds.push(new SpiAdcFeed(chan.id, f));
+            if (f.isActive) this.feeds.push(new SpiAdcFeed(f, chan.id));
         }
     }
     public openAsync(spiBus, opts) {
@@ -125,51 +128,70 @@ export class SpiAdcChannel {
             } catch (err) { logger.error(err); }
         });
     }
-    public get deviceStatus(): DeviceStatus { return { name: this.device.name, category: 'SPI Channel', hasFault: !this.isOpen, status: this.isOpen ? 'ok' : 'not open', lastComm: this.lastComm, protocol: 'spi', busNumber: this.busNumber, address: this.channel } }
+    public get deviceStatus(): DeviceStatus { return { name: this.deviceType.name, category: 'SPI Channel', hasFault: !this.isOpen, status: this.isOpen ? 'ok' : 'not open', lastComm: this.lastComm, protocol: 'spi', busNumber: this.busNumber, address: this.channel } }
     private convertValue(val): number {
         let ratio = val !== 0 ? ((this.maxRawValue / val - 1)) : 0;
         let lval;
-        let vout = (this.refVoltage * val) / this.maxRawValue;
-        switch (this.device.input.toLowerCase()) {
-            case 'ohms':
-                let ohms = (this.deviceOptions.resistance || this.device.resistance);
-                let resistance = ohms * val / (this.maxRawValue - val);
+        this.device.values.volts = (this.refVoltage * val) / this.maxRawValue;
+        this.device.values.raw = val;
+        
+        try {
+            switch (this.deviceType.input.toLowerCase()) {
+                case 'ohms':
+                    let ohms = (this.deviceOptions.refResistance || this.deviceType.refResistance);
+                    let resistance = ohms * val / (this.maxRawValue - val);
+                    this.device.values.resistance = resistance;
+                    /*
+                    var numInput = Number(msg.payload);
+                    var R0 = 10000;
+                    var R = R0 / ((1023 / numInput)-1);
+                    var T0 = 273 + 25;
+                    var B = 3950;
+                    var T =  1 / ( (1/T0) + (1/B) * Math.log(R/R0) );
+                    msg.payload = T;
+                    return msg;
 
-                // Below is Steinhart/Hart equation.
-                //let A = 0.001129148
-                //let B = 0.000234125
-                //let C = 0.0000000876741;
-                //let Rth = resistance;
-                //let tk = (1 / (A + (B * Math.log(resistance)) + (C * Math.pow((Math.log(resistance)), 3))));
-                //let tc = tk - 273.15;
-                //let tf = tc * 9 / 5 + 32;
-                // lval = tf;
+                     */
+
+
+                    // Below is Steinhart/Hart equation.
+                    //let A = 0.001129148
+                    //let B = 0.000234125
+                    //let C = 0.0000000876741;
+                    //let Rth = resistance;
+                    //let tk = (1 / (A + (B * Math.log(resistance)) + (C * Math.pow((Math.log(resistance)), 3))));
+                    //let tc = tk - 273.15;
+                    //let tf = tc * 9 / 5 + 32;
+                    // lval = tf;
 
 
 
-                //console.log({
-                //    vcc: this.refVoltage, vout: vout, ohms: ohms, resistance: resistance, max: this.maxRawValue,
-                //    tk: tk,
-                //    tc: tc,
-                //    tf: tf
-                //});
-                //lval = tf;
-
-                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, resistance); 
-                break;
-            case 'v':
-            case 'volts':
-                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, this.refVoltage * ratio);
-                break;
-            case 'mv':
-            case 'millivolts':
-                lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, (this.refVoltage * 1000) * ratio);
-                break;
-            default:
-                lval = val;
-                break;
+                    //console.log({
+                    //    vcc: this.refVoltage, vout: vout, ohms: ohms, resistance: resistance, max: this.maxRawValue,
+                    //    tk: tk,
+                    //    tc: tc,
+                    //    tf: tf
+                    //});
+                    //lval = tf;
+                    lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, resistance, this.device, utils);
+                    break;
+                case 'v':
+                case 'volts':
+                    lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, this.device.values.volts, this.device, utils);
+                    break;
+                case 'mv':
+                case 'millivolts':
+                    this.device.values.millivolts = Math.round(this.device.values.volts * 10000)/10;
+                    lval = this._convertValue(AnalogDevices.maps, this.deviceOptions, this.device.values.millivolts, this.device, utils);
+                    break;
+                default:
+                    lval = val;
+                    break;
+            }
+            return this.setPrecision(lval);
+        } catch (err) {
+            logger.error(`Error converting SPI${this.busNumber} Channel ${this.channel} value: ${err.message}`);
         }
-        return this.setPrecision(lval);
     }
     private setPrecision(val: number): number {
         if (typeof this.precision !== 'number') return val;
@@ -212,8 +234,8 @@ export class SpiAdcChannel {
                         this.convertedValue = this.convertValue(rawVal);
                         // Now we need to trigger the values to all the cannel feeds.
                         if (typeof this.lastVal === 'undefined' || this.lastVal !== this.convertedValue) {
-                            webApp.emitToClients('spiChannel', { bus: this.busNumber, channel: this.channel, raw: rawVal, converted: this.convertedValue, buffer: message[0].receiveBuffer });
-                            for (let i = 0; i < this.feeds.length; i++) this.feeds[i].value = this.convertedValue;
+                            webApp.emitToClients('spiChannel', { bus: this.busNumber, channel: this.channel, raw: rawVal, converted: this.convertedValue, values: this.device.values });
+                            for (let i = 0; i < this.feeds.length; i++) this.feeds[i].send(this.device);
                         }
                         this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
                     }
@@ -236,51 +258,7 @@ export class SpiAdcChannel {
             });
         });
     }
-}
-class SpiAdcFeed {
-    public server: ServerConnection;
-    //public frequency: number;
-    //public eventName: string;
-    //public property: string;
-    public lastSent: number;
-    public value: number;
-    //public changesOnly: boolean;
-    private _timerSend: NodeJS.Timeout;
-    public translatePayload: Function;
-    public channelId: number;
-    public feed: DeviceFeed;
-    constructor(channelId: number, feed: DeviceFeed) {
-        this.server = connBroker.findServer(feed.connectionId);
-        //this.frequency = feed.frequency * 1000;
-        //this.eventName = feed.eventName;
-        //this.property = feed.property;
-        //this.changesOnly = feed.changesOnly;
-        this.feed = feed;
-        this._timerSend = setTimeout(() => this.send(), Math.max(1000, this.feed.frequency * 1000));
-        if (typeof feed.payloadExpression !== 'undefined' && feed.payloadExpression.length > 0)
-            this.translatePayload = new Function('feed', 'value', feed.payloadExpression);
-    }
-    public async send() {
-        try {
-            if (this._timerSend) clearTimeout(this._timerSend);
-            if (typeof this.value !== 'undefined') {
-                if (!this.feed.changesOnly || this.lastSent !== this.value) {
-                    await this.server.send({
-                        eventName: this.feed.eventName,
-                        property: this.feed.property,
-                        deviceBinding: this.feed.deviceBinding,
-                        value: typeof this.translatePayload === 'function' ? this.translatePayload(this, this.value) : this.value
-                    });
-                    this.lastSent = this.value;
-                }
-            }
-            this._timerSend = setTimeout(() => this.send(), Math.max(1000, this.feed.frequency * 1000));
-        } catch (err) { }
-    }
-    public closeAsync() {
-        if (typeof this._timerSend !== 'undefined') clearTimeout(this._timerSend);
-        this._timerSend = null;
-    }
+
 }
 class mockSpiDevice {
     constructor(busNumber, deviceNumber, opts?) {

@@ -451,6 +451,40 @@
       "interfaces": [
         "i2c"
       ]
+    },
+    {
+      "id": 701,
+      "name": "Raw ADC Values",
+      "precision": 2,
+      "input": "volts",
+      "convertValue": "return value;",
+      "outputs": [
+        {
+          "name": "adcValue",
+          "desc": "ADC Value",
+          "maxSamples": 50
+        },
+        {
+          "name": "volts",
+          "desc": "Volts from the channel",
+          "maxSamples": 50
+        },
+        {
+          "name": "millivolts",
+          "desc": "mV from the channel",
+          "maxSamples": 50
+        },
+        {
+          "name": "all",
+          "desc": "All values",
+          "maxSamples": 50
+        }
+      ],
+      "interfaces": [
+        "spi",
+        "i2cAdc"
+      ]
     }
+
   ]
 }

@@ -12,12 +12,15 @@
             el.addClass('pnl-config-spi');
             el.attr('data-controllerid', o.controllerId);
             $.getLocalService('/config/options/spi/' + o.controllerId, null, function (data, status, xhr) {
-                console.log(data);
                 o.analogDevices = data.analogDevices;
                 var outer = $('<div></div>').appendTo(el).addClass('control-panel');
                 var head = $('<div></div>').appendTo(outer).addClass('pnl-settings-header').addClass('control-panel-title');
+                var chip = $('<div></div>').appendTo(outer).addClass('pnl-settings-chip');
                 $('<span></span>').appendTo(head).addClass('header-text').text('SPI Analog to Digital Settings');
-                var settings = $('<div></div>').appendTo(outer).addClass('pnl-adc-controller-settings');
+
+
+
+                var settings = $('<div></div>').appendTo(chip).addClass('pnl-adc-controller-settings');
                 var line = $('<div></div>').appendTo(settings);
                 $('<div></div>').appendTo(line).pickList({
                     required: true,
@@ -38,7 +41,7 @@
                     items: [{ val: 3.3, name: '3.3' }, { val: 5.0, name: '5.0' }], inputAttrs: { style: { width: '3.7rem' } }, labelAttrs: { style: { width: '5.7rem' } }
                 });
 
-                var pnlChip = $('<div></div>').appendTo(outer).addClass('pnl-adc-parameters').hide();
+                var pnlChip = $('<div></div>').appendTo(chip).addClass('pnl-adc-parameters').hide();
                 line = $('<div></div>').appendTo(pnlChip);
                 $('<div></div>').appendTo(line).staticField({ binding: 'manufacturer', labelText: 'Supplier', labelAttrs: { style: { width: '5.7rem' } } });
                 line = $('<div></div>').appendTo(pnlChip);
@@ -61,12 +64,20 @@
         },
         dataBind: function (spi) {
             var self = this, o = self.options, el = self.element;
-            var ct = o.adcChipTypes.find(elem => elem.id === spi.adcChipType);
+            var ct = o.adcChipTypes.find(elem => elem.id === spi.adcChipType) || { maxChannels: 0, bits: 10 };
             //self.setAdcChip(ct);
             var data = $.extend(true, {}, spi, { maxChannels: ct.maxChannels, bits: ct.bits });
             console.log(spi);
-            dataBinder.bind(el, data);
-           
+            var elChip = el.find('div.pnl-settings-chip');
+            dataBinder.bind(elChip, data);
+            if (typeof data.channels !== 'undefined') {
+                for (let i = 0; i < data.channels.length; i++) {
+                    let elChan = el.find(`div.pnl-spi-channel[data-channelid="${i}"]`);
+                    //setTimeout(() => { dataBinder.bind(elChan, data.channels[i]); }, 1000);
+                    elChan[0].dataBind(data.channels[i]);
+                    console.log(data.channels[i]);
+                }
+            }
         },
         createAdcChannel: function (channelId) {
             var self = this, o = self.options, el = self.element;
@@ -97,7 +108,11 @@
         saveSettings: function () {
             var self = this, o = self.options, el = self.element;
             if (dataBinder.checkRequired(el, true)) {
-                var settings = dataBinder.fromElement(el);
+                var settings = dataBinder.fromElement(el.find('div.pnl-settings-chip'));
+                settings.channels = [];
+                el.find('div.pnl-spi-channel').each(function () {
+                    settings.channels.push(dataBinder.fromElement($(this)));
+                });
                 settings.channels.length = settings.maxChannels || 0;
                 console.log(settings);
                 $.putLocalService('/config/spi/' + o.controllerId, settings, 'Saving SPI' + o.controllerId + ' Settings...', function (data, status, xhr) {
@@ -231,8 +246,13 @@
         setChannelValue: function (data) {
             var self = this, o = self.options, el = self.element;
             el.find('div.picAccordian[data-channelid="' + data.channel + '"]').each(function () {
+                console.log(data);
                 var cols = this.columns();
-                cols[2].elText().text(data.raw + '/' + data.converted);
+                if(typeof data.converted === 'number')
+                    cols[2].elText().text(data.raw + '/' + data.converted.format('#,##0.###'));
+                else
+                    cols[2].elText().text(data.raw + '/' + data.converted);
+                if (typeof data.values !== 'undefined') dataBinder.bind($(this), data);
             });
         }
     });
@@ -249,15 +269,22 @@
             el.addClass('pnl-spi-channel');
             el.attr('data-channelid', o.channelId);
             var channelId = o.channelId;
-            el.attr('data-bind', 'channels[' + channelId + ']');
-            var binding = 'channels[' + channelId + '].';
+            //el.attr('data-bind', 'channels[' + channelId + ']');
+            var binding = '';// 'channels[' + channelId + '].';
             var acc = $('<div></div>').appendTo(el).accordian({
                 columns: [{ text: 'Channel #' + channelId, glyph: 'fas fa-code-branch', style: { width: '10.5rem' } },
                 { binding: 'device', style: { width: '14rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis' } }, { binding: 'value', style: { textAlign: 'right', width: '10rem' } }]
             });
             acc.attr('data-channelid', channelId);
             var contents = acc.find('div.picAccordian-contents');
-            var line = $('<div></div>').appendTo(contents);
+            var tabBar = $('<div></div>').appendTo(contents).tabBar({ id: `tabsSpiChannel${channelId}` }).on('tabchange', function (evt) { evt.stopPropagation(); });;
+            var tabGeneral = tabBar[0].addTab({ id: `tabSpiChanGeneral${channelId}`, text: 'General' });
+            var tabFeeds = tabBar[0].addTab({ id: `tabSpiChanFeeds${channelId}`, text: 'Feeds' });
+            tabBar[0].selectTabById(`tabSpiChanGeneral${channelId}`);
+            
+            var line = $('<div></div>').appendTo(tabGeneral);
+
+
             $('<div></div>').appendTo(line).checkbox({ binding: binding + 'isActive', labelText: 'Is Active', style: {} }).on('changed', function (evt) {
                 acc[0].columns()[0].elGlyph().attr('class', evt.newVal ? 'fas fa-share-alt' : 'fas fa-share-alt').css({ textShadow: evt.newVal ? '0px 0px 3px green' : '', color: evt.newVal ? 'darkGreen' : '' });
             });
@@ -275,7 +302,7 @@
             var fs = $('<fieldset></fieldset>').appendTo(line).addClass('pnl-analog-device-options').hide();
             $('<legend></legend>').appendTo(fs).text('Device Options');
             $('<div></div>').appendTo(fs).addClass('pnl-analog-device-options');
-            $('<div></div>').appendTo(contents).pnlSpiFeeds({ binding: binding + 'feeds', channelId: channelId, controllerId: o.controllerId });
+            $('<div></div>').appendTo(tabFeeds).pnlSpiFeeds({ binding: binding + 'feeds', channelId: channelId, controllerId: o.controllerId });
 
         },
         createDeviceOptions: function (devType, data) {
@@ -284,7 +311,7 @@
             var pnl = el.find('div.pnl-analog-device-options');
             if (typeof devType !== 'undefined' && typeof devType.options !== 'undefined') {
                 fs.show();
-                var binding = 'channels[' + o.channelId + '].options';
+                var binding = '';// 'channels[' + o.channelId + '].';
                 if (pnl.attr('data-devicetypeid') !== devType.id.toString()) {
                     pnl.empty();
                     //console.log(`Resetting Options ${pnl.attr("data-devicetypeid")} - ${devType.id}`);
@@ -299,77 +326,172 @@
         _createControlOptions: function (pnl, opt, binding) {
             var self = this, o = self.options, el = self.element;
             var fld = null;
+            //binding = `channels[${o.channelId}].${binding}`;
+            
             var prop = '';
             switch (opt.field.type) {
                 case 'hidden':
-                    fld = $('<input type="hidden"></input>').appendTo(pnl).attr('data-bind', binding + prop).attr('data-datatype', opt.dataType);
+                    fld = $('<input type="hidden"></input>');
+                    if (binding) fld.attr('data-bind', binding + prop);
+                    fld.attr('data-datatype', opt.dataType).appendTo(pnl);
                     if (typeof opt.default !== 'undefined') fld.val(opt.default);
                     break;
                 case 'pickList':
-                    fld = $('<div></div>').appendTo(pnl).pickList(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).pickList(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'valueSpinner':
-                    fld = $('<div></div>').appendTo(pnl).valueSpinner(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).valueSpinner(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'timeSpinner':
-                    fld = $('<div></div>').appendTo(pnl).timeSpinner(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).timeSpinner(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'inputField':
-                    fld = $('<div></div>').appendTo(pnl).staticField(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).inputField(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'dateField':
-                    fld = $('<div></div>').appendTo(pnl).dateField(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).dateField(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'optionButton':
-                    fld = $('<div></div>').appendTo(pnl).optionButton(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).optionButton(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'staticField':
-                    fld = $('<div></div>').appendTo(pnl).staticField(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).staticField(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'checkbox':
-                    fld = $('<div></div>').appendTo(pnl).checkbox(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).checkbox(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'actionButton':
-                    fld = $('<div></div>').appendTo(pnl).actionButton(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl);
+                    if (binding) fld.attr('data-bind', binding + prop);
+                    fld.actionButton(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'toggleButton':
-                    fld = $('<div></div>').appendTo(pnl).toggleButton(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).toggleButton(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 case 'colorPicker':
-                    fld = $('<div></div>').appendTo(pnl).colorPicker(opt.field).attr('data-bind', binding + prop);
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).colorPicker(opt.field);
                     if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
+                    break;
+                case 'chemTank':
+                    fld = $('<div></div>').appendTo(pnl).chemTank(opt.field);
+                    if (binding) fld.attr('data-bind', binding + prop);
                     break;
                 case 'fieldset':
                     fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                    if (typeof opt.field.legend !== 'undefined') $('<legend></legend>').appendTo(fld).html(opt.field.legend);
                     if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
                     if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
+                    if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
+                    if (typeof opt.field.attrs !== 'undefined') {
+                        for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
+                    }
                     if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
-                    if (typeof opt.field.legend !== 'undefined') $('<legend></legend>').appendTo(fld).html(opt.field.legend);
+                    break;
+                case 'selectList':
+                    fld = $('<div></div>').appendTo(pnl).selectList(opt.field);
+                    break;
+                case 'panel':
+                    fld = $('<div></div>').appendTo(pnl)[`${opt.field.class}`](opt.field);
+                    if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
+                    if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
+                    if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
+                    if (typeof opt.field.attrs !== 'undefined') {
+                        for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
+                    }
+                    break;
+                case 'tabbar':
+                case 'tabBar':
+                    fld = $('<div></div>').appendTo(pnl).tabBar(opt.field);
+                    // Now we need to deal with all of the tabs.
+                    if (typeof opt.tabs !== 'undefined') {
+                        for (var tabIndex = 0; tabIndex < opt.tabs.length; tabIndex++) {
+                            var tab = opt.tabs[tabIndex]
+                            var pane = fld[0].addTab(tab.field);
+                            if (typeof tab.options !== 'undefined') self._createControlOptions(pane, tab, binding + prop);
+                        }
+                    }
+                    fld[0].selectFirstVisibleTab();
+                    break;
+                case 'templateRepeater':
+                    fld = $(`<div></div>`).appendTo(pnl).templateRepeater(opt.field);
+                    break;
+                case 'scriptEditor':
+                    fld = $('<div></div>').appendTo(pnl).attr('data-bind', binding + prop).scriptEditor(opt.field);
+                    if (typeof opt.default !== 'undefined') fld[0].val(opt.default);
                     break;
                 default:
-                    fld = $(`<${opt.field.type}></${opt.field.type}>`).appendTo(pnl);
+                    fld = $(`<${opt.field.type || 'div'}></${opt.field.type || 'div'}>`).appendTo(pnl);
+                    if (typeof opt.field.cssClass !== 'undefined') fld.addClass(opt.field.cssClass);
+                    if (typeof opt.field.html !== 'undefined') fld.html(opt.field.html);
                     if (typeof opt.field.style !== 'undefined') fld.css(opt.field.style);
-                    if (typeof opt.binding !== 'undefined') fld.attr('data-bind', opt.binding);
+                    if (typeof opt.field.binding !== 'undefined') fld.attr('data-bind', opt.field.binding);
+                    if (typeof opt.field.attrs !== 'undefined') {
+                        for (var attr in opt.field.attrs) fld.attr(attr.toLowerCase(), opt.field.attrs[attr]);
+                    }
                     if (typeof opt.options !== 'undefined') self._createObjectOptions(fld, opt, binding + prop);
                     break;
+            }
+            if (typeof fld !== 'undefined' && typeof opt.field !== 'undefined') {
+                if (opt.field.fieldEvents !== 'undefined') {
+                    for (var eventName in opt.field.fieldEvents) {
+                        var fevent = opt.field.fieldEvents[eventName];
+                        if (typeof fevent === 'string') {
+                            console.log('Adding field event:' + fevent);
+                            fld.on(eventName, new Function('evt', fevent));
+                        }
+                        else if (typeof fevent === 'object') {
+                            fld.on(eventName, (evt) => {
+                                if (typeof fevent.confirm === 'object') {
+                                    var confirm = $.pic.modalDialog.createConfirm("dlgConfirmEvent", $.extend(true, {}, {
+                                        title: 'Confirm Action',
+                                        message: 'Are you sure you want to do this?'
+                                    }, fevent.confirm)).on('confirmed', function (e) { self._callServiceEvent(evt, fevent); });
+                                }
+                                else
+                                    self._callServiceEvent(evt, fevent);
+                            });
+                        }
+                    }
+                }
+                if (typeof opt.fieldEvents) {
+                    for (var eventName in opt.fieldEvents) {
+                        var fevent = opt.fieldEvents[eventName];
+                        if (typeof fevent === 'string') {
+                            console.log('Adding field event:' + fevent);
+                            fld.on(eventName, new Function('evt', fevent));
+                        }
+                        else if (typeof fevent === 'object') {
+                            fld.on(eventName, (evt) => {
+                                if (typeof fevent.confirm === 'object') {
+                                    var confirm = $.pic.modalDialog.createConfirm("dlgConfirmEvent", $.extend(true, {}, {
+                                        title: 'Confirm Action',
+                                        message: 'Are you sure you want to do this?'
+                                    }, fevent.confirm)).on('confirmed', function (e) { self._callServiceEvent(evt, fevent); });
+                                }
+                                else
+                                    self._callServiceEvent(evt, fevent);
+                            });
+                        }
+                    }
+                }
             }
             return fld;
         },
         _createObjectOptions: function (pnl, opts, binding) {
             var self = this, o = self.options, el = self.element;
-            var bind = opts.binding || binding;
-            for (var prop in opts.options) {
-                self._createControlOptions(pnl, opts.options[prop], bind + '.' + prop);
+            for (var i = 0; i < opts.options.length; i++) {
+                var opt = opts.options[i];
+                self._createControlOptions(pnl, opt, opt.bind);
             }
         },
         val: function (val) {
@@ -389,8 +511,11 @@
                 var devType = o.analogDevices.find(elem => elem.id === data.deviceId);
                 if (typeof devType !== 'undefined') {
                     self.createDeviceOptions(devType, data.options);
+                    dataBinder.bind(el, data);
                 }
-                this.val(data.deviceId);
+                dataBinder.bind(el, data);
+
+                //this.val(data.deviceId);
             });
         },
     });
@@ -537,8 +662,10 @@
         },
         _createFeedDialog: function (id, title, f) {
             var self = this, o = self.options, el = self.element;
+            if ($(`div#${id}`).length > 0) return;
+            console.log(f);
             var dlg = $.pic.modalDialog.createDialog(id, {
-                width: '497px',
+                width: '547px',
                 height: 'auto',
                 title: title,
                 position: { my: "center top", at: "center top", of: window },
@@ -549,6 +676,11 @@
                             var feed = dataBinder.fromElement(dlg);
                             if (dataBinder.checkRequired(dlg, true)) {
                                 feed.connection = dlg.find('div[data-bind="connectionId"]')[0].selectedItem();
+                                feed.busId = o.busId;
+                                feed.busNumber = o.busNumber;
+                                feed.deviceId = o.deviceId;
+                                feed.address = o.address;
+                                ///feed.device = dlg.find('div[data-bind="deviceBinding"]')[0].selectedItem();
                                 self.saveFeed(feed);
                                 $.pic.modalDialog.closeDialog(this);
                             }
@@ -560,27 +692,42 @@
                     }
                 ]
             });
-            $('<div></div>').appendTo(dlg).text('A Data Feed is used to transport data to the specified data source.  You can add multiple data feeds for the specified channel.');
+            $('<div></div>').appendTo(dlg).text('A Data Feed is used to transport data to the specified data source.  You can add multiple data feeds for the device.');
             $('<hr></hr>').appendTo(dlg);
             var line = $('<div></div>').appendTo(dlg);
             $('<input type="hidden"></input>').appendTo(dlg).attr('data-bind', 'id').attr('data-datatype', 'int').val(-1);
             var conn = $('<div></div>').appendTo(line).pickList({
-                required: true, value: -2,
+                required: true,
                 bindColumn: 0, displayColumn: 1, labelText: 'Connection', binding: 'connectionId',
                 columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { binding: 'name', text: 'Name', style: { minWidth: '197px' } }, { binding: 'type.desc', text: 'Type', style: { minWidth: '147px' } }],
                 items: f.connections, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
             })
                 .on('selchanged', function (evt) {
-                    console.log(evt.newItem);
                     dlg.find('div.pnl-spi-feed-params').each(function () { this.setConnection(evt.newItem); });
                 });
             $('<div></div>').appendTo(line).checkbox({ labelText: 'Is Active', binding: 'isActive', value: true });
             line = $('<div></div>').appendTo(dlg);
-            $('<div></div>').appendTo(line).valueSpinner({
-                required: true, canEdit: true, binding: 'frequency', labelText: 'Send Every', fmtMask: '#,###.##', dataType: 'number', step: .1,
-                min: .1, max: 1000, units: 'seconds', inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
+            $('<div></div>').appendTo(line).pickList({
+                required: true,
+                bindColumn: 0, displayColumn: 1, labelText: 'Send Value', binding: 'sendValue',
+                columns: [{ binding: 'name', text: 'Name', style: { maxWidth: '197px' } }, { binding: 'desc', text: 'Type', style: { minWidth: '347px' } }],
+                items: f.channel.device.outputs, inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
+
+            }).on('selchanged', function (evt) {
+                var elSamp = dlg.find('div[data-bind="sampling"]').each(function () {
+                    if (evt.newItem.maxSamples <= 1 || typeof evt.newItem.maxSamples === 'undefined') this.val(1);
+                    this.options({ max: evt.newItem.maxSamples || 1 });
+                });
+                if (evt.newItem.maxSamples <= 1 || typeof evt.newItem.maxSamples === 'undefined') elSamp.hide();
+                else elSamp.show();
             });
-            $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed', style: { marginLeft: '1rem' } });
+            $('<div></div>').appendTo(line).checkbox({ binding: 'changesOnly', labelText: 'Only When Changed' });
+            line = $('<div></div>').appendTo(dlg);
+            $('<div></div>').appendTo(line).valueSpinner({
+                required: true, canEdit: true, binding: 'sampling', labelText: 'Sampling', fmtMask: '#,##0', dataType: 'number', step: 1,
+                min: 1, max: 20, units: `smooth reading using median samples`, inputAttrs: { style: { width: '4rem' } }, labelAttrs: { style: { width: '7rem' } }
+            }).hide();
+
             line = $('<div></div>').appendTo(dlg);
             $('<div></div>').appendTo(dlg).pnlSpiFeedParams({ device: f.device });
             if (typeof f.feed.id !== 'undefined') {
@@ -591,10 +738,10 @@
                 });
                 dataBinder.bind(dlg, f.feed);
             }
-            
             dlg.css({ overflow: 'visible' });
             return dlg;
         },
+
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('pnl-spi-feeds').addClass('list-outer');
@@ -693,22 +840,22 @@
         dataBind: function (data) {
             var self = this, o = self.options, el = self.element;
             self.setConnection(data.connection, function () {
-                if (typeof data.eventName !== 'undefined') {
-                    var fldEventName = el.find('div[data-bind="eventName"]');
+                var fldEventName = el.find('div[data-bind="eventName"]');
+                if (typeof data.eventName !== 'undefined' && fldEventName.length > 0) {
                     if (fldEventName[0].val() !== data.eventName) {
                         fldEventName[0].val(data.eventName);
                         dataBinder.bind(el, data);
                     }
                 }
                 else {
+                    console.log(data);
                     dataBinder.bind(el, data);
                 }
             });
         },
         setConnection: function (conn, callback) {
             var self = this, o = self.options, el = self.element;
-            let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' ? conn.type.name : '';
-            console.log({ msg: `Setting Connection`, type: type });
+            let type = typeof conn !== 'undefined' && typeof conn.type !== 'undefined' && conn.id !== 0 ? conn.type.name : '';
             if (el.attr('data-conntype') !== type || type === '') {
                 el.attr('data-conntype', type);
                 el.empty();
@@ -716,10 +863,11 @@
                 if (type !== '') {
                     $.searchLocalService('/config/connection/bindings', { name: type }, 'Getting Connection Bindings...', function (bindings, status, xhr) {
                         o.bindings = bindings;
+                        console.log(bindings);
                         $('<hr></hr>').appendTo(el);
                         var line = $('<div></div>').appendTo(el);
                         var lbl = type === 'njspc' || type === 'webSocket' ? 'Socket Event' : 'Topic';
-                        if (typeof o.bindings.devices !== 'undefined' && o.bindings.devices.length > 0) {
+                        if (typeof o.bindings.devices !== 'undefined' && type === 'internal') {
                             $('<div></div>').appendTo(line).pickList({
                                 required: true,
                                 bindColumn: 0, displayColumn: 2, labelText: 'to Device', binding: 'deviceBinding',
@@ -755,7 +903,6 @@
                             line = $('<div></div>').appendTo(el);
                             $('<div></div>').appendTo(line).scriptEditor({ binding: 'payloadExpression', prefix: '(feed, value): any => {', suffix: '}', codeStyle: { maxHeight: '300px', overflow: 'auto' } });
                         }
-                        $('<hr></hr>').appendTo(el);
                         if (typeof callback === 'function') { callback(); }
                     });
                 }
@@ -775,11 +922,20 @@
                     columns: [{ binding: 'binding', text: 'Variable', style: { whiteSpace: 'nowrap' } }],
                     items: typeof feed !== 'undefined' ? feed.bindings : [], inputAttrs: { style: { width: '12rem' } }, labelAttrs: { style: { width: '7rem' } }
                 });
+                $('<div></div>').addClass('pnl-feed-params').appendTo(line);
             }
             else {
                 pnl.find('div.picPickList:first').each(function () {
                     this.items(typeof feed !== 'undefined' ? feed.bindings : []);
                 });
+                let pnlParams = pnl.find('div.pnl-feed-params');
+                if (typeof feed === 'undefined' || typeof feed.options === 'undefined' || pnlParams.attr('data-feedname') !== feed.name) pnlParams.empty();
+                if (typeof feed !== 'undefined' && typeof feed.options !== 'undefined' && pnlParams.attr('data-feedname') !== feed.name) {
+                    // Bind up these params.
+                    templateBuilder.createObjectOptions(pnlParams, feed);
+                }
+                if (typeof feed !== 'undefined') dataBinder.bind(pnlParams, feed);
+                pnlParams.attr('data-feedname', typeof feed !== 'undefined' ? feed.pnlParams || '' : '');
             }
         },
         _build_deviceBindings: function (feed) {
@@ -801,6 +957,5 @@
                 });
             }
         }
-        
     });
 })(jQuery);

@@ -227,9 +227,36 @@ export class Utils {
                 c: (val) => { return val - 273.15; },
                 f: (val) => { return ((val - 273.15) * (9 / 5)) + 32; }
             },
+            shart: (ref: number, temp: number, resistance: number, beta: number, units: string): number => {
+                let rtemp = this.convert.temperature.convertUnits(temp, 'c', 'k');
+                let tK = (beta * rtemp) / (beta + (rtemp * Math.log(resistance / ref)));
+                return this.convert.temperature.convertUnits(tK, 'k', units);
+            },
             convertUnits: (val: number, from: string, to: string) => {
                 if (typeof val !== 'number') return null;
                 let fn = this.convert.temperature[from.toLowerCase()];
+                if (typeof fn !== 'undefined' && typeof fn[to.toLowerCase()] === 'function') return fn[to.toLowerCase()](val);
+            }
+        },
+        pressure: {
+            psi: {
+                psi: (val) => { return val; },
+                kpa: (val) => { return val / 6.89476; },
+                atm: (val) => { return val / 0.068406; }
+            },
+            kpa: {
+                psi: (val) => { return val * 6.89476; },
+                kpa: (val) => { return val; },
+                atm: (val) => { return val * 0.00986923; }
+            },
+            atm: {
+                psi: (val) => { return val * 14.6959; },
+                kpa: (val) => { return val * 101.325; },
+                atm: (val) => { return val; }
+            },
+            convertUnits: (val: number, from: string, to: string) => {
+                if (typeof val !== 'number') return null;
+                let fn = this.convert.pressure[from.toLowerCase()];
                 if (typeof fn !== 'undefined' && typeof fn[to.toLowerCase()] === 'function') return fn[to.toLowerCase()](val);
             }
         }
