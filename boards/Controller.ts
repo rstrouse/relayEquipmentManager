@@ -983,8 +983,11 @@ export class Feed {
                     options: this.feed.options
                 });
                 this.lastSent = typeof v === 'object' ? extend(true, {}, v) : v;
-                if (typeof this.feed.property !== 'undefined'){ // socket
-                    logger.verbose(`Feed ${this.server.server.type.name}/${this.server.server.name} sending ${this.feed.property}: ${JSON.stringify(v)} to ${this.feed.deviceBinding}`);
+                if (typeof this.feed.property !== 'undefined') { // socket
+                    if (typeof this.feed.deviceBinding === 'undefined')
+                        logger.verbose(`Feed ${this.server.server.type.name}/${this.server.server.name} sending ${this.feed.property}: ${JSON.stringify(v)} to ${this.feed.eventName}`);
+                    else
+                        logger.verbose(`Feed ${this.server.server.type.name}/${this.server.server.name} sending ${this.feed.property}: ${JSON.stringify(v)} to ${this.feed.deviceBinding}`);
                 }
                 else if (typeof this.feed.eventName !== 'undefined') { // mqtt
                     logger.verbose(`Feed ${this.server.server.type.name}/${this.server.server.name} sending ${this.feed.sendValue}: ${JSON.stringify(v)} to ${this.feed.eventName}`);

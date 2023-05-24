@@ -285,8 +285,8 @@ export class i2cRelay extends i2cDeviceBase {
                         await this.readConfigRegisters();
                         let reg = this.device.info.registers.find(elem => elem.name === 'CFG') || { value: 0x00 };
                         if (reg.value !== 0) {
-                            await this.sendCommand([reg.register, 0]);
                             await this.sendCommand([0x01, 0x00]);
+                            await this.sendCommand([reg.register, 0]);
                             await this.readConfigRegisters();
 
                         }
