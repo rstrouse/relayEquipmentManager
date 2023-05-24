@@ -120,7 +120,7 @@ export class SpiAdcChannel {
                     if (err) { logger.error(err); reject(err) }
                     else {
                         this.isOpen = true;
-                        setTimeout(() => { this.readAsync(); }, 500);
+                        setTimeout(async () => { await this.readAsync(); }, 500);
                         resolve();
                     }
                 });
@@ -200,8 +200,8 @@ export class SpiAdcChannel {
     }
     public readAsync(): Promise<number> {
         return new Promise<number>((resolve, reject) => {
-            if (!this.isOpen) return reject(new Error(`SPI Channel is closed and cannot be read`));
             if (this._timerRead) clearTimeout(this._timerRead);
+            if (!this.isOpen) return reject(new Error(`SPI Channel is closed and cannot be read`));
             let readBuff = this._readCommand(this.channel);
             let b: Buffer = Buffer.from([0, 0, 0]);
             let message = [{
@@ -210,9 +210,13 @@ export class SpiAdcChannel {
                 receiveBuffer: Buffer.alloc(readBuff.byteLength),
                 speedHz: this.speedHz || 2000
             }];
+            logger.verbose(`Reading SPI${this.busNumber} Channel ${this.channel}`);
             //if (this.channel === 1) console.log(readBuff);
             this._spiDevice.transfer(message, (err, reading) => {
-                if (err) { logger.error(err); reject(err); }
+                if (err) {
+                    logger.error(`Error reading SPI${this.busNumber} Channel ${this.channel}: ${err.message}`);
+                    reject(err);
+                }
                 else {
                     try {
                         let rawVal = this.rawValue = this._getValue(message[0].receiveBuffer);
@@ -237,9 +241,9 @@ export class SpiAdcChannel {
                             webApp.emitToClients('spiChannel', { bus: this.busNumber, channel: this.channel, raw: rawVal, converted: this.convertedValue, values: this.device.values });
                             for (let i = 0; i < this.feeds.length; i++) this.feeds[i].send(this.device);
                         }
-                        this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
                     }
                     catch (err) { logger.error(err); reject(err); }
+                    finally { this._timerRead = setTimeout(async () => { await this.readAsync(); }, 500);  }
                     resolve(reading);
                 }
             });
