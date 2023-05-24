@@ -272,25 +272,25 @@ export class i2cRelay extends i2cDeviceBase {
                 case 'sequent4':
                 case 'sequent8v3':
                     {
-                        await this.readConfigRegisters();
                         let reg = this.device.info.registers.find(elem => elem.name === 'CFG') || { value: 0x00 };
-                        if (reg.value !== 0) {
-                            await this.sendCommand([reg.register, 0]);
-                            await this.readConfigRegisters();
+                        reg.value = await this.readCommand(0x03);
+                        if (reg.CFG !== 0) {
+                            await this.sendCommand([0x01, 0x00]);
+                            await this.sendCommand([0x03, 0x00]);
                         }
+                        await this.readConfigRegisters();
+
                     }
                     break;
                 case 'sequent8IND':
                     {
-                        await this.readConfigRegisters();
                         let reg = this.device.info.registers.find(elem => elem.name === 'CFG') || { value: 0x00 };
-                        if (reg.value !== 0) {
+                        reg.value = await this.readCommand(0x03);
+                        if (reg.CFG !== 0) {
                             await this.sendCommand([0x01, 0x00]);
-                            await this.sendCommand([reg.register, 0]);
-                            await this.readConfigRegisters();
-
+                            await this.sendCommand([0x03, 0x00]);
                         }
-
+                        await this.readConfigRegisters();
                     }
                     break;
 
