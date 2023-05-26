@@ -257,12 +257,14 @@ export class SpiAdcChannel {
             if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead);
             for (let i = 0; i < this.feeds.length; i++) this.feeds[i].closeAsync();
             this._timerRead = null;
-            this.isOpen = false;
             logger.info(`Closing SPI Channel ${this.busNumber} ${this.channel}`);
-            this._spiDevice.close(err => {
-                if (err) reject(new Error(`Error closing SPI${this.busNumber} ${this.channel}:${err.message}`));
-                resolve();
-            });
+            if (this.isOpen) {
+                this.isOpen = false;
+                this._spiDevice.close(err => {
+                    if (err) reject(new Error(`Error closing SPI${this.busNumber} ${this.channel}:${err.message}`));
+                    resolve();
+                });
+            }
         });
     }
 }
