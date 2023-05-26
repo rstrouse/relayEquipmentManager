@@ -265,6 +265,8 @@ export class SpiAdcChannel {
                     resolve();
                 });
             }
+            else
+                resolve();
         });
     }
 }
