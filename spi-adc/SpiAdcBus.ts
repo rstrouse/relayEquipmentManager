@@ -117,7 +117,10 @@ export class SpiAdcChannel {
             try {
                 logger.info(`Attempting to open SPI Bus #${opts.busNumber} Channel #${this.channel}`);
                 this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, err => {
-                    if (err) { logger.error(err); reject(err) }
+                    if (err) {
+                        logger.error(`SPI${opts.busNumber} Channel ${this.channel} library error: ${err.message}`);
+                        reject(err);
+                    }
                     else {
                         this.isOpen = true;
                         setTimeout(async () => { await this.readAsync(); }, 500);
@@ -125,7 +128,7 @@ export class SpiAdcChannel {
                     }
                 });
                 logger.info(`Opened SPI Bus #${opts.busNumber} Channel #${this.channel}`);
-            } catch (err) { logger.error(err); }
+            } catch (err) { logger.error(`Error opening SPI${opts.busNumber} Channel ${this.channel}: ${err.message}`); }
         });
     }
     public get deviceStatus(): DeviceStatus { return { name: this.deviceType.name, category: 'SPI Channel', hasFault: !this.isOpen, status: this.isOpen ? 'ok' : 'not open', lastComm: this.lastComm, protocol: 'spi', busNumber: this.busNumber, address: this.channel } }
