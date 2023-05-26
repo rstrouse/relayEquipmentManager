@@ -232,7 +232,7 @@ export class SpiAdcChannel {
                                 this.samples.length = 0;
                             }
                             else {
-                                this._timerRead = setTimeout(() => { this.readAsync(); }, 500);
+                                //this._timerRead = setTimeout(async () => { await this.readAsync(); }, 500);
                                 resolve(rawVal);
                                 return;
                             }
@@ -246,26 +246,25 @@ export class SpiAdcChannel {
                         }
                     }
                     catch (err) { logger.error(err); reject(err); }
-                    finally { this._timerRead = setTimeout(async () => { await this.readAsync(); }, 500);  }
+                    finally { if(this.isOpen) this._timerRead = setTimeout(async () => { await this.readAsync(); }, 500);  }
                     resolve(reading);
                 }
             });
         });
     }
-    public closeAsync(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+    public async closeAsync(): Promise<void> {
+        return new Promise<void>(async (resolve, reject) => {
             if (typeof this._timerRead !== 'undefined') clearTimeout(this._timerRead);
             for (let i = 0; i < this.feeds.length; i++) this.feeds[i].closeAsync();
             this._timerRead = null;
             this.isOpen = false;
             logger.info(`Closing SPI Channel ${this.busNumber} ${this.channel}`);
             this._spiDevice.close(err => {
-                if (err) reject(err);
+                if (err) reject(new Error(`Error closing SPI${this.busNumber} ${this.channel}:${err.message}`));
                 resolve();
             });
         });
     }
-
 }
 class mockSpiDevice {
     constructor(busNumber, deviceNumber, opts?) {
