@@ -95,7 +95,7 @@
             });
             $('<div></div>').appendTo(line).pickList({
                 binding: binding + 'deviceId', labelText: 'Device',
-                bindColumn: 0, displayColumn: 1,
+                bindColumn: 0, displayColumn: 1, required: true,
                 columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'name', text: 'Device Name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'category', text: 'Category', style: { whiteSpace: 'nowrap' } }],
                 items: o.analogDevices, inputAttrs: { style: { width: '14rem' } }, labelAttrs: { style: { marginLeft: '1rem' } }
             }).on('selchanged', function (evt) {
@@ -290,7 +290,7 @@
             });
             $('<div></div>').appendTo(line).pickList({
                 binding: binding + 'deviceId', labelText: 'Device',
-                bindColumn: 0, displayColumn: 1,
+                bindColumn: 0, displayColumn: 1, value: 701,
                 columns: [{ hidden: true, binding: 'id', text: 'Id', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'name', text: 'Device Name', style: { whiteSpace: 'nowrap' } }, { hidden: false, binding: 'category', text: 'Category', style: { whiteSpace: 'nowrap' } }],
                 items: o.analogDevices, inputAttrs: { style: { width: '14rem' } }, labelAttrs: { style: { marginLeft: '1rem' } }
             }).on('selchanged', function (evt) {
