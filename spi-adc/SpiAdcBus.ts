@@ -115,7 +115,7 @@ export class SpiAdcChannel {
         return new Promise<void>((resolve, reject) => {
             this.busNumber = opts.busNumber;
             try {
-                logger.info(`Attempting to open SPI Bus #${opts.busNumber} Channel #${this.channel}`);
+                //logger.info(`Attempting to open SPI Bus #${opts.busNumber} Channel #${this.channel}`);
                 this._spiDevice = spiBus.open(opts.busNumber || 0, this.channel, err => {
                     if (err) {
                         logger.error(`SPI${opts.busNumber} Channel ${this.channel} library error: ${err.message}`);
@@ -124,10 +124,10 @@ export class SpiAdcChannel {
                     else {
                         this.isOpen = true;
                         setTimeout(async () => { await this.readAsync(); }, 500);
+                        logger.info(`Opened SPI Bus #${opts.busNumber} Channel #${this.channel}`);
                         resolve();
                     }
                 });
-                logger.info(`Opened SPI Bus #${opts.busNumber} Channel #${this.channel}`);
             } catch (err) { logger.error(`Error opening SPI${opts.busNumber} Channel ${this.channel}: ${err.message}`); }
         });
     }
