@@ -315,8 +315,8 @@ export class ads1x15 extends i2cDeviceBase {
         try {
             let reg = typeof this.options.registers !== 'undefined' ? this.options.registers : this.options.registers = {};
             reg.config = await this.readRegister(ads1x15.registers['CONFIG']);
-            reg.lowTheshold = await this.readRegister(ads1x15.registers.LOWTHRESH);
-            reg.highThreshold = await this.readRegister(ads1x15.registers.HITHRESH);
+            //reg.lowTheshold = await this.readRegister(ads1x15.registers.LOWTHRESH);
+            //reg.highThreshold = await this.readRegister(ads1x15.registers.HITHRESH);
         } catch (err) { logger.error(`${this.device.name} Error reading all registers: ${err.message}`); }
     }
     public getValue(prop) {
