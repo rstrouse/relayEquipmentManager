@@ -34,14 +34,14 @@ export class StateRoute {
                 for (let i = 0; i < cont.spi0.channels.length; i++) {
                     let chan = cont.spi0.channels.getItemByIndex(i);
                     let dev = devs.find(elem => elem.id === chan.deviceId);
-                    devices.push({ type: 'spi', isActive: chan.isActive, name: `${typeof dev !== 'undefined' ? dev.name : 'Channel #0-' + chan.id}`, binding: `spi:0:${chan.id}`, category: typeof dev !== 'undefined' ? dev.category : 'Unknown SPI' });
+                    if (typeof dev !== 'undefined') devices.push({ type: 'spi', isActive: chan.isActive, name: `${typeof dev !== 'undefined' ? dev.name : 'Channel #0-' + chan.id}`, binding: `spi:0:${chan.id}`, category: typeof dev !== 'undefined' ? dev.category : 'Unknown SPI' });
                 }
             } catch (err) { logger.error(`/devices/all Error getting spi0: ${err.message}`); }
             try {
                 for (let i = 0; i < cont.spi1.channels.length; i++) {
                     let chan = cont.spi1.channels.getItemByIndex(i);
                     let dev = devs.find(elem => elem.id === chan.deviceId);
-                    devices.push({ type: 'spi', isActive: chan.isActive, name: `${typeof dev !== 'undefined' ? dev.name : 'Channel #1-' + chan.id}`, binding: `spi:1:${chan.id}`, category: typeof dev !== 'undefined' ? dev.category : 'Unknown SPI', feeds: dev.feeds.get() });
+                    if (typeof dev !== 'undefined') devices.push({ type: 'spi', isActive: chan.isActive, name: `${typeof dev !== 'undefined' ? dev.name : 'Channel #1-' + chan.id}`, binding: `spi:1:${chan.id}`, category: typeof dev !== 'undefined' ? dev.category : 'Unknown SPI', feeds: dev.feeds.get() });
                 }
             } catch (err) { logger.error(`/devices/all Error getting spi1: ${err.message}`); }
 
