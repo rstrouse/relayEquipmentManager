@@ -439,9 +439,12 @@ export class AtlasEZOorp extends AtlasEZO {
         finally { this.suspendPolling = false; }
     }
     public async readProbe(): Promise<number> {
+        const validResultPattern = /^[\d.]+$/;
         try {
             this.suspendPolling = true;
             let result = await this.execCommand('R', 900);
+            if (!validResultPattern.test(result))
+                throw new Error('Invalid ORP probe value');
 
             let val = this.i2c.isMock ? 666.66 + (Math.floor(Math.random() * 10000) / 100): parseFloat(result);
             this.values.orp = val;
