@@ -439,7 +439,7 @@ export class AtlasEZOorp extends AtlasEZO {
         finally { this.suspendPolling = false; }
     }
     public async readProbe(): Promise<number> {
-        const validResultPattern = /^[\d.]+$/;
+        const validResultPattern = /^\d+(\.\d+)?$/;
         try {
             this.suspendPolling = true;
             let result = await this.execCommand('R', 900);
