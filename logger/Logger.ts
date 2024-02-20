@@ -37,7 +37,7 @@ class Logger {
     private _logger: winston.Logger;
     public init() {
         // match date format used by njsPC
-        const timestampFormat = winston.format.timestamp({format: 'DD/MM/YYYY HH:mm:ss'});
+        const timestampFormat = winston.format.timestamp({format: '[DD/MM/YYYY, HH:mm:ss]'});
         this.cfg = config.getSection('log');
         if(typeof logger._logger !== 'undefined') logger._logger.close();
         logger._logger = winston.createLogger({
