@@ -439,11 +439,14 @@ export class AtlasEZOorp extends AtlasEZO {
         finally { this.suspendPolling = false; }
     }
     public async readProbe(): Promise<number> {
+        const validResultPattern = /^-?\d+(\.\d+)?$/;
         try {
             this.suspendPolling = true;
             let result = await this.execCommand('R', 900);
 
             let val = this.i2c.isMock ? 666.66 + (Math.floor(Math.random() * 10000) / 100): parseFloat(result);
+            if (!validResultPattern.test(result) || val < -1019.9 || val > 1019.9)
+                throw new Error(`Discarded invalid value from I2C result:${result}`);
             this.values.orp = val;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             return Promise.resolve(val);
@@ -560,6 +563,7 @@ export class AtlasEZOpH extends AtlasEZO {
         finally { this.suspendPolling = false; }
     }
     public async readProbe(tempCompensation?: number): Promise<number> {
+        const validResultPattern = /^\d+(\.\d+)?$/;
         try {
             this.suspendPolling = true;
             if (typeof tempCompensation !== 'undefined' && this.version < 2.12) {
@@ -567,6 +571,8 @@ export class AtlasEZOpH extends AtlasEZO {
             }
             let result = typeof tempCompensation !== 'undefined' && this.version >= 2.12 ? await this.execCommand(`RT,${tempCompensation.toFixed(1)}`, 900) : await this.execCommand('R', 900);
             let val = this.i2c.isMock ? 7.4 + (Math.floor(Math.random() * 100) / 1000) : parseFloat(result);
+            if (!validResultPattern.test(result) || val < 0.001 || val > 14.000)
+                throw new Error(`Discarded invalid value from I2C result:${result}`);
             this.values.pH = val;
             if (typeof tempCompensation !== 'undefined') this.values.temperature = tempCompensation;
             else await this.getTempCompensation();
@@ -1628,6 +1634,7 @@ export class AtlasEZOrtd extends AtlasEZO {
         catch (err) { this.logError(err); }
     }
     public async readProbe(): Promise<number> {
+        const validResultPattern = /^-?\d+(\.\d+)?$/;
         try {
             let result = await this.execCommand('R', 600);
             if (this.i2c.isMock) {
@@ -1635,6 +1642,8 @@ export class AtlasEZOrtd extends AtlasEZO {
             }
             else 
                 result = await this.execCommand('R', 600);
+            if (!validResultPattern.test(result))
+                throw new Error(`Discarded invalid value from I2C result:${result}`);
             let val = parseFloat(result);
             this.values.temperature = val;
             webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
