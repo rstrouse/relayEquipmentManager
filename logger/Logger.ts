@@ -21,8 +21,8 @@ class Logger {
     private captureForReplayPath: string;
     private pktTimer: NodeJS.Timeout;
     private currentTimestamp: string;
-    private myFormat = winston.format.printf(({ level, message, label }) => {
-        return `[${new Date().toLocaleString()}] ${level}: ${message}`;
+    private myFormat = winston.format.printf(({ level, message, label, timestamp }) => {
+        return `[${timestamp}] ${level}: ${message}`;
     });
     private getConsoleToFilePath(): string {
         return 'consoleLog(' + this.getLogTimestamp() + ').log';
@@ -36,10 +36,12 @@ class Logger {
     }
     private _logger: winston.Logger;
     public init() {
+        // match date format used by njsPC
+        const timestampFormat = winston.format.timestamp({format: 'DD/MM/YYYY, HH:mm:ss'});
         this.cfg = config.getSection('log');
         if(typeof logger._logger !== 'undefined') logger._logger.close();
         logger._logger = winston.createLogger({
-            format: winston.format.combine(winston.format.colorize(), winston.format.splat(), winston.format.simple()),
+            format: winston.format.combine(winston.format.colorize(), winston.format.splat(), timestampFormat, this.myFormat),
             transports: [this.transports.console]
         });
         this.transports.console.level = this.cfg.app.level;
@@ -47,7 +49,7 @@ class Logger {
             this.transports.consoleFile = new winston.transports.File({
                 filename: path.join(process.cwd(), '/logs', this.getConsoleToFilePath()),
                 level: 'silly',
-                format: winston.format.combine(winston.format.splat(), winston.format.uncolorize(), this.myFormat)
+                format: winston.format.combine(winston.format.splat(), winston.format.uncolorize(), timestampFormat, this.myFormat)
             });
             this.transports.consoleFile.level = this.cfg.app.level;
             this._logger.add(this.transports.consoleFile);
