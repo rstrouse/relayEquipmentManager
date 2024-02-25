@@ -835,7 +835,7 @@ export class SequentMegaIND extends SequentIO {
             case 'inputvoltage':
                 return this.info.volts;
             case 'pivoltage':
-                return this.info.rapsiVolts;
+                return this.info.raspiVolts;
             case 'fwversion':
                 return this.info.fwVersion;
             default:
@@ -1093,7 +1093,7 @@ export class SequentMegaBAS extends SequentIO {
             case 'inputvoltage':
                 return this.info.volts;
             case 'pivoltage':
-                return this.info.rapsiVolts;
+                return this.info.raspiVolts;
             case 'fwversion':
                 return this.info.fwVersion;
             default:
@@ -2491,7 +2491,7 @@ export class SequentHomeAuto extends SequentIO {
             case 'cputempk':
                 return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
             case 'pivoltage':
-                return this.info.rapsiVolts;
+                return this.info.raspiVolts;
             case 'fwversion':
                 return this.info.fwVersion;
             default:
