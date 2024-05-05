@@ -424,7 +424,7 @@ export class Controller extends ConfigItem {
     public async setConnectionAsync(data): Promise<ConnectionSource> {
         let c = this.connections.find(elem => elem.id === data.id);
         if (typeof c === 'undefined') {
-            if(data.id <= 0 || typeof data.id !== 'number') data.id = this.connections.getMaxId(false, -1) + 1;
+            if (data.id <= 0 || typeof data.id !== 'number') data.id = this.connections.getMaxId(false, -1) + 1;
             if (data.id === 0) data.id = 1;
         }
         return new Promise<ConnectionSource>((resolve, reject) => {
@@ -449,7 +449,7 @@ export class Controller extends ConfigItem {
         } catch (err) { return Promise.reject(new Error(`Error deleting connection: ${err.message}`)); }
     }
     public async setSpiControllerAsync(controllerId: number, data): Promise<SpiController> {
-        return await new Promise<SpiController>( async (resolve, reject) => {
+        return await new Promise<SpiController>(async (resolve, reject) => {
             if (isNaN(controllerId) || controllerId < 0 || controllerId > 1) return reject(new Error(`Invalid SPI Controller Id ${controllerId}`));
             let spi: SpiController = cont['spi' + controllerId];
             if (typeof spi === 'undefined') return reject(new Error(`Could not find controller Id ${controllerId}`));
@@ -830,14 +830,14 @@ export class Controller extends ConfigItem {
         }
         catch (err) { logger.error(`Error restoring configuration: ${err.message}`); }
     }
-    public static isMock(): boolean { 
+    public static isMock(): boolean {
         try {
             //console.log(process.platform);
             switch (process.platform) {
                 case 'linux':
                     return false
                 default:
-                   return true;
+                    return true;
             }
         } catch (err) { console.log(err); }
     }
@@ -1043,7 +1043,7 @@ export class Gpio extends ConfigItem {
     public async deleteConnectionAsync(id: number) {
         try {
             for (let i = 0; i < this.pins.length; i++) await this.pins.getItemByIndex(i).deleteConnectionAsync(id);
-        } catch (err) { return Promise.reject(new Error(`Error removing connection from gpio`));}
+        } catch (err) { return Promise.reject(new Error(`Error removing connection from gpio`)); }
     }
     public getDeviceInputs(): any[] {
         let devices = [];
@@ -2267,7 +2267,7 @@ export class I2cController extends ConfigItem {
     }
     public async validateRestore(rest: any, ctx: any): Promise<void> {
         try {
-            ctx.i2cBus = { errors: [], warnings:[], add:[], update:[], remove: [] };
+            ctx.i2cBus = { errors: [], warnings: [], add: [], update: [], remove: [] };
             // First check to see it there are any i2c busses that need removed or added.
             let ic = rest.i2c;
             if (typeof ic === 'undefined' || typeof ic.buses === 'undefined') {
@@ -2861,7 +2861,7 @@ export class I2cDevice extends ConfigItem {
             let feed: DeviceFeed;
             let connectionId;
             let connection;
-             
+
 
             // search for existing feed; also acts as to not allow duplicate feeds
             feed = this.getDeviceFeed(data); // try to find feed with matching data; useful if data is sent from njsPC
@@ -2889,7 +2889,7 @@ export class I2cDevice extends ConfigItem {
             feed.connectionId = connectionId;
             feed.set(data);
             feed.id = feedId;
-            
+
             // Set this on the bus.
             return Promise.resolve(feed);
         }
@@ -3004,7 +3004,7 @@ export class I2cDevice extends ConfigItem {
             let bus = i2c.buses.find(elem => elem.busId === bind.busId);
             if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
             let dev = bus.devices.find(elem => elem.device.id === this.id);
-            if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
             return await dev.setDeviceState(bind, data);
         }
         catch (err) { return Promise.reject(new Error(`setDeviceState: Error setting device state ${err.message}`)) }
@@ -3016,7 +3016,7 @@ export class I2cDevice extends ConfigItem {
             let bus = i2c.buses.find(elem => elem.busId === bind.busId);
             if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
             let dev = bus.devices.find(elem => elem.device.id === this.id);
-            if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
             return await dev.feedDeviceValue(bind, data);
         }
         catch (err) { return Promise.reject(new Error(`feedDeviceValue: Error setting device value ${err.message}`)) }
@@ -3227,7 +3227,7 @@ export class SpiChannel extends ConfigItem {
     public set values(val: any) { this.data.values = val; }
     public get info() { return this.data.info; }
     public set info(val: any) { this.data.info = val; }
-   
+
     public get sampling(): number { return this.data.sampling; }
     public set sampling(val: number) { this.setDataVal('sampling', val); }
     public getExtended() {
@@ -4224,7 +4224,7 @@ export class OneWireController extends ConfigItem {
     }
     public async validateRestore(rest: any, ctx: any): Promise<void> {
         try {
-            ctx.oneWireBus = { errors: [], warnings:[], add:[], update:[], remove: [] };
+            ctx.oneWireBus = { errors: [], warnings: [], add: [], update: [], remove: [] };
             // First check to see it there are any oneWire busses that need removed or added.
             let ic = rest.oneWire;
             if (typeof ic === 'undefined' || typeof ic.buses === 'undefined') {
@@ -4361,11 +4361,11 @@ export class OneWireBus extends ConfigItem {
             let cdev = this.addresses.find(elem => elem.address === addr);
             if (typeof cdev !== 'undefined') return Promise.reject(new Error(`Address ${cdev.address} aready exists for device ${cdev.name}`));
             this.addresses.push({ address: addr, name: 'Unknown', product: 0, manufacturer: 0 });
-            this.addresses.sort((a, b) => { 
+            this.addresses.sort((a, b) => {
                 if (a.address < b.address) return -1;
                 if (a.address > b.address) return 1;
                 return 0;
-                 });
+            });
         } catch (err) { return Promise.reject(err); }
     }
     public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
@@ -4670,7 +4670,7 @@ export class OneWireBus extends ConfigItem {
         try {
             if (typeof data.deviceId === 'undefined' && data.address === 'undefined') return Promise.reject(new Error(`Trigger device address or id was not provided.`));
             let devId = (typeof data.deviceId !== 'undefined') ? parseInt(data.deviceId, 10) : undefined;
-            let address = (typeof data.address !== 'undefined') ?data.address : undefined;
+            let address = (typeof data.address !== 'undefined') ? data.address : undefined;
             let dev: OneWireDevice = !isNaN(devId) ? this.devices.getItemById(devId) : this.devices.getItemByAddress(address);
             if (isNaN(dev.typeId)) return Promise.reject(new Error(`Trigger device has not been initialized`));
             await dev.setDeviceTrigger(data);
@@ -4937,7 +4937,7 @@ export class OneWireDevice extends ConfigItem {
             let bus = oneWire.buses.find(elem => elem.busId === bind.busId);
             if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
             let dev = bus.devices.find(elem => elem.device.id === this.id);
-            if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
             return await dev.setDeviceState(bind, data);
         }
         catch (err) { return Promise.reject(new Error(`setDeviceState: Error setting device state ${err.message}`)) }
@@ -4949,7 +4949,7 @@ export class OneWireDevice extends ConfigItem {
             let bus = oneWire.buses.find(elem => elem.busId === bind.busId);
             if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
             let dev = bus.devices.find(elem => elem.device.id === this.id);
-            if (typeof bus === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
+            if (typeof dev === 'undefined') return Promise.reject(new Error(`feedDeviceValue: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
             return await dev.feedDeviceValue(bind, data);
         }
         catch (err) { return Promise.reject(new Error(`feedDeviceValue: Error setting device value ${err.message}`)) }
