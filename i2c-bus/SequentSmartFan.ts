@@ -35,6 +35,7 @@ export class SequentSmartFan extends i2cDeviceBase {
     protected get version(): number { return typeof this.device !== 'undefined' && this.options !== 'undefined' && typeof this.device.info !== 'undefined' ? parseFloat(this.device.info.firmware) : 0 }
     protected processing = 0;
     protected get fanCurve(): { curve: string, linear: { start: number, end: number, min: number }, exp: { start: number, min: number, ramp: string }, log: { start: number, min: number, ramp: string } } {
+        if (typeof this.options.units === 'undefined') this.options.units = 'C';
         if (typeof this.options.fanCurve === 'undefined') {
             this.options.fanCurve = { curve: this.cliVer < 4 ? 'custom' : 'linear' };
         }
@@ -85,10 +86,10 @@ export class SequentSmartFan extends i2cDeviceBase {
             this.stopPolling();
             if (typeof this.options.readInterval === 'undefined') this.options.readInterval = 3000;
             this.options.readInterval = Math.max(500, this.options.readInterval);
-            if (typeof this.device.options.name !== 'string' || this.device.options.name.length === 0) this.device.name = this.device.options.name = deviceType.name;
+            if (typeof this.options.name !== 'string' || this.options.name.length === 0) this.device.name = this.options.name = deviceType.name;
             else this.device.name = this.device.options.name;
-            if (typeof this.device.options.units === 'undefined') {
-                this.device.options.units = this.device.values.units = 'C';
+            if (typeof this.options.units === 'undefined') {
+                this.options.units = this.device.values.units = 'C';
             }
             if (typeof this.options.fanPowerFn !== 'undefined' && this.options.fanPowerFn.length > 0)
                 this.evalFanPower = new Function('options', 'values', 'info', this.options.fanPowerFn);
@@ -119,6 +120,7 @@ export class SequentSmartFan extends i2cDeviceBase {
     public async setOptions(opts): Promise<any> {
         try {
             this.suspendPolling = true;
+            if (typeof this.options.units === 'undefined') this.options.units = 'C';
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
             if (typeof opts.fanSafeTemp !== 'undefined' && opts.fanSafeTemp !== this.options.fanSafeTemp) await this.setFanSafeTemp(opts.fanSafeTemp);
             if (typeof opts.blink !== 'undefined' && opts.blink !== this.options.blink) await this.setFanBlink(opts.blink);
@@ -310,6 +312,7 @@ export class SequentSmartFan extends i2cDeviceBase {
         try {
             let fanTemp: number;
             let cpuTemp: number;
+            if (typeof this.values.units === 'undefined') this.values.units = 'C';
             if (this.i2c.isMock) {
                 fanTemp = utils.convert.temperature.convertUnits(72 + (Math.round((5 * Math.random()) * 100) / 100), 'f', this.values.units)
                 cpuTemp = this.getCpuTemp();
