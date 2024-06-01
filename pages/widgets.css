@@ -734,13 +734,12 @@ div.header-pin[data-sex="female"] div.header-pin-inner:before {
 
 div.pnl-gpio-board-name {
   display: inline-block;
-  position: absolute;
+  position: relative;
   font-weight: bold;
   font-size: 24pt;
-  left: 20px;
-  bottom: 240px;
   color: white;
-  height: 40px; }
+  height:auto;
+}
 
 div.pin-header-name {
   color: white;

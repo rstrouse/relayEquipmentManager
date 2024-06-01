@@ -28,7 +28,7 @@
                     $('<div></div>').appendTo(headers).pinHeader({ header: head, overlays: overlays, pins: data.controller.gpio.pins });
 
                 }
-                $('<div></div>').appendTo(el).pnlPinDefinition({ headers: headers, pinDirections: data.pinDirections });
+                let pnlPins = $('<div></div>').appendTo(el).pnlPinDefinition({ headers: headers, pinDirections: data.pinDirections });
                 el.on('selchanged', 'div.pin-header', function (evt) {
                     // Bind up the gpio data from our set.
                     // Lets round trip to the server to get the data we need for the specific pin.
@@ -38,11 +38,16 @@
                         el.find('div.pnl-pin-definition').each(function () { console.log(this); this.dataBind(pin); });
                     });
                 });
-                let name = $('<div></div>').appendTo(el).addClass('pnl-gpio-board-name').text(data.pinDefinitions.name);
+                let nameOuter = $('<div></div>').appendTo(headers).addClass('pnl-gpio-board-name-outer');
+                let name = $('<div></div>').appendTo(nameOuter).addClass('pnl-gpio-board-name').text(data.pinDefinitions.name);
                 if (typeof data.pinDefinitions.icon !== 'undefined') $('<i class="' + data.pinDefinitions.icon + '"></i>').appendTo(name);
                 let pos = headers.position();
-                name.css({ left: (pinHeads.length == 1 ? -57 : 75) + 'px', top: headers.height() / 2 + 'px' });
-                name.css({ transform: 'rotate(270deg)' });
+                nameOuter.css({ position: 'absolute', width: headers.height() + 'px' });
+                console.log({ nameWidth: name.width(), nameHeight: name.height() });
+                nameOuter.css({ left: -(name.width()/2) + 'px', top: '45%' });
+                //nameOuter.css({ left: (pinHeads.length == 1 ? -177 : 75) + 'px', top: '50%' });
+                name.css({ transformOrigin: 'center top', transform: 'rotate(270deg)' });
+                name.css({ position: 'relative', left: (pinHeads.length === 1 ? '27px' : '167px') });
             });
         }
     });
