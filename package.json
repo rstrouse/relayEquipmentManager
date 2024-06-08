@@ -45,6 +45,6 @@
     "socket.io": "^4.5.0",
     "socket.io-client": "^4.5.0",
     "spi-device": "^3.1.2",
-    "winston": "^3.6.0"
+    "winston": "^3.13.0"
   }
 }

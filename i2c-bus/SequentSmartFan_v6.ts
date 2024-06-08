@@ -295,21 +295,23 @@ export class SequentSmartFanV6 extends i2cDeviceBase {
    
     protected getCpuTemp(): number {
         try {                        
+            let cpuTemp: number;
+            if (typeof this.values.units === 'undefined') this.values.units = this.options.units || 'C';
             if (this.i2c.isMock) {
-                return utils.convert.temperature.convertUnits(72 + (Math.round((5 * Math.random()) * 100) / 100), 'f', this.values.units);
+                cpuTemp = utils.convert.temperature.convertUnits(72 + (Math.round((5 * Math.random()) * 100) / 100), 'F', this.values.units);
             }
-            if (fs.existsSync('/sys/class/thermal/thermal_zone0/temp')) {
+            else if (fs.existsSync('/sys/class/thermal/thermal_zone0/temp')) {
                 let buffer = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp');
-                let cpuTemp: number;
                 cpuTemp = utils.convert.temperature.convertUnits(parseInt(buffer.toString().trim(), 10) / 1000, 'C', this.values.units);
+            }
+            if (typeof cpuTemp !== 'undefined') {
                 this.values.cpuTemp = cpuTemp;
                 let ct = utils.convert.temperature.convertUnits;
                 this.values.cpuTempF = ct(cpuTemp, this.values.units, 'F');
                 this.values.cpuTempC = ct(cpuTemp, this.values.units, 'C');
                 this.values.cpuTempK = ct(cpuTemp, this.values.units, 'K');
-               
-                return cpuTemp;
             }
+            return cpuTemp;
         } catch (err) { logger.error(`${this.device.name} error getting cpu temp: ${err.message}`); }
     }  
   
@@ -331,7 +333,7 @@ export class SequentSmartFanV6 extends i2cDeviceBase {
             await this.setFanPower(); //not a reading; but set the value and then make sure it is set properly.
             await this.getCpuTemp();
             await this.getFanPower();
-            if (this.values.fanPower !== _values.fanPower || this.values.fanPowerFnVal !== _values.fanPowerFnVal) {
+            if (this.values.fanPower !== _values.fanPower || this.values.fanPowerFnVal !== _values.fanPowerFnVal || this.values.cpuTemp !== _values.cpuTemp) {
                 webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: this.values });
             }
             this.emitFeeds();

@@ -91,7 +91,8 @@ export class SequentIO extends i2cDeviceBase {
     protected ensureIOChannels(label, type, arr, count) {
         try {
             for (let i = 1; i <= count; i++) {
-                if (typeof arr.find(elem => elem.id === i) === 'undefined') arr.push({ id: i, name: `${label} #${i}`, type: type, enabled: false });
+                let ch = arr.find(elem => elem.id === i);
+                if (typeof ch === 'undefined') arr.push({ id: i, name: `${label} #${i}`, type: type, enabled: false });
             }
             arr.sort((a, b) => { return a.id - b.id });
             arr.length = count;
@@ -120,6 +121,19 @@ export class SequentIO extends i2cDeviceBase {
     public get out0_10(): any[] { return typeof this.outputs.out0_10 === 'undefined' ? this.outputs.out0_10 = [] : this.outputs.out0_10; }
     public get outDrain(): any[] { return typeof this.outputs.outDrain === 'undefined' ? this.outputs.outDrain = [] : this.outputs.outDrain; }
     public get calibration(): any { return typeof this.calibration === 'undefined' ? this.info.calibration = {} : this.info.calibration; }
+    protected async initOutputs(outputs: any[], fn: (ord: number, val: number) => void) {
+        if (typeof fn === 'function') {
+            for (let i = 0; i < outputs.length; i++) {
+                let o = outputs[i];
+                if (o.enabled === true) {
+                    if (typeof o.value === 'number') {
+                        console.log(o);
+                        await fn.apply(this, [o.id, o.value]);
+                    }
+                }
+            }
+        }
+    }
     protected packRS485Port(port): Buffer {
         let buffer = Buffer.from([0, 0, 0, 0, 0]);
         buffer.writeUInt16LE(port.baud & 0x00FFFF, 0);
@@ -442,6 +456,8 @@ export class SequentMegaIND extends SequentIO {
             this.ensureIOChannels('OUT 4-20', '420OUT', this.out4_20, 4);
             this.ensureIOChannels('IN Digital', 'DIN', this.inDigital, 4);
             this.ensureIOChannels('OUT Open Drain', 'ODOUT', this.outDrain, 4);
+            await this.initOutputs(this.out0_10, this.set0_10Output);
+            await this.initOutputs(this.out4_20, this.set4_20Output);
             if (this.device.isActive) await this.getRS485Port();
             return Promise.resolve(true);
         }
@@ -889,6 +905,8 @@ export class SequentMegaBAS extends SequentIO {
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 8);
             this.ensureIOChannels('OUT 0-10', 'AOUT', this.out0_10, 4);
+            await this.initOutputs(this.out0_10, this.set0_10Output);
+
             if (this.device.isActive) await this.getRS485Port();
             return Promise.resolve(true);
         }

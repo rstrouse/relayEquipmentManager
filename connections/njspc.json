@@ -388,6 +388,10 @@
         {
           "binding": "isOn",
           "type": "boolean"
+        },
+        {
+          "binding": "toggle",
+          "type": "boolean"
         }
       ],
       "options": [
@@ -414,6 +418,10 @@
       "bindings": [
         {
           "binding": "isOn",
+          "type": "boolean"
+        },
+        {
+          "binding": "toggle",
           "type": "boolean"
         }
       ],

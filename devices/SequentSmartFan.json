@@ -2078,7 +2078,48 @@
                       "verticalAlign": "top"
                     }
                   },
-                  "options": [                   
+                  "options": [
+                    {
+                      "field": {
+                        "type": "div",
+                        "style": {
+                          "display": "block",
+                          "fontSize": ".8rem"
+                        }
+                      },
+                      "options": [
+                        {
+                          "field": {
+                            "type": "staticField",
+                            "labelText": "CPU Temp",
+                            "binding": "values.cpuTemp",
+                            "dataType": "number",
+                            "fmtMask": "#,##0.0#",
+                            "emptyMask": "--.-",
+                            "units": "&deg;",
+                            "labelAttrs": {
+                              "style": {
+                                "width": "7rem",
+                                "fontSize": ".8rem",
+                                "verticalAlign": "middle"
+                              }
+                            },
+                            "style": {
+                              "fontSize": ".8rem",
+                              "line-height": "1.2",
+                              "verticalAlign": "middle"
+                            }
+                          }
+                        },
+                        {
+                          "field": {
+                            "binding": "values.units",
+                            "type": "span",
+                            "cssClass": "picSpinner-units picUnits"
+                          }
+                        }
+                      ]
+                    },
                     {
                       "field": {
                         "type": "staticField",

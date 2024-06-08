@@ -10,7 +10,8 @@
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
             var tabs = $('<div class="picTabPanel"></div>');
-            el.addClass('config-gpio')
+            el.addClass('config-gpio');
+            el.css({ position: 'relative'});
             $.getLocalService('/config/options/gpio', null, function (data, status, xhr) {
                 console.log(data);
                 // Let's draw the gpio headers.

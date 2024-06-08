@@ -1290,6 +1290,8 @@ export class GpioPin extends ConfigItem {
     }
     public get id(): number { return this.data.id; }
     public set id(val: number) { this.setDataVal('id', val); }
+    public get chipId(): number { return this.data.chipId || 0; }
+    public set chipId(val: number) { this.setDataVal('chipId', val); }
     public get isActive(): boolean { return utils.makeBool(this.data.isActive); }
     public set isActive(val: boolean) { this.setDataVal('isActive', val); }
     public get headerId(): number { return this.data.headerId; }
