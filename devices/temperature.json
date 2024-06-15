@@ -842,8 +842,8 @@
       "name": "10k Temperature Probe",
       "input": "ohms",
       "precision": 2,
-      "deviceClass": "GenericDeviceBase",
-      "module": "./genericDevices",
+      "deviceClass": "Thermistor10k",
+      "module": "./Temperature",
       "convertValue": "device.values.inputUnits = device.options.inputType === 'raw' ? '' : device.options.inputType === 'volt' ? 'volts' : device.options.inputResistanceUnits === 1000 ? 'kOhms': 'ohms'; device.values.units = device.options.units; device.values.maxVal = (device.options.inputType === 'raw') ? (1 << device.options.inputBitness) : device.options.inputType === 'volt' ? device.options.vccRef : 10000; device.values.resistance = (device.options.inputType === 'ohms') ? device.values.adcValue * device.options.inputResistanceUnits : (10000 * device.values.adcValue) / (device.values.maxVal - device.values.adcValue); device.values.temperature = (Math.round(maps.thermistor10k.interpolate(device.values.resistance, device.values.units || 'F') * 100)/100) + (device.options.calibration || 0);",
       "inputs": [
         {
@@ -1328,6 +1328,76 @@
                       }
                     }
                   ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "type": "fieldset",
+                "legend": "Calculation",
+                "cssClass": "pnl-calculation"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "pickList",
+                    "labelText": "",
+                    "binding": "options.calcType",
+                    "value": "interpolate",
+                    "required": true,
+                    "canEdit": false,
+                    "inputAttrs": {
+                      "style": {
+                        "width": "12rem"
+                      }
+                    },
+                    "labelAttrs": {
+                      "style": {
+                        "hidden": true,
+                        "width": "0rem"
+                      }
+                    },
+                    "style": {
+                      "display": "block"
+                    },
+                    "columns": [
+                      {
+                        "binding": "val",
+                        "hidden": true,
+                        "text": "Val",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      },
+                      {
+                        "binding": "name",
+                        "text": "Type",
+                        "hidden":  true,
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      },
+                      {
+                        "binding": "desc",
+                        "text": "Method",
+                        "style": {
+                          "whiteSpace": "nowrap"
+                        }
+                      }
+                    ],
+                    "items": [
+                      {
+                        "val": "interpolate",
+                        "name": "10k thermistor table",
+                        "desc": "10k thermistor table"
+                      },
+                      {
+                        "val": "shart",
+                        "name": "Steinhart-Hart Equation",
+                        "desc": "Steinhart-Hart Equation"
+                      }
+                    ]
+                  }
                 }
               ]
             },

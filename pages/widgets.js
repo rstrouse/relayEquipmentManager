@@ -601,14 +601,19 @@ var dataBinder = {
         if (typeof val === 'number') return val;
         else if (typeof val === 'undefined' || val === null) return;
         else if (typeof val.getTime === 'function') return val.getTime();
-        var tval = val.replace(/[^0-9\.\-]+/g, '');
-        var v;
-        if (tval.indexOf('.') !== -1) {
-            v = parseFloat(tval);
-            v = v.round(tval.length - tval.indexOf('.'));
+        try {
+            var tval = val.replace(/[^0-9\.\-]+/g, '');
+            var v;
+            if (tval.indexOf('.') !== -1) {
+                v = parseFloat(tval);
+                v = v.round(tval.length - tval.indexOf('.'));
+            }
+            else v = parseInt(tval, 10);
+            return v;
+        } catch (err) {
+            console.log({ msg: 'Error parsing number', val: val, err: err });
+            return NaN;
         }
-        else v = parseInt(tval, 10);
-        return v;
     },
     formatDuration: function (dur) {
         var fmt = '';

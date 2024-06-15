@@ -233,6 +233,11 @@ export class Utils {
                 let tK = (beta * rtemp) / (beta + (rtemp * Math.log(resistance / ref)));
                 return this.convert.temperature.convertUnits(tK, 'k', units);
             },
+            shart3: (resistance: number, sA: number, sB: number, sC: number, units:string): number => {
+                let rlog = Math.log(resistance);
+                let tK = 1 / (sA + sB * rlog + sC * rlog * rlog * rlog);
+                return this.convert.temperature.convertUnits(tK, 'k', units);
+            },
             convertUnits: (val: number, from: string, to: string) => {
                 if (typeof val !== 'number') return null;
                 let fn = this.convert.temperature[from.toLowerCase()];
