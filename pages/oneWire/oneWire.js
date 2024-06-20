@@ -116,6 +116,9 @@
                     console.log(`Adding device name ${dev.address} - ${dev.name || 'Unknown'}`);
                     addrs.push({ address: dev.address, id: dev.id, manufacturer: 0, product: 0, name: dev.name || 'Unknown' });
                 }
+                else {
+                    if (addr.name === addr.address) addr.name = dev.name;
+                }
             }
             addrs.sort((a, b) => { return a.address - b.address });
             el.find('div#oneWireAddresses').each(function () {
