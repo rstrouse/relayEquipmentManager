@@ -148,6 +148,7 @@ export class SequentIO extends i2cDeviceBase {
     }
     protected unpackRS485Port(buff: Buffer): { baud: number, mode: number, parity: number, stopBits: number, address: number } {
         let port = { baud: 0, mode: 0, parity: 0, stopBits: 0, address: 0 };
+        console.log(buff);
         port.baud = buff.readUInt8(0) << 16 | buff.readUInt8(1) << 8 | buff.readUInt8(2);
         let bits = buff.readUInt8(3);
         port.mode = (bits & 0xF0) >> 4;
