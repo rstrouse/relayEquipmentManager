@@ -136,10 +136,15 @@ export class SequentIO extends i2cDeviceBase {
     }
     protected packRS485Port(port): Buffer {
         let buffer = Buffer.from([0, 0, 0, 0, 0]);
-        buffer.writeUInt8((port.baud & 0x0F0000) >> 16, 0);
+        buffer.writeUInt8((port.baud & 0x0000FF), 0);
         buffer.writeUInt8((port.baud & 0x00FF00) >> 8, 1);
-        buffer.writeUInt8((port.baud & 0x0000FF), 2);
-        buffer.writeUInt8(((port.mode & 0x0F) << 4) | ((port.parity & 0x03) << 2) | (port.stopBits & 0x03), 3);
+        buffer.writeUInt8((port.baud & 0x0F0000) >> 16, 2);
+        buffer.writeUInt8((port.mode & 0x0F) | ((port.stopBits & 0x03) << 6) | ((port.parity & 0x03) << 4), 3);
+            //<Buffer 80 25 00 40 01 >
+            //<mode> <baudrate> <stopbits> <parity> <add> 0 9600 1 0 1
+            //<Buffer 80 25 00 41 01>
+            //<mode><baudrate><stopbits><parity><add>1 9600 1 0 1            
+        //buffer.writeUInt8((port.mode & 0x0F) | ((port.parity & 0x03) << 2) | (port.stopBits & 0x03) << 4, 3);
         //buffer.writeUInt16LE(port.baud & 0x00FFFF, 0);
         //buffer.writeUInt8((port.baud & 0xFF00000) >> 24, 2);
         //buffer.writeUInt8(((port.stopBits & 0x0F) << 6) + ((port.parity & 0x0F) << 4) + (port.mode & 0xFF), 3);
@@ -149,11 +154,11 @@ export class SequentIO extends i2cDeviceBase {
     protected unpackRS485Port(buff: Buffer): { baud: number, mode: number, parity: number, stopBits: number, address: number } {
         let port = { baud: 0, mode: 0, parity: 0, stopBits: 0, address: 0 };
         console.log(buff);
-        port.baud = buff.readUInt8(0) << 16 | buff.readUInt8(1) << 8 | buff.readUInt8(2);
+        port.baud = buff.readUInt8(2) << 16 | buff.readUInt8(1) << 8 | buff.readUInt8(0);
         let bits = buff.readUInt8(3);
-        port.mode = (bits & 0xF0) >> 4;
-        port.parity = (bits & 0x30) >> 2;
-        port.stopBits = (bits & 0x03);
+        port.mode = (bits & 0x0F);
+        port.parity = (bits >> 4) & 0x30;
+        port.stopBits = (bits >> 6) & 0x03;
         port.address = buff.readUInt8(4);
         console.log(port);
         return port;
