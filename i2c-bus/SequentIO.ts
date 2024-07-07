@@ -136,11 +136,26 @@ export class SequentIO extends i2cDeviceBase {
     }
     protected packRS485Port(port): Buffer {
         let buffer = Buffer.from([0, 0, 0, 0, 0]);
-        buffer.writeUInt16LE(port.baud & 0x00FFFF, 0);
-        buffer.writeUInt8((port.baud & 0xFF00000) >> 24, 2);
-        buffer.writeUInt8(((port.stopBits & 0x0F) << 6) + ((port.parity & 0x0F) << 4) + (port.mode & 0xFF), 3);
+        buffer.writeUInt8((port.baud & 0x0F0000) >> 16, 0);
+        buffer.writeUInt8((port.baud & 0x00FF00) >> 8, 1);
+        buffer.writeUInt8((port.baud & 0x0000FF), 2);
+        buffer.writeUInt8(((port.mode & 0x0F) << 4) | ((port.parity & 0x03) << 2) | (port.stopBits & 0x03), 3);
+        //buffer.writeUInt16LE(port.baud & 0x00FFFF, 0);
+        //buffer.writeUInt8((port.baud & 0xFF00000) >> 24, 2);
+        //buffer.writeUInt8(((port.stopBits & 0x0F) << 6) + ((port.parity & 0x0F) << 4) + (port.mode & 0xFF), 3);
         buffer.writeUInt8(port.address, 4);
         return buffer
+    }
+    protected unpackRS485Port(buff: Buffer): { baud: number, mode: number, parity: number, stopBits: number, address: number } {
+        let port = { baud: 0, mode: 0, parity: 0, stopBits: 0, address: 0 };
+        port.baud = buff.readUInt8(0) << 16 | buff.readUInt8(1) << 8 | buff.readUInt8(2);
+        let bits = buff.readUInt8(3);
+        port.mode = (bits & 0xF0) >> 4;
+        port.parity = (bits & 0x30) >> 2;
+        port.stopBits = (bits & 0x03);
+        port.address = buff.readUInt8(4);
+        console.log(port);
+        return port;
     }
     protected async getRS485Port() {
         try {
@@ -166,12 +181,18 @@ export class SequentIO extends i2cDeviceBase {
             //    unsigned int mbStopB: 2;
             //    unsigned int add: 8;
             //} ModbusSetingsType;
-            this.rs485.baud = ret.buffer.readUInt16LE(0) + (ret.buffer.readUInt8(2) << 24);
-            let byte = ret.buffer.readUInt8(3);
-            this.rs485.mode = byte & 0x0F;
-            this.rs485.parity = (byte & 0x30) >> 4;
-            this.rs485.stopBits = (byte & 0xC0) >> 6;
-            this.rs485.address = ret.buffer.readUInt8(4);
+            let port = this.unpackRS485Port(ret.buffer);
+            this.rs485.baud = port.baud;
+            this.rs485.mode = port.mode;
+            this.rs485.parity = port.parity;
+            this.rs485.stopBits = port.stopBits;
+            this.rs485.address = port.address;
+            //this.rs485.baud = ret.buffer.readUInt16LE(0) + (ret.buffer.readUInt8(2) << 24);
+            //let byte = ret.buffer.readUInt8(3);
+            //this.rs485.mode = byte & 0x0F;
+            //this.rs485.parity = (byte & 0x30) >> 4;
+            //this.rs485.stopBits = (byte & 0xC0) >> 6;
+            //this.rs485.address = ret.buffer.readUInt8(4);
         } catch (err) { logger.error(`${this.device.name} error getting RS485 port settings: ${err.message}`); }
     }
     protected async setRS485Port(port) {
@@ -195,6 +216,7 @@ export class SequentIO extends i2cDeviceBase {
             // Now we have to put together a buffer.  Just use brute force packing no need for a library.
             let buffer = this.packRS485Port(p);
             if (!this.i2c.isMock) await this.i2c.writeI2cBlock(this.device.address, this.regs.rs485Settings, 5, buffer);
+            else console.log(buffer);
             this.rs485.mode = p.mode;
             this.rs485.baud = p.baud;
             this.rs485.stopBits = p.stopBits;
