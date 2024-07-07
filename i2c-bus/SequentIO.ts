@@ -1044,7 +1044,7 @@ export class SequentMegaBAS extends SequentIO {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
-            if (typeof opts.rs485 !== 'undefined' && this.checkDiff(this.rs485, opts.rs485)) this.setRS485Port(opts.rs485);
+            if (typeof opts.rs485 !== 'undefined' && this.checkDiff(this.rs485, opts.rs485)) await this.setRS485Port(opts.rs485);
             return Promise.resolve(this.options);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
