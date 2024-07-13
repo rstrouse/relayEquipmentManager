@@ -10,6 +10,8 @@ import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";
 import { I2cDevice, DeviceBinding } from "../boards/Controller";
 import { LatchTimers } from "../devices/AnalogDevices";
+import * as fs from 'fs';
+
 export class SequentIO extends i2cDeviceBase {
     protected regs = {
         rs485Settings: 65,
@@ -249,6 +251,13 @@ export class SequentIO extends i2cDeviceBase {
     protected async getCpuTemp() {
         try {
             this.info.cpuTemp = (this.i2c.isMock) ? Math.round(19.0 + Math.random()) : await this.i2c.readByte(this.device.address, this.regs.cpuTemp);
+
+            if(typeof(this.info.cpuTemp) === 'undefined' || this.info.cpuTemp <= 0) {
+                if (fs.existsSync('/sys/class/thermal/thermal_zone0/temp')) {
+                    let buffer = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp');
+                    this.info.cpuTemp = (parseInt(buffer.toString().trim(), 10) / 1000);
+                }
+            }
         } catch (err) { logger.error(`${this.device.name} error getting cpu temp: ${err.message}`); }
     }
     protected async getSourceVolts() {
