@@ -1349,22 +1349,22 @@ export class Sequent4RelIND extends SequentIO {
             }
             return vals;
         }
-        else if (p.startsWith('indigital')) {
-            let ord = parseInt(p.substring(8), 10);
-            if (!isNaN(ord) && this.inDigital.length > ord) {
-                logger.verbose(`Get Digital Input Value ${this.relays[ord - 1].state}`)
-                return this.inDigital[ord - 1].value;
-            }
-            else {
-                logger.error(`Error getting ${this.device.name} digital input value for ${prop}`);
-            }
-        }
         else if (p === 'relayvalall') {
             let vals = [];
             for (let i = 0; i < this.relays.length; i++) {
                 vals.push(this.relays[i].state);
             }
             return vals;
+        }
+        else if (p.startsWith('indigital')) {
+            let ord = parseInt(p.substring(9), 10);
+            if (!isNaN(ord) && this.inDigital.length > ord) {
+                logger.verbose(`Get Digital Input Value ${this.inDigital[ord - 1].value}`);
+                return this.inDigital[ord - 1].value;
+            }
+            else {
+                logger.error(`Error getting ${this.device.name} digital input value for ${prop}`);
+            }
         }
         else if (p.startsWith('relayval')) {
             let ord = parseInt(p.substring(8), 10);
@@ -1833,16 +1833,6 @@ export class Sequent4Rel4In extends SequentIO {
             }
             return vals;
         }
-        else if (p.startsWith('indigital')) {
-            let ord = parseInt(p.substring(8), 10);
-            if (!isNaN(ord) && this.inDigital.length > ord) {
-                logger.verbose(`Get Digital Input Value ${this.relays[ord - 1].state}`)
-                return this.inDigital[ord - 1].value;
-            }
-            else {
-                logger.error(`Error getting ${this.device.name} digital input value for ${prop}`);
-            }
-        }
         else if (p === 'relayvalall') {
             let vals = [];
             for (let i = 0; i < this.relays.length; i++) {
@@ -1850,27 +1840,28 @@ export class Sequent4Rel4In extends SequentIO {
             }
             return vals;
         }
-        else if (p.startsWith('relayval')) {
-            let ord = parseInt(p.substring(8), 10);
-            if (!isNaN(ord) && this.relays.length > ord) {
-                logger.verbose(`Get Relay Value ${this.relays[ord - 1].state}`)
-                return this.relays[ord - 1].state;
+        else {
+            let iarr;
+            if (p.startsWith('indigital')) iarr = this.inDigital;
+            else if (p.startsWith('relay')) iarr = this.relays;
+            if (typeof iarr === 'undefined') {
+                logger.error(`${this.device.name} error getting I/O channel ${prop}`);
+                return;
             }
-            else {
-                logger.error(`Error getting ${this.device.name} relay value for ${prop}`);
+            if (p.includes('relay.') || p.includes('digital.')) { p = p.replace('.', ''); } // If the prop gets sent in as [channeltype].x convert back to [channeltype][ord] format.
+            let parr = p.split('.');
+            let sord = p[parr[0].length - 1];
+            let ord = parseInt(sord, 10);
+            if (isNaN(ord) || (p.startsWith('in') && (ord <= 0 || ord >= 9)) || (p.startsWith('out') && (ord <= 0 || ord >= 5))) {
+                logger.error(`${this.device.name} error getting I/O ${prop} channel ${sord} out of range.`);
+                return;
             }
+            let chan = iarr[ord - 1];
+            // In order to retain parity with the multi-relay types we need to look for the relayval and relayobj
+            // values.
+            if (p.startsWith('relayval')) chan = chan.state;
+            return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
         }
-        else if (p.startsWith('relayobj')) {
-            let ord = parseInt(p.substring(8), 10);
-            if (!isNaN(ord) && this.relays.length > ord) {
-                return this.relays[ord - 1];
-            }
-            else {
-                logger.error(`Error getting ${this.device.name} relay object for ${prop}`);
-            }
-        }
-        else
-            logger.error(`Error getting ${this.device.name} value for ${prop}`);
         return;
     }
 
@@ -2555,11 +2546,12 @@ export class SequentHomeAuto extends SequentIO {
                 else if (p.startsWith('in0_10')) iarr = this.in0_10;
                 else if (p.startsWith('outdrain')) iarr = this.outDrain;
                 else if (p.startsWith('inanalog')) iarr = this.inAnalog;
+                else if (p.startsWith('relay')) iarr = this.relays;
                 if (typeof iarr === 'undefined') {
                     logger.error(`${this.device.name} error getting I/O channel ${prop}`);
                     return;
                 }
-                if (p.includes('0_10.') || p.includes('analog.')) { p = p.replace('.', ''); } // If the prop gets sent in as in0_10.x or inAnalog.x convert back to in0_108 format.
+                if (p.includes('0_10.') || p.includes('analog.') || p.includes('relay.')) { p = p.replace('.', ''); } // If the prop gets sent in as in0_10.x or inAnalog.x convert back to in0_108 format.
                 let parr = p.split('.');
                 let sord = p[parr[0].length - 1];
                 let ord = parseInt(sord, 10);
@@ -2568,6 +2560,9 @@ export class SequentHomeAuto extends SequentIO {
                     return;
                 }
                 let chan = iarr[ord - 1];
+                // In order to retain parity with the multi-relay types we need to look for the relayval and relayobj
+                // values.
+                if (p.startsWith('relayval')) chan = chan.state;
                 return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
         }
     }
