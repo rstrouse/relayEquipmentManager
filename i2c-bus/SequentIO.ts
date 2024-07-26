@@ -2406,11 +2406,11 @@ export class SequentHomeAuto extends SequentIO {
                 let input = this.inAnalog[i];
                 if (this.inAnalog[i].enabled) {
                     // Read the registers.
-                    let volts = await this.readWord(regV.reg) / 1000;
+                    let volts = (this.i2c.isMock) ? 3.3 * Math.random() : await this.readWord(regV.reg + (i * 2)) / 1000;
                     if (volts !== input.value) changed = true;
                     if (changed) {
                         input.value = volts;
-                        input.raw = await this.readWord(regR.reg);
+                        input.raw = (this.i2c.isMock) ? Math.round((1 << 12) * (volts / 3.3)) : await this.readWord(regR.reg + (i * 2));
                         webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inAnalog: [input] } } });
                     }
                 }
@@ -2554,13 +2554,13 @@ export class SequentHomeAuto extends SequentIO {
                 if (p.startsWith('out0_10')) iarr = this.out0_10;
                 else if (p.startsWith('in0_10')) iarr = this.in0_10;
                 else if (p.startsWith('outdrain')) iarr = this.outDrain;
+                else if (p.startsWith('inanalog')) iarr = this.inAnalog;
                 if (typeof iarr === 'undefined') {
                     logger.error(`${this.device.name} error getting I/O channel ${prop}`);
                     return;
                 }
-                if (p.includes('0_10.')) { p = p.replace('.', ''); } // If the prop gets sent in as in0_10.x convert back to in0_108 format.
+                if (p.includes('0_10.') || p.includes('analog.')) { p = p.replace('.', ''); } // If the prop gets sent in as in0_10.x or inAnalog.x convert back to in0_108 format.
                 let parr = p.split('.');
-
                 let sord = p[parr[0].length - 1];
                 let ord = parseInt(sord, 10);
                 if (isNaN(ord) || (p.startsWith('in') && (ord <= 0 || ord >= 9)) || (p.startsWith('out') && (ord <= 0 || ord >= 5))) {

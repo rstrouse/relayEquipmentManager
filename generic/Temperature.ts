@@ -19,6 +19,7 @@ export class Thermistor10k extends GenericDeviceBase {
                     case 'number':
                         if (typeof value.value !== 'undefined') val = value.value;
                         else if (typeof value.adcValue !== 'undefined') val = value.adcValue;
+                        break;
 
                 }
             }
@@ -47,6 +48,10 @@ export class Thermistor10k extends GenericDeviceBase {
             case 'kohms':
                 device.values.resistance = (10000 * device.values.adcValue) / (device.values.maxVal - device.values.adcValue);
                 break;
+            case 'raw':
+                device.values.resistance = 10000 * (device.values.adcValue / (device.values.maxVal - device.values.adcValue));
+                break;
+
         }
         switch (device.options.calcType) {
             case 'shart':

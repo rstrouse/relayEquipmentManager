@@ -2515,7 +2515,7 @@
       "hasChangeAddress": false,
       "readings": {
         "out0_10": {
-          "label": "0-10mA output",
+          "label": "0-10v output",
           "interval": {
             "min": 2000,
             "max": 99000,
@@ -2603,7 +2603,129 @@
           "name": "inDigital4.value",
           "desc": "Digital in #4 state",
           "maxSamples": 50
+        },
+        {
+          "name": "inAnalog1",
+          "desc": "Analog in #1",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog2",
+          "desc": "Analog in #2",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog3",
+          "desc": "Analog in #3",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog4",
+          "desc": "Analog in #4",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog5",
+          "desc": "Analog in #5",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog6",
+          "desc": "Analog in #6",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog7",
+          "desc": "Analog in #7",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog8",
+          "desc": "Analog in #8",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog1.value",
+          "desc": "Analog in #1 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog2.value",
+          "desc": "Analog in #2 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog3.value",
+          "desc": "Analog in #3 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog4.value",
+          "desc": "Analog in #4 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog5.value",
+          "desc": "Analog in #5 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog6.value",
+          "desc": "Analog in #6 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog7.value",
+          "desc": "Analog in #7 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog8.value",
+          "desc": "Analog in #8 voltage",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog1.raw",
+          "desc": "Analog in #1 raw ADC",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog2.raw",
+          "desc": "Analog in #2 raw ADC",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog3.raw",
+          "desc": "Analog in #3 raw ADC",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog4.raw",
+          "desc": "Analog in #4 raw ADC",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog5.raw",
+          "desc": "Analog in #5 raw ADC",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog6.raw",
+          "desc": "Analog in #6 raw ADC",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog7.raw",
+          "desc": "Analog in #7 raw ADC",
+          "maxSamples": 50
+        },
+        {
+          "name": "inAnalog8.raw",
+          "desc": "Analog in #8 raw ADC",
+          "maxSamples": 50
         }
+
+
       ],
       "inputs": [
         {
