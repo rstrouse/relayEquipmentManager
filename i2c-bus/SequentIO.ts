@@ -2242,7 +2242,7 @@ export class SequentHomeAuto extends SequentIO {
             this.relays.sort((a, b) => { return a.id - b.id; });
             // Not sure why but the Sequent command line code retries 10 times if it does not get the relay set.
             while (tries++ < 10 && byte != (reg.value & 0xff)) {
-                if (!this.i2c.isMock) await this.sendCommand([this.registers.setRelay.reg, byte]);
+                if (!this.i2c.isMock) await this.sendCommand([this.registers.relayVal.reg, byte]);
                 else reg.value = byte;
                 for (let i = 0; i < this.relays.length; i++) {
                     let r = this.relays[i];
@@ -2416,7 +2416,7 @@ export class SequentHomeAuto extends SequentIO {
             let reg = this.info.registers.find(elem => elem.register === this.registers.relayVal.reg);
             let val = (this.i2c.isMock) ? reg.value : await this.readCommand(reg.register);
             if (this.hasFault) val = 0xff;
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 8; i++) {
                 // Read the relay.
                 let relay = this.relays[i];
                 if (relay.enabled) {
