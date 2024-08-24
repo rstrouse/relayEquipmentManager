@@ -2073,7 +2073,7 @@ export class SequentHomeAuto extends SequentIO {
         gpioDir: { reg: 0x07, name: 'GPIO_DIR', desc: 'GPIO Direction', r: true, w: false },
 
         analogValue: { reg: 0x08, name: 'ADC_RAW', desc: 'Analog Raw', r: true, w: false, size: 16 },
-        analogVoltage: { reg: 0x1E, name: 'ADC_MV', desc: 'Analog Millivolts', r: true, w: false, size: 16 },
+        analogVoltage: { reg: 0x18, name: 'ADC_MV', desc: 'Analog Millivolts', r: true, w: false, size: 16 },
         dacValue: { reg: 0x34, name: 'DAC_VAL', desc: 'DAC Value', r: true, w: false, size: 8 },
         pwmValue: { reg: 0x3C, name: 'PWM_VAL', desc: 'PWM Value', r: true, w: false, size: 8 },
         risingEdge: { reg: 0x3D, name: 'RISING_EDGE', desc: 'Rising Edge Enable', r: true, w: true },
@@ -2242,7 +2242,7 @@ export class SequentHomeAuto extends SequentIO {
             this.relays.sort((a, b) => { return a.id - b.id; });
             // Not sure why but the Sequent command line code retries 10 times if it does not get the relay set.
             while (tries++ < 10 && byte != (reg.value & 0xff)) {
-                if (!this.i2c.isMock) await this.sendCommand([this.registers.setRelay.reg, byte]);
+                if (!this.i2c.isMock) await this.sendCommand([this.registers.relayVal.reg, byte]);
                 else reg.value = byte;
                 for (let i = 0; i < this.relays.length; i++) {
                     let r = this.relays[i];
@@ -2397,11 +2397,11 @@ export class SequentHomeAuto extends SequentIO {
                 let input = this.inAnalog[i];
                 if (this.inAnalog[i].enabled) {
                     // Read the registers.
-                    let volts = (this.i2c.isMock) ? 3.3 * Math.random() : await this.readWord(regV.reg + (i * 2)) / 1000;
+                    let volts = (this.i2c.isMock) ? 3.3 * Math.random() : await this.readWord(regV.register + (i * 2)) / 1000;
                     if (volts !== input.value) changed = true;
                     if (changed) {
                         input.value = volts;
-                        input.raw = (this.i2c.isMock) ? Math.round((1 << 12) * (volts / 3.3)) : await this.readWord(regR.reg + (i * 2));
+                        input.raw = (this.i2c.isMock) ? Math.round((1 << 12) * (volts / 3.3)) : await this.readWord(regR.register + (i * 2));
                         webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, values: { inputs: { inAnalog: [input] } } });
                     }
                 }
@@ -2416,7 +2416,7 @@ export class SequentHomeAuto extends SequentIO {
             let reg = this.info.registers.find(elem => elem.register === this.registers.relayVal.reg);
             let val = (this.i2c.isMock) ? reg.value : await this.readCommand(reg.register);
             if (this.hasFault) val = 0xff;
-            for (let i = 0; i < 4; i++) {
+            for (let i = 0; i < 8; i++) {
                 // Read the relay.
                 let relay = this.relays[i];
                 if (relay.enabled) {

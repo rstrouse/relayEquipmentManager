@@ -49,9 +49,9 @@ export class Thermistor10k extends GenericDeviceBase {
                 device.values.resistance = (10000 * device.values.adcValue) / (device.values.maxVal - device.values.adcValue);
                 break;
             case 'raw':
+            case 'volt':
                 device.values.resistance = 10000 * (device.values.adcValue / (device.values.maxVal - device.values.adcValue));
                 break;
-
         }
         switch (device.options.calcType) {
             case 'shart':
