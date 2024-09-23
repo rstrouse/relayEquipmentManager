@@ -87,7 +87,7 @@ export class OneWireTemperature extends OneWireDeviceBase {
             if (typeof opts.calibration !== this.options.calibration) this.options.calibration = opts.calibration;
             if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
             this.options.readInterval = Math.max(1000, this.options.readInterval);
-            if (typeof opts.units !== 'undefined' && this.options.units !== opts.units) this.setUnits(opts.units);
+            if (typeof opts.units !== 'undefined' && this.options.units !== opts.units) await this.setUnits(opts.units);
             // RSG - need to figure out permissions to make this work.
             try {
 
@@ -99,10 +99,10 @@ export class OneWireTemperature extends OneWireDeviceBase {
             // RSG - need to figure out permissions to make this work.
             try {
                 if (typeof opts.alarmLow !== 'undefined' && typeof opts.alarmHigh !== 'undefined' && opts.alarmLow !== this.options.alarmLow || opts.alarmHigh !== this.options.alarmHigh) {
-                    await this.setAlarms(`${opts.alarmLow} ${opts.alarmHigh}`)
+                    await this.setAlarms(opts.alarmLow, opts.alarmHigh)
                 }
             }
-            catch (err) { logger.error(`${this.device.name} - EXPECTED - cannot set resolution.  ${err}`) }
+            catch (err) { throw(err)}
             return Promise.resolve(this);
         }
         catch (err) {
@@ -141,17 +141,20 @@ export class OneWireTemperature extends OneWireDeviceBase {
     public async alarmSearch() {
         // to implement; is an alarm triggered?
     }
-    protected async setAlarms(val: string) {
+    protected async setAlarms(alarmLow: number, alarmHigh: number) {
         try {
             let lowLimit = Math.round(utils.convert.temperature.convertUnits(-100, 'C', this.values.units));
             let highLimit = Math.round(utils.convert.temperature.convertUnits(100, 'C', this.values.units));
-            let alarms = val.split(' ').map(el => utils.convert.temperature.convertUnits(parseInt(el, 10), this.values.units, 'C'));
-            if (isNaN(alarms[0]) || isNaN(alarms[1]) || alarms[0] < lowLimit || alarms[0] > highLimit || alarms[1] < lowLimit || alarms[1] > highLimit && alarms[0] < alarms[1]) return Promise.reject(`${this.device.name} alarms must be between ${lowLimit} and ${highLimit}.  Value provided: ${val}`);
+            // let alarms = alarmLow.split(' ').map(el => utils.convert.temperature.convertUnits(parseInt(el, 10), this.values.units, 'C'));
+            let alarmLowC = utils.convert.temperature.convertUnits(alarmLow, this.values.units, 'C');
+            let alarmHighC = utils.convert.temperature.convertUnits(alarmHigh, this.values.units, 'C');
+            if (isNaN(alarmLowC) || isNaN(alarmHighC) || alarmLowC < lowLimit || alarmLowC > highLimit || alarmHighC < lowLimit || alarmHighC > highLimit && alarmLowC < alarmHighC) return Promise.reject(`${this.device.name} alarms must be between ${lowLimit} and ${highLimit} celsius.  Value provided: ${alarmLow} and ${alarmHigh}`);
             if (Controller.isMock()) {
-                this.options.resolution = val;
+                this.options.alarmLow = alarmLow;
+                this.options.alarmHigh = alarmHigh;
             }
             else {
-                await this.writeFile(`alarms`, val);
+                await this.writeFile(`alarms`, `${alarmLowC} ${alarmHighC}`);
                 await this.getAlarms();
             }
 
@@ -209,7 +212,7 @@ export class OneWireTemperature extends OneWireDeviceBase {
 
         } catch (err) { return Promise.reject(err); }
     }
-    public setUnits(value: string): Promise<boolean> {
+    public async setUnits(value: string): Promise<boolean> {
         try {
             if (!['C', 'F', 'K'].includes(value.toUpperCase())) return Promise.reject(new Error(`Cannot set units to ${value}`));
             let prevUnits = this.values.units || 'C';
@@ -217,9 +220,10 @@ export class OneWireTemperature extends OneWireDeviceBase {
             this.values.temp = utils.convert.temperature.convertUnits(this.values.temp, prevUnits, this.values.units) + this.options.calibration;
             this.options.alarmLow = Math.round(utils.convert.temperature.convertUnits(this.options.alarmLow, 'c', this.values.units));
             this.options.alarmHigh = Math.round(utils.convert.temperature.convertUnits(this.options.alarmHigh, 'c', this.values.units));
+            await this.setAlarms(this.options.alarmLow, this.options.alarmHigh);
             webApp.emitToClients('oneWireDataValues', { id: this.device.id, typeId: this.device.typeId, values: this.values });
         }
-        catch (err) { this.logError(err); }
+        catch (err) { this.logError(err); return Promise.reject(err); }
     }
 
     protected pollDeviceInformation() {
