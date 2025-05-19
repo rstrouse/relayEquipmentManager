@@ -2105,6 +2105,8 @@ export class SequentHomeAuto extends SequentIO {
 
         hwVerMajor: { reg: 0x78, name: 'HW_VER_MAJOR', desc: 'Hardware Version Major', r: true, w: false },
         hwVerMinor: { reg: 0x79, name: 'HW_VER_MINOR', desc: 'Hardware Version Minor', r: true, w: false },
+        fwRevMajor: { reg: 0x7A, name: 'REV_MAJ', desc: 'Revision Major', r: true, w: false },
+        fwRevMinor: { reg: 0x7B, name: 'REV_MIN', desc: 'Revision Minor', r: true, w: false },        
         fwVerMajor: { reg: 0x80, name: 'FW_VER_MAJOR', desc: 'Firmware Version Major', r: true, w: false },
         fwVerMinor: { reg: 0x81, name: 'FW_VER_MINOR', desc: 'Firmware Version Minor', r: true, w: false },
         fifoSize: { reg: 0x82, name: 'FIFO_SIZE', desc: 'Debug FIFO Size', r: true, w: false, size: 2 },
@@ -2116,12 +2118,13 @@ export class SequentHomeAuto extends SequentIO {
         optoEncCount: { reg: 0xB3, name: 'OPTO_ENC_COUNT', desc: 'Opto Encoder Count', r: true, w: false, size: 8 },
         gpioEncCount: { reg: 0xBB, name: 'GPIO_ENC_COUNT', desc: 'GPIO Encoder Count', r: true, w: false, size: 8 },
         owDevice: { reg: 0xC4, name: 'OW_DEVICE', desc: 'One-wire Device', r: true, w: false },
-        owRomCode: { reg: 0xC5, name: 'OW_ROM_CODE', desc: 'One-wire ROM Code', r: true, w: false, size: 64 },
+        owRomCode: { reg: 0xC5, name: 'OW_ROM_CODE', desc: 'One-wire ROM Code', r: true, w: false, size: 8 },
         owStart: { reg: 0xCD, name: 'OW_SEARCH_START', desc: 'One-wire Search Start', r: true, w: false },
         owT1: { reg: 0xCE, name: 'OW_T1', desc: 'One-wire T1', r: true, w: false },
         owT16: { reg: 0xCD, name: 'OW_T16', desc: 'One-wire T16', r: true, w: false },
         slaveBuffSize: { reg: 0xED, name: 'SLAVE_BUFF_SIZE', desc: 'Slave Buffer Size', r: true, w: false }
     }
+    protected latches = new LatchTimers();    
     protected async sendCommand(command: number[]): Promise<{ bytesWritten: number, buffer: Buffer }> {
         try {
             let buffer = Buffer.from(command);
@@ -2155,14 +2158,13 @@ export class SequentHomeAuto extends SequentIO {
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN Digital', 'DIN', this.inDigital, 8);
             this.ensureIOChannels('IN Analog', 'AIN', this.inAnalog, 8);
-            this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 4);
             this.ensureIOChannels('OUT 0-10', 'AOUT', this.out0_10, 4);
             this.ensureIOChannels('OUT Open Drain', 'ODOUT', this.outDrain, 4);
             this.ensureRelays('Relay', this.relays, 8);
             await this.initRegisters();
             await this.getHwFwVer();
-            //await this.initRelayStates();
-            return true;
+            await this.initRelayStates();
+            return Promise.resolve(true)
         }
         catch (err) { this.logError(err); return Promise.resolve(false); }
         finally {
@@ -2238,8 +2240,16 @@ export class SequentHomeAuto extends SequentIO {
             // We need only the upper nibble of this byte.  So set the lower nibble to 0.  These are input values.
             let byte = states & 0xff;
             let tries = 0;
-            let reg = this.info.registers.find(elem => elem.register === this.registers.relayVal.reg) || { name: 'RELAY_VAL', reg: 0x00, desc: 'Relay Value', value: 0 };
+            let reg = this.info.registers.find(elem => elem.register === this.registers.relayVal.reg) || { 
+                name: 'RELAY_VAL',
+                code: "relayVal", 
+                reg: 0x00, 
+                desc: 'Relay Value',
+                size: 1, 
+                value: 0 
+            };
             this.relays.sort((a, b) => { return a.id - b.id; });
+            let origState = reg.value;
             // Not sure why but the Sequent command line code retries 10 times if it does not get the relay set.
             while (tries++ < 10 && byte != (reg.value & 0xff)) {
                 if (!this.i2c.isMock) await this.sendCommand([this.registers.relayVal.reg, byte]);
@@ -2256,6 +2266,9 @@ export class SequentHomeAuto extends SequentIO {
                 if (tries > 1) logger.warn(`Retry #${tries - 1} setting relay states ${this.device.name} expected ${byte} but got ${reg.value & 0xf0}`);
             }
             if ((reg.value & 0xff) !== byte && !this.i2c.isMock) logger.error(`Error setting relay states ${this.device.name} register did not echo ${reg.value & 0xf0} <> ${byte}`);
+            if (origState !== reg.value) {
+                webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
+            }
         }
         catch (err) { logger.error(`Error setting relay states ${this.device.name}`); }
     }
@@ -2299,15 +2312,123 @@ export class SequentHomeAuto extends SequentIO {
         }
         catch (err) { return Promise.reject(err) };
     }
-    public async getStatus(): Promise<boolean> {
+    public async getStatus(): Promise<boolean> { return true; }  
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
         try {
-            this.suspendPolling = true;
-            await this.getRaspVolts();
-            await this.getCpuTemp();
-            return true;
-        }
-        catch (err) { logger.error(`Error getting info ${typeof err !== 'undefined' ? err.message : ''}`); return Promise.reject(err); }
-        finally { this.suspendPolling = false; }
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            //i2c:${ this.i2c.busId }:${ this.device.id }: inDigital.${ i + 1 }
+            // We need to know what relay we are referring to.
+            // i2c:1:24:3
+            // i2c:1:24:inDigital:1 <= This is an example of an input we need to reject if the user is attempting to set a digital input.
+            let relayId = parseInt(bind.params[0], 10);
+            if (isNaN(relayId)) {
+                if (bind.params.length > 0 && bind.params[0].toLowerCase() === 'indigital') return Promise.reject(new Error(`setDeviceState: Inputs are read only ${bind.params[0]}`));
+                return Promise.reject(new Error(`setDeviceState: Invalid relay Id ${bind.params[0]}`));
+            }
+            let relay = this.relays.find(elem => elem.id === relayId);
+            if (typeof relay === 'undefined') return Promise.reject(new Error(`setDeviceState: Could not find relay Id ${bind.params[0]}`));
+            if (!relay.enabled) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] is not enabled.`));
+            let latch = (typeof data.latch !== 'undefined') ? parseInt(data.latch, 10) : -1;
+            if (isNaN(latch)) return Promise.reject(new Error(`setDeviceState: Relay [${relay.name}] latch data is invalid ${data.latch}.`));
+            this.latches.clearLatch(relayId);
+            let newState;
+            switch (typeof data) {
+                case 'boolean':
+                    newState = data;
+                    break;
+                case 'number':
+                    newState = data === 1 ? true : data === 0 ? false : relay.state;
+                    break;
+                case 'string':
+                    switch (data.toLowerCase()) {
+                        case 'tripped':
+                        case 'true':
+                        case 'on':
+                        case '1':
+                            newState = true;
+                        case 'untripped':
+                        case 'false':
+                        case '0':
+                        case 'off':
+                            newState = false;
+                            break;
+                    }
+                    break;
+                case 'object':
+                    if (Array.isArray(data) && data.length > 0) {
+                        this.suspendPolling = true;
+                        let nOffs = 0;
+                        let nOns = 0;
+                        // This is a sequence.
+                        // [{isOn: true, timeout: 1000}, {isOn: false, timeout: 1000}]
+                        let onDelay = relay.sequenceOnDelay || 0;
+                        let offDelay = relay.sequenceOffDelay || 0;
+                        for (let i = 0; i < data.length; i++) {
+                            let seq = data[i];
+                            let state = utils.makeBool(seq.state || seq.isOn);
+                            if (!state) nOffs++;
+                            else nOns++;
+                            await this.setRelayState({ id: relayId, state: state });
+                            //logger.info(`Sequencing relay: ${ relay.name } state: ${ state } delay: ${ seq.timeout + (state ? onDelay : offDelay) }`)
+                            if (seq.timeout) await utils.wait(seq.timeout + (state ? onDelay : offDelay));
+                            newState = state;
+                        }
+                        logger.info(`Sent a total of Ons:${nOns} and Offs:${nOffs} to relay`);
+                        this.suspendPolling = false;
+                    }
+                    else {
+                        if (typeof data.state !== 'undefined') newState = utils.makeBool(data.state);
+                        else if (typeof data.isOn !== 'undefined') newState = utils.makeBool(data.isOn);
+                        else if (typeof data.isDiverted !== 'undefined') newState = utils.makeBool(data.isDiverted);
+                        else newState = false;
+                    }
+                    break;
+                default:
+                    newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
+                    break;
+            }
+            let oldState = relay.state;
+            if (newState !== oldState) {
+                await this.setRelayState({ id: relayId, state: newState });
+            }
+            if (latch > 0) {
+                this.latches.setLatch(relayId, async () => {
+                    try {
+                        await this.setRelayState({ id: relayId, state: !newState })
+                        logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
+                    } catch (err) { logger.error(`Error processing latch timer`); }
+                }, latch);
+            }
+            return extend(true, {}, relay, { oldState: oldState, latchDuration: new Date().getTime() - relay.tripTime });
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            // We need to know what relay we are referring to.
+            // i2c:1:24:3
+            // i2c:1:24:inDigital:1 <= This is an example of an input we need to reject if the user is attempting to set a digital input.
+            if (bind.params.length === 0) return Promise.reject(new Error(`getDeviceState: You must supply an input or relay to get its state`));
+            await this.takeReadings();
+            if (bind.params[0].toLowerCase() === 'indigital') {
+                if (bind.params.length < 2) return Promise.reject(new Error(`getDeviceState: You must supply a digital input id to get its state`));
+                let inputId = parseInt(bind.params[1], 10);
+                let input = this.inDigital.find(elem => elem.id === inputId);
+                if (typeof input === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find digital input Id ${bind.params[1]}`));
+                if (!input.enabled) return Promise.reject(new Error(`getDeviceState: Input [${input.name}] is not enabled.`));
+                return input.value;
+            }
+            else {
+                let relayId = parseInt(bind.params[0], 10);
+                if (isNaN(relayId)) {
+                    return Promise.reject(new Error(`getDeviceState: Invalid relay Id ${bind.params[0]}`));
+                }
+                let relay = this.relays.find(elem => elem.id === relayId);
+                if (typeof relay === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find relay Id ${bind.params[0]}`));
+                if (!relay.enabled) return Promise.reject(new Error(`getDeviceState: Relay [${relay.name}] is not enabled.`));
+                return relay.state;
+            }
+        } catch (err) { return Promise.reject(err); }
     }
     protected async get0_10Output(id) {
         try {
@@ -2361,7 +2482,6 @@ export class SequentHomeAuto extends SequentIO {
         } catch (err) { logger.error(`${this.device.name} error writing Open Drain output ${id}: ${err.message}`); }
 
     }
-
     protected async readDigitalIn(): Promise<boolean> {
         try {
 
@@ -2436,7 +2556,7 @@ export class SequentHomeAuto extends SequentIO {
         }
         catch (err) { this.logError(err, 'Error reading relay states'); }
     }
-    public async takeReadings(): Promise<boolean> {
+        public async takeReadings(): Promise<boolean> {
         try {
             await this.readDigitalIn();
             await this.readRelayStates();
@@ -2448,16 +2568,21 @@ export class SequentHomeAuto extends SequentIO {
             return true;
         }
         catch (err) { this.logError(err, 'Error taking device readings'); }
-    }
+    }    
     public async setOptions(opts): Promise<any> {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
+            if (typeof opts.relays !== 'undefined') {
+                this.relays = opts.relays;
+                await this.initRegisters();
+            }
+            if (typeof opts.readInterval === 'number') this.options.readInterval = opts.readInterval;
             return Promise.resolve(this.options);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
         finally { this.suspendPolling = false; }
-    }
+    }  
     public async setIOChannels(data): Promise<any> {
         try {
             if (typeof data.values !== 'undefined') {
@@ -2496,30 +2621,25 @@ export class SequentHomeAuto extends SequentIO {
     }
     public getDeviceDescriptions(dev) {
         let desc = [];
-        let category = typeof dev !== 'undefined' ? dev.category : 'unknown';
-        category = '0-10v Input';
-        for (let i = 0; i < this.in0_10.length; i++) {
-            let chan = this.in0_10[i];
-            switch (chan.type) {
-                case 'T10k':
-                    category = '10k Thermistor';
-                    break;
-                case 'T1k':
-                    category = '1k Thermistor';
-                    break;
-                case 'DIN':
-                    category = 'Dry Contact';
-                    break;
-                default:
-                    category = '0-10v Input';
-                    break;
-            }
-            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:in0_10.${i + 1}`, category: category });
+        for (let i = 0; i < this.inDigital.length; i++) {
+            let chan = this.inDigital[i];
+            desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:inDigital:${i + 1}`, category: 'Digital Input' });
         }
-        category = '0-10v Output';
+        for (let i = 0; i < this.inAnalog.length; i++) {
+            let chan = this.inAnalog[i];
+            desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:inAnalog:${i + 1}`, category: 'Analog Input' });
+        }
         for (let i = 0; i < this.out0_10.length; i++) {
             let chan = this.out0_10[i];
-            if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:out0_10.${i + 1}`, category: category });
+            desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:out0_10:${i + 1}`, category: '0-10 Output' });
+        }
+        for (let i = 0; i < this.outDrain.length; i++) {
+            let chan = this.outDrain[i];
+            desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:outDrain:${i + 1}`, category: 'Drain Output' });
+        }                                     
+        for (let i = 0; i < this.relays.length; i++) {
+            let relay = this.relays[i];
+            desc.push({ type: 'i2c', isActive: this.device.isActive, name: relay.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:${relay.id}`, category: 'Relays' });
         }
         return desc;
     }
@@ -2536,16 +2656,12 @@ export class SequentHomeAuto extends SequentIO {
                 return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'F');
             case 'cputempk':
                 return utils.convert.temperature.convertUnits(this.info.cpuTemp, 'C', 'K');
-            case 'pivoltage':
-                return this.info.raspiVolts;
-            case 'fwversion':
-                return this.info.fwVersion;
             default:
                 let iarr;
                 if (p.startsWith('out0_10')) iarr = this.out0_10;
-                else if (p.startsWith('in0_10')) iarr = this.in0_10;
                 else if (p.startsWith('outdrain')) iarr = this.outDrain;
                 else if (p.startsWith('inanalog')) iarr = this.inAnalog;
+                else if (p.startsWith('indigital')) iarr = this.inDigital;                
                 else if (p.startsWith('relay')) iarr = this.relays;
                 if (typeof iarr === 'undefined') {
                     logger.error(`${this.device.name} error getting I/O channel ${prop}`);
@@ -2565,5 +2681,5 @@ export class SequentHomeAuto extends SequentIO {
                 if (p.startsWith('relayval')) chan = chan.state;
                 return (parr.length > 1) ? super.getValue(parr[1], chan) : chan;
         }
-    }
+    }   
 }
