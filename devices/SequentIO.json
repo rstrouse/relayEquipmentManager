@@ -2545,6 +2545,26 @@
           "maxSamples": 1
         },
         {
+          "name": "relayVal5",
+          "desc": "Value for relay #5",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal6",
+          "desc": "Value for relay #6",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal7",
+          "desc": "Value for relay #7",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal8",
+          "desc": "Value for relay #8",
+          "maxSamples": 1
+        },
+        {
           "name": "relayObj1",
           "desc": "Object for relay #1",
           "maxSamples": 1
@@ -2565,6 +2585,26 @@
           "maxSamples": 1
         },
         {
+          "name": "relayObj5",
+          "desc": "Object for relay #5",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj6",
+          "desc": "Object for relay #6",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj7",
+          "desc": "Object for relay #7",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj8",
+          "desc": "Object for relay #8",
+          "maxSamples": 1
+        },
+        {
           "name": "inDigital1",
           "desc": "Digital in #1",
           "maxSamples": 50
@@ -2582,6 +2622,26 @@
         {
           "name": "inDigital4",
           "desc": "Digital in #4",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital5",
+          "desc": "Digital in #5",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital6",
+          "desc": "Digital in #6",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital7",
+          "desc": "Digital in #7",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital8",
+          "desc": "Digital in #8",
           "maxSamples": 50
         },
         {
@@ -2684,7 +2744,7 @@
           "desc": "Analog in #8 voltage",
           "maxSamples": 50
         },
-        {
+{
           "name": "inAnalog1.raw",
           "desc": "Analog in #1 raw ADC",
           "maxSamples": 50
@@ -2723,11 +2783,89 @@
           "name": "inAnalog8.raw",
           "desc": "Analog in #8 raw ADC",
           "maxSamples": 50
+        },        
+        {
+          "name": "out0_101",
+          "desc": "0-10v out #1",
+          "maxSamples": 50
+        },
+        {
+          "name": "out0_102",
+          "desc": "0-10v out #2",
+          "maxSamples": 50
+        },
+        {
+          "name": "out0_103",
+          "desc": "0-10v out #3",
+          "maxSamples": 50
+        },
+        {
+          "name": "out0_104",
+          "desc": "0-10v out #4",
+          "maxSamples": 50
+        },
+        {
+          "name": "outDrain1",
+          "desc": "Open Drain #1",
+          "maxSamples": 50
+        },
+        {
+          "name": "outDrain2",
+          "desc": "Open Drain #2",
+          "maxSamples": 50
+        },
+        {
+          "name": "outDrain3",
+          "desc": "Open Drain #3",
+          "maxSamples": 50
+        },
+        {
+          "name": "outDrain4",
+          "desc": "Open Drain #4",
+          "maxSamples": 50
         }
-
-
       ],
       "inputs": [
+         {
+          "name": "out0_101",
+          "desc": "0-10v out #1",
+          "dataType": "number"
+        },
+        {
+          "name": "out0_102",
+          "desc": "0-10v out #2",
+          "dataType": "number"
+        },
+        {
+          "name": "out0_103",
+          "desc": "0-10v out #3",
+          "dataType": "number"
+        },
+        {
+          "name": "out0_104",
+          "desc": "0-10v out #4",
+          "dataType": "number"
+        },
+        {
+          "name": "outDrain1",
+          "desc": "Open Drain #1",
+          "dataType": "number"
+        },
+        {
+          "name": "outDrain2",
+          "desc": "Open Drain #2",
+          "dataType": "number"
+        },
+        {
+          "name": "outDrain3",
+          "desc": "Open Drain #3",
+          "dataType": "number"
+        },
+        {
+          "name": "outDrain4",
+          "desc": "Open Drain #4",
+          "dataType": "number"
+        },        
         {
           "name": "relayState",
           "desc": "Relay State Value",
