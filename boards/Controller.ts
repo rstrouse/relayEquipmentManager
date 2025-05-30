@@ -291,30 +291,46 @@ export class Controller extends ConfigItem {
     private _spiAdcChips;
     private _analogDevices;
     public get dirty(): boolean { return this._isDirty; }
-    public set dirty(val) {
+    public set dirty(val: boolean) {
         this._isDirty = val;
         this._lastUpdated = new Date();
         this.data.lastUpdated = this._lastUpdated.toLocaleString();
+    
         if (this._timerDirty !== null) {
             clearTimeout(this._timerDirty);
             this._timerDirty = null;
         }
+    
         if (this._isDirty) {
-            //logger.silly(`Setting Dirty... ${val} ${new Date().getTime() - this._lastPersisted.getTime()}`);
-            if (new Date().getTime() - this._lastPersisted.getTime() > 10000) //TODO: Set this higher as we don't need to write it every 10 seconds.
-                this.persist();
-            else
-                this._timerDirty = setTimeout(function () { cont.persist(); }, 3000);
+            const elapsed = new Date().getTime() - this._lastPersisted.getTime();
+            if (elapsed > 60000) {
+                this.persist(); // immediate write
+            } else {
+                this._timerDirty = setTimeout(() => this.persist(), 3000); // delayed write
+            }
         }
     }
     public persist() {
         this._isDirty = false;
+    
+        const start = process.hrtime();
+        const timestamp = new Date().toISOString();
+        const tempPath = this.cfgPath + '.tmp';
+    
         logger.debug(`Persisting Configuration data... ${this.cfgPath}`);
-        // Don't overwrite the configuration if we failed during the initialization.
-        Promise.resolve()
-            .then(() => { fs.writeFileSync(this.cfgPath, JSON.stringify(this.data, undefined, 2)); })
-            .then(() => { this._lastPersisted = new Date() })
-            .catch(function (err) { if (err) logger.error('Error writing controller config %s %s', err, this.cfgPath); });
+    
+        try {
+            fs.writeFileSync(tempPath, JSON.stringify(this.data, undefined, 2));
+            fs.renameSync(tempPath, this.cfgPath); // Atomic replace
+    
+            const [seconds, nanoseconds] = process.hrtime(start);
+            const durationMs = seconds * 1000 + nanoseconds / 1e6;
+            console.log(`[${timestamp}] Persisted config in ${durationMs.toFixed(3)}ms`);
+    
+            this._lastPersisted = new Date();
+        } catch (err) {
+            logger.error('Error writing controller config %s %s', err, this.cfgPath);
+        }
     }
     public get controllerType() { return this.getMapVal(this.data.controllerType || 'raspi', vMaps.controllerTypes); }
     public set controllerType(val) {
