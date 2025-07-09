@@ -974,7 +974,10 @@ export class i2cRelay extends i2cDeviceBase {
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();
-                            this.info.registers.find(x => x.register === 0x00).value = this.encodeSequent(byte, map);
+                            if (this.i2c.isMock) {
+                                let reg = this.device.info.registers?.find(x => x.register === 0x00);
+                                if (reg) reg.value = this.encodeSequent(byte, map);
+                            }
                             webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                         }
                     }
@@ -997,7 +1000,10 @@ export class i2cRelay extends i2cDeviceBase {
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();
-                            this.info.registers.find(x => x.register === 0x00).value = byte;
+                            if (this.i2c.isMock) {
+                                let reg = this.device.info.registers?.find(x => x.register === 0x00);
+                                if (reg) reg.value = byte;
+                            }
                             webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                         }
                     }
@@ -1022,7 +1028,10 @@ export class i2cRelay extends i2cDeviceBase {
                         if (relay.state !== newState) {
                             relay.state = newState;
                             relay.tripTime = new Date().getTime();
-                            if (this.i2c.isMock) this.info.registers.find(x => x.register === 0x00).value = this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10]);
+                            if (this.i2c.isMock) {
+                                let reg = this.device.info.registers?.find(x => x.register === 0x00);
+                                if (reg) reg.value = this.encodeSequent(byte, [0x80, 0x40, 0x20, 0x10]);
+                            }
                             webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
                         }
                     }

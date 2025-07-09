@@ -105,5 +105,18 @@ class Logger {
             if (typeof transport !== 'undefined') transport.level = this.cfg.app.level;
         }
     }
+    public setLogFile(filename: string) {
+        const filePath = path.join(process.cwd(), '/logs', filename);
+        if (this.transports.consoleFile) {
+            this._logger.remove(this.transports.consoleFile);
+            this.transports.consoleFile.close();
+        }
+        this.transports.consoleFile = new winston.transports.File({
+            filename: filePath,
+            level: 'silly',
+            format: winston.format.combine(winston.format.splat(), winston.format.uncolorize(), this.myFormat)
+        });
+        this._logger.add(this.transports.consoleFile);
+    }
 }
 export var logger = new Logger();

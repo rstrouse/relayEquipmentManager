@@ -10,6 +10,11 @@ import { Client } from "node-ssdp";
 import { connBroker, ConnectionBindings } from "../../connections/Bindings";
 import { gpioCont } from "../../gpio/Gpio-Controller";
 import { SpiAdcChips } from "../../spi-adc/SpiAdcChips";
+
+
+// Store previous logger settings for packet capture
+let previousLoggerConfig: any = null;
+
 export class ConfigRoute {
     // GPIO Config services.
     public static initGPIO(app: express.Application) {
@@ -719,5 +724,105 @@ export class ConfigRoute {
             logger.setOptions(req.body);
             return res.status(200).send(logger.options);
         });
+
+        // Packet Capture Endpoints for njsPC Integration
+        app.put('/config/packetCapture/start', async (req, res, next) => {
+            try {
+                if (previousLoggerConfig) {
+                    return res.status(400).send({
+                        status: { code: 400, message: 'Packet capture is already active' },
+                        error: { message: 'ALREADY_ACTIVE' }
+                    });
+                }
+
+                // Save current logger config
+                previousLoggerConfig = JSON.parse(JSON.stringify(logger.options));
+
+                // Set logger to silly level and enable file logging
+                logger.setOptions({
+                    level: 'silly',
+                    logToFile: true
+                });
+
+                logger.info('Packet capture started with maximum logging verbosity');
+
+                return res.status(200).send({
+                    status: { code: 200, message: 'Packet capture started successfully' },
+                    data: 'Packet capture started'
+                });
+            } catch (err) {
+                next(err);
+            }
+        });
+
+        app.put('/config/packetCapture/stop', async (req, res, next) => {
+            try {
+                if (!previousLoggerConfig) {
+                    return res.status(400).send({
+                        status: { code: 400, message: 'Packet capture is not currently active' },
+                        error: { message: 'NOT_ACTIVE' }
+                    });
+                }
+
+                // Restore previous logger config
+                logger.setOptions(previousLoggerConfig.app || previousLoggerConfig);
+                previousLoggerConfig = null;
+
+                logger.info('Packet capture stopped. Logging configuration restored.');
+
+                return res.status(200).send({
+                    status: { code: 200, message: 'Packet capture stopped successfully' },
+                    data: 'Packet capture stopped'
+                });
+            } catch (err) {
+                next(err);
+            }
+        });
+
+        app.get('/config/packetCapture/log', async (req, res, next) => {
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const logsDir = path.join(process.cwd(), '/logs');
+
+                // Find the most recent consoleLog*.log file
+                if (!fs.existsSync(logsDir)) {
+                    return res.status(404).send({
+                        status: { code: 404, message: 'No logs directory found' },
+                        error: { message: 'NO_LOGS_DIR' }
+                    });
+                }
+
+                const files = fs.readdirSync(logsDir)
+                    .filter(file => file.startsWith('consoleLog') && file.endsWith('.log'))
+                    .map(file => ({
+                        name: file,
+                        path: path.join(logsDir, file),
+                        mtime: fs.statSync(path.join(logsDir, file)).mtime
+                    }))
+                    .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+
+                if (files.length === 0) {
+                    return res.status(404).send({
+                        status: { code: 404, message: 'No log files found' },
+                        error: { message: 'NO_LOG_FILES' }
+                    });
+                }
+
+                // Read the most recent log file
+                const mostRecentFile = files[0];
+                const logContent = fs.readFileSync(mostRecentFile.path, 'utf8');
+
+                return res.status(200).send({
+                    status: { code: 200, message: 'Log retrieved successfully' },
+                    data: logContent,
+                    obj: { logFile: mostRecentFile.name }
+                });
+            } catch (err) {
+                next(err);
+            }
+        });
+
+
     }
 }
