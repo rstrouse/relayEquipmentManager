@@ -325,7 +325,7 @@ export class Controller extends ConfigItem {
     
             const [seconds, nanoseconds] = process.hrtime(start);
             const durationMs = seconds * 1000 + nanoseconds / 1e6;
-            console.log(`[${timestamp}] Persisted config in ${durationMs.toFixed(3)}ms`);
+           //onsole.log(`[${timestamp}] Persisted config in ${durationMs.toFixed(3)}ms`);
     
             this._lastPersisted = new Date();
         } catch (err) {
