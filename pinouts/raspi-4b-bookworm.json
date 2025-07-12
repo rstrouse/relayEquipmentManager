@@ -681,13 +681,13 @@
           "id": 36,
           "name": "BCM 16",
           "type": "gpio",
-          "gpioId": 16
+          "gpioId": 528
         },
         {
           "id": 37,
           "name": "BCM 26",
           "type": "gpio",
-          "gpioId": 528
+          "gpioId": 538
         },
         {
           "id": 38,
