@@ -17,14 +17,29 @@
                 var settings = $('<div></div>').appendTo(outer).addClass('pnl-board-settings');
 
                 var line = $('<div></div>').appendTo(settings).addClass('pnl-board-controllersettings');
-                $('<div></div>').appendTo(line).pickList({
+                var boardContainer = $('<div></div>').appendTo(line).addClass('board-selector-container').css({
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%'
+                });
+                $('<div></div>').appendTo(boardContainer).pickList({
                     required: true,
                     bindColumn: 0, displayColumn: 1, labelText: 'Board', binding: 'controllerType',
-                    columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Controller Type', style: { width: '297px', whiteSpace: 'nowrap' } }],
-                    items: data.controllerTypes, inputAttrs: { style: { width: '10rem' } }, labelAttrs: { style: { width: '4rem' } }
+                    columns: [{ hidden: true, binding: 'name', text: 'Name', style: { whiteSpace: 'nowrap' } }, { binding: 'desc', text: 'Controller Type', style: { width: '14rem', whiteSpace: 'nowrap' } }],
+                    items: data.controllerTypes, inputAttrs: { style: { width: '14rem' } }, labelAttrs: { style: { width: '4rem' } }
                 }).
                     on('selchanged', function (evt) {
                         console.log(evt.newItem);
+                        
+                        // Check if the new board type requires sysfs GPIO
+                        if (evt.newItem.name === 'raspi-bookworm' || evt.newItem.name === 'raspi-5') {
+                            self.checkAndShowSysfsWarning(evt.newItem);
+                        } else {
+                            // Remove warning button if switching to a board that doesn't need sysfs
+                            self.removeSysfsWarning();
+                        }
+                        
                         if (makeBool(evt.newItem.spi0)) el.find('div#cbSpi0').show();
                         else {
                             el.find('div#cbSpi0').hide();
@@ -113,6 +128,9 @@
                 self.dataBind(data.controller);
                 
                 conns[0].dataBind(data.controller.connections);
+                
+                // Check sysfs status for current board on page load
+                self.checkSysfsStatusOnLoad(data.controller.controllerType);
             });
         },
         dataBind: function (data) {
@@ -182,6 +200,179 @@
                 $('<div></div>').appendTo(dlg).text('The board definition has changed do you want to save your changes?  You must either save your changes or press cancel to continue.');
             }
             return !bChanged;
+        },
+        checkSysfsStatusOnLoad: function (controllerType) {
+            var self = this, o = self.options, el = self.element;
+            
+            // Check if current board requires sysfs GPIO
+            if (controllerType === 'raspi-bookworm' || controllerType === 'raspi-5') {
+                self.checkAndShowSysfsWarning({ name: controllerType });
+            }
+        },
+        checkAndShowSysfsWarning: function (board) {
+            var self = this, o = self.options, el = self.element;
+            
+            // Check if sysfs is already enabled
+            $.getLocalService('/config/gpio/status', null, function (status, statusCode, xhr) {
+                if (status.sysfsAvailable && status.sysfsWritable) {
+                    // Sysfs is already enabled, remove any existing warning
+                    self.removeSysfsWarning();
+                    return;
+                }
+                
+                // Sysfs is not enabled, show warning button
+                self.showSysfsWarning(board);
+            });
+        },
+        showSysfsWarning: function (board) {
+            var self = this, o = self.options, el = self.element;
+            
+            // Remove any existing warning first
+            self.removeSysfsWarning();
+            
+            // Create warning button next to board selector
+            var boardContainer = el.find('.board-selector-container');
+            var warningButton = $('<div></div>').appendTo(boardContainer).addClass('sysfs-warning-button')
+                .css({
+                    display: 'inline-block',
+                    marginLeft: '10px',
+                    verticalAlign: 'middle'
+                });
+            
+            $('<button></button>').appendTo(warningButton)
+                .addClass('btn btn-warning')
+                .css({
+                    backgroundColor: '#ffc107',
+                    borderColor: '#ffc107',
+                    color: '#212529',
+                    padding: '5px 10px',
+                    fontSize: '12px',
+                    borderRadius: '4px',
+                    border: '1px solid',
+                    cursor: 'pointer'
+                })
+                .html('<i class="fas fa-exclamation-triangle"></i> Enable Sysfs')
+                .on('click', function() {
+                    self.showSysfsEnableDialog(board);
+                });
+        },
+        removeSysfsWarning: function () {
+            var self = this, o = self.options, el = self.element;
+            el.find('.sysfs-warning-button').remove();
+        },
+        showSysfsEnableDialog: function (board) {
+            var self = this, o = self.options, el = self.element;
+            
+            // Show confirmation dialog
+            var dlg = $.pic.modalDialog.createDialog('dlgSysfsConfirm', {
+                width: '500px',
+                height: 'auto',
+                title: 'Sysfs GPIO Required',
+                position: { my: "center top", at: "center top", of: window },
+                buttons: [
+                    {
+                        text: 'Enable', icon: '<i class="fas fa-check"></i>',
+                        click: function () {
+                            $.pic.modalDialog.closeDialog(this);
+                            self.enableSysfs(board);
+                        }
+                    },
+                    {
+                        text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                        click: function () { $.pic.modalDialog.closeDialog(this); }
+                    }
+                ]
+            });
+            
+            var content = $('<div></div>').appendTo(dlg);
+            $('<p></p>').appendTo(content).text('The application will attempt to enable sysfs GPIO automatically. This may require root privileges and could require a system reboot.');
+            $('<p></p>').appendTo(content).text('Do you want to proceed with enabling sysfs GPIO?');
+        },
+        enableSysfs: function (board) {
+            var self = this, o = self.options, el = self.element;
+            
+            // Show progress dialog
+            var progressDlg = $.pic.modalDialog.createDialog('dlgSysfsProgress', {
+                width: '400px',
+                height: 'auto',
+                title: 'Enabling Sysfs GPIO',
+                position: { my: "center top", at: "center top", of: window },
+                buttons: []
+            });
+            
+            var content = $('<div></div>').appendTo(progressDlg);
+            $('<p></p>').appendTo(content).text('Attempting to enable sysfs GPIO...');
+            $('<div></div>').appendTo(content).addClass('loading-spinner').html('<i class="fas fa-spinner fa-spin"></i>');
+            
+            // Call the enable sysfs endpoint
+            $.post('/config/gpio/enable-sysfs', {}, function (result) {
+                $.pic.modalDialog.closeDialog(progressDlg[0]);
+                
+                // After attempting to enable, check status again
+                $.getLocalService('/config/gpio/status', null, function (status, statusCode, xhr) {
+                    if (status.sysfsAvailable && status.sysfsWritable) {
+                        // Sysfs is now enabled, show yellow success message
+                        self.showSysfsSuccessMessage();
+                    } else {
+                        // Sysfs is still not enabled, show reboot required dialog
+                        var rebootDlg = $.pic.modalDialog.createDialog('dlgSysfsReboot', {
+                            width: '500px',
+                            height: 'auto',
+                            title: 'Reboot Required',
+                            position: { my: "center top", at: "center top", of: window },
+                            buttons: [
+                                {
+                                    text: 'OK', icon: '<i class="fas fa-check"></i>',
+                                    click: function () { $.pic.modalDialog.closeDialog(this); }
+                                }
+                            ]
+                        });
+                        var rebootContent = $('<div></div>').appendTo(rebootDlg);
+                        $('<p></p>').appendTo(rebootContent).html('<i class="fas fa-exclamation-triangle" style="color: orange;"></i> <strong>Sysfs GPIO has been enabled, but a system reboot is required for changes to take effect.</strong>');
+                        $('<p></p>').appendTo(rebootContent).text('Please reboot your Raspberry Pi and check again after the system restarts.');
+                    }
+                });
+                
+            }).fail(function (xhr, status, error) {
+                $.pic.modalDialog.closeDialog(progressDlg[0]);
+                
+                // Network error dialog
+                var networkErrorDlg = $.pic.modalDialog.createDialog('dlgSysfsNetworkError', {
+                    width: '500px',
+                    height: 'auto',
+                    title: 'Network Error',
+                    position: { my: "center top", at: "center top", of: window },
+                    buttons: [
+                        {
+                            text: 'OK', icon: '<i class="fas fa-times"></i>',
+                            click: function () { $.pic.modalDialog.closeDialog(networkErrorDlg[0]); }
+                        }
+                    ]
+                });
+                
+                var networkErrorContent = $('<div></div>').appendTo(networkErrorDlg);
+                $('<p></p>').appendTo(networkErrorContent).html('<i class="fas fa-exclamation-triangle" style="color: red;"></i> <strong>Network Error</strong>');
+                $('<p></p>').appendTo(networkErrorContent).text('Failed to communicate with the server while enabling sysfs GPIO.');
+            });
+        },
+        showSysfsSuccessMessage: function () {
+            var self = this, o = self.options, el = self.element;
+            self.removeSysfsWarning();
+            var boardContainer = el.find('.board-selector-container');
+            var successMsg = $('<div></div>').appendTo(boardContainer).addClass('sysfs-success-message')
+                .css({
+                    display: 'inline-block',
+                    marginLeft: '10px',
+                    color: '#856404',
+                    backgroundColor: '#fff3cd',
+                    border: '1px solid #ffeeba',
+                    borderRadius: '4px',
+                    padding: '5px 12px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    verticalAlign: 'middle'
+                })
+                .html('<i class="fas fa-check-circle" style="color: #ffc107; margin-right: 6px;"></i> Sysfs enabled');
         }
     });
     $.widget('pic.pnlConnections', {

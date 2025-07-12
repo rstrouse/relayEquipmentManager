@@ -1297,3 +1297,9 @@ div.picChemTank[data-setattributes=true] {
 
 .pnl-i2cdevice-feeds {
   max-width: 37rem; }
+
+.loading-spinner {
+  text-align: center;
+  padding: 1rem;
+  font-size: 2rem;
+  color: #007bff; }

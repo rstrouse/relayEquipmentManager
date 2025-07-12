@@ -137,6 +137,26 @@ export class ConfigRoute {
             };
             return res.status(200).send(opts);
         });
+        
+        // GPIO Status endpoint to check sysfs and onoff module status
+        app.get('/config/gpio/status', async (req, res, next) => {
+            try {
+                const status = await cont.gpio.getSysfsStatus();
+                return res.status(200).send(status);
+            } catch (err) {
+                next(err);
+            }
+        });
+        
+        // Sysfs GPIO enabling endpoint
+        app.post('/config/gpio/enable-sysfs', async (req, res, next) => {
+            try {
+                const result = await cont.gpio.enableSysfs();
+                return res.status(200).send(result);
+            } catch (err) {
+                next(err);
+            }
+        });
     }
     public static initRoutes(app: express.Application) {
         ConfigRoute.initGPIO(app);

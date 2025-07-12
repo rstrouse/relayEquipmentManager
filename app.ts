@@ -19,7 +19,7 @@ export function initAsync() {
         .then(function () { cont.init(); })
         .then(function () { webApp.init(); })
         .then(function () { connBroker.init(); })
-        .then(function () { gpioCont.init(); })
+        .then(function () { return gpioCont.init(); })
         .then(function () { spi0.initAsync(cont.spi0); })
         .then(function () { spi1.initAsync(cont.spi1); })
         .then(function () { i2c.initAsync(cont.i2c); })

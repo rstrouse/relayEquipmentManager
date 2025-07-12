@@ -2,6 +2,7 @@
 import * as fs from "fs";
 import * as extend from "extend";
 import * as util from "util";
+import { execSync } from 'child_process';
 
 import { setTimeout, clearTimeout } from "timers";
 import { logger } from "../logger/Logger";
@@ -15,10 +16,149 @@ import { connBroker, ServerConnection } from "../connections/Bindings";
 import { Gpio } from "onoff";
 const gp = require('onoff').Gpio;
 
+// Add types for clarity
+export interface SysfsStatus {
+    sysfsAvailable: boolean;
+    sysfsWritable: boolean;
+    onoffAccessible: boolean;
+    platform: string;
+    isRaspberryPi: boolean;
+    osInfo: string | null;
+    recommendations: string[];
+}
+
+export interface SysfsEnableResult {
+    success: boolean;
+    message: string;
+    requiresReboot: boolean;
+    manualInstructions: string[];
+}
+
 export class GpioController {
     constructor(data) { }
     public pins: gpioPinComms[] = [];
+    
+    /**
+     * Check if sysfs GPIO is available and enabled
+     */
+    private checkSysfsGpio(): boolean {
+        try {
+            // Check if /sys/class/gpio exists
+            if (!fs.existsSync('/sys/class/gpio')) {
+                logger.warn('Sysfs GPIO interface not available: /sys/class/gpio does not exist');
+                return false;
+            }
+            
+            // Check if we can write to /sys/class/gpio/export
+            try {
+                fs.accessSync('/sys/class/gpio/export', fs.constants.W_OK);
+                return true;
+            } catch (err) {
+                logger.warn('Sysfs GPIO interface not writable: /sys/class/gpio/export is not writable');
+                return false;
+            }
+        } catch (err) {
+            logger.error(`Error checking sysfs GPIO: ${err.message}`);
+            return false;
+        }
+    }
+    
+    /**
+     * Attempt to enable sysfs GPIO on Bookworm systems
+     */
+    private async enableSysfsGpio(): Promise<boolean> {
+        try {
+            logger.info('Attempting to enable sysfs GPIO interface...');
+            
+            // Check if we're on a Raspberry Pi
+            if (!fs.existsSync('/proc/device-tree/model')) {
+                logger.info('Not on a Raspberry Pi, skipping sysfs GPIO enable');
+                return false;
+            }
+            
+            const model = fs.readFileSync('/proc/device-tree/model', 'utf8').trim();
+            if (!model.includes('Raspberry Pi')) {
+                logger.info('Not on a Raspberry Pi, skipping sysfs GPIO enable');
+                return false;
+            }
+            
+            // Check if we're on Bookworm or newer
+            try {
+                const osRelease = fs.readFileSync('/etc/os-release', 'utf8');
+                if (!osRelease.includes('bookworm') && !osRelease.includes('bullseye')) {
+                    logger.info('Not on Bookworm/Bullseye, sysfs GPIO should already be available');
+                    return true;
+                }
+            } catch (err) {
+                logger.warn('Could not read /etc/os-release, assuming older OS');
+                return true;
+            }
+            
+            // Try to enable sysfs GPIO using raspi-config
+            try {
+                logger.info('Attempting to enable sysfs GPIO using raspi-config...');
+                execSync('raspi-config nonint do_gpio 0', { stdio: 'pipe' });
+                logger.info('Successfully enabled sysfs GPIO via raspi-config');
+                return true;
+            } catch (err) {
+                logger.warn(`raspi-config failed: ${err.message}`);
+            }
+            
+            // Try to enable via device tree overlay
+            try {
+                logger.info('Attempting to enable sysfs GPIO via device tree...');
+                execSync('echo "dtoverlay=gpio-no-irq" | sudo tee -a /boot/config.txt', { stdio: 'pipe' });
+                logger.info('Added gpio-no-irq overlay to /boot/config.txt (reboot required)');
+                return false; // Requires reboot
+            } catch (err) {
+                logger.warn(`Device tree overlay failed: ${err.message}`);
+            }
+            
+            // Try to enable via sysfs directly
+            try {
+                logger.info('Attempting to enable sysfs GPIO directly...');
+                execSync('echo 1 | sudo tee /sys/class/gpio/export', { stdio: 'pipe' });
+                execSync('echo out | sudo tee /sys/class/gpio/gpio1/direction', { stdio: 'pipe' });
+                execSync('echo 1 | sudo tee /sys/class/gpio/unexport', { stdio: 'pipe' });
+                logger.info('Successfully enabled sysfs GPIO directly');
+                return true;
+            } catch (err) {
+                logger.warn(`Direct sysfs enable failed: ${err.message}`);
+            }
+            
+            logger.error('All methods to enable sysfs GPIO failed');
+            return false;
+            
+        } catch (err) {
+            logger.error(`Error enabling sysfs GPIO: ${err.message}`);
+            return false;
+        }
+    }
+    
+    /**
+     * Initialize GPIO with sysfs detection and enabling
+     */
     public init() {
+        // Check if sysfs GPIO is available
+        let sysfsAvailable = this.checkSysfsGpio();
+        if (!sysfsAvailable) {
+            logger.warn('Sysfs GPIO not available. GPIO functionality may not work properly.');
+            logger.info('To enable sysfs GPIO manually:');
+            logger.info('1. Run: sudo raspi-config');
+            logger.info('2. Navigate to: Interface Options > GPIO');
+            logger.info('3. Select: Yes (to enable sysfs GPIO)');
+            logger.info('4. Reboot the system');
+        }
+        // Check onoff module accessibility
+        if (!gp.accessible) {
+            logger.warn('onoff module reports GPIO not accessible');
+            if (sysfsAvailable) {
+                logger.info('Sysfs GPIO is available but onoff module cannot access it');
+                logger.info('This may be due to permissions or missing sysfs GPIO support');
+            }
+        } else {
+            logger.info('GPIO interface is accessible via onoff module');
+        }
         this.initPins();
         return this;
     }
@@ -221,6 +361,168 @@ export class GpioController {
             });
         }
         return states;
+    }
+
+    /**
+     * Get sysfs GPIO status and recommendations
+     */
+    public async getSysfsStatus(): Promise<SysfsStatus> {
+        const status: SysfsStatus = {
+            sysfsAvailable: false,
+            sysfsWritable: false,
+            onoffAccessible: false,
+            platform: process.platform,
+            isRaspberryPi: false,
+            osInfo: null,
+            recommendations: []
+        };
+        try {
+            // Check if sysfs GPIO exists
+            if (fs.existsSync('/sys/class/gpio')) {
+                status.sysfsAvailable = true;
+                // Check if sysfs GPIO is writable
+                try {
+                    fs.accessSync('/sys/class/gpio/export', fs.constants.W_OK);
+                    status.sysfsWritable = true;
+                } catch (err) {
+                    status.recommendations.push('Sysfs GPIO exists but is not writable. Check permissions or run with sudo.');
+                }
+            } else {
+                status.recommendations.push('Sysfs GPIO interface not found. This may indicate a non-Linux system or missing GPIO support.');
+            }
+            // Check onoff module accessibility
+            status.onoffAccessible = gp.accessible;
+            if (!status.onoffAccessible) {
+                status.recommendations.push('onoff module reports GPIO not accessible. This may be due to missing sysfs GPIO support.');
+            }
+            // Check if we're on a Raspberry Pi
+            try {
+                if (fs.existsSync('/proc/device-tree/model')) {
+                    const model = fs.readFileSync('/proc/device-tree/model', 'utf8').trim();
+                    status.isRaspberryPi = model.includes('Raspberry Pi');
+                    if (status.isRaspberryPi) {
+                        // Check OS version
+                        try {
+                            const osRelease = fs.readFileSync('/etc/os-release', 'utf8');
+                            if (osRelease.includes('bookworm')) {
+                                status.osInfo = 'Raspberry Pi OS Bookworm';
+                                if (!status.sysfsWritable) {
+                                    status.recommendations.push('On Bookworm, sysfs GPIO may be disabled. Enable it via: sudo raspi-config > Interface Options > GPIO');
+                                }
+                            } else if (osRelease.includes('bullseye')) {
+                                status.osInfo = 'Raspberry Pi OS Bullseye';
+                                if (!status.sysfsWritable) {
+                                    status.recommendations.push('On Bullseye, sysfs GPIO may be disabled. Enable it via: sudo raspi-config > Interface Options > GPIO');
+                                }
+                            } else {
+                                status.osInfo = 'Raspberry Pi OS (Legacy)';
+                            }
+                        } catch (err) {
+                            status.osInfo = 'Raspberry Pi (OS version unknown)';
+                        }
+                    }
+                }
+            } catch (err) {
+                // Not a Raspberry Pi or can't read device tree
+            }
+            // Add general recommendations
+            if (!status.sysfsAvailable && status.isRaspberryPi) {
+                status.recommendations.push('Enable sysfs GPIO: sudo raspi-config > Interface Options > GPIO > Yes');
+            }
+            if (status.sysfsAvailable && status.sysfsWritable && !status.onoffAccessible) {
+                status.recommendations.push('Sysfs GPIO is available but onoff module cannot access it. Check if the onoff module is properly installed.');
+            }
+            if (status.recommendations.length === 0) {
+                status.recommendations.push('GPIO interface appears to be working correctly.');
+            }
+        } catch (err) {
+            status.recommendations.push(`Error checking GPIO status: ${err.message}`);
+        }
+        return status;
+    }
+
+    /**
+     * Attempt to enable sysfs GPIO and return result
+     */
+    public async enableSysfs(): Promise<SysfsEnableResult> {
+        const result: SysfsEnableResult = {
+            success: false,
+            message: '',
+            requiresReboot: false,
+            manualInstructions: []
+        };
+        try {
+            // Check if we're on a Raspberry Pi
+            if (!fs.existsSync('/proc/device-tree/model')) {
+                result.message = 'Not on a Raspberry Pi system';
+                return result;
+            }
+            const model = fs.readFileSync('/proc/device-tree/model', 'utf8').trim();
+            if (!model.includes('Raspberry Pi')) {
+                result.message = 'Not on a Raspberry Pi system';
+                return result;
+            }
+            // Check if sysfs GPIO is already enabled
+            try {
+                if (fs.existsSync('/sys/class/gpio')) {
+                    fs.accessSync('/sys/class/gpio/export', fs.constants.W_OK);
+                    result.success = true;
+                    result.message = 'Sysfs GPIO is already enabled';
+                    return result;
+                }
+            } catch (err) {
+                // Not writable, continue
+            }
+            // Try to enable sysfs GPIO using raspi-config
+            try {
+                logger.info('Attempting to enable sysfs GPIO using raspi-config...');
+                execSync('raspi-config nonint do_gpio 0', { stdio: 'pipe' });
+                result.success = true;
+                result.message = 'Successfully enabled sysfs GPIO via raspi-config';
+                logger.info('Successfully enabled sysfs GPIO via raspi-config');
+                return result;
+            } catch (err) {
+                logger.warn(`raspi-config failed: ${err.message}`);
+            }
+            // Try to enable via device tree overlay
+            try {
+                logger.info('Attempting to enable sysfs GPIO via device tree...');
+                execSync('echo "dtoverlay=gpio-no-irq" | sudo tee -a /boot/config.txt', { stdio: 'pipe' });
+                result.success = true;
+                result.requiresReboot = true;
+                result.message = 'Added gpio-no-irq overlay to /boot/config.txt. A reboot is required for changes to take effect.';
+                logger.info('Added gpio-no-irq overlay to /boot/config.txt (reboot required)');
+                return result;
+            } catch (err2) {
+                logger.warn(`Device tree overlay failed: ${err2.message}`);
+            }
+            // Try to enable via sysfs directly
+            try {
+                logger.info('Attempting to enable sysfs GPIO directly...');
+                execSync('echo 1 | sudo tee /sys/class/gpio/export', { stdio: 'pipe' });
+                execSync('echo out | sudo tee /sys/class/gpio/gpio1/direction', { stdio: 'pipe' });
+                execSync('echo 1 | sudo tee /sys/class/gpio/unexport', { stdio: 'pipe' });
+                result.success = true;
+                result.message = 'Successfully enabled sysfs GPIO directly';
+                logger.info('Successfully enabled sysfs GPIO directly');
+                return result;
+            } catch (err3) {
+                logger.warn(`Direct sysfs enable failed: ${err3.message}`);
+            }
+            result.success = false;
+            result.message = 'All methods to enable sysfs GPIO failed';
+            result.manualInstructions = [
+                '1. Run: sudo raspi-config',
+                '2. Navigate to: Interface Options > GPIO',
+                '3. Select: Yes (to enable sysfs GPIO)',
+                '4. Reboot the system'
+            ];
+            return result;
+        } catch (err) {
+            result.success = false;
+            result.message = `Error enabling sysfs GPIO: ${err.message}`;
+            return result;
+        }
     }
 }
 export class gpioPinComms implements IDevice {

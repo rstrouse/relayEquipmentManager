@@ -1,6 +1,6 @@
-﻿{
-  "name": "Raspberry Pi (Bookworm)",
-  "desc": "Raspberry Pi 4B or Pi 5 running Bookworm OS",
+{
+  "name": "Raspberry Pi 5",
+  "desc": "Raspberry Pi 5 with Bookworm OS",
   "icon": "fab fa-raspberry-pi",
   "overlays": [
     {
@@ -68,7 +68,7 @@
             },
             {
               "val": 32768,
-              "name":  "7,629 Hz"
+              "name": "7,629 Hz"
             }
           ]
         }
@@ -84,7 +84,7 @@
         },
         {
           "id": 23,
-          "name":  "SCLK - Serial Clock"
+          "name": "SCLK - Serial Clock"
         },
         {
           "id": 24,
@@ -211,7 +211,7 @@
         },
         {
           "id": 28,
-          "name":  "EEPROM Clock"
+          "name": "EEPROM Clock"
         }
       ]
     },
@@ -445,7 +445,6 @@
               "id": 3,
               "name": "I2C Data",
               "type": "i2c"
-
             },
             {
               "id": 5,
@@ -491,7 +490,7 @@
           "id": 3,
           "name": "BCM 2",
           "type": "gpio",
-          "gpioId": 514
+          "gpioId": 602
         },
         {
           "id": 4,
@@ -502,7 +501,7 @@
           "id": 5,
           "name": "BCM 3",
           "type": "gpio",
-          "gpioId": 515
+          "gpioId": 603
         },
         {
           "id": 6,
@@ -513,13 +512,13 @@
           "id": 7,
           "name": "BCM 4",
           "type": "gpio",
-          "gpioId": 516
+          "gpioId": 604
         },
         {
           "id": 8,
           "name": "BCM 14",
           "type": "gpio",
-          "gpioId": 526
+          "gpioId": 614
         },
         {
           "id": 9,
@@ -530,25 +529,25 @@
           "id": 10,
           "name": "BCM 15",
           "type": "gpio",
-          "gpioId": 527
+          "gpioId": 615
         },
         {
           "id": 11,
           "name": "BCM 17",
           "type": "gpio",
-          "gpioId": 529
+          "gpioId": 617
         },
         {
           "id": 12,
           "name": "BCM 18",
           "type": "gpio",
-          "gpioId": 530
+          "gpioId": 618
         },
         {
           "id": 13,
           "name": "BCM 27",
           "type": "gpio",
-          "gpioId": 539
+          "gpioId": 627
         },
         {
           "id": 14,
@@ -559,13 +558,13 @@
           "id": 15,
           "name": "BCM 22",
           "type": "gpio",
-          "gpioId": 534
+          "gpioId": 622
         },
         {
           "id": 16,
           "name": "BCM 23",
           "type": "gpio",
-          "gpioId": 535
+          "gpioId": 623
         },
         {
           "id": 17,
@@ -576,13 +575,13 @@
           "id": 18,
           "name": "BCM 24",
           "type": "gpio",
-          "gpioId": 536
+          "gpioId": 624
         },
         {
           "id": 19,
           "name": "BCM 10",
           "type": "gpio",
-          "gpioId": 522
+          "gpioId": 610
         },
         {
           "id": 20,
@@ -593,25 +592,25 @@
           "id": 21,
           "name": "BCM 9",
           "type": "gpio",
-          "gpioId": 521
+          "gpioId": 609
         },
         {
           "id": 22,
           "name": "BCM 25",
           "type": "gpio",
-          "gpioId": 537
+          "gpioId": 625
         },
         {
           "id": 23,
           "name": "BCM 11",
           "type": "gpio",
-          "gpioId": 523
+          "gpioId": 611
         },
         {
           "id": 24,
           "name": "BCM 8",
           "type": "gpio",
-          "gpioId": 520
+          "gpioId": 608
         },
         {
           "id": 25,
@@ -622,25 +621,25 @@
           "id": 26,
           "name": "BCM 7",
           "type": "gpio",
-          "gpioId": 519
+          "gpioId": 607
         },
         {
           "id": 27,
           "name": "BCM 0",
           "type": "gpio",
-          "gpioId": 512
+          "gpioId": 600
         },
         {
           "id": 28,
           "name": "BCM 1",
           "type": "gpio",
-          "gpioId": 513
+          "gpioId": 601
         },
         {
           "id": 29,
           "name": "BCM 5",
           "type": "gpio",
-          "gpioId": 517
+          "gpioId": 605
         },
         {
           "id": 30,
@@ -651,19 +650,19 @@
           "id": 31,
           "name": "BCM 6",
           "type": "gpio",
-          "gpioId": 518
+          "gpioId": 606
         },
         {
           "id": 32,
           "name": "BCM 12",
           "type": "gpio",
-          "gpioId": 524
+          "gpioId": 612
         },
         {
           "id": 33,
           "name": "BCM 13",
           "type": "gpio",
-          "gpioId": 525
+          "gpioId": 613
         },
         {
           "id": 34,
@@ -675,25 +674,25 @@
           "id": 35,
           "name": "BCM 19",
           "type": "gpio",
-          "gpioId": 531
+          "gpioId": 619
         },
         {
           "id": 36,
           "name": "BCM 16",
           "type": "gpio",
-          "gpioId": 528
+          "gpioId": 616
         },
         {
           "id": 37,
           "name": "BCM 26",
           "type": "gpio",
-          "gpioId": 538
+          "gpioId": 626
         },
         {
           "id": 38,
           "name": "BCM 20",
           "type": "gpio",
-          "gpioId": 532
+          "gpioId": 620
         },
         {
           "id": 39,
@@ -705,9 +704,9 @@
           "id": 40,
           "name": "BCM 21",
           "type": "gpio",
-          "gpioId": 533
+          "gpioId": 621
         }
       ]
     }
   ]
-}
+} 
