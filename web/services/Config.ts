@@ -141,7 +141,7 @@ export class ConfigRoute {
         // GPIO Status endpoint to check sysfs and onoff module status
         app.get('/config/gpio/status', async (req, res, next) => {
             try {
-                const status = await cont.gpio.getSysfsStatus();
+                const status = await gpioCont.getSysfsStatus();
                 return res.status(200).send(status);
             } catch (err) {
                 next(err);
@@ -151,7 +151,7 @@ export class ConfigRoute {
         // Sysfs GPIO enabling endpoint
         app.post('/config/gpio/enable-sysfs', async (req, res, next) => {
             try {
-                const result = await cont.gpio.enableSysfs();
+                const result = await gpioCont.enableSysfs();
                 return res.status(200).send(result);
             } catch (err) {
                 next(err);
