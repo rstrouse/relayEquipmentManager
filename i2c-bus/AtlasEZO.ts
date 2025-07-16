@@ -141,7 +141,7 @@ export class AtlasEZO extends i2cDeviceBase {
                         } catch (err) { this.logError(err, 'Error taking device readings'); }
                     })();
                 }
-                else logger.warn(`${this.device.name} Suspend Polling ${this._suspendPolling}`);
+                else logger.silly(`${this.device.name} Suspend Polling ${this._suspendPolling}`);
             }
         }
         catch (err) { this.logError(err, 'Error Polling Device Values'); }

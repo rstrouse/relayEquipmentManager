@@ -360,7 +360,7 @@ export class SequentSmartFanV6 extends i2cDeviceBase {
     }
 
     public get suspendPolling(): boolean { 
-        if (this._suspendPolling > 0) logger.warn(`${this.device.name} Suspend Polling ${this._suspendPolling}`); 
+        if (this._suspendPolling > 0) logger.silly(`${this.device.name} Suspend Polling ${this._suspendPolling}`); 
         return this._suspendPolling > 0; 
     
     }

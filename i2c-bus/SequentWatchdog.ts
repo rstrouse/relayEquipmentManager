@@ -403,7 +403,7 @@ export class SequentWatchdog extends i2cDeviceBase {
         catch (err) { this.logError(err, 'Error Polling Device Values'); }
         finally { this._timerRead = setTimeout(() => { this.pollReadings(); }, this.options.readInterval) }
     }
-    public get suspendPolling(): boolean { if (this._suspendPolling > 0) logger.warn(`${this.device.name} Suspend Polling ${this._suspendPolling}`); return this._suspendPolling > 0; }
+    public get suspendPolling(): boolean { if (this._suspendPolling > 0) logger.silly(`${this.device.name} Suspend Polling ${this._suspendPolling}`); return this._suspendPolling > 0; }
     public set suspendPolling(val: boolean) {
         this._suspendPolling = Math.max(0, this._suspendPolling + (val ? 1 : -1));
     }

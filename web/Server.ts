@@ -277,7 +277,7 @@ export class HttpServer extends ProtoServer {
                 return res.status(200).send(config.getSection(req.params.section));
             });
             this.app.use((req, res, next) => {
-                logger.info(`[${new Date().toLocaleTimeString()}] ${req.ip} ${req.method} ${req.url} ${typeof req.body === 'undefined' ? '' : JSON.stringify(req.body)}`);
+                logger.verbose(`[${new Date().toLocaleTimeString()}] ${req.ip} ${req.method} ${req.url} ${typeof req.body === 'undefined' ? '' : JSON.stringify(req.body)}`);
                 next()
             });
             ConfigRoute.initRoutes(this.app);
