@@ -7,7 +7,7 @@ import { logger } from "../logger/Logger";
 import { webApp } from "../web/Server";
 import { i2c } from "../i2c-bus/I2cBus";
 import { gdc } from "../generic/genericDevices";
-import * as extend from "extend";
+const extend = require('extend');
 const io = require('socket.io-client');
 //import io from "socket.io-client";
 //import { Server } from "http";

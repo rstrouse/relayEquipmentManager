@@ -5,6 +5,6 @@ import { AnalogDevices } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";
 //import { i2cBus } from "./I2cBus";
 import { connBroker, ServerConnection } from "../connections/Bindings";
-import * as extend from "extend";
+const extend = require('extend');
 import { Buffer } from "buffer";
 import { i2cDeviceFactory } from "./i2cFactory";

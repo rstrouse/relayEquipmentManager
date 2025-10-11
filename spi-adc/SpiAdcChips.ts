@@ -2,7 +2,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../logger/Logger";
-import * as extend from 'extend';
+const extend = require('extend');
 import { cont } from "../boards/Controller";
 export class SpiAdcChips {
     constructor() { }

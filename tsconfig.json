@@ -5,9 +5,16 @@
     "noEmitOnError": true,
     "removeComments": false,
     "sourceMap": true,
-    "target": "ESNext",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "node",
     "preserveConstEnums": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
   },
   "exclude": [
     "node_modules"

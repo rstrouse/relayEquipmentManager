@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import { logger } from "../logger/Logger";
 import { utils } from "../boards/Constants";
 import { setTimeout, clearTimeout } from "timers";
-import * as extend from "extend";
+const extend = require('extend');
 import { Buffer } from "buffer";
 import { i2cDeviceBase } from "./I2cBus";
 import { webApp } from "../web/Server";

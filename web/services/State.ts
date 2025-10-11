@@ -1,5 +1,5 @@
 ﻿import * as express from "express";
-import * as extend from 'extend';
+const extend = require('extend');
 import { config } from "../../config/Config";
 import { logger } from "../../logger/Logger";
 import { utils, vMaps } from "../../boards/Constants";

@@ -7,7 +7,7 @@ import { webApp } from "../web/Server";
 import { PromisifiedBus } from "i2c-bus";
 import { GenericDeviceFactory } from "./GenericFactory";
 import { connBroker, ServerConnection } from "../connections/Bindings";
-import * as extend from "extend";
+const extend = require('extend');
 import { Buffer } from "buffer";
 import * as path from 'path';
 import * as fs from 'fs';

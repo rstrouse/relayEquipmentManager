@@ -1,4 +1,4 @@
-﻿import * as extend from 'extend';
+﻿const extend = require('extend');
 import { EventEmitter } from 'events';
 import { logger } from '../logger/Logger';
 import { setTimeout } from 'timers';

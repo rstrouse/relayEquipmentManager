@@ -1,4 +1,4 @@
-﻿import * as extend from 'extend';
+﻿const extend = require('extend');
 import * as fs from 'fs';
 import * as path from 'path';
 import { setTimeout } from 'timers';

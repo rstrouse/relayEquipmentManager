@@ -5,7 +5,7 @@ import { AnalogDevices, DeviceStatus } from "../devices/AnalogDevices";
 import { webApp } from "../web/Server";
 import { utils } from "../boards/Constants";
 import { connBroker, ServerConnection } from "../connections/Bindings";
-import * as extend from "extend";
+const extend = require('extend');
 export class SpiAdcBus {
     private _spiBus;
     //private _opts;

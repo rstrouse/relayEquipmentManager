@@ -1,6 +1,6 @@
 ﻿import * as path from "path";
 import * as fs from "fs";
-import * as extend from "extend";
+const extend = require('extend');
 import * as util from "util";
 import { execSync } from 'child_process';
 

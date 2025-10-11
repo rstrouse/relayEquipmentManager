@@ -14,7 +14,7 @@ import * as ssdp from 'node-ssdp';
 import * as os from 'os';
 import { URL } from "url";
 import { Timestamp } from '../boards/Constants';
-import extend = require("extend");
+const extend = require('extend');
 import { ConfigRoute } from "./services/Config";
 import { StateRoute } from "./services/State";
 import { cont } from "../boards/Controller";
