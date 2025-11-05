@@ -1,6 +1,6 @@
 {
   "name": "relay-equipment-manager",
-  "version": "8.1.2",
+  "version": "8.3.0",
   "description": "relayEquipmentManager",
   "main": "dist/app.js",
   "engines": {

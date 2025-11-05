@@ -7,8 +7,23 @@
  ## Architecture
  REM uses nodejs as its primary development platform.  Communication can be performed through configurable MQTT, websocket, or HTTP Rest APIs.  The data interface is exposed through the built in web interface for REM.  Inputs and outputs in REM are described as Triggers (inputs) and Feeds (outputs).  These are routed through a connection manager that can be configured within the web interface.
  
- # Installation
- To install relayEquipmentManager clone the repository to either a Raspberry Pi or BeagleBone.  While you can install this software on other platforms to try it out the GPIO functions will not do anything.  All that will happen is the node console will show feedback to simulate GPIO operations.
+# Installation
+
+## Prerequisites
+**Node.js Version 20 or higher is required.** This software requires Node.js v20.0.0 or later. You can check your Node.js version by running:
+```bash
+node --version
+```
+
+If you need to install or upgrade Node.js, visit [nodejs.org](https://nodejs.org/) or use a version manager like `nvm`:
+```bash
+# Using nvm (Node Version Manager)
+nvm install 20
+nvm use 20
+```
+
+## Installation Steps
+To install relayEquipmentManager clone the repository to either a Raspberry Pi or BeagleBone.  While you can install this software on other platforms to try it out the GPIO functions will not do anything.  All that will happen is the node console will show feedback to simulate GPIO operations.
 
 After you have cloned the repository run ```npm install``` or ```sudo npm install``` in the cloned directory depending on the permissions assigned to the user on your linux console.  Once completed run ```npm start``` or ```sudo npm start``` to start the relayEquipmentManager server.
 
@@ -36,7 +51,7 @@ relayEquipmentManager server includes a web server for configuration of connecti
         "sslCertFile": ""
       },
       "mdns": { "enabled": false },
-      "sspd": { "enabled": false },
+      "ssdp": { "enabled": false },
       "services": {}
     }
   },
@@ -46,7 +61,7 @@ relayEquipmentManager server includes a web server for configuration of connecti
       "level": "info"
     }
   },
-  "appVersion": "1.0.0"
+  "appVersion": "8.3.0"
 }
 ```
 
