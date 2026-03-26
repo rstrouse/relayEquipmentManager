@@ -2,6 +2,15 @@
   "name": "Raspberry Pi 5",
   "desc": "Raspberry Pi 5 with Bookworm OS",
   "icon": "fab fa-raspberry-pi",
+  "gpioBackends": {
+    "sysfs": {
+      "base": 600
+    },
+    "libgpiod": {
+      "chipRegex": "pinctrl-rp1",
+      "lineSource": "bcm"
+    }
+  },
   "overlays": [
     {
       "name": "spi0",

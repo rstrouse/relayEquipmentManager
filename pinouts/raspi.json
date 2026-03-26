@@ -1,7 +1,16 @@
-﻿{
+{
   "name": "Raspberry Pi (Legacy OS)",
   "desc": "All current models up to 4B running the Legacy OS option",
   "icon": "fab fa-raspberry-pi",
+  "gpioBackends": {
+    "sysfs": {
+      "base": 0
+    },
+    "libgpiod": {
+      "chipRegex": "pinctrl-bcm",
+      "lineSource": "bcm"
+    }
+  },
   "overlays": [
     {
       "name": "spi0",

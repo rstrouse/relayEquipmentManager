@@ -31,6 +31,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@bratbit/onoff": "^1.0.7",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "codejar": "^3.5.0",
     "express": "^4.21.0",

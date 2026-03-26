@@ -1,4 +1,4 @@
-﻿import * as express from "express";
+import * as express from "express";
 const extend = require('extend');
 import * as dns from 'dns';
 import { config } from "../../config/Config";
@@ -138,7 +138,7 @@ export class ConfigRoute {
             return res.status(200).send(opts);
         });
         
-        // GPIO Status endpoint to check sysfs and onoff module status
+        // GPIO status endpoint to inspect selected backend and platform capability.
         app.get('/config/gpio/status', async (req, res, next) => {
             try {
                 const status = await gpioCont.getSysfsStatus();
@@ -148,7 +148,7 @@ export class ConfigRoute {
             }
         });
         
-        // Sysfs GPIO enabling endpoint
+        // Legacy sysfs enable endpoint. On Trixie this returns libgpiod guidance.
         app.post('/config/gpio/enable-sysfs', async (req, res, next) => {
             try {
                 const result = await gpioCont.enableSysfs();
