@@ -109,15 +109,18 @@ export class SequentSmartFanV6 extends i2cDeviceBase {
                 this.evalFanPower = new Function('options', 'values', 'info', this.options.fanPowerFn);
             }
 
-            this.powerPin = await cont.gpio.setPinAsync(1, 32,
-                {
-                    isActive: this.device.isActive,
-                    name: `${this.device.name} Power`, direction: 'output',
-                    isInverted: false, initialState: 'off', debounceTimeout: 0
-                }
-            );
-            
             if (this.device.isActive) {
+                try {
+                    this.powerPin = await cont.gpio.setPinAsync(1, 32,
+                        {
+                            isActive: true,
+                            name: `${this.device.name} Power`, direction: 'output',
+                            isInverted: false, initialState: 'off', debounceTimeout: 0
+                        }
+                    );
+                } catch (err) {
+                    logger.error(`${this.device.name} error exporting GPIO pin 32 for fan enable: ${err.message}`);
+                }
                 await this.getHwFwVer();                      
                 await this.getFanPower();                           
                 await this.getStatus();
@@ -194,13 +197,19 @@ export class SequentSmartFanV6 extends i2cDeviceBase {
 
     protected async getFanPower() {
         try {
-            if (this.i2c.isMock) Math.round(Math.random() * 100); 
-        
-            let fanPower = await this.i2c.readByte(this.device.address, this.regs.I2C_MEM_FAN_POWER);
-            fanPower = Math.round((255 - fanPower) / 2.55);
-
-            this.values.fanPower = fanPower;
-    
+            if (this.i2c.isMock) return;
+            // v6 hardware is a digital pot with no processor — use a plain I2C read
+            // (no register address byte). Sending a register byte would be interpreted
+            // as a wiper-set command and corrupt the current fan power.
+            let buff = await this.i2c.read(this.device.address, 1);
+            if (buff.bytesRead === 1) {
+                let pwr = buff.buffer.readUInt8(0);
+                logger.verbose(`${this.device.name} getFanPower = ${pwr}`);
+                this.values.fanPower = Math.round((255 - pwr) / 2.55);
+            }
+            else {
+                this.values.fanPower = 0;
+            }
         } catch (err) { logger.error(`${this.device.name} error getting fan power: ${err.message}`); }
     }
 
@@ -273,13 +282,12 @@ export class SequentSmartFanV6 extends i2cDeviceBase {
                 // Sequent occupies a gpio pin to turn on and off the fan.
                 let pwr = Math.round(255 - Math.min(val * 2.55, 255));
                 if (typeof this.powerPin !== 'undefined')  {
-                    // Device was initially configured inactive, now active (without restart)
                     if(!this.powerPin.isActive) {
                         await this.powerPin.setPinAsync({                            
                             isActive: true,
-                        })      
+                        });
                     }              
-                    this.powerPin.setPinStateAsync((val > 0 ? 1 : 0));
+                    await this.powerPin.setPinStateAsync(val > 0);
                 }
                 let buffer = Buffer.from([pwr]);
                 logger.verbose(`${this.device.name} setFanPower = ${pwr} val = ${val}`);
