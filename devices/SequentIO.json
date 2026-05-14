@@ -3402,6 +3402,394 @@
       "interfaces": [
         "i2c"
       ]
+    },
+    {
+      "id": 906,
+      "enabled": true,
+      "name": "Sequent Smart Relay Ind v2",
+      "deviceClass": "SequentSmartRelayInd",
+      "module": "./SequentIO",
+      "hasReset": false,
+      "hasChangeAddress": false,
+      "readings": {
+        "inUniversal": {
+          "label": "Universal input",
+          "interval": {
+            "min": 2000,
+            "max": 99000,
+            "default": 10000
+          }
+        }
+      },
+      "outputs": [
+        { "name": "relayVal1", "desc": "Value for relay #1", "maxSamples": 1 },
+        { "name": "relayVal2", "desc": "Value for relay #2", "maxSamples": 1 },
+        { "name": "relayVal3", "desc": "Value for relay #3", "maxSamples": 1 },
+        { "name": "relayVal4", "desc": "Value for relay #4", "maxSamples": 1 },
+        { "name": "relayObj1", "desc": "Object for relay #1", "maxSamples": 1 },
+        { "name": "relayObj2", "desc": "Object for relay #2", "maxSamples": 1 },
+        { "name": "relayObj3", "desc": "Object for relay #3", "maxSamples": 1 },
+        { "name": "relayObj4", "desc": "Object for relay #4", "maxSamples": 1 },
+        { "name": "crt1", "desc": "Relay #1 current (A)", "maxSamples": 50 },
+        { "name": "crt2", "desc": "Relay #2 current (A)", "maxSamples": 50 },
+        { "name": "crt3", "desc": "Relay #3 current (A)", "maxSamples": 50 },
+        { "name": "crt4", "desc": "Relay #4 current (A)", "maxSamples": 50 },
+        { "name": "crtRms1", "desc": "Relay #1 RMS current (A)", "maxSamples": 50 },
+        { "name": "crtRms2", "desc": "Relay #2 RMS current (A)", "maxSamples": 50 },
+        { "name": "crtRms3", "desc": "Relay #3 RMS current (A)", "maxSamples": 50 },
+        { "name": "crtRms4", "desc": "Relay #4 RMS current (A)", "maxSamples": 50 },
+        { "name": "inDigital1", "desc": "Digital in #1", "maxSamples": 50 },
+        { "name": "inDigital2", "desc": "Digital in #2", "maxSamples": 50 },
+        { "name": "inDigital3", "desc": "Digital in #3", "maxSamples": 50 },
+        { "name": "inDigital4", "desc": "Digital in #4", "maxSamples": 50 },
+        { "name": "inUniversal1", "desc": "Universal in #1 (DIN/AC/T10k)", "maxSamples": 50 },
+        { "name": "inUniversal2", "desc": "Universal in #2 (DIN/AC/T10k)", "maxSamples": 50 },
+        { "name": "inUniversal3", "desc": "Universal in #3 (DIN/AC/T10k)", "maxSamples": 50 },
+        { "name": "inUniversal4", "desc": "Universal in #4 (DIN/AC/T10k)", "maxSamples": 50 },
+        { "name": "inUniversal1.value", "desc": "Universal in #1 value", "maxSamples": 50 },
+        { "name": "inUniversal2.value", "desc": "Universal in #2 value", "maxSamples": 50 },
+        { "name": "inUniversal3.value", "desc": "Universal in #3 value", "maxSamples": 50 },
+        { "name": "inUniversal4.value", "desc": "Universal in #4 value", "maxSamples": 50 },
+        { "name": "inUniversal1.resistance", "desc": "Universal in #1 thermistor resistance", "maxSamples": 50 },
+        { "name": "inUniversal2.resistance", "desc": "Universal in #2 thermistor resistance", "maxSamples": 50 },
+        { "name": "inUniversal3.resistance", "desc": "Universal in #3 thermistor resistance", "maxSamples": 50 },
+        { "name": "inUniversal4.resistance", "desc": "Universal in #4 thermistor resistance", "maxSamples": 50 }
+      ],
+      "inputs": [
+        {
+          "name": "relayState",
+          "desc": "Relay State Value",
+          "dataType": "boolean",
+          "instructions": "<hr style=\"margin:1px\"></hr>The incoming data should represent a boolean true/false or an object { state: boolean, latch:number }.  If a latch is supplied the relay will unlatch after the number of ms expires.",
+          "options": [
+            {
+              "bind": "channelId",
+              "dataType": "number",
+              "default": "",
+              "field": {
+                "type": "valueSpinner",
+                "required": false,
+                "bind": "channelId",
+                "labelText": "Relay #",
+                "min": 1,
+                "max": 16,
+                "inputAttrs": { "maxLength": 24, "style": { "width": "3rem" } },
+                "labelAttrs": { "style": { "width": "7rem" } },
+                "style": { "display": "block" }
+              }
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "dataType": "panel",
+          "field": {
+            "type": "tabBar",
+            "style": { "display": "inline-block" }
+          },
+          "tabs": [
+            {
+              "field": { "text": "General", "id": "tabGeneral" },
+              "options": [
+                {
+                  "dataType": "string",
+                  "default": "",
+                  "field": {
+                    "type": "inputField",
+                    "required": false,
+                    "bind": "options.name",
+                    "labelText": "Name",
+                    "inputAttrs": { "maxLength": 16, "style": { "width": "16rem" } },
+                    "style": { "display": "block" }
+                  }
+                },
+                {
+                  "bind": "options.readInterval",
+                  "dataType": "int",
+                  "default": false,
+                  "field": {
+                    "binding": "options.readInterval",
+                    "type": "valueSpinner",
+                    "labelText": "Read Interval",
+                    "min": 500,
+                    "max": 99000,
+                    "canEdit": true,
+                    "fmtMask": "#,##0",
+                    "emptyMask": "--",
+                    "labelAttrs": { "style": { "paddingRight": ".25rem" } },
+                    "inputAttrs": { "style": { "width": "4.5rem" } },
+                    "units": "ms",
+                    "style": { "marginLeft": "0rem" }
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Device Info",
+                    "style": { "display": "block", "verticalAlign": "top" },
+                    "cssClass": "i2cDeviceInformation"
+                  },
+                  "options": [
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Hardware",
+                        "binding": "info.hwVersion",
+                        "style": { "display": "block", "fontSize": ".8rem", "lineHeight": "1.2" },
+                        "labelAttrs": { "style": { "width": "5.5rem" } }
+                      }
+                    },
+                    {
+                      "field": {
+                        "type": "staticField",
+                        "labelText": "Firmware",
+                        "binding": "info.fwVersion",
+                        "style": { "display": "block", "fontSize": ".8rem", "lineHeight": "1.2" },
+                        "labelAttrs": { "style": { "width": "5.5rem" } }
+                      }
+                    },
+                    {
+                      "bind": "info.registers",
+                      "field": {
+                        "caption": "Registers",
+                        "type": "selectList",
+                        "bind": "info.registers",
+                        "columns": [
+                          { "binding": "name", "text": "Name", "style": { "width": "97px", "whiteSpace": "nowrap", "overflow": "hidden", "textOverflow": "ellipsis" } },
+                          { "binding": "value", "text": "Val", "style": { "width": "107px", "whiteSpace": "nowrap", "overflow": "hidden", "textOverflow": "ellipsis", "textAlign": "center" } },
+                          { "binding": "desc", "text": "Description", "style": { "width": "177px", "whiteSpace": "nowrap", "overflow": "hidden", "textOverflow": "ellipsis" } }
+                        ],
+                        "style": { "fontSize": "8pt" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Universal Inputs",
+                "id": "tabUniversalIn",
+                "cssClass": "i2cReadingValues",
+                "attrs": { "data-bindingcontext": "io-channels" }
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "32rem" },
+                    "html": "Each channel can be configured as a Dry Contact (DIN), AC signal detector (AC), or 10K Thermistor (T10k).",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "panel",
+                    "class": "ioChannels",
+                    "direction": "in",
+                    "total": 4,
+                    "ioType": "analog",
+                    "binding": "values.inputs.inUniversal",
+                    "configTemplate": {
+                      "field": { "type": "div" },
+                      "options": [
+                        {
+                          "dataType": "string",
+                          "default": "DIN",
+                          "field": {
+                            "binding": "type",
+                            "bindColumn": 0,
+                            "displayColumn": 2,
+                            "type": "pickList",
+                            "labelText": "Input Type",
+                            "columns": [
+                              { "binding": "val", "text": "type", "hidden": true },
+                              { "binding": "desc", "text": "name", "hidden": true },
+                              { "binding": "desc", "text": "Mode", "style": { "whiteSpace": "nowrap" } }
+                            ],
+                            "items": [
+                              { "val": "DIN", "name": "DIN", "desc": "Dry Contact" },
+                              { "val": "AC", "name": "AC", "desc": "AC Detect (50Hz filtered)" },
+                              { "val": "T10k", "name": "T10k", "desc": "10K Thermistor" }
+                            ],
+                            "inputAttrs": { "style": { "width": "12rem" } }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "fieldEvents": {
+                    "saveIOChannel": {
+                      "type": "putservice",
+                      "path": "`/config/i2c/${device.busNumber}/${device.address}/deviceCommand/setIOChannels`",
+                      "message": "Saving Universal Input...",
+                      "callContext": "io-channels"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "field": {
+                "text": "Relays",
+                "id": "tabRelays",
+                "cssClass": "i2cReadingValues"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "24rem" },
+                    "html": "Enable each relay you are going to control or monitor.  This Smart Relay HAT supports 4 relays with onboard current sensing (HALL effect).<hr style=\"margin:2px\"></hr>Only the relays you identify here will be available for triggers and feeds.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "panel",
+                    "class": "pnlI2cRelay",
+                    "controllerTypes": [
+                      {
+                        "name": "sequent4",
+                        "desc": "Sequent 4",
+                        "options": { "idType": "sequent4", "maxRelays": 4 }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "field": { "text": "RS-485", "id": "tabRS485" },
+              "options": [
+                {
+                  "dataType": "int",
+                  "default": false,
+                  "field": {
+                    "bindColumn": 0,
+                    "displayColumn": 2,
+                    "type": "pickList",
+                    "bind": "options.rs485.mode",
+                    "labelText": "Port Mode",
+                    "columns": [
+                      { "binding": "val", "text": "mode", "hidden": true },
+                      { "binding": "desc", "text": "name", "hidden": true },
+                      { "binding": "desc", "text": "Mode", "style": { "whiteSpace": "nowrap" } }
+                    ],
+                    "items": [
+                      { "val": 0, "name": "passThru", "desc": "RS485 Pass Thru" },
+                      { "val": 1, "name": "slave", "desc": "Modbus RTU (slave)" }
+                    ],
+                    "inputAttrs": { "style": { "width": "10rem" } }
+                  },
+                  "fieldEvents": {
+                    "selchanged": "var pnl = $(evt.currentTarget).parents('.picTabContent:first'); if(evt.newItem.val > 0) { pnl.find('fieldset.pnl-port-settings').show(); } else { pnl.find('fieldset.pnl-port-settings').hide(); }"
+                  }
+                },
+                {
+                  "dataType": "panel",
+                  "field": {
+                    "type": "fieldset",
+                    "legend": "Modbus Port Settings",
+                    "style": { "display": "none", "verticalAlign": "top" },
+                    "cssClass": "pnl-port-settings"
+                  },
+                  "options": [
+                    {
+                      "dataType": "number",
+                      "default": "",
+                      "field": {
+                        "type": "inputField",
+                        "required": false,
+                        "binding": "options.rs485.baud",
+                        "value": 19200,
+                        "dataType": "int",
+                        "fmtMask": "#,###",
+                        "emptyMask": "",
+                        "labelText": "Baud Rate",
+                        "inputAttrs": { "maxLength": 7, "style": { "width": "7rem", "textAlign": "right" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" },
+                        "units": "baud"
+                      }
+                    },
+                    {
+                      "dataType": "int",
+                      "default": false,
+                      "field": {
+                        "bindColumn": 0,
+                        "displayColumn": 2,
+                        "type": "pickList",
+                        "bind": "options.rs485.parity",
+                        "labelText": "Parity",
+                        "value": 1,
+                        "columns": [
+                          { "binding": "val", "text": "parity", "hidden": true },
+                          { "binding": "desc", "text": "name", "hidden": true },
+                          { "binding": "desc", "text": "Parity", "style": { "whiteSpace": "nowrap" } }
+                        ],
+                        "items": [
+                          { "val": 0, "name": "none", "desc": "None" },
+                          { "val": 1, "name": "even", "desc": "Even" },
+                          { "val": 2, "name": "odd", "desc": "Odd" }
+                        ],
+                        "inputAttrs": { "style": { "width": "5rem" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "dataType": "int",
+                      "default": false,
+                      "field": {
+                        "type": "valueSpinner",
+                        "binding": "options.rs485.stopBits",
+                        "labelText": "Stop Bits",
+                        "min": 1,
+                        "max": 2,
+                        "inputAttrs": { "style": { "width": "3rem" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" }
+                      }
+                    },
+                    {
+                      "dataType": "int",
+                      "field": {
+                        "type": "valueSpinner",
+                        "binding": "options.rs485.address",
+                        "labelText": "Address",
+                        "min": 1,
+                        "max": 255,
+                        "canEdit": true,
+                        "inputAttrs": { "style": { "width": "3rem" } },
+                        "labelAttrs": { "style": { "width": "5rem" } },
+                        "style": { "display": "block" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "field": { "text": "Watchdog", "id": "tabWatchdog" },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "html": "Hardware watchdog status (read-only display).  Use the Sequent CLI tools to configure WDT periods.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        "i2c"
+      ]
     }
 
   ]
