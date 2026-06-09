@@ -835,6 +835,39 @@
             },
             {
               "field": {
+                "text": "Triacs",
+                "id": "tabTriacs",
+                "cssClass": "i2cReadingValues"
+              },
+              "options": [
+                {
+                  "field": {
+                    "type": "div",
+                    "style": { "width": "24rem" },
+                    "html": "Enable each triac output you are going to control.  The MEGA-BAS board has 4 x 24VAC triac outputs.<hr style=\"margin:2px\"></hr>Only the triacs you identify here will be available for triggers and feeds.",
+                    "cssClass": "script-advanced-instructions"
+                  }
+                },
+                {
+                  "field": {
+                    "type": "panel",
+                    "class": "pnlI2cRelay",
+                    "controllerTypes": [
+                      {
+                        "name": "sequent4",
+                        "desc": "Sequent 4",
+                        "options": {
+                          "idType": "sequent4",
+                          "maxRelays": 4
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "field": {
                 "text": "RS-485",
                 "id": "tabRS485"
               },
@@ -1185,6 +1218,46 @@
           "name": "in0_108.value",
           "desc": "0-10v in #8 value",
           "maxSamples": 50
+        },
+        {
+          "name": "relayVal1",
+          "desc": "Value for triac #1",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal2",
+          "desc": "Value for triac #2",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal3",
+          "desc": "Value for triac #3",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayVal4",
+          "desc": "Value for triac #4",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj1",
+          "desc": "Object for triac #1",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj2",
+          "desc": "Object for triac #2",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj3",
+          "desc": "Object for triac #3",
+          "maxSamples": 1
+        },
+        {
+          "name": "relayObj4",
+          "desc": "Object for triac #4",
+          "maxSamples": 1
         }
       ],
       "inputs": [

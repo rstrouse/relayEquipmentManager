@@ -924,6 +924,7 @@ export class SequentMegaBAS extends SequentIO {
         out4_20: { name: '4-20mA output', idOffset: 5 },
         in0_10pm: { name: '+- 10v input', idOffset: 13 }
     }
+    protected triacRegs = { val: 0, set: 1, clear: 2 };
     public async initAsync(deviceType): Promise<boolean> {
         try {
             // The Sequent cards pick registers at random between cards.  Not ideal but we simply override
@@ -942,6 +943,7 @@ export class SequentMegaBAS extends SequentIO {
             // Set up all the I/O channels.  We want to create a values data structure for all potential inputs and outputs.
             this.ensureIOChannels('IN 0-10', 'AIN', this.in0_10, 8);
             this.ensureIOChannels('OUT 0-10', 'AOUT', this.out0_10, 4);
+            this.ensureRelays('Triac', this.relays, 4);
             await this.initOutputs(this.out0_10, this.set0_10Output);
 
             if (this.device.isActive) await this.getRS485Port();
@@ -1040,6 +1042,7 @@ export class SequentMegaBAS extends SequentIO {
     public async takeReadings(): Promise<boolean> {
         try {
             await this.readDryContact();
+            await this.readTriacs();
             // Read all the active inputs and outputs.
             await this.readIOChannels(this.in0_10, this.get0_10Input);
             await this.readIOChannels(this.out0_10, this.get0_10Output);
@@ -1049,11 +1052,119 @@ export class SequentMegaBAS extends SequentIO {
         }
         catch (err) { this.logError(err, 'Error taking device readings'); }
     }
+    protected async readTriacs() {
+        try {
+            let val = (this.i2c.isMock) ? Math.floor(255 * Math.random()) & 0x0f : await this.readByte(this.triacRegs.val);
+            for (let i = 0; i < this.relays.length; i++) {
+                let relay = this.relays[i];
+                if (relay.enabled) {
+                    let v = utils.makeBool((1 << i) & val);
+                    if (relay.invert === true) v = !v;
+                    if (relay.state !== v) {
+                        relay.state = v;
+                        relay.tripTime = new Date().getTime();
+                        webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+                    }
+                }
+            }
+        }
+        catch (err) { logger.error(`${this.device.name} error reading triac states: ${err.message}`); }
+    }
+    protected async setTriacState(id: number, state: boolean) {
+        try {
+            let reg = state ? this.triacRegs.set : this.triacRegs.clear;
+            let bit = 1 << (id - 1);
+            if (!this.i2c.isMock) {
+                let buff = Buffer.from([reg, bit]);
+                await this.i2c.writeI2cBlock(this.device.address, reg, 1, Buffer.from([bit]));
+            }
+            let relay = this.relays[id - 1];
+            relay.state = state;
+            relay.tripTime = new Date().getTime();
+            webApp.emitToClients('i2cDataValues', { bus: this.i2c.busNumber, address: this.device.address, relayStates: [relay] });
+        }
+        catch (err) { logger.error(`${this.device.name} error setting triac ${id}: ${err.message}`); }
+    }
+    public async setRelayState(opts): Promise<{ id: number, name: string, state: boolean }> {
+        let relay = this.relays.find(elem => { return elem.id === opts.id });
+        if (typeof relay === 'undefined') return Promise.reject(new Error(`${this.device.name} - Invalid Triac id: ${opts.id}`));
+        try {
+            let newState = utils.makeBool(opts.state);
+            let target = relay.invert === true ? !newState : newState;
+            await this.setTriacState(relay.id, target);
+            return relay;
+        }
+        catch (err) { return Promise.reject(err); }
+    }
+    public async setDeviceState(binding: string | DeviceBinding, data: any): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            let relayId = parseInt(bind.params[0], 10);
+            if (isNaN(relayId)) return Promise.reject(new Error(`setDeviceState: Invalid triac Id ${bind.params[0]}`));
+            let relay = this.relays.find(elem => elem.id === relayId);
+            if (typeof relay === 'undefined') return Promise.reject(new Error(`setDeviceState: Could not find triac Id ${bind.params[0]}`));
+            if (!relay.enabled) return Promise.reject(new Error(`setDeviceState: Triac [${relay.name}] is not enabled.`));
+            let newState;
+            switch (typeof data) {
+                case 'boolean':
+                    newState = data;
+                    break;
+                case 'number':
+                    newState = data === 1 ? true : data === 0 ? false : relay.state;
+                    break;
+                case 'string':
+                    switch (data.toLowerCase()) {
+                        case 'tripped':
+                        case 'true':
+                        case 'on':
+                        case '1':
+                            newState = true;
+                            break;
+                        case 'untripped':
+                        case 'false':
+                        case '0':
+                        case 'off':
+                            newState = false;
+                            break;
+                    }
+                    break;
+                case 'object':
+                    if (typeof data.state !== 'undefined') newState = utils.makeBool(data.state);
+                    else if (typeof data.isOn !== 'undefined') newState = utils.makeBool(data.isOn);
+                    else newState = false;
+                    break;
+                default:
+                    newState = typeof data.state !== 'undefined' ? utils.makeBool(data.state) : typeof data.isOn !== 'undefined' ? utils.makeBool(data.isOn) : false;
+                    break;
+            }
+            let oldState = relay.state;
+            if (newState !== oldState) {
+                await this.setRelayState({ id: relayId, state: newState });
+            }
+            return extend(true, {}, relay, { oldState: oldState, latchDuration: new Date().getTime() - relay.tripTime });
+        } catch (err) { return Promise.reject(err); }
+    }
+    public async getDeviceState(binding: string | DeviceBinding): Promise<any> {
+        try {
+            let bind = (typeof binding === 'string') ? new DeviceBinding(binding) : binding;
+            if (bind.params.length === 0) return Promise.reject(new Error(`getDeviceState: You must supply a triac id to get its state`));
+            await this.takeReadings();
+            let relayId = parseInt(bind.params[0], 10);
+            if (isNaN(relayId)) return Promise.reject(new Error(`getDeviceState: Invalid triac Id ${bind.params[0]}`));
+            let relay = this.relays.find(elem => elem.id === relayId);
+            if (typeof relay === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find triac Id ${bind.params[0]}`));
+            if (!relay.enabled) return Promise.reject(new Error(`getDeviceState: Triac [${relay.name}] is not enabled.`));
+            return relay.state;
+        } catch (err) { return Promise.reject(err); }
+    }
     public async setOptions(opts): Promise<any> {
         try {
             this.suspendPolling = true;
             if (typeof opts.name !== 'undefined' && this.device.name !== opts.name) this.options.name = this.device.name = opts.name;
             if (typeof opts.rs485 !== 'undefined' && this.checkDiff(this.rs485, opts.rs485)) await this.setRS485Port(opts.rs485);
+            if (typeof opts.relays !== 'undefined') {
+                this.relays = opts.relays;
+            }
             return Promise.resolve(this.options);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
@@ -1098,6 +1209,9 @@ export class SequentMegaBAS extends SequentIO {
                     }
                 }
             }
+            if (typeof vals.relays !== 'undefined') {
+                await this.setRelayOptions(vals.relays);
+            }
             return Promise.resolve(this.options);
         }
         catch (err) { this.logError(err); Promise.reject(err); }
@@ -1129,6 +1243,10 @@ export class SequentMegaBAS extends SequentIO {
         for (let i = 0; i < this.out0_10.length; i++) {
             let chan = this.out0_10[i];
             if (chan.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: chan.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:out0_10.${i+1}`, category: category });
+        }
+        for (let i = 0; i < this.relays.length; i++) {
+            let relay = this.relays[i];
+            if (relay.enabled) desc.push({ type: 'i2c', isActive: this.device.isActive, name: relay.name, binding: `i2c:${this.i2c.busId}:${this.device.id}:${relay.id}`, category: 'Triacs' });
         }
         return desc;
     }
