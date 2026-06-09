@@ -41,6 +41,87 @@ export interface GpioBackendSelection {
     platform: GpioPlatformInfo;
 }
 
+class MockGpioPin {
+    private _opts: any;
+    private _pinId: number;
+    private _direction: string;
+    private _edge: string;
+    private _value: number = 0;
+    private _watches: ((err: any, value: number) => void)[] = [];
+    private _isExported = true;
+    constructor(pinId: number, direction: string, edge?: string, options?: any) {
+        this._pinId = pinId;
+        switch (direction) {
+            case "high": this._value = 1; this._direction = "out"; break;
+            case "low": this._value = 0; this._direction = "out"; break;
+            default: this._direction = direction; this._value = 0; break;
+        }
+        this._edge = edge;
+        this._opts = Object.assign({ activeLow: false, debounceTimeout: 0, reconfigureDirection: true }, options || {});
+    }
+    public read(callback?: (err: any, value: number) => void): any {
+        if (typeof callback !== "undefined") return callback(null, this._value);
+        return Promise.resolve(this._value);
+    }
+    public readSync(): number { return this._value; }
+    public write(val: number, callback?: (err: any, value: number) => void): any {
+        if (this._direction === "in") {
+            const err = new Error(`EPERM: GPIO #${this._pinId} write not permitted on input.`);
+            if (typeof callback !== "undefined") return callback(err, this._value);
+            return Promise.reject(err);
+        }
+        this.setValueInternal(val);
+        if (typeof callback !== "undefined") return callback(null, this._value);
+        return Promise.resolve(this._value);
+    }
+    public writeSync(val: number): any {
+        if (this._direction === "in") return Promise.reject(new Error(`EPERM: GPIO #${this._pinId} write not permitted.`));
+        this.setValueInternal(val);
+        return Promise.resolve(val);
+    }
+    public watch(callback: (err: any, value: number) => void) { this._watches.push(callback); }
+    public unwatch(callback?: (err: any, value: number) => void) {
+        if (typeof callback === "undefined") this._watches.length = 0;
+        else {
+            for (let i = this._watches.length - 1; i >= 0; i--) if (this._watches[i] === callback) this._watches.splice(i, 1);
+        }
+    }
+    public unwatchAll() { this._watches.length = 0; }
+    public edge(): string { return this._edge; }
+    public setEdge(edge: string) { this._edge = edge; }
+    public activeLow(): boolean { return !!this._opts.activeLow; }
+    public setActiveLow(activeLow: boolean) { this._opts.activeLow = activeLow; }
+    public direction(): string { return this._direction; }
+    public unexport() { this._isExported = false; }
+    private setValueInternal(val: number) {
+        const oldVal = this._value;
+        this._value = val;
+        if (oldVal !== val) {
+            const fire = (this._edge === "both") ||
+                (this._edge === "rising" && val === 1) ||
+                (this._edge === "falling" && val === 0);
+            if (fire) {
+                for (let i = 0; i < this._watches.length; i++) {
+                    try { this._watches[i](null, val); } catch (e) { /* swallow */ }
+                }
+            }
+        }
+    }
+}
+
+class MockBackend implements GpioBackend {
+    public readonly id = "mock";
+    public readonly displayName = "mock (no hardware)";
+    public readonly usesSysfs = false;
+    public isAccessible(): boolean { return true; }
+    public resolveAddress(pinDef: GpioPin, pinout: any, context: BackendContext): BackendPinAddress {
+        return { gpio: Number(pinout?.gpioId), source: "mock" };
+    }
+    public createGpio(address: BackendPinAddress, direction: string, edge: string, options: any): any {
+        return new MockGpioPin(address.gpio, direction, edge, options);
+    }
+}
+
 class SysfsOnOffBackend implements GpioBackend {
     public readonly id = "sysfs-onoff";
     public readonly displayName = "onoff (sysfs)";
@@ -153,6 +234,16 @@ function detectRaspberryPi(): boolean {
     }
 }
 
+function isPi5(): boolean {
+    try {
+        if (!fs.existsSync("/proc/device-tree/model")) return false;
+        const model = fs.readFileSync("/proc/device-tree/model", "utf8").trim();
+        return /Raspberry Pi 5/i.test(model);
+    } catch (err) {
+        return false;
+    }
+}
+
 function safeLoadOnOff(): any {
     try {
         return require("onoff").Gpio;
@@ -210,6 +301,10 @@ export function selectGpioBackend(info?: GpioPlatformInfo): GpioBackendSelection
     const requested = (process.env.REM_GPIO_BACKEND || "").trim().toLowerCase();
     const sysfsBackend = createSysfsBackend();
     const libgpiodBackend = createLibgpiodBackend();
+    const mockBackend = new MockBackend();
+    if (requested === "mock") {
+        return { backend: mockBackend, reason: "Forced by REM_GPIO_BACKEND=mock", platform };
+    }
     if (requested === "sysfs-onoff") {
         if (sysfsBackend && platform.sysfsWritable && sysfsBackend.isAccessible()) {
             return { backend: sysfsBackend, reason: "Forced by REM_GPIO_BACKEND=sysfs-onoff", platform };
@@ -223,6 +318,12 @@ export function selectGpioBackend(info?: GpioPlatformInfo): GpioBackendSelection
         return { backend: null, reason: "REM_GPIO_BACKEND requested libgpiod-onoff but backend is unavailable", platform };
     }
     if (platform.osCodename === "trixie") {
+        // Pi 5 has a libgpiod line reconfiguration bug that causes assertion failures.
+        if (platform.isRaspberryPi && isPi5()) {
+            if (sysfsBackend && platform.sysfsWritable && sysfsBackend.isAccessible()) {
+                return { backend: sysfsBackend, reason: "Trixie on Pi 5 detected; using sysfs to avoid libgpiod crash", platform };
+            }
+        }
         if (libgpiodBackend && libgpiodBackend.isAccessible()) {
             return { backend: libgpiodBackend, reason: "Trixie detected; selected libgpiod backend", platform };
         }
@@ -234,5 +335,8 @@ export function selectGpioBackend(info?: GpioPlatformInfo): GpioBackendSelection
     if (libgpiodBackend && libgpiodBackend.isAccessible()) {
         return { backend: libgpiodBackend, reason: "Selected libgpiod backend because sysfs backend is unavailable", platform };
     }
-    return { backend: null, reason: "No compatible GPIO backend detected", platform };
+    if (!platform.isLinux || !platform.isRaspberryPi) {
+        return { backend: mockBackend, reason: `No GPIO hardware detected on ${platform.platform}; using mock backend`, platform };
+    }
+    return { backend: mockBackend, reason: "No compatible GPIO backend detected; falling back to mock backend", platform };
 }
