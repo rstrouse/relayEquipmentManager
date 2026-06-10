@@ -1073,6 +1073,15 @@ export class Gpio extends ConfigItem {
     public async setPinAsync(headerId: number, pinId: number, data): Promise<GpioPin> {
         return await this.pins.getPinById(headerId, pinId, true).setPinAsync(data);
     }
+    public async deletePinAsync(headerId: number, pinId: number): Promise<any> {
+        let pin = this.pins.find(elem => elem.headerId === headerId && elem.id === pinId);
+        if (typeof pin === 'undefined')
+            return Promise.reject(new Error(`Pin ${headerId}-${pinId} not found`));
+        pin.isActive = false;
+        gpioCont.initPin(pin);
+        this.pins.removePinById(headerId, pinId);
+        return Promise.resolve({ headerId: headerId, pinId: pinId });
+    }
     public async jogPinAsync(headerId: number, pinId: number, data): Promise<GpioPin> {
         return await this.pins.getPinById(headerId, pinId, true).jogPinAsync(data);
     }
@@ -1281,6 +1290,16 @@ export class GpioPinCollection extends ConfigItemCollection<GpioPin> {
         if (typeof add !== 'undefined' && add)
             return this.add(data || { id: pinId, headerId: headerId });
         return this.createItem(data || { id: pinId, headerId: headerId });
+    }
+    public removePinById(headerId: number, pinId: number): GpioPin {
+        for (let i = this.data.length - 1; i >= 0; i--) {
+            if (this.data[i].headerId === headerId && this.data[i].id === pinId) {
+                let rem = this.createItem(this.data[i]);
+                this.data.splice(i, 1);
+                return rem;
+            }
+        }
+        return undefined;
     }
 }
 export class GpioPin extends ConfigItem {

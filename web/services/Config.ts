@@ -91,6 +91,17 @@ export class ConfigRoute {
             }
             catch (err) { next(err); }
         });
+        app.delete('/config/gpio/pin/:headerId/:pinId', async (req, res, next) => {
+            try {
+                var headerId = parseInt(req.params.headerId, 10);
+                var pinId = parseInt(req.params.pinId, 10);
+                if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
+                if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
+                let result = await cont.gpio.deletePinAsync(headerId, pinId);
+                return res.status(200).send(result);
+            }
+            catch (err) { next(err); }
+        });
         app.put('/config/gpio/pin/trigger/:headerId/:pinId', async (req, res, next) => {
             try {
                 let headerId = parseInt(req.params.headerId, 10);
@@ -109,7 +120,7 @@ export class ConfigRoute {
                 var triggerId = parseInt(req.params.triggerId, 10);
                 if (isNaN(headerId)) throw new Error(`Invalid Header Id ${req.params.headerId}`);
                 if (isNaN(pinId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
-                if (isNaN(triggerId)) throw new Error(`Invalid Pin Id ${req.params.pinId}`);
+                if (isNaN(triggerId)) throw new Error(`Invalid Trigger Id ${req.params.triggerId}`);
                 let pin = await cont.gpio.deletePinTriggerAsync(headerId, pinId, triggerId);
                 return res.status(200).send(pin.getExtended());
             }

@@ -173,6 +173,29 @@
                         self.dataBind({ pin: p });
                     });
                 });
+            $('<div></div>').appendTo(btnPnl).actionButton({ text: 'Delete Pin', icon: '<i class="fas fa-trash"></i>' })
+                .on('click', function (evt) {
+                    var pin = dataBinder.fromElement(pinDef);
+                    $.pic.modalDialog.createConfirm('dlgConfirmDeletePin', {
+                        message: 'Are you sure you want to delete this pin?  All triggers and feeds will also be removed.',
+                        width: '350px',
+                        height: 'auto',
+                        title: 'Confirm Delete Pin',
+                        buttons: [{
+                            text: 'Yes', icon: '<i class="fas fa-trash"></i>',
+                            click: function () {
+                                $.pic.modalDialog.closeDialog(this);
+                                $.deleteLocalService('/config/gpio/pin/' + pin.header.id + '/' + pin.id, {}, 'Deleting Pin...', function (data, status, xhr) {
+                                    self.dataBind({ pin: {} });
+                                });
+                            }
+                        },
+                        {
+                            text: 'No', icon: '<i class="far fa-window-close"></i>',
+                            click: function () { $.pic.modalDialog.closeDialog(this); }
+                        }]
+                    });
+                });
         },
         dataBind: function (data) {
             var self = this, o = self.options, el = self.element;
