@@ -37,8 +37,10 @@ export class i2cController {
                 let bus = i2c.buses.getItemByIndex(i);
                 if (!bus.isActive) continue;
                 let ibus = new i2cBus();
-                await ibus.initAsync(bus);
-                this.buses.push(ibus);
+                try {
+                    await ibus.initAsync(bus);
+                    this.buses.push(ibus);
+                } catch (err) { continue; }
                 // push the path for mock i2c buses
                 if (typeof i2c.detected[i] === 'undefined') {
                     let _detected = JSON.parse(JSON.stringify(i2c.detected));
@@ -174,6 +176,7 @@ export class i2cBus {
     }
     public async scanBus(start: number = 0x03, end: number = 0x77): Promise<{ address: number, name: string, product: number, manufacturer: number }[]> {
         try {
+            if (typeof this._i2cBus === 'undefined') return Promise.reject(new Error(`i2c Bus #${this.busNumber} is not open. Check that /dev/i2c-${this.busNumber} exists and has correct permissions.`));
             logger.info(`Scanning i2c Bus #${this.busNumber}`);
             let addrs = await this._i2cBus.scan(start, end);
             let t = await this._i2cBus.scan(0x3F)
@@ -235,7 +238,7 @@ export class i2cBus {
                 await this.addDevice(dev).catch(err => { logger.error(err); });
             }
             logger.info(`i2c Bus #${bus.busNumber} Initialized`);
-        } catch (err) { logger.error(err); }
+        } catch (err) { logger.error(`Error initializing i2c Bus #${bus.busNumber}: ${err.message}`); return Promise.reject(err); }
     }
     public async readByte(addr: number, cmd: number): Promise<number> {
         try {
