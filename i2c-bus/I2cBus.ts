@@ -238,7 +238,7 @@ export class i2cBus {
                 await this.addDevice(dev).catch(err => { logger.error(err); });
             }
             logger.info(`i2c Bus #${bus.busNumber} Initialized`);
-        } catch (err) { logger.error(`Error initializing i2c Bus #${bus.busNumber}: ${err.message}`); return Promise.reject(err); }
+        } catch (err) { logger.error(`Error initializing i2c Bus #${bus.busNumber}: ${err instanceof Error ? err.message : err}. Check that /dev/i2c-${bus.busNumber} exists and the user has permission to access it.`); return Promise.reject(err); }
     }
     public async readByte(addr: number, cmd: number): Promise<number> {
         try {

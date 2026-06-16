@@ -50,4 +50,14 @@ if (process.platform === 'win32') {
 else {
     process.on('SIGINT', async () => { await stopAsync(); });
 }
+process.on('uncaughtException', (err) => {
+    console.error(`Uncaught Exception: ${err.message}`);
+    console.error(err.stack);
+    logger.error(`Uncaught Exception: ${err.message}`);
+});
+process.on('unhandledRejection', (reason: any) => {
+    console.error(`Unhandled Rejection: ${reason?.message || reason}`);
+    if (reason?.stack) console.error(reason.stack);
+    logger.error(`Unhandled Rejection: ${reason?.message || reason}`);
+});
 initAsync();

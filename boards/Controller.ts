@@ -1078,7 +1078,8 @@ export class Gpio extends ConfigItem {
         if (typeof pin === 'undefined')
             return Promise.reject(new Error(`Pin ${headerId}-${pinId} not found`));
         pin.isActive = false;
-        gpioCont.initPin(pin);
+        try { gpioCont.initPin(pin); }
+        catch (err) { logger.error(`Error uninitializing GPIO pin ${headerId}-${pinId}: ${err.message}`); }
         this.pins.removePinById(headerId, pinId);
         return Promise.resolve({ headerId: headerId, pinId: pinId });
     }
@@ -1362,7 +1363,8 @@ export class GpioPin extends ConfigItem {
                     await gpioCont.resetPinTriggers(this.headerId, this.id);
                 }
             }
-            gpioCont.initPin(this);
+            try { gpioCont.initPin(this); }
+            catch (err) { logger.error(`Error initializing GPIO pin ${this.headerId}-${this.id}: ${err.message}`); }
             return this;
         } catch (err) { return Promise.reject(new Error(`Error saving pin ${this.headerId}-${this.id}: ${err.message}`)); }
     }
