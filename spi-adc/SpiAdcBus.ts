@@ -23,11 +23,15 @@ export class SpiAdcBus {
                     this._spiBus = new mockSpi();
                     break;
             }
-        } catch (err) { console.log(err); }
+        } catch (err) { logger.error(`Error loading SPI module for Bus #${busNumber}: ${err instanceof Error ? err.message : err}. SPI channels will not be available.`); }
     }
     public async initAsync(def: SpiController) {
         try {
             logger.info(`Initializing SPI Bus #${this.busNumber}`);
+            if (typeof this._spiBus === 'undefined') {
+                logger.error(`SPI Bus #${this.busNumber} cannot initialize: SPI module failed to load. Ensure spi-device is installed and SPI is enabled.`);
+                return;
+            }
             this._ct = cont.spiAdcChips.find(elem => elem.id === def.adcChipType);
             //this._opts = {
             //    channelCount: this._ct.maxChannels,
@@ -43,7 +47,7 @@ export class SpiAdcBus {
                 await this.channels[i].openAsync(this._spiBus, { busNumber: this.busNumber });
             }
             logger.info(`SPI Bus #${this.busNumber} Initialized`);
-        } catch (err) { logger.error(err); }
+        } catch (err) { logger.error(`Error initializing SPI Bus #${this.busNumber}: ${err instanceof Error ? err.message : err}`); }
     }
     public async resetAsync(spiBus) {
         try {
