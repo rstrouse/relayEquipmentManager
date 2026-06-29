@@ -39,6 +39,7 @@ export interface GpioBackendSelection {
     backend: GpioBackend | null;
     reason: string;
     platform: GpioPlatformInfo;
+    noReconfigureDirection?: boolean;
 }
 
 class MockGpioPin {
@@ -323,6 +324,11 @@ export function selectGpioBackend(info?: GpioPlatformInfo): GpioBackendSelection
             if (sysfsBackend && platform.sysfsWritable && sysfsBackend.isAccessible()) {
                 return { backend: sysfsBackend, reason: "Trixie on Pi 5 detected; using sysfs to avoid libgpiod crash", platform };
             }
+            // sysfs unavailable on Trixie — use libgpiod but disable reconfigureDirection to avoid RP1 assertion crash
+            if (libgpiodBackend && libgpiodBackend.isAccessible()) {
+                return { backend: libgpiodBackend, reason: "Trixie on Pi 5; using libgpiod with reconfigure workaround (sysfs unavailable)", platform, noReconfigureDirection: true };
+            }
+            return { backend: null, reason: "Pi 5 + Trixie: no safe GPIO backend available. Install @bratbit/onoff.", platform };
         }
         if (libgpiodBackend && libgpiodBackend.isAccessible()) {
             return { backend: libgpiodBackend, reason: "Trixie detected; selected libgpiod backend", platform };

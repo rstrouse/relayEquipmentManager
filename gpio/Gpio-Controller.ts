@@ -10,7 +10,7 @@ import { cont, DeviceBinding, GpioPin, Feed } from "../boards/Controller";
 import { IDevice, DeviceStatus, LatchTimer } from "../devices/AnalogDevices";
 
 import { connBroker, ServerConnection } from "../connections/Bindings";
-import { BackendContext, BackendPinAddress, GpioBackend, GpioPlatformInfo, getGpioPlatformInfo, selectGpioBackend } from "./Gpio-Backends";
+import { BackendContext, BackendPinAddress, GpioBackend, GpioBackendSelection, GpioPlatformInfo, getGpioPlatformInfo, selectGpioBackend } from "./Gpio-Backends";
 
 // Add types for clarity
 export interface SysfsStatus {
@@ -42,6 +42,7 @@ export class GpioController {
     private backend: GpioBackend = null;
     private backendReason: string = "";
     private platformInfo: GpioPlatformInfo;
+    private noReconfigureDirection: boolean = false;
 
     private get backendContext(): BackendContext {
         return {
@@ -174,6 +175,7 @@ export class GpioController {
         const selection = selectGpioBackend(this.platformInfo);
         this.backend = selection.backend;
         this.backendReason = selection.reason;
+        this.noReconfigureDirection = selection.noReconfigureDirection || false;
         if (!this.backend) {
             logger.error(`No compatible GPIO backend found. ${selection.reason}`);
             if (this.platformInfo.osCodename === "trixie") {
@@ -250,9 +252,16 @@ export class GpioController {
                     }
                     else if (typeof pin.gpio !== 'undefined') {
                         if (dir !== pin.gpio.direction()) {
-                            opts.reconfigureDirection = true;
+                            if (this.noReconfigureDirection) {
+                                // Workaround for RP1 libgpiod assertion crash on Pi 5 + Trixie:
+                                // unexport the pin and re-create it with new direction instead of reconfiguring in-place.
+                                try { pin.gpio.unexport(); } catch (e) { /* ignore unexport errors */ }
+                                pin.gpio = undefined;
+                            } else {
+                                opts.reconfigureDirection = true;
+                            }
                         }
-                        pin.gpio.unwatchAll();
+                        if (pin.gpio) pin.gpio.unwatchAll();
                     }
                     pin.label = pinDef.name;
                     if (dir === 'in' && pinDef.debounceTimeout > 0) opts['debounceTimeout'] = pinDef.debounceTimeout;
@@ -261,7 +270,12 @@ export class GpioController {
                     const edge = dir === "in" ? "both" : "none";
                     const address = this.getBackendAddress(pinDef, pinout);
                     logger.info(`Configuring Pin #${pinDef.id} Gpio #${pinout.gpioId}:${stateDir} (backend ${address.gpio}) on Header ${pinDef.headerId} Edge: ${edge}. ${JSON.stringify(opts)}`);
-                    pin.gpio = this.createGpioInstance(pinDef, pinout, stateDir, edge, opts);
+                    try {
+                        pin.gpio = this.createGpioInstance(pinDef, pinout, stateDir, edge, opts);
+                    } catch (err) {
+                        logger.error(`Failed to configure GPIO Pin #${pinDef.id} (${pinout.gpioId}) on Header ${pinDef.headerId}: ${err.message}`);
+                        return pin;
+                    }
                     logger.info(`Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId} Configured.`);
                     cont.gpio.setExported(pinout.gpioId);
                     pin.initFeeds();

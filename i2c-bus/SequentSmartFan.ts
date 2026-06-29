@@ -97,13 +97,17 @@ export class SequentSmartFan extends i2cDeviceBase {
                 await this.getHwFwVer();
                 // If this is a cliVer >= 4 we need to export a gpio pin for the fan control.  Another stupid present from Sequent.
                 if (this.cliVer >= 4) {
-                    this.powerPin = await cont.gpio.setPinAsync(1, 32,
-                        {
-                            isActive: true,
-                            name: `${this.device.name} Power`, direction: 'output',
-                            isInverted: false, initialState: 'off', debounceTimeout: 0
-                        }
-                    );
+                    try {
+                        this.powerPin = await cont.gpio.setPinAsync(1, 32,
+                            {
+                                isActive: true,
+                                name: `${this.device.name} Power`, direction: 'output',
+                                isInverted: false, initialState: 'off', debounceTimeout: 0
+                            }
+                        );
+                    } catch (err) {
+                        logger.error(`${this.device.name}: Could not configure GPIO pin 32 for fan power control: ${err.message}`);
+                    }
                 }
                 await this.getFanPower();
                 await this.getFanBlink();
