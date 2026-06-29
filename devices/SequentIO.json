@@ -2738,6 +2738,26 @@
           "maxSamples": 50
         },
         {
+          "name": "inDigital5.value",
+          "desc": "Digital in #5 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital6.value",
+          "desc": "Digital in #6 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital7.value",
+          "desc": "Digital in #7 state",
+          "maxSamples": 50
+        },
+        {
+          "name": "inDigital8.value",
+          "desc": "Digital in #8 state",
+          "maxSamples": 50
+        },
+        {
           "name": "inAnalog1",
           "desc": "Analog in #1",
           "maxSamples": 50
