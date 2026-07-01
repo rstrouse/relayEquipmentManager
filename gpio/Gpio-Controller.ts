@@ -234,8 +234,14 @@ export class GpioController {
                 if (!pinDef.isActive) {
                     if (cont.gpio.isExported(pinout.gpioId)) {
                         try {
-                            let p = this.createGpioInstance(pinDef, pinout, dir, "none", opts);
-                            p.unexport();
+                            if (this.noReconfigureDirection && typeof pin !== 'undefined' && typeof pin.gpio !== 'undefined') {
+                                // On Trixie, avoid creating a new Gpio instance on an already-held line
+                                // (triggers libgpiod assertion). Use existing handle to unexport.
+                                pin.gpio.unexport();
+                            } else {
+                                let p = this.createGpioInstance(pinDef, pinout, dir, "none", opts);
+                                p.unexport();
+                            }
                         }
                         catch (err) { logger.error(`Unable to unexport pin ${pinDef.headerId}-${pinDef.id}: ${err.message}`); }
                         cont.gpio.setUnexported(pinout.gpioId);
@@ -251,15 +257,24 @@ export class GpioController {
                         this.pins.push(pin);
                     }
                     else if (typeof pin.gpio !== 'undefined') {
-                        if (dir !== pin.gpio.direction()) {
+                        // Normalize direction for comparison: "high" and "low" are both effectively "out"
+                        let currentDir = pin.gpio.direction();
+                        if (currentDir === 'high' || currentDir === 'low') currentDir = 'out';
+                        if (dir !== currentDir) {
                             if (this.noReconfigureDirection) {
-                                // Workaround for RP1 libgpiod assertion crash on Pi 5 + Trixie:
+                                // Workaround for libgpiod assertion crash on Trixie:
                                 // unexport the pin and re-create it with new direction instead of reconfiguring in-place.
                                 try { pin.gpio.unexport(); } catch (e) { /* ignore unexport errors */ }
                                 pin.gpio = undefined;
                             } else {
                                 opts.reconfigureDirection = true;
                             }
+                        } else if (this.noReconfigureDirection) {
+                            // Same effective direction — skip re-creation entirely to avoid
+                            // libgpiod assertion when re-requesting an already-held line.
+                            logger.info(`Pin #${pinDef.id} already configured as ${dir} on Header ${pinDef.headerId}; skipping re-init (libgpiod workaround).`);
+                            pin.label = pinDef.name;
+                            return pin;
                         }
                         if (pin.gpio) pin.gpio.unwatchAll();
                     }

@@ -319,19 +319,20 @@ export function selectGpioBackend(info?: GpioPlatformInfo): GpioBackendSelection
         return { backend: null, reason: "REM_GPIO_BACKEND requested libgpiod-onoff but backend is unavailable", platform };
     }
     if (platform.osCodename === "trixie") {
-        // Pi 5 has a libgpiod line reconfiguration bug that causes assertion failures.
-        if (platform.isRaspberryPi && isPi5()) {
+        // Trixie's libgpiod has a reconfigure assertion bug (gpiod_line_request_reconfigure_lines)
+        // that crashes the process on ALL Raspberry Pi models (Pi3B+, Pi4B, Pi5), not just Pi5/RP1.
+        if (platform.isRaspberryPi) {
             if (sysfsBackend && platform.sysfsWritable && sysfsBackend.isAccessible()) {
-                return { backend: sysfsBackend, reason: "Trixie on Pi 5 detected; using sysfs to avoid libgpiod crash", platform };
+                return { backend: sysfsBackend, reason: "Trixie on Raspberry Pi detected; using sysfs to avoid libgpiod reconfigure crash", platform };
             }
-            // sysfs unavailable on Trixie — use libgpiod but disable reconfigureDirection to avoid RP1 assertion crash
+            // sysfs unavailable on Trixie — use libgpiod but disable reconfigureDirection to avoid assertion crash
             if (libgpiodBackend && libgpiodBackend.isAccessible()) {
-                return { backend: libgpiodBackend, reason: "Trixie on Pi 5; using libgpiod with reconfigure workaround (sysfs unavailable)", platform, noReconfigureDirection: true };
+                return { backend: libgpiodBackend, reason: "Trixie on Raspberry Pi; using libgpiod with reconfigure workaround (sysfs unavailable)", platform, noReconfigureDirection: true };
             }
-            return { backend: null, reason: "Pi 5 + Trixie: no safe GPIO backend available. Install @bratbit/onoff.", platform };
+            return { backend: null, reason: "Trixie on Raspberry Pi: no safe GPIO backend available. Install @bratbit/onoff.", platform };
         }
         if (libgpiodBackend && libgpiodBackend.isAccessible()) {
-            return { backend: libgpiodBackend, reason: "Trixie detected; selected libgpiod backend", platform };
+            return { backend: libgpiodBackend, reason: "Trixie detected (non-Pi); selected libgpiod backend", platform };
         }
         return { backend: null, reason: "Trixie detected but no libgpiod backend is available. Install @bratbit/onoff.", platform };
     }
