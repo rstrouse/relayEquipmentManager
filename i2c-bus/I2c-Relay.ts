@@ -165,12 +165,10 @@ export class i2cRelay extends i2cDeviceBase {
         },
         seeed: { state: [0x06], write: [0x06], config: [] },
         pca9535: {
-            // Mirrors the MCP23017 GPIO/OLAT split: state polling reads the Input Port
-            // registers, which reflect the actual live electrical level on each pin
-            // (updates in real time, same role as MCP23017's GPIOA/GPIOB). Writes go to
-            // the Output Port registers, which hold the driven output value (same role
-            // as MCP23017's OLATA/OLATB).
-            state: [0x00, 0x01],
+            // PCA9535 has no separate output-latch register like the MCP23017 (OLATA/OLATB).
+            // The Output Port registers both hold what was last written AND are safe to
+            // read back, so they are used for both state reads and writes.
+            state: [0x02, 0x03],
             write: [0x02, 0x03],
             config: [
                 { name: 'INPUT0', register: 0x00, desc: 'Input port level for 1-8 (actual pin state)' },
@@ -1137,16 +1135,6 @@ export class i2cRelay extends i2cDeviceBase {
             }
             if (command.length > 0) {
                 await this.sendCommand(command);
-                if (this.options.idType === 'bit' && this.device.options.controllerType === 'pca9535') {
-                    // Unlike MCP23017's OLAT (which just echoes back what was written), the
-                    // PCA9535's Input Port is an independent read of the live pin level. Read
-                    // it back immediately rather than waiting for the next poll cycle, both to
-                    // give instant UI feedback and to catch a relay that didn't actually switch
-                    // (stuck contact, wiring fault, bus contention, etc.).
-                    let bmOrd = Math.floor((relay.id - 1) / 8);
-                    let readByte = this.getReadCommandByte(bmOrd);
-                    if (typeof readByte !== 'undefined') await this.readCommand(readByte);
-                }
                 if (relay.state !== newState) {
                     relay.tripTime = new Date().getTime();
                     webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
