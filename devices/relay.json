@@ -349,6 +349,14 @@
                     }
                   },
                   {
+                    "name": "pca9535",
+                    "desc": "PCA9535 Based",
+                    "options": {
+                      "idType": "bit",
+                      "maxRelays": 16
+                    }
+                  },
+                  {
                     "name": "seeed",
                     "desc": "Seeed Studio",
                     "options": {
