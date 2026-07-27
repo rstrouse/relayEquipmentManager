@@ -16,6 +16,7 @@ export class i2cRelay extends i2cDeviceBase {
         { name: 'pcf8574', desc: 'PCF8574 Based', options: { idType: 'pcf857x', maxRelays: 8 }},
         { name: 'pcf8575', desc: 'PCF8575 Based', options: { idType: 'pcf857x', maxRelays: 16 } },
         { name: 'seeed', desc: 'Seeed Studio', options: { idType: 'bit', maxRelays: 8}},
+        { name: 'pca9535', desc: 'PCA9535 Based', options: { idType: 'bit', maxRelays: 16 } },
         { name: 'dockerPi4', desc: 'Docker Pi 4', options: { idType: 'ordinal', maxRelays: 4 } },
         { name: 'sequent4', desc: 'Sequent 4', options: { idType: 'sequent4', maxRelays: 4 }   },
         { name: 'sequent8', desc: 'Sequent 8 v2.x', options: { idType: 'sequent8', maxRelays: 8 } },
@@ -162,7 +163,26 @@ export class i2cRelay extends i2cDeviceBase {
                 { name: 'P1x', register: 0x00, desc: 'I/O value 9-16' }
             ]
         },
-        seeed: { state: [0x06], write: [0x06], config: [] }
+        seeed: { state: [0x06], write: [0x06], config: [] },
+        pca9535: {
+            // Mirrors the MCP23017 GPIO/OLAT split: state polling reads the Input Port
+            // registers, which reflect the actual live electrical level on each pin
+            // (updates in real time, same role as MCP23017's GPIOA/GPIOB). Writes go to
+            // the Output Port registers, which hold the driven output value (same role
+            // as MCP23017's OLATA/OLATB).
+            state: [0x00, 0x01],
+            write: [0x02, 0x03],
+            config: [
+                { name: 'INPUT0', register: 0x00, desc: 'Input port level for 1-8 (actual pin state)' },
+                { name: 'INPUT1', register: 0x01, desc: 'Input port level for 9-16 (actual pin state)' },
+                { name: 'OUTPUT0', register: 0x02, desc: 'Relay state for 1-8' },
+                { name: 'OUTPUT1', register: 0x03, desc: 'Relay state for 9-16' },
+                { name: 'POLINV0', register: 0x04, desc: 'Polarity inversion for 1-8 (leave at 0x00)' },
+                { name: 'POLINV1', register: 0x05, desc: 'Polarity inversion for 9-16 (leave at 0x00)' },
+                { name: 'CONFIG0', register: 0x06, desc: 'I/O direction for 1-8. 0=output(relay), 1=input' },
+                { name: 'CONFIG1', register: 0x07, desc: 'I/O direction for 9-16. 0=output(relay), 1=input' }
+            ]
+        }
     };
     protected _latchTimers = {};
     protected latches = new LatchTimers();
@@ -257,6 +277,30 @@ export class i2cRelay extends i2cDeviceBase {
                             }
                         }
                         await this.sendCommand([reg.register, reg.value]);
+                        if (!this.i2c.isMock) await this.readConfigRegisters();
+                    }
+                    break;
+                case 'pca9535':
+                    // Set the registers to output for all the relays we have.
+                    {
+                        // On power-up the PCA9535 defaults CONFIG0/CONFIG1 to 0xFF (all inputs).
+                        // Bit value of 0 = output (what we need to control a relay), 1 = input.
+                        await this.readConfigRegisters();
+
+                        let regA = this.device.info.registers.find(elem => elem.name === 'CONFIG0') || { value: 0x00 };
+                        let regB = this.device.info.registers.find(elem => elem.name === 'CONFIG1') || { value: 0x00 };
+                        if (this.i2c.isMock) { regA.value = 0xFF; regB.value = 0xFF; }
+                        for (let i = 0; i < this.relays.length; i++) {
+                            let relay = this.relays[i];
+                            if (utils.makeBool(relay.enabled)) {
+                                // Set the bit to 0 for output.
+                                (i < 8) ? regA.value &= ~(1 << i) : regB.value &= ~(1 << (i - 8));
+                            }
+                        }
+                        logger.info(`Setting config register ${regA.name} ${regA.value}`);
+                        logger.info(`Setting config register ${regB.name} ${regB.value}`);
+                        await this.sendCommand([regA.register, regA.value]);
+                        await this.sendCommand([regB.register, regB.value]);
                         if (!this.i2c.isMock) await this.readConfigRegisters();
                     }
                     break;
@@ -1093,6 +1137,16 @@ export class i2cRelay extends i2cDeviceBase {
             }
             if (command.length > 0) {
                 await this.sendCommand(command);
+                if (this.options.idType === 'bit' && this.device.options.controllerType === 'pca9535') {
+                    // Unlike MCP23017's OLAT (which just echoes back what was written), the
+                    // PCA9535's Input Port is an independent read of the live pin level. Read
+                    // it back immediately rather than waiting for the next poll cycle, both to
+                    // give instant UI feedback and to catch a relay that didn't actually switch
+                    // (stuck contact, wiring fault, bus contention, etc.).
+                    let bmOrd = Math.floor((relay.id - 1) / 8);
+                    let readByte = this.getReadCommandByte(bmOrd);
+                    if (typeof readByte !== 'undefined') await this.readCommand(readByte);
+                }
                 if (relay.state !== newState) {
                     relay.tripTime = new Date().getTime();
                     webApp.emitToClients('i2cDeviceInformation', { bus: this.i2c.busNumber, address: this.device.address, info: { registers: this.device.info.registers } });
