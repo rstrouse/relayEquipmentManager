@@ -1173,7 +1173,7 @@ export class SequentMegaBAS extends SequentIO {
             if (bind.params.length === 0) return Promise.reject(new Error(`getDeviceState: You must supply a triac id to get its state`));
             await this.takeReadings();
             let relayId = parseInt(bind.params[0], 10);
-            if (isNaN(relayId)) return Promise.reject(new Error(`getDeviceState: Invalid triac Id ${bind.params[0]}`));
+            if (isNaN(relayId)) return super.getDeviceState(bind); // non-numeric param = an I/O channel binding (e.g. in0_10.8), not a triac
             let relay = this.relays.find(elem => elem.id === relayId);
             if (typeof relay === 'undefined') return Promise.reject(new Error(`getDeviceState: Could not find triac Id ${bind.params[0]}`));
             if (!relay.enabled) return Promise.reject(new Error(`getDeviceState: Triac [${relay.name}] is not enabled.`));
