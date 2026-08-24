@@ -84,7 +84,7 @@ export class StateRoute {
             try {
                 //console.log(`setDeviceState: ${req.params.binding} - ${JSON.stringify(req.body)}`);
                 let ret = await cont.setDeviceState(req.params.binding, req.body);
-                return res.status(200).send(ret);
+                return res.status(200).send(typeof ret === 'number' ? ret.toString() : ret);
             }
             catch (err) { next(err); }
         });

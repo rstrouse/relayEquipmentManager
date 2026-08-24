@@ -3044,7 +3044,7 @@ export class I2cDevice extends ConfigItem {
             if (typeof bus === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Bus id ${bind.busId} is not initialized. - ${bind.binding}`));
             let dev = bus.devices.find(elem => elem.device.id === this.id);
             if (typeof dev === 'undefined') return Promise.reject(new Error(`setDeviceState: i2c Device id ${bind.busId}:${this.name} is not initialized. - ${bind.binding}`));
-            return await dev.setDeviceState(bind, data);
+            return { status: dev.deviceStatus, state: await dev.setDeviceState(bind, data) };
         }
         catch (err) { return Promise.reject(new Error(`setDeviceState: Error setting device state ${err.message}`)) }
     }
