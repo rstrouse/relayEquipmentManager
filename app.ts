@@ -26,7 +26,17 @@ export function initAsync() {
         .then(function () { oneWire.initAsync(cont.oneWire)})
         .then(function () { gdc.initAsync(cont.genericDevices); });
 }
-export async function stopAsync(): Promise<void> {
+let _stopPromise: Promise<void> = null;
+export function stopAsync(): Promise<void> {
+    // Signals can arrive more than once (SIGINT + SIGTERM, repeated Ctrl+C); only run shutdown once.
+    if (_stopPromise) {
+        console.log('Shutdown already in progress');
+        return _stopPromise;
+    }
+    _stopPromise = stopProcessesAsync();
+    return _stopPromise;
+}
+async function stopProcessesAsync(): Promise<void> {
     try {
         console.log(`Shutting down Relay Equipment Manager`);
         try { await connBroker.stopAsync(); } catch (err) { console.error(`Error stopping Connection Broker: ${err.message}`); }
@@ -48,7 +58,12 @@ if (process.platform === 'win32') {
     rl.on('SIGINT', async () => { await stopAsync(); });
 }
 else {
-    process.on('SIGINT', async () => { await stopAsync(); });
+    const onStopSignal = async function () {
+        try { return await stopAsync(); } catch (err) { console.log(`Error shutting down processes ${err.message}`); }
+    };
+    process.on('SIGINT', onStopSignal);
+    // systemd, Docker, and pm2 stop the process with SIGTERM.
+    process.on('SIGTERM', onStopSignal);
 }
 process.on('uncaughtException', (err) => {
     console.error(`Uncaught Exception: ${err.message}`);
