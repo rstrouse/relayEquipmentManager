@@ -271,3 +271,6 @@ data/
 dist/
 uploads/
 .DS_Store
+.plan/ISSUES_COMPLETED.md
+.plan/ISSUES_INDEX.md
+.plan/ISSUES.md
