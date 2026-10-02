@@ -1195,7 +1195,7 @@ export class i2cRelay extends i2cDeviceBase {
             if (latch > 0) {
                 this.latches.setLatch(relayId, async () => {
                     try {
-                        await this.setRelayState({ id: relayId, state: !newState })
+                        await this.setRelayState({ id: relayId, state: false }) // Latch expiry is a dead-man's switch: always de-energize.
                         logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
                     } catch (err) { logger.error(`Error processing latch timer`); }
                 }, latch);

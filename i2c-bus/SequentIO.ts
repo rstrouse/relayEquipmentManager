@@ -13,6 +13,9 @@ import { LatchTimers, AnalogDevices } from "../devices/AnalogDevices";
 import * as fs from 'fs';
 
 export class SequentIO extends i2cDeviceBase {
+    // Relay-capable subclasses declare their own `latches = new LatchTimers()`.  Declared here so
+    // closeAsync() can flush pending latches on shutdown.
+    protected latches: LatchTimers;
     protected regs = {
         rs485Settings: 65,
         hwVersion: 120,  // 120 & 121 = major.(minor/100)
@@ -357,6 +360,8 @@ export class SequentIO extends i2cDeviceBase {
     public async closeAsync(): Promise<void> {
         try {
             await this.stopPolling();
+            // Release any pending relay latches so latched relays are de-energized on shutdown.
+            if (typeof this.latches !== 'undefined') await this.latches.close(true);
             await super.closeAsync();
             return Promise.resolve();
         }
@@ -1765,7 +1770,7 @@ export class Sequent4RelIND extends SequentIO {
             if (latch > 0) {
                 this.latches.setLatch(relayId, async () => {
                     try {
-                        await this.setRelayState({ id: relayId, state: !newState })
+                        await this.setRelayState({ id: relayId, state: false }) // Latch expiry is a dead-man's switch: always de-energize.
                         logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
                     } catch (err) { logger.error(`Error processing latch timer`); }
                 }, latch);
@@ -2250,7 +2255,7 @@ export class Sequent4Rel4In extends SequentIO {
             if (latch > 0) {
                 this.latches.setLatch(relayId, async () => {
                     try {
-                        await this.setRelayState({ id: relayId, state: !newState })
+                        await this.setRelayState({ id: relayId, state: false }) // Latch expiry is a dead-man's switch: always de-energize.
                         logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
                     } catch (err) { logger.error(`Error processing latch timer`); }
                 }, latch);
@@ -2622,7 +2627,7 @@ export class SequentHomeAuto extends SequentIO {
             if (latch > 0) {
                 this.latches.setLatch(relayId, async () => {
                     try {
-                        await this.setRelayState({ id: relayId, state: !newState })
+                        await this.setRelayState({ id: relayId, state: false }) // Latch expiry is a dead-man's switch: always de-energize.
                         logger.warn(`Relay Latch timer expired ${relay.name}: ${latch}ms`);
                     } catch (err) { logger.error(`Error processing latch timer`); }
                 }, latch);
