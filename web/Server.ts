@@ -333,7 +333,10 @@ export class SsdpServer extends ProtoServer {
                 //customLogger: (...args) => console.log.apply(null, args),
                 logLevel: 'INFO',
                 udn: this.deviceUUID,
-                location: this.upnpPath,
+                // Object form lets node-ssdp fill in each socket's own IP so hosts with
+                // multiple nics (docker...etc) advertise a reachable LOCATION on every interface.
+                // Do not use explicitSocketBind: on Linux a socket bound to a unicast IP never sees M-SEARCH.
+                location: { protocol: 'http://', port: port, path: '/upnp.xml' },
                 sourcePort: 1900
             });
             this.server.addUSN('upnp:rootdevice'); // This line will make the server show up in windows.
