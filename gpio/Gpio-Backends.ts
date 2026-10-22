@@ -132,9 +132,18 @@ class SysfsOnOffBackend implements GpioBackend {
         return typeof this.gp !== "undefined" && this.gp !== null && this.gp.accessible === true;
     }
     public resolveAddress(pinDef: GpioPin, pinout: any, context: BackendContext): BackendPinAddress {
+        const gpioId = Number(pinout?.gpioId);
+        const declaredBase = Number(context?.pinouts?.gpioBackends?.sysfs?.base);
+        if (!Number.isInteger(gpioId) || !Number.isInteger(declaredBase) || declaredBase <= 0 || gpioId < declaredBase) {
+            return { gpio: gpioId, source: "pinout.gpioId" };
+        }
+        // The pinout bakes in a kernel-specific sysfs base (e.g. 600 on Pi 5) that moves between kernel
+        // releases. Rebase the BCM offset onto the base the running kernel actually reports.
+        const chip = findSysfsGpioChip(context);
+        if (!chip || chip.base === declaredBase) return { gpio: gpioId, source: "pinout.gpioId" };
         return {
-            gpio: Number(pinout.gpioId),
-            source: "pinout.gpioId"
+            gpio: chip.base + (gpioId - declaredBase),
+            source: `sysfs ${chip.name} (${chip.label}) base ${chip.base}`
         };
     }
     public createGpio(address: BackendPinAddress, direction: string, edge: string, options: any): any {
@@ -200,6 +209,55 @@ class LibgpiodOnOffBackend implements GpioBackend {
     public createGpio(address: BackendPinAddress, direction: string, edge: string, options: any): any {
         return new this.gp(address.gpio, direction, edge, options);
     }
+}
+
+export interface SysfsGpioChip {
+    name: string;
+    base: number;
+    ngpio: number;
+    label: string;
+}
+
+let sysfsChipCache: SysfsGpioChip[] | null = null;
+
+export function listSysfsGpioChips(): SysfsGpioChip[] {
+    if (sysfsChipCache) return sysfsChipCache;
+    const chips: SysfsGpioChip[] = [];
+    try {
+        const root = "/sys/class/gpio";
+        if (fs.existsSync(root)) {
+            for (const name of fs.readdirSync(root)) {
+                if (!name.startsWith("gpiochip")) continue;
+                try {
+                    const read = (f: string) => fs.readFileSync(`${root}/${name}/${f}`, "utf8").trim();
+                    const base = parseInt(read("base"), 10);
+                    const ngpio = parseInt(read("ngpio"), 10);
+                    if (Number.isInteger(base) && Number.isInteger(ngpio)) chips.push({ name, base, ngpio, label: read("label") });
+                } catch (err) { /* skip unreadable chip */ }
+            }
+        }
+    } catch (err) { /* sysfs unavailable */ }
+    sysfsChipCache = chips;
+    return chips;
+}
+
+function findSysfsGpioChip(context: BackendContext): SysfsGpioChip | undefined {
+    const chips = listSysfsGpioChips();
+    if (chips.length === 0) return undefined;
+    let regex: string = context?.pinouts?.gpioBackends?.libgpiod?.chipRegex;
+    if (typeof regex !== "string" || regex.length === 0) {
+        if (context?.controllerType === "raspi-5") regex = "pinctrl-rp1";
+        else if (context?.controllerType?.startsWith("raspi")) regex = "pinctrl-bcm";
+    }
+    if (typeof regex === "string" && regex.length > 0) {
+        try {
+            const rx = new RegExp(regex, "i");
+            const match = chips.find(c => rx.test(c.label));
+            if (match) return match;
+        } catch (err) { /* bad regex in pinout; fall through */ }
+    }
+    // No label match: the header GPIO controller is the chip with the most lines.
+    return chips.reduce((a, b) => (b.ngpio > a.ngpio ? b : a));
 }
 
 function detectGpioCharacterDevice(): boolean {

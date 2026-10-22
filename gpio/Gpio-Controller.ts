@@ -10,7 +10,7 @@ import { cont, DeviceBinding, GpioPin, Feed } from "../boards/Controller";
 import { IDevice, DeviceStatus, LatchTimer } from "../devices/AnalogDevices";
 
 import { connBroker, ServerConnection } from "../connections/Bindings";
-import { BackendContext, BackendPinAddress, GpioBackend, GpioBackendSelection, GpioPlatformInfo, getGpioPlatformInfo, selectGpioBackend } from "./Gpio-Backends";
+import { BackendContext, BackendPinAddress, GpioBackend, GpioBackendSelection, GpioPlatformInfo, getGpioPlatformInfo, selectGpioBackend, listSysfsGpioChips } from "./Gpio-Backends";
 
 // Add types for clarity
 export interface SysfsStatus {
@@ -185,6 +185,7 @@ export class GpioController {
         }
         logger.info(`Using GPIO backend: ${this.backend.displayName}`);
         logger.info(`GPIO backend selection reason: ${selection.reason}`);
+        if (selection.backend?.usesSysfs) logger.info(`sysfs GPIO chips: ${listSysfsGpioChips().map(c => `${c.name} base=${c.base} ngpio=${c.ngpio} label=${c.label}`).join("; ") || "none found"}`);
         this.initPins();
         return this;
     }
