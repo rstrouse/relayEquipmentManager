@@ -260,6 +260,18 @@ function findSysfsGpioChip(context: BackendContext): SysfsGpioChip | undefined {
     return chips.reduce((a, b) => (b.ngpio > a.ngpio ? b : a));
 }
 
+// Reports how far a sysfs line got (exported? direction/edge values?) so an opaque EINVAL can be pinned to export, direction or edge.
+export function describeSysfsLine(line: number): string {
+    const dir = `/sys/class/gpio/gpio${line}`;
+    try {
+        if (!fs.existsSync(dir)) return `not exported (${dir} missing)`;
+        const read = (f: string) => { try { return fs.readFileSync(`${dir}/${f}`, "utf8").trim(); } catch (err) { return `unreadable (${err.code || err.message})`; } };
+        return `exported; direction=${read("direction")} edge=${read("edge")} value=${read("value")} active_low=${read("active_low")}`;
+    } catch (err) {
+        return `unknown (${err.message})`;
+    }
+}
+
 function detectGpioCharacterDevice(): boolean {
     try {
         if (!fs.existsSync("/dev")) return false;

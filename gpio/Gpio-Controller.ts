@@ -10,7 +10,7 @@ import { cont, DeviceBinding, GpioPin, Feed } from "../boards/Controller";
 import { IDevice, DeviceStatus, LatchTimer } from "../devices/AnalogDevices";
 
 import { connBroker, ServerConnection } from "../connections/Bindings";
-import { BackendContext, BackendPinAddress, GpioBackend, GpioBackendSelection, GpioPlatformInfo, getGpioPlatformInfo, selectGpioBackend, listSysfsGpioChips } from "./Gpio-Backends";
+import { BackendContext, BackendPinAddress, GpioBackend, GpioBackendSelection, GpioPlatformInfo, getGpioPlatformInfo, selectGpioBackend, listSysfsGpioChips, describeSysfsLine } from "./Gpio-Backends";
 
 // Add types for clarity
 export interface SysfsStatus {
@@ -289,7 +289,8 @@ export class GpioController {
                     try {
                         pin.gpio = this.createGpioInstance(pinDef, pinout, stateDir, edge, opts);
                     } catch (err) {
-                        logger.error(`Failed to configure GPIO Pin #${pinDef.id} (${pinout.gpioId}) on Header ${pinDef.headerId}: ${err.message}`);
+                        logger.error(`Failed to configure GPIO Pin #${pinDef.id} (${pinout.gpioId}, backend ${address.gpio}) on Header ${pinDef.headerId}: ${err.message}`);
+                        if (this.backend?.usesSysfs) logger.error(`sysfs state for line ${address.gpio}: ${describeSysfsLine(address.gpio)}`);
                         return pin;
                     }
                     logger.info(`Pin #${pinDef.id} Gpio #${pinout.gpioId}:${pinDef.direction.gpio} on Header ${pinDef.headerId} Configured.`);
