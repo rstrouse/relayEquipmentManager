@@ -50,5 +50,8 @@
     "socket.io-client": "^4.5.0",
     "spi-device": "^3.1.2",
     "winston": "^3.15.0"
+  },
+  "overrides": {
+    "nan": "^2.30.0"
   }
 }
